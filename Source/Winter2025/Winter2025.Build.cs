@@ -20,7 +20,11 @@ public class Winter2025 : ModuleRules
 			"GameplayStateTreeModule",
 			"Niagara",
 			"UMG",
-			"Slate"
+			"Slate",
+			"World",
+			"GameplayAbilities",
+			"GameplayTags",
+			"GameplayTasks"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
