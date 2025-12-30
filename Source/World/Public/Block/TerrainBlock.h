@@ -3,14 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ABlockBase.h"
+#include "BlockBase.h"
 #include "TerrainBlock.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class WORLD_API ATerrainBlock : public AABlockBase
+class WORLD_API ATerrainBlock : public ABlockBase
 {
 	GENERATED_BODY()
 	

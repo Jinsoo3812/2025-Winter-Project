@@ -22,6 +22,7 @@ public class Winter2025 : ModuleRules
 			"UMG",
 			"Slate",
 			"World",
+			"Skill",
 			"GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks"

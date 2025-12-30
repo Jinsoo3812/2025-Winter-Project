@@ -48,16 +48,16 @@ void ATestCharacter::BeginPlay()
 					AbilitySystemComponent->GiveAbility(AbilitySpec);
 				}
 				else {
-					UE_LOG(LogTemp, Warning, TEXT("Ability class is null in %s"), *GetName());
+					UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability class is null in %s"), *GetName());
 				}
 			}
 		}
 		else {
-			UE_LOG(LogTemp, Error, TEXT("Controller is invalid in %s"), *GetName());
+			UE_LOG(LogTemp, Error, TEXT("ATestCharacter: Controller is invalid in %s"), *GetName());
 		}
 	}
 	else {
-		UE_LOG(LogTemp, Error, TEXT("AbilitySystemComponent is null in %s"), *GetName());
+		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: AbilitySystemComponent is null in %s"), *GetName());
 	}
 }
 
@@ -76,10 +76,10 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 				if (InputMappingContext)
 				{
 					Subsystem->AddMappingContext(InputMappingContext, 0);
-					UE_LOG(LogTemp, Log, TEXT("InputMappingContext added to %s"), *GetName());
+					UE_LOG(LogTemp, Log, TEXT("ATestCharacter: InputMappingContext added to %s"), *GetName());
 				}
 				else {
-					UE_LOG(LogTemp, Warning, TEXT("InputMappingContext is null in %s"), *GetName());
+					UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: InputMappingContext is null in %s"), *GetName());
 				}
 			}
 		}
@@ -90,7 +90,7 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 			EnhancedInputComponent->BindAction(AbilityInputAction, ETriggerEvent::Started, this, &ATestCharacter::OnAbilityInputPressed);
 		}
 		else {
-			UE_LOG(LogTemp, Warning, TEXT("AbilityInputAction is null in %s"), *GetName());
+			UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: AbilityInputAction is null in %s"), *GetName());
 		}
 	}
 }
@@ -108,19 +108,19 @@ void ATestCharacter::OnAbilityInputPressed()
 			if (Spec.Ability && !Spec.IsActive())
 			{
 				AbilitySystemComponent->TryActivateAbility(Spec.Handle);
-				//UE_LOG(LogTemp, Warning, TEXT("Ability Activated: %s"), *Spec.Ability->GetName());
+				// UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability Activated: %s"), *Spec.Ability->GetName());
 				break;
 			}
 			else if (!Spec.Ability) {
-				UE_LOG(LogTemp, Warning, TEXT("Ability is null in Spec in %s"), *GetName());
+				UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability is null in Spec in %s"), *GetName());
 			}
 			else {
-				UE_LOG(LogTemp, Warning, TEXT("Ability already active: %s"), *Spec.Ability->GetName());
+				UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability already active: %s"), *Spec.Ability->GetName());
 			}
 		}
 	}
 	else {
-		UE_LOG(LogTemp, Error, TEXT("AbilitySystemComponent is null in %s"), *GetName());
+		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: AbilitySystemComponent is null in %s"), *GetName());
 	}
 }
 

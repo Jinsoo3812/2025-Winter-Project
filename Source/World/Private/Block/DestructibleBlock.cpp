@@ -28,7 +28,7 @@ void ADestructibleBlock::BeginPlay()
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 	else {
-		UE_LOG(LogTemp, Warning, TEXT("AbilitySystemComponent is null in DestructibleBlock %s"), *GetName());
+		UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock: AbilitySystemComponent is null in DestructibleBlock %s"), *GetName());
 	}
 }
 
@@ -39,23 +39,25 @@ UAbilitySystemComponent* ADestructibleBlock::GetAbilitySystemComponent() const
 
 void ADestructibleBlock::OnGameplayEffectApplied(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
 {
-	UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock %s received a Gameplay Effect."), *GetName());
+	UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock: %s received a Gameplay Effect."), *GetName());
 	// DestructionTag이 유효하지 않으면 리턴
 	if (!DestructionTag.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("DestructionTag is not valid in DestructibleBlock %s"), *GetName());
+		UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock: DestructionTag is not valid in DestructibleBlock %s"), *GetName());
 		return;
 	}
 
-	// GE를 만든 주체의 Tag. 주체가 GE에 파괴 관련 Tag를 부여하도록 구현할 것이므로 비교할 필요 X
+	// GE를 만든 주체의 Tag. GE 자체에 Tag가 미리 부여되어 있으므로 필요 X
 	// const FGameplayTagContainer* SourceTags = SpecApplied.CapturedSourceTags.GetAggregatedTags();
 	
-	// GE 자체의 Tag (GE를 만든 주체가 선택적으로 Tag를 GE에 부여)
+	// GE 자체의 Tag
 	const FGameplayTagContainer& SpecTags = SpecApplied.Def->InheritableGameplayEffectTags.CombinedTags;
 
 	// 태그 비교: SpecTags에 DestructionTag가 포함되어 있는지 확인
 	bool bHasDestructionTag = false;
-	UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock %s received GE with Tags: %s"), *GetName(), *SpecTags.ToString());
+
+	// 자신이 받은 GE의 Tag 출력
+	// UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock: %s received GE with Tags: %s"), *GetName(), *SpecTags.ToString());
 	if (SpecTags.HasTag(DestructionTag))
 	{
 		bHasDestructionTag = true;

@@ -25,6 +25,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	// 플레이어 입력 컴포넌트 설정 함수야.
+	// IMC 할당 및 IA 바인딩을 수행
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	// TestCharacter의 ASC

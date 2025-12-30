@@ -95,7 +95,7 @@ void UGA_ForwardBoxAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 	}
 	else if (!TestGameplayEffect)
 	{
-		UE_LOG(LogTemp, Error, TEXT("TestGameplayEffect is null in GA_ForwardBoxAttack by %s"), *GetName());
+		UE_LOG(LogTemp, Error, TEXT("GA_ForwardBoxAttack: TestGameplayEffect is null in GA_ForwardBoxAttack by %s"), *GetName());
 	}
 
 	EndAbility(Handle, ActorInfo, ActivationInfo, true, false);

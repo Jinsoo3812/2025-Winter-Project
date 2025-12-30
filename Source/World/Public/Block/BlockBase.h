@@ -6,7 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 #include "Components/StaticMeshComponent.h"
-#include "ABlockBase.generated.h"
+#include "BlockBase.generated.h"
 
 UENUM()
 enum class EBlockType : uint8 {
@@ -18,12 +18,12 @@ enum class EBlockType : uint8 {
 
 
 UCLASS()
-class WORLD_API AABlockBase : public AActor
+class WORLD_API ABlockBase : public AActor
 {
 	GENERATED_BODY()
 	
 public:	
-	AABlockBase();
+	ABlockBase();
 
 protected:
 	// Called when the game starts or when spawned

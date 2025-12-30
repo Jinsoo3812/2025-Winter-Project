@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ABlockBase.h"
+#include "BlockBase.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
 #include "GameplayTagContainer.h"
@@ -13,7 +13,7 @@
  * 
  */
 UCLASS()
-class WORLD_API ADestructibleBlock : public AABlockBase, public IAbilitySystemInterface
+class WORLD_API ADestructibleBlock : public ABlockBase, public IAbilitySystemInterface
 {
 	// ASC를 갖는 클래스는 IAbilitySystemInterface를 상속
 	GENERATED_BODY()
