@@ -87,7 +87,7 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		// 어빌리티 입력 바인딩
 		if (AbilityInputAction)
 		{
-			EnhancedInputComponent->BindAction(AbilityInputAction, ETriggerEvent::Triggered, this, &ATestCharacter::OnAbilityInputPressed);
+			EnhancedInputComponent->BindAction(AbilityInputAction, ETriggerEvent::Started, this, &ATestCharacter::OnAbilityInputPressed);
 		}
 		else {
 			UE_LOG(LogTemp, Warning, TEXT("AbilityInputAction is null in %s"), *GetName());
@@ -108,7 +108,7 @@ void ATestCharacter::OnAbilityInputPressed()
 			if (Spec.Ability && !Spec.IsActive())
 			{
 				AbilitySystemComponent->TryActivateAbility(Spec.Handle);
-				UE_LOG(LogTemp, Warning, TEXT("Ability Activated: %s"), *Spec.Ability->GetName());
+				//UE_LOG(LogTemp, Warning, TEXT("Ability Activated: %s"), *Spec.Ability->GetName());
 				break;
 			}
 			else if (!Spec.Ability) {

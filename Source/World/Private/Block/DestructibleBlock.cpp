@@ -15,10 +15,9 @@ ADestructibleBlock::ADestructibleBlock()
 void ADestructibleBlock::BeginPlay()
 {
 	Super::BeginPlay();
-
 	// ASC가 유효한 경우 Gameplay Effect 적용 콜백 등록
 	if (AbilitySystemComponent)
-	{
+	{	
 		// Gameplay Effect가 적용될 때 호출되는 델리게이트 바인딩
 		AbilitySystemComponent->OnGameplayEffectAppliedDelegateToSelf.AddUObject(this, &ADestructibleBlock::OnGameplayEffectApplied);
 
@@ -40,6 +39,7 @@ UAbilitySystemComponent* ADestructibleBlock::GetAbilitySystemComponent() const
 
 void ADestructibleBlock::OnGameplayEffectApplied(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
 {
+	UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock %s received a Gameplay Effect."), *GetName());
 	// DestructionTag이 유효하지 않으면 리턴
 	if (!DestructionTag.IsValid())
 	{
@@ -55,7 +55,7 @@ void ADestructibleBlock::OnGameplayEffectApplied(UAbilitySystemComponent* Target
 
 	// 태그 비교: SpecTags에 DestructionTag가 포함되어 있는지 확인
 	bool bHasDestructionTag = false;
-
+	UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock %s received GE with Tags: %s"), *GetName(), *SpecTags.ToString());
 	if (SpecTags.HasTag(DestructionTag))
 	{
 		bHasDestructionTag = true;

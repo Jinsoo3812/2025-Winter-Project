@@ -9,8 +9,8 @@ AABlockBase::AABlockBase()
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	// MeshComponent 생성 및 초기화
-	CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
+	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
+	RootComponent = MeshComponent;
 }
 
 // Called when the game starts or when spawned

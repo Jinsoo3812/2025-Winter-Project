@@ -36,70 +36,60 @@ void UGA_ForwardBoxAttack::ActivateAbility(const FGameplayAbilitySpecHandle Hand
 		return;
 	}
 
-	// 디버그를 위한 박스 충돌 영역 계산 및 시각화
+	// 디버그를 위한 라인 캐스팅 시작 위치 및 종료 위치 설정
 	FVector OwnerLocation = OwnerActor->GetActorLocation();
 	FVector ForwardVector = OwnerActor->GetActorForwardVector();
-	FVector BoxCenter = OwnerLocation + ForwardVector * ForwardOffset;
+	FVector TraceStart = OwnerLocation;
+	FVector TraceEnd = OwnerLocation + ForwardVector * TraceDistance;
 
-	FVector HalfExtent = FVector(BoxDepth * 0.5f, BoxWidth * 0.5f, BoxHeight * 0.5f);
-	FQuat BoxRotation = OwnerActor->GetActorQuat();
-
-	TArray<FOverlapResult> OverlapResults;
-	FCollisionShape BoxShape = FCollisionShape::MakeBox(HalfExtent);
+	FHitResult HitResult;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(OwnerActor);
 
-	bool bHit = GetWorld()->OverlapMultiByChannel(
-		OverlapResults,
-		BoxCenter,
-		BoxRotation,
+	// 라인 트레이스를 통한 충돌 검사
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult,
+		TraceStart,
+		TraceEnd,
 		ECC_Pawn,
-		BoxShape,
 		QueryParams
 	);
 
-	DrawDebugBox(GetWorld(), BoxCenter, HalfExtent, BoxRotation, FColor::Red, false, DebugDrawDuration, 0, 3.0f);
+	// 디버그용 라인 그리기
+	DrawDebugLine(GetWorld(), TraceStart, TraceEnd, FColor::Red, false, DebugDrawDuration, 0, 3.0f);
 
 	// 충돌하였고, TestGameplayEffect(GE)가 유효할 경우
 	if (bHit && TestGameplayEffect)
 	{
-		for (const FOverlapResult& Result : OverlapResults)
+		if (AActor* HitActor = HitResult.GetActor())
 		{
-			if (AActor* HitActor = Result.GetActor())
+			UAbilitySystemComponent* TargetASC = nullptr;
+			
+			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
 			{
-				UAbilitySystemComponent* TargetASC = nullptr;
-				
-				if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
+				TargetASC = ASI->GetAbilitySystemComponent();
+			}
+			
+			if (TargetASC)
+			{
+				FGameplayEffectContextHandle EffectContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
+				EffectContext.AddSourceObject(OwnerActor);
+
+				FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(TestGameplayEffect, GetAbilityLevel(), EffectContext);
+				if (SpecHandle.IsValid())
 				{
-					TargetASC = ASI->GetAbilitySystemComponent();
-				}
-				
-				if (TargetASC)
-				{
-					// GE를 만들기 위한 정보를 담은 EffectContext 생성 및 출처(OwnerActor) 설정
-					FGameplayEffectContextHandle EffectContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
-					EffectContext.AddSourceObject(OwnerActor);
+					GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
-					// 
-					FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(TestGameplayEffect, GetAbilityLevel(), EffectContext);
-					if (SpecHandle.IsValid())
-					{
-						// GE Spec에 동적으로 태그 추가 (Block.Destruction)
-						SpecHandle.Data->DynamicGrantedTags.AddTag(FGameplayTag::RequestGameplayTag(FName("Block.Category.Destruction")));
-
-						GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-
-						UE_LOG(LogTemp, Warning, TEXT("Applied GE to: %s"), *HitActor->GetName());
-					}
-					else
-					{
-						UE_LOG(LogTemp, Error, TEXT("Failed to create GameplayEffectSpec for GE in GA_ForwardBoxAttack by %s"), *GetName());
-					}
+					UE_LOG(LogTemp, Warning, TEXT("GA_ForwardBoxAttack: Applied GE to %s"), *HitActor->GetName());
 				}
 				else
 				{
-					UE_LOG(LogTemp, Warning, TEXT("Hit actor %s does not have an AbilitySystemComponent."), *HitActor->GetName());
+					UE_LOG(LogTemp, Error, TEXT("GA_ForwardBoxAttack: Failed to create GameplayEffectSpec for GE in GA_ForwardBoxAttack by %s"), *GetName());
 				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GA_ForwardBoxAttack: Hit actor %s does not have an AbilitySystemComponent."), *HitActor->GetName());
 			}
 		}
 	}
