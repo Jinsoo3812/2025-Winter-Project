@@ -11,6 +11,7 @@
 class UGameplayAbility;
 class UInputAction;
 class UInputMappingContext;
+class USkillManagerComponent;
 
 UCLASS()
 class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbilitySystemInterface
@@ -20,32 +21,33 @@ class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbili
 public:
 	ATestCharacter();
 
+	// IAbilitySystemInterface 구현
+	// 원본이 0을 반환하므로 override 필요
+	// @return TestCharacter의 AbilitySystemComponent
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
 	virtual void BeginPlay() override;
 
-	// 플레이어 입력 컴포넌트 설정 함수야.
-	// IMC 할당 및 IA 바인딩을 수행
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
 	// TestCharacter의 ASC
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
-	// TestCharacter가 보유한 GA 목록
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS")
-	TArray<TSubclassOf<UGameplayAbility>> Abilities;
+	// 스킬 매니저 컴포넌트 - 스킬 장착/해제/활성화 관리
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill System")
+	TObjectPtr<USkillManagerComponent> SkillManager;
 
-	// GA를 발동을 바인딩할 Input Action
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
-	TObjectPtr<UInputAction> AbilityInputAction;
+	// 스킬 슬롯별 Input Action (슬롯 0, 1, 2)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Skill Slots")
+	TObjectPtr<UInputAction> SkillSlot0InputAction;
 
-	// Input Mapping Context
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Skill Slots")
+	TObjectPtr<UInputAction> SkillSlot1InputAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input|Skill Slots")
+	TObjectPtr<UInputAction> SkillSlot2InputAction;
+
+	// Input Mapping Context 할당 변수
+	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
-
-private:
-	// GA 발동용 입력 처리 함수
-	void OnAbilityInputPressed();
 };

@@ -5,12 +5,14 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameplayAbilitySpec.h"
 #include "Abilities/GameplayAbility.h"
-#include "InputAction.h"
-#include "InputActionValue.h"
-#include "InputMappingContext.h"
+//#include "InputAction.h"
+//#include "InputActionValue.h"
+//#include "InputMappingContext.h"
+#include "SkillManagerComponent.h"
 
 ATestCharacter::ATestCharacter()
 {
+	// ASC 생성 및 설정
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	
 	// ASC의 서버-클라이언트 상태 동기화를 활성화합니다.
@@ -18,6 +20,9 @@ ATestCharacter::ATestCharacter()
 
 	// GE를 제외한 Tag와 Attributes만 동기화하도록 설정합니다. 부하를 줄이기 위해 AI 캐릭터에 주로 사용.
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
+
+	// 스킬 매니저 컴포넌트 생성
+	SkillManager = CreateDefaultSubobject<USkillManagerComponent>(TEXT("SkillManagerComponent"));
 }
 
 UAbilitySystemComponent* ATestCharacter::GetAbilitySystemComponent() const
@@ -27,29 +32,29 @@ UAbilitySystemComponent* ATestCharacter::GetAbilitySystemComponent() const
 
 void ATestCharacter::BeginPlay()
 {
+	// 부모(최종적으로 AActor)의 BeginPlay 호출
+	// 그 내부 구현에서 ReceiveBeginPlay 호출
+	// ReceiveBeginPlay는 BP의 BeginPlay와 같음
 	Super::BeginPlay();
 
 	if (AbilitySystemComponent)
-	{	
+	{
 		if (IsValid(Controller))
 		{
+			// InitAbilityActorInfo (ASC 초기화)
+			// @param OwnerActor: 이 ASC가 속한 액터 (서버가 소유한 playerstate)
+			// @param AvatarActor: 이 ASC가 제어하는 액터 (레벨에서 실제로 존재하는 캐릭터)
 			AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-			for (TSubclassOf<UGameplayAbility>& Ability : Abilities)
+			// 스킬 매니저에 ASC 참조 전달
+			if (SkillManager)
 			{
-				if (Ability)
-				{
-					// FGameplayAbilitySpec는 ASC에 부여된 GA의 정보를 담는 구조체
-					// Ability: GA의 CDO.
-					// Level: GA의 현재 레벨
-					// InputID: 입력 바인딩 ID
-					// SourceObject: GA를 부여한 객체
-					FGameplayAbilitySpec AbilitySpec(Ability, 1, 0, this);
-					AbilitySystemComponent->GiveAbility(AbilitySpec);
-				}
-				else {
-					UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability class is null in %s"), *GetName());
-				}
+				SkillManager->SkillManagerInitialize(AbilitySystemComponent);
+				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: SkillManager initialized successfully"));
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("ATestCharacter: SkillManager is null"));
 			}
 		}
 		else {
@@ -60,67 +65,3 @@ void ATestCharacter::BeginPlay()
 		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: AbilitySystemComponent is null in %s"), *GetName());
 	}
 }
-
-void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	// Enhanced Input을 사용하기 위해 기본 InputComponent를 캐스팅합니다.
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
-	{
-		// InputMappingContext 추가
-		if (APlayerController* PC = Cast<APlayerController>(GetController()))
-		{
-			if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
-			{
-				if (InputMappingContext)
-				{
-					Subsystem->AddMappingContext(InputMappingContext, 0);
-					UE_LOG(LogTemp, Log, TEXT("ATestCharacter: InputMappingContext added to %s"), *GetName());
-				}
-				else {
-					UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: InputMappingContext is null in %s"), *GetName());
-				}
-			}
-		}
-
-		// 어빌리티 입력 바인딩
-		if (AbilityInputAction)
-		{
-			EnhancedInputComponent->BindAction(AbilityInputAction, ETriggerEvent::Started, this, &ATestCharacter::OnAbilityInputPressed);
-		}
-		else {
-			UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: AbilityInputAction is null in %s"), *GetName());
-		}
-	}
-}
-
-void ATestCharacter::OnAbilityInputPressed()
-{
-	if (AbilitySystemComponent)
-	{
-		// 시전 가능한 GA들의 목록
-		TArray<FGameplayAbilitySpec> ActivatableAbilities = AbilitySystemComponent->GetActivatableAbilities();
-
-		// 이미 시전된 GA들을 제외하고, 시전 가능한 첫 번째 GA를 시전
-		for (FGameplayAbilitySpec& Spec : ActivatableAbilities)
-		{
-			if (Spec.Ability && !Spec.IsActive())
-			{
-				AbilitySystemComponent->TryActivateAbility(Spec.Handle);
-				// UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability Activated: %s"), *Spec.Ability->GetName());
-				break;
-			}
-			else if (!Spec.Ability) {
-				UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability is null in Spec in %s"), *GetName());
-			}
-			else {
-				UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability already active: %s"), *Spec.Ability->GetName());
-			}
-		}
-	}
-	else {
-		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: AbilitySystemComponent is null in %s"), *GetName());
-	}
-}
-
