@@ -35,27 +35,27 @@ void UGA_Destruction::ActivateAbility(
 		return;
 	}
 
-	// GA를 소유한 액터(플레이어 캐릭터)를 가져옴
-	AActor* OwnerActor = ActorInfo->OwnerActor.Get();
-	if (!OwnerActor)
+	// 레벨에 존재하는 AvatarActor(플레이어 캐릭터) 가져오기
+	AActor* AvatarActor = ActorInfo->AvatarActor.Get();
+	if (!AvatarActor)
 	{
 		UE_LOG(LogTemp, Error, TEXT("GA_Destruction: OwnerActor is null"));
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
 	else {
-		UE_LOG(LogTemp, Log, TEXT("GA_Destruction: OwnerActor is available: %s"), *OwnerActor->GetName());
+		UE_LOG(LogTemp, Log, TEXT("GA_Destruction: OwnerActor is unavailable: %s"), *AvatarActor->GetName());
 	}
 
 	// 직육면체 범위의 중심 위치 계산
 	// 플레이어의 위치에서 전방 방향으로 (BoxDistance + BoxExtent.X) 만큼 이동한 지점이 박스의 중심
-	FVector OwnerLocation = OwnerActor->GetActorLocation();
-	FVector ForwardVector = OwnerActor->GetActorForwardVector();
+	FVector OwnerLocation = AvatarActor->GetActorLocation();
+	FVector ForwardVector = AvatarActor->GetActorForwardVector();
 	FVector BoxCenter = OwnerLocation + ForwardVector * (BoxDistance + BoxExtent.X);
 
 	// 충돌 검사를 위한 파라미터 설정
 	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(OwnerActor); // 자기 자신은 검사에서 제외
+	QueryParams.AddIgnoredActor(AvatarActor); // 자기 자신은 검사에서 제외
 
 	// 겹친(Overlap) 액터들을 저장할 배열
 	TArray<FOverlapResult> OverlapResults;
@@ -65,7 +65,7 @@ void UGA_Destruction::ActivateAbility(
 	bool bHit = GetWorld()->OverlapMultiByChannel(
 		OverlapResults,
 		BoxCenter,
-		OwnerActor->GetActorQuat(), // 플레이어의 회전값을 사용하여 박스도 같은 방향으로 회전
+		AvatarActor->GetActorQuat(), // 플레이어의 회전값을 사용하여 박스도 같은 방향으로 회전
 		ECC_Pawn, // Pawn 채널에 대해 Overlap/Block 한다면 검사
 		FCollisionShape::MakeBox(BoxExtent), // 직육면체 모양 생성
 		QueryParams
@@ -76,7 +76,7 @@ void UGA_Destruction::ActivateAbility(
 		GetWorld(),
 		BoxCenter,
 		BoxExtent,
-		OwnerActor->GetActorQuat(),
+		AvatarActor->GetActorQuat(),
 		FColor::Green,
 		false, // 영구적으로 표시하지 않음
 		DebugDrawDuration, // 1초간 표시
@@ -117,7 +117,7 @@ void UGA_Destruction::ActivateAbility(
 			{
 				// Gameplay Effect Context 생성 - 이 효과가 어디서 왔는지 등의 정보를 담음
 				FGameplayEffectContextHandle EffectContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
-				EffectContext.AddSourceObject(OwnerActor); // 효과의 발생 주체(플레이어) 기록
+				EffectContext.AddSourceObject(AvatarActor); // 효과의 발생 주체(플레이어) 기록
 
 				// Gameplay Effect Spec 생성. Spec은 무거우므로 Handle로 관리
 				// Spec: GE는 데이터 에셋, Spec은 그것을 기반한 실제 인스턴스
