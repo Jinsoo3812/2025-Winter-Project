@@ -11,5 +11,6 @@ public class Winter2025EditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V6;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Unreal5_7;
 		ExtraModuleNames.Add("Winter2025");
-	}
+        ExtraModuleNames.Add("Enemy");
+    }
 }
