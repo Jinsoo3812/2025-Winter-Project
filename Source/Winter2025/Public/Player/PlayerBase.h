@@ -1,10 +1,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Winter2025Character.h"    // [중요] 이동/카메라 기능이 있는 부모 클래스
+#include "GameFramework/Character.h"   //부모 클래스
 #include "AbilitySystemInterface.h" // GAS 시스템과 소통하기 위한 인터페이스
 #include "PlayerAttributeSet.h"     // 같은 Player 폴더에 있는 체력 데이터 클래스
 #include "PlayerBase.generated.h"
+
+class UCameraComponent;
+class USpringArmComponent;
+
 
 /**
  * APlayerBase
@@ -16,7 +20,7 @@
  * 3. 나중에 전사, 마법사 같은 직업이 생긴다면 이 클래스를 상속받아 만듭니다.
  */
 UCLASS()
-class WINTER2025_API APlayerBase : public AWinter2025Character, public IAbilitySystemInterface
+class WINTER2025_API APlayerBase : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -27,6 +31,16 @@ public:
 	// [IAbilitySystemInterface 구현]
 	// 외부 시스템이 "너 GAS 컴포넌트 어딨어?" 라고 물어볼 때 호출되는 함수입니다.
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+private:
+
+	/** Top down camera */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraComponent> TopDownCameraComponent;
+
+	/** Camera boom positioning the camera above the character */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USpringArmComponent> CameraBoom;
 
 protected:
 
@@ -53,4 +67,14 @@ protected:
 	 */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"))
 	class UPlayerAttributeSet* Attributes;
+
+public:
+	/** Update */
+	virtual void Tick(float DeltaSeconds) override;
+
+	/** Returns the camera component **/
+	UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent.Get(); }
+
+	/** Returns the Camera Boom component **/
+	USpringArmComponent* GetCameraBoom() const { return CameraBoom.Get(); }
 };
