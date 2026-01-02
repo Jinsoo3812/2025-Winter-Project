@@ -44,7 +44,7 @@ void UGA_Destruction::ActivateAbility(
 		return;
 	}
 	else {
-		UE_LOG(LogTemp, Log, TEXT("GA_Destruction: OwnerActor is unavailable: %s"), *AvatarActor->GetName());
+		// UE_LOG(LogTemp, Log, TEXT("GA_Destruction: OwnerActor is available: %s"), *AvatarActor->GetName());
 	}
 
 	// 직육면체 범위의 중심 위치 계산
