@@ -11,6 +11,14 @@ ABlockBase::ABlockBase()
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
 	RootComponent = MeshComponent;
+
+	// 기본 Cube 메시 로드
+	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
+	if (CubeMesh.Succeeded())
+	{
+		DefaultBlockMesh = CubeMesh.Object;
+		MeshComponent->SetStaticMesh(DefaultBlockMesh);
+	}
 }
 
 // Called when the game starts or when spawned

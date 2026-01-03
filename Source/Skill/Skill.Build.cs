@@ -10,7 +10,9 @@ public class Skill: ModuleRules
             "Engine",
             "GameplayAbilities",
             "GameplayTasks",
-            "GameplayTags"
+            "GameplayTags",
+            "World",
+            "InputCore"
         });
     }
 }
