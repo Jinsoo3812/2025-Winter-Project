@@ -246,16 +246,6 @@ void ATestCharacter::OnAbilityInputPressed(int32 InputID)
 	// 1. 실행 중인 Ability의 Task에게 신호 전파 (예: WaitInputPress)
 	// 2. 비활성 상태면 자동으로 활성화 시도
 	CachedAbilitySystemComponent->AbilityLocalInputPressed(InputID);
-	
-	// SkillManager를 통한 활성화는 주석 처리 (중복 활성화 방지)
-	// AbilityLocalInputPressed가 이미 TryActivateAbility를 내부적으로 호출하므로 불필요
-	/*
-	if (CachedSkillManager)
-	{
-		CachedSkillManager->ActivateSkillBySlot(InputID);
-		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Slot %d activated"), InputID);
-	}
-	*/
 }
 
 void ATestCharacter::OnAbilityInputReleased(int32 InputID)

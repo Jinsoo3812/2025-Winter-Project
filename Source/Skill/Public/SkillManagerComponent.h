@@ -89,8 +89,6 @@ public:
 	// 특정 슬롯의 스킬을 활성화하는 함수
 	// @param SlotIndex: 활성화할 슬롯의 인덱스
 	// @return 성공 여부
-	UFUNCTION(BlueprintCallable, Category = "Skill Manager")
-	bool ActivateSkillBySlot(int32 SlotIndex);
 
 	// 현재 장착된 모든 스킬 정보를 반환하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Skill Manager")
