@@ -12,6 +12,9 @@ ATestCharacter::ATestCharacter()
 {
 	// ASC와 SkillManager는 더 이상 여기서 생성하지 않음
 	// PlayerState에서 관리됨
+	
+	// 스킬 슬롯 Input Action 배열 초기화 (최대 3개)
+	SkillSlotActions.SetNum(3);
 }
 
 UAbilitySystemComponent* ATestCharacter::GetAbilitySystemComponent() const
@@ -31,8 +34,7 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	}
 
 	// Enhanced Input Component로 캐스팅
-	// Actor 수준에서 작동
-	// IA와 C++/BP 함수를 바인딩
+	// Actor 수준에서 작동하며, IA와 C++/BP 함수를 바인딩하기 위해 사용
 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
 	if (!EnhancedInputComponent)
 	{
@@ -65,25 +67,34 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Input Mapping Context added"));
 	}
 
-	// 스킬 슬롯별 입력 바인딩
-	if (SkillSlot0Action)
+	// 스킬 슬롯별 입력 바인딩 (배열 기반)
+	for (int32 i = 0; i < SkillSlotActions.Num(); ++i)
 	{
-		EnhancedInputComponent->BindAction(SkillSlot0Action, ETriggerEvent::Started, this, &ATestCharacter::OnSkillSlot0Triggered);
-	}
-
-	if (SkillSlot1Action)
-	{
-		EnhancedInputComponent->BindAction(SkillSlot1Action, ETriggerEvent::Started, this, &ATestCharacter::OnSkillSlot1Triggered);
-	}
-
-	if (SkillSlot2Action)
-	{
-		EnhancedInputComponent->BindAction(SkillSlot2Action, ETriggerEvent::Started, this, &ATestCharacter::OnSkillSlot2Triggered);
-	}
-
-	if (SkillSlot3Action)
-	{
-		EnhancedInputComponent->BindAction(SkillSlot3Action, ETriggerEvent::Started, this, &ATestCharacter::OnSkillSlot3Triggered);
+		if (SkillSlotActions[i])
+		{
+			// Pressed 이벤트
+			// @param SkillSlotActions[i]: 바인딩할 Input Action
+			// @param ETriggerEvent::Started: 액션이 시작될 때 트리거
+			// @param this: 바인딩할 대상 객체(호출할 함수가 있는 객체)
+			// @param OnAbilityInputPressed: 호출할 멤버 함수 포인터
+			// @param i: 추가 전달할 정수 매개변수 (InputID)
+			EnhancedInputComponent->BindAction(
+				SkillSlotActions[i], 
+				ETriggerEvent::Started, 
+				this, 
+				&ATestCharacter::OnAbilityInputPressed, 
+				i
+			);
+			
+			// Released 이벤트 
+			EnhancedInputComponent->BindAction(
+				SkillSlotActions[i], 
+				ETriggerEvent::Completed, 
+				this, 
+				&ATestCharacter::OnAbilityInputReleased, 
+				i
+			);
+		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Input bindings set up successfully"));
@@ -183,14 +194,14 @@ void ATestCharacter::InitializeAbilitySystem()
 	// ASC가 유효한지 확인
 	if (!CachedAbilitySystemComponent)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: InitializeAbilitySystem - SkillManager is null"));
+		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: InitializeAbilitySystem - AbilitySystemComponent is null"));
 		return;
 	}
 
 	// SkillManager가 유효한지 확인
 	if (!CachedSkillManager)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: InitializeAbilitySystem - AbilitySystemComponent is null"));
+		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: InitializeAbilitySystem - SkillManager is null"));
 		return;
 	}
 
@@ -222,51 +233,40 @@ void ATestCharacter::InitializeAbilitySystem()
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter: AbilitySystem initialization complete"));
 }
 
-void ATestCharacter::OnSkillSlot0Triggered()
+void ATestCharacter::OnAbilityInputPressed(int32 InputID)
 {
-	if (CachedSkillManager && bAbilitySystemInitialized)
+	if (!CachedAbilitySystemComponent || !bAbilitySystemInitialized)
 	{
-		CachedSkillManager->ActivateSkillBySlot(0);
-		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Slot 0 activated"));
+		UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability input pressed but system not initialized"));
+		return;
 	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Skill Slot 0 activation failed - SkillManager not initialized"));
+
+	// ASC에게 입력 Press 이벤트 전달
+	// AbilityLocalInputPressed가 다음 두 가지를 모두 처리:
+	// 1. 실행 중인 Ability의 Task에게 신호 전파 (예: WaitInputPress)
+	// 2. 비활성 상태면 자동으로 활성화 시도
+	CachedAbilitySystemComponent->AbilityLocalInputPressed(InputID);
+	
+	// SkillManager를 통한 활성화는 주석 처리 (중복 활성화 방지)
+	// AbilityLocalInputPressed가 이미 TryActivateAbility를 내부적으로 호출하므로 불필요
+	/*
+	if (CachedSkillManager)
+	{
+		CachedSkillManager->ActivateSkillBySlot(InputID);
+		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Slot %d activated"), InputID);
 	}
+	*/
 }
 
-void ATestCharacter::OnSkillSlot1Triggered()
+void ATestCharacter::OnAbilityInputReleased(int32 InputID)
 {
-	if (CachedSkillManager && bAbilitySystemInitialized)
-	{
-		CachedSkillManager->ActivateSkillBySlot(1);
-		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Slot 1 activated"));
+	if (!CachedAbilitySystemComponent || !bAbilitySystemInitialized)
+	{	
+		UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Ability input released but system not initialized"));
+		return;
 	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Skill Slot 1 activation failed - SkillManager not initialized"));
-	}
-}
 
-void ATestCharacter::OnSkillSlot2Triggered()
-{
-	if (CachedSkillManager && bAbilitySystemInitialized)
-	{
-		CachedSkillManager->ActivateSkillBySlot(2);
-		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Slot 2 activated"));
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Skill Slot 2 activation failed - SkillManager not initialized"));
-	}
-}
-
-void ATestCharacter::OnSkillSlot3Triggered()
-{
-	if (CachedSkillManager && bAbilitySystemInitialized)
-	{
-		CachedSkillManager->ActivateSkillBySlot(3);
-		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Slot 3 activated"));
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("ATestCharacter: Skill Slot 3 activation failed - SkillManager not initialized"));
-	}
+	// ASC에게 입력 Release 이벤트 전달
+	CachedAbilitySystemComponent->AbilityLocalInputReleased(InputID);
 }
 

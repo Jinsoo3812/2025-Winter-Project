@@ -13,6 +13,8 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/OverlapResult.h"
 #include "InputCoreTypes.h"
+#include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
+#include "Components/InputComponent.h"
 
 UGA_Construction::UGA_Construction()
 {
@@ -33,11 +35,56 @@ void UGA_Construction::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	// Ability 활성화 커밋 (Cost, Cooldown 등 체크 및 적용)
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to commit ability"));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+
+	// LastPlayerLocation 초기화 (첫 실행 시 무조건 하이라이트 갱신되도록)
+	LastPlayerLocation = FVector(FLT_MAX, FLT_MAX, FLT_MAX);
+
 	// 프리뷰 업데이트를 위한 타이머 시작 (매 프레임)
 	if (UWorld* World = GetWorld())
 	{	
 		// 60FPS 간격으로 UpdatePreview 함수 호출
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Construction::UpdatePreview, 0.016f, true);
+	}
+
+	// WaitInputPress 어빌리티 태스크 생성
+	WaitInputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
+	if (WaitInputTask)
+	{
+		// OnPress 델리게이트에 콜백 함수(스킬 취소) 바인딩
+		WaitInputTask->OnPress.AddDynamic(this, &UGA_Construction::OnCancelPressed);
+
+		// 어빌리티 태스크 활성화
+		WaitInputTask->ReadyForActivation();
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create WaitInputTask"));
+	}
+
+	// 좌클릭 입력 바인딩
+	// 좌클릭은 사용 범위가 넓고, 여러 어빌리티에서 공통으로 사용될 수 있으므로
+	// Ability Task 대신 직접 InputComponent에 바인딩
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (OwnerPawn)
+	{
+		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+		if (PC && PC->InputComponent)
+		{
+			// 좌클릭 키 바인딩 추가
+			PC->InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &UGA_Construction::OnLeftClickPressed);
+		}
+		else {
+			UE_LOG(LogTemp, Error, TEXT("GA_Construction: PlayerController or InputComponent is null"));
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: OwnerPawn is null"));
 	}
 }
 
@@ -53,6 +100,12 @@ void UGA_Construction::EndAbility(
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 
+	// 타이머 핸들 무효화
+	TickTimerHandle.Invalidate();
+
+	// LastPlayerLocation 리셋 (다음 활성화 시 하이라이트 갱신 보장)
+	LastPlayerLocation = FVector::ZeroVector;
+
 	// 하이라이트 제거
 	ClearHighlights();
 
@@ -61,6 +114,31 @@ void UGA_Construction::EndAbility(
 	{
 		PreviewBlock->Destroy();
 		PreviewBlock = nullptr;
+	}
+
+	// Ability Task 정리
+	if (WaitInputTask)
+	{
+		WaitInputTask->EndTask();
+		WaitInputTask = nullptr;
+	}
+
+	// 좌클릭 바인딩 명시적 해제
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (OwnerPawn)
+	{
+		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+		if (PC && PC->InputComponent)
+		{
+			// InputComponent에서 이 객체에 바인딩된 모든 키 바인딩 제거 (ASC를 사용하지 않았기에 수동 제거)
+			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
+			{
+				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
+				{
+					PC->InputComponent->KeyBindings.RemoveAt(i);
+				}
+			}
+		}
 	}
 
 	// 끝내는 함수는 자식이 먼저 호출하고, 마지막에 부모 함수 호출
@@ -236,7 +314,7 @@ void UGA_Construction::UpdatePreview()
 
 	// 매 프레임 플레이어 위치 기준으로 하이라이트 업데이트
 	FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
-	if (!LastPlayerLocation.Equals(CurrentPlayerLocation, 10.0f)) // 10cm 이상 움직였을 때만
+	if (!LastPlayerLocation.Equals(CurrentPlayerLocation, 10.0f)) // 10 이상 움직였을 때만
 	{
 		ClearHighlights(); // 기존 하이라이트 제거
 		HighlightBlocksInRange(); // 새 위치 기준으로 재계산
@@ -292,12 +370,6 @@ void UGA_Construction::UpdatePreview()
 				PreviewBlock->SetActorRotation(BlockRotation);
 				PreviewBlock->SetActorHiddenInGame(false);
 			}
-
-			// 좌클릭 감지하여 블록 생성
-			if (PC->WasInputKeyJustPressed(EKeys::LeftMouseButton))
-			{
-				SpawnBlock();
-			}
 		}
 		else
 		{
@@ -321,7 +393,7 @@ void UGA_Construction::UpdatePreview()
 void UGA_Construction::SpawnBlock()
 {
 	if (!PreviewBlock || PreviewBlock->IsHidden()) return;
-	
+
 	if (!BlockToSpawn)
 	{
 		UE_LOG(LogTemp, Error, TEXT("GA_Construction: BlockToSpawn is null in SpawnBlock"));
@@ -350,5 +422,21 @@ void UGA_Construction::SpawnBlock()
 		// 스킬 종료
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to spawn block"));
+	}
+}
+
+void UGA_Construction::OnLeftClickPressed()
+{
+	// 좌클릭 시 블록 생성 시도
+	SpawnBlock();
+}
+
+void UGA_Construction::OnCancelPressed(float TimeWaited)
+{
+	// W키 재입력 시 스킬 취소
+	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 }
 

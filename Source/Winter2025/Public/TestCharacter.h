@@ -53,11 +53,9 @@ protected:
 	// PlayerState로 부터 가져온 ASC와 SkillManager를 초기화
 	void InitializeAbilitySystem();
 
-	// 스킬 슬롯별 입력이 들어왔을 때 호출되는 함수들
-	void OnSkillSlot0Triggered();
-	void OnSkillSlot1Triggered();
-	void OnSkillSlot2Triggered();
-	void OnSkillSlot3Triggered();
+	// 스킬 슬롯별 입력 핸들러 (InputID 기반)
+	void OnAbilityInputPressed(int32 InputID);
+	void OnAbilityInputReleased(int32 InputID);
 
 protected:
 	// PlayerState의 ASC 캐시 (빠른 접근을 위해)
@@ -77,14 +75,5 @@ protected:
 
 	// 스킬 슬롯별 Input Action
 	UPROPERTY(EditAnywhere, Category = "Input|Skills")
-	TObjectPtr<UInputAction> SkillSlot0Action;
-
-	UPROPERTY(EditAnywhere, Category = "Input|Skills")
-	TObjectPtr<UInputAction> SkillSlot1Action;
-
-	UPROPERTY(EditAnywhere, Category = "Input|Skills")
-	TObjectPtr<UInputAction> SkillSlot2Action;
-
-	UPROPERTY(EditAnywhere, Category = "Input|Skills")
-	TObjectPtr<UInputAction> SkillSlot3Action;
+	TArray<TObjectPtr<UInputAction>> SkillSlotActions;
 };
