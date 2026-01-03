@@ -9,24 +9,17 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
-				"Engine"
+				"GameplayAbilities"
 			]
 		},
 		{
-			"Name": "World",
+			"Name": "Enemy",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
-				"Engine"
-			]
-		},
-		{
-			"Name": "Skill",
-			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-				"GameplayAbilities",
-				"Engine"
+				"AIModule",
+				"Engine",
+				"GameplayAbilities"
 			]
 		}
 	],
