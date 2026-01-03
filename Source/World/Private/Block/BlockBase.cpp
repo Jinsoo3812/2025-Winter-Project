@@ -17,6 +17,7 @@ ABlockBase::ABlockBase()
 	if (CubeMesh.Succeeded())
 	{
 		DefaultBlockMesh = CubeMesh.Object;
+		MeshComponent->SetStaticMesh(DefaultBlockMesh);
 	}
 }
 
@@ -24,12 +25,6 @@ ABlockBase::ABlockBase()
 void ABlockBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// DefaultBlockMesh가 설정되어 있으면 MeshComponent에 적용
-	if (DefaultBlockMesh && MeshComponent)
-	{
-		MeshComponent->SetStaticMesh(DefaultBlockMesh);
-	}
 }
 
 // Called every frame

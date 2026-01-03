@@ -8,6 +8,7 @@
 
 class ABlockBase;
 class ADestructibleBlock;
+class UMaterialInstanceDynamic;
 
 /**
  * 블록 생성 스킬 - 스킬 키로 활성화하여 범위 내 블록 위에 새 블록을 생성
@@ -52,13 +53,22 @@ protected:
 	UPROPERTY()
 	TSet<TObjectPtr<ABlockBase>> HighlightedBlocks;
 
-	// 원본 머티리얼 저장 (복구용)
+	// 각 블록별로 다이나믹 머티리얼 인스턴스를 저장
+	// 이미 하이라이트된 블록들을 저장하여 중복 생성 방지
+	UPROPERTY()
+	TMap<TObjectPtr<ABlockBase>, TObjectPtr<UMaterialInstanceDynamic>> DynamicMaterials;
+
+	// 각 블록별로 원본 머티리얼 저장
 	UPROPERTY()
 	TMap<TObjectPtr<ABlockBase>, TObjectPtr<UMaterialInterface>> OriginalMaterials;
 
-	// 하이라이트 머티리얼
+	// 각 블록별로 원본 EmissivePower 값 저장
+	UPROPERTY()
+	TMap<TObjectPtr<ABlockBase>, float> OriginalEmissivePowers;
+
+	// 하이라이트 시 적용할 EmissivePower 값
 	UPROPERTY(EditDefaultsOnly, Category = "Construction")
-	TObjectPtr<UMaterialInterface> HighlightMaterial;
+	float HighlightEmissivePower = 0.1f;
 
 	// 타이머 핸들
 	FTimerHandle TickTimerHandle;

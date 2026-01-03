@@ -10,6 +10,7 @@
 #include "TimerManager.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/OverlapResult.h"
 #include "InputCoreTypes.h"
 
@@ -141,20 +142,47 @@ void UGA_Construction::HighlightBlocksInRange()
 			continue;
 		}
 
-		// 원본 머티리얼 저장(중복 저장 방지)
-		if (!OriginalMaterials.Contains(Block))
+		// 원본 머티리얼로부터 동적 머티리얼 인스턴스 생성 (중복 생성 방지)
+		if (!DynamicMaterials.Contains(Block))
 		{
-			OriginalMaterials.Add(Block, MeshComp->GetMaterial(0));
+			// 원본 머티리얼 가져오기
+			UMaterialInterface* OriginalMaterial = MeshComp->GetMaterial(0);
+			if (!OriginalMaterial)
+			{
+				UE_LOG(LogTemp, Error, TEXT("GA_Construction: Block %s has no material"), *Block->GetName());
+				continue;
+			}
+
+			// 원본 머티리얼 저장
+			OriginalMaterials.Add(Block, OriginalMaterial);
+
+			// 동적 머티리얼 인스턴스 생성
+			// UMaterialInstanceDynamic::Create 함수는 머티리얼 인스턴스를 생성하는 함수
+			// @param OriginalMaterial: 원본 머티리얼
+			// @param this: 소유자 객체 (여기서는 GA_Construction)
+			UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(OriginalMaterial, this);
+			if (!DynMat)
+			{
+				UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create dynamic material for Block %s"), *Block->GetName());
+				continue;
+			}
+
+			// 원본 EmissivePower 값 저장 (스칼라 파라미터가 없을 경우 0으로 처리)
+			float OriginalEmissive = 0.0f;
+			DynMat->GetScalarParameterValue(FName("EmissivePower"), OriginalEmissive);
+			OriginalEmissivePowers.Add(Block, OriginalEmissive);
+
+			// 동적 머티리얼 저장 및 메시에 적용
+			DynamicMaterials.Add(Block, DynMat);
+			MeshComp->SetMaterial(0, DynMat);
 		}
 
-		// 하이라이트 머티리얼 적용
-		if (!HighlightMaterial)
+		// 이미 동적 머티리얼이 생성된 블록이라면 EmissivePower 값만 업데이트
+		UMaterialInstanceDynamic* DynMat = DynamicMaterials[Block];
+		if (DynMat)
 		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Construction: HighlightMaterial is null"));
-			continue;
+			DynMat->SetScalarParameterValue(FName("EmissivePower"), HighlightEmissivePower);
 		}
-		
-		MeshComp->SetMaterial(0, HighlightMaterial);
 	}
 }
 
@@ -176,18 +204,18 @@ void UGA_Construction::ClearHighlights()
 			continue;
 		}
 
+		// 원본 머티리얼로 복구
 		TObjectPtr<UMaterialInterface>* OriginalMat = OriginalMaterials.Find(Block.Get());
-		if (!OriginalMat)
+		if (OriginalMat)
 		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Construction: Original material not found for Block %s during ClearHighlights"), *Block->GetName());
-			continue;
+			MeshComp->SetMaterial(0, OriginalMat->Get());
 		}
-
-		MeshComp->SetMaterial(0, OriginalMat->Get());
 	}
 
 	HighlightedBlocks.Empty();
+	DynamicMaterials.Empty();
 	OriginalMaterials.Empty();
+	OriginalEmissivePowers.Empty();
 }
 
 void UGA_Construction::UpdatePreview()
