@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"   //부모 클래스
 #include "AbilitySystemInterface.h" // GAS 시스템과 소통하기 위한 인터페이스
-#include "PlayerAttributeSet.h"     // 같은 Player 폴더에 있는 체력 데이터 클래스
 #include "PlayerBase.generated.h"
 
 class UCameraComponent;
@@ -28,8 +27,8 @@ public:
 	// 생성자: 컴포넌트(부품)들을 조립하는 곳
 	APlayerBase();
 
-	// [IAbilitySystemInterface 구현]
-	// 외부 시스템이 "너 GAS 컴포넌트 어딨어?" 라고 물어볼 때 호출되는 함수입니다.
+	// [인터페이스 유지] 
+	// 내 몸에 ASC가 없더라도, 연결된 PlayerState의 ASC를 찾아서 리턴해줘야 합니다.
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 private:
@@ -42,31 +41,19 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
+	// 중복 코드를 방지하기 위해 GAS 초기화 로직을 별도 함수로 뺐습니다.
+	void InitAbilityActorInfo();
+
 protected:
 
-	virtual void BeginPlay() override;
+	/*virtual void BeginPlay() override;*/
 
-	// ------------------------------------------------------------------------------------------
-	// GAS (Gameplay Ability System) 컴포넌트
-	// ------------------------------------------------------------------------------------------
 
-	/**
-	 * [Ability System Component (ASC)]
-	 * - 역할: 플레이어의 '스킬 엔진'입니다. 스킬 실행, 쿨타임, 버프 관리를 총괄합니다.
-	 * - VisibleAnywhere: 에디터 상세 창에서 볼 수 있음.
-	 * - BlueprintReadOnly: 블루프린트에서 가져다 쓸 수 있음.
-	 * - AllowPrivateAccess: private/protected 변수여도 에디터에서 접근 허용.
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"))
-	class UAbilitySystemComponent* AbilitySystemComponent;
+	// [서버용] 컨트롤러가 빙의(Possess)했을 때 호출됩니다.
+	virtual void PossessedBy(AController* NewController) override;
 
-	/**
-	 * [Attribute Set (속성 세트)]
-	 * - 역할: 플레이어의 '스탯 통'입니다. 체력(Health), 마나(Mana) 등의 데이터가 들어갑니다.
-	 * - UPROPERTY가 없으면 언리얼이 메모리 관리를 안 해서 게임 도중 데이터가 증발할 수 있습니다.
-	 */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS", meta = (AllowPrivateAccess = "true"))
-	class UPlayerAttributeSet* Attributes;
+	// [클라이언트용] PlayerState가 서버로부터 복제되어 내게 도착했을 때 호출됩니다.
+	virtual void OnRep_PlayerState() override;
 
 public:
 	/** Update */
