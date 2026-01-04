@@ -45,6 +45,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
+	// BP에서 설정 가능한 기본 메시 (기본값: Cube)
+	UPROPERTY(EditDefaultsOnly, Category = "Block")
+	TObjectPtr<UStaticMesh> DefaultBlockMesh;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -57,4 +61,7 @@ public:
 	FVector GetBlockLocation() const { return Location; }
 
 	virtual bool CanBeDestroyed() const { return IsDestrictible; }
+
+	// 블록의 메시 컴포넌트를 반환하는 함수 (머티리얼 변경 등에 사용)
+	UStaticMeshComponent* GetBlockMesh() const { return MeshComponent; }
 };

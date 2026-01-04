@@ -131,47 +131,6 @@ bool USkillManagerComponent::UnequipSkill(int32 SlotIndex)
 	return true;
 }
 
-bool USkillManagerComponent::ActivateSkillBySlot(int32 SlotIndex)
-{
-	// 유효성 검사: ASC 확인
-	if (!CachedAbilitySystemComponent)
-	{
-		UE_LOG(LogTemp, Error, TEXT("USkillManagerComponent::ActivateSkillBySlot: ASC is not initialized"));
-		return false;
-	}
-
-	// 유효성 검사: 슬롯 인덱스 확인
-	if (!IsValidSlotIndex(SlotIndex))
-	{
-		UE_LOG(LogTemp, Error, TEXT("USkillManagerComponent::ActivateSkillBySlot: Invalid slot index %d"), SlotIndex);
-		return false;
-	}
-
-	// 해당 슬롯에 스킬이 없다면 실패
-	if (!SkillSlots[SlotIndex].EquippedSkill)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("USkillManagerComponent::ActivateSkillBySlot: No skill equipped in slot %d"), SlotIndex);
-		return false;
-	}
-
-	// TryActivateAbility (스킬 활성화 시도)
-	// @param AbilityHandle 활성화할 GA의 핸들
-	// @return 활성화 성공 여부
-	// Tag, Cost, Cooldown을 검사하고 InstancingPolicy에 따라 실행
-	bool bSuccess = CachedAbilitySystemComponent->TryActivateAbility(SkillSlots[SlotIndex].AbilityHandle);
-
-	if (bSuccess)
-	{
-		// UE_LOG(LogTemp, Log, TEXT("USkillManagerComponent::ActivateSkillBySlot: Activated skill in slot %d"), SlotIndex);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("USkillManagerComponent::ActivateSkillBySlot: Failed to activate skill in slot %d"), SlotIndex);
-	}
-
-	return bSuccess;
-}
-
 TArray<FSkillSlot> USkillManagerComponent::GetEquippedSkills() const
 {
 	// 현재 장착된 스킬 슬롯 배열을 반환
