@@ -53,6 +53,10 @@ protected:
 	// PlayerState로 부터 가져온 ASC와 SkillManager를 초기화
 	void InitializeAbilitySystem();
 
+	// CachedSkillManager를 반환하는 Get 함수 선언 및 정의
+	UFUNCTION(BlueprintCallable, Category = "Skill System")
+	USkillManagerComponent* GetSkillManager() const { return CachedSkillManager; }
+
 	// 스킬 슬롯별 입력 핸들러 (InputID 기반)
 	void OnAbilityInputPressed(int32 InputID);
 	void OnAbilityInputReleased(int32 InputID);

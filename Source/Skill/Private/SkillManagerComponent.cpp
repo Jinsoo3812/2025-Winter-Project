@@ -3,6 +3,7 @@
 #include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
+#include "Rune/DA_Rune.h"
 
 // Sets default values for this component's properties
 USkillManagerComponent::USkillManagerComponent()
@@ -135,6 +136,117 @@ TArray<FSkillSlot> USkillManagerComponent::GetEquippedSkills() const
 {
 	// 현재 장착된 스킬 슬롯 배열을 반환
 	return SkillSlots;
+}
+
+bool USkillManagerComponent::EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* RuneData)
+{
+	// 1. 스킬 슬롯 유효성 검사
+	if (!IsValidSlotIndex(SlotIndex))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipRune: Invalid SlotIndex %d"), SlotIndex);
+		return false;
+	}
+
+	// 2. 룬 슬롯 인덱스 유효성 검사 (0~2)
+	if (!SkillSlots[SlotIndex].EquippedRunes.IsValidIndex(RuneSlotIndex))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipRune: Invalid RuneSlotIndex %d"), RuneSlotIndex);
+		return false;
+	}
+
+	// 3. 룬 데이터 유효성 검사
+	if (!RuneData)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("EquipRune: RuneData is null"));
+		return false;
+	}
+
+	// 4. 룬 장착 (배열의 해당 인덱스를 덮어씀)
+	SkillSlots[SlotIndex].EquippedRunes[RuneSlotIndex] = RuneData;
+
+	return true;
+}
+
+bool USkillManagerComponent::UnequipRune(int32 SlotIndex, int32 RuneSlotIndex)
+{
+	if (!IsValidSlotIndex(SlotIndex) || !SkillSlots[SlotIndex].EquippedRunes.IsValidIndex(RuneSlotIndex))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UnequipRune: Invalid SlotIndex %d or RuneSlotIndex %d"), SlotIndex, RuneSlotIndex);
+		return false;
+	}
+
+	// 해당 칸을 비움 (nullptr)
+	SkillSlots[SlotIndex].EquippedRunes[RuneSlotIndex] = nullptr;
+
+	return true;
+}
+
+float USkillManagerComponent::GetTotalDamageMultiplier(int32 SlotIndex) const
+{
+	if (!IsValidSlotIndex(SlotIndex)) {
+		UE_LOG(LogTemp, Warning, TEXT("GetTotalDamageMultiplier: Invalid SlotIndex %d"), SlotIndex);
+		return 1.0f; // 기본값 반환
+	}
+
+	// 기본 배율은 1.0 (100%)
+	float TotalMultiplier = 1.0f;
+
+	// 해당 스킬 슬롯에 장착된 3개의 룬을 순회
+	for (const UDA_Rune* Rune : SkillSlots[SlotIndex].EquippedRunes)
+	{
+		// 룬이 있고, 타입이 Red(피해량)라면
+		if (Rune && Rune->RuneTag == TAG_Rune_Red)
+		{
+			// 룬의 값을 더함 (예: 0.2 = 20% 증가)
+			// 현재는 합연산 방식 사용
+			TotalMultiplier += Rune->RuneValue;
+		}
+	}
+	return TotalMultiplier;
+}
+
+float USkillManagerComponent::GetTotalCooldownReduction(int32 SlotIndex) const
+{
+	if (!IsValidSlotIndex(SlotIndex)) {
+		UE_LOG(LogTemp, Warning, TEXT("GetTotalCooldownReduction: Invalid SlotIndex %d"), SlotIndex);
+		return 0.0f; // 기본값 반환
+	}
+
+	// 쿨타임 감소량 합계 (0.0에서 시작)
+	float TotalReduction = 0.0f;
+
+	for (const UDA_Rune* Rune : SkillSlots[SlotIndex].EquippedRunes)
+	{
+		if (Rune && Rune->RuneTag == TAG_Rune_Yellow)
+		{
+			// 예: RuneValue가 0.1(10%)라면 누적
+			TotalReduction += Rune->RuneValue;
+		}
+	}
+
+	// 최대 쿨감 제한 (예: 99% 이상 쿨감 방지)
+	return FMath::Clamp(TotalReduction, 0.0f, 0.99f);
+}
+
+float USkillManagerComponent::GetTotalRangeMultiplier(int32 SlotIndex) const
+{
+	if (!IsValidSlotIndex(SlotIndex)) {
+		UE_LOG(LogTemp, Warning, TEXT("GetTotalRangeMultiplier: Invalid SlotIndex %d"), SlotIndex);
+		return 1.0f; // 기본값 반환
+	}
+
+	// 기본 범위 1.0배
+	float TotalMultiplier = 1.0f;
+
+	for (const UDA_Rune* Rune : SkillSlots[SlotIndex].EquippedRunes)
+	{
+		if (Rune && Rune->RuneTag == TAG_Rune_Orange)
+		{
+			TotalMultiplier += Rune->RuneValue;
+		}
+	}
+
+	return TotalMultiplier;
 }
 
 bool USkillManagerComponent::IsValidSlotIndex(int32 SlotIndex) const

@@ -9,6 +9,7 @@
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
+				"Engine",
 				"GameplayAbilities"
 			]
 		},
@@ -18,6 +19,24 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"AIModule",
+				"Engine",
+				"GameplayAbilities"
+			]
+		},
+		{
+			"Name": "World",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GameplayAbilities"
+			]
+		},
+		{
+			"Name": "Skill",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
 				"Engine",
 				"GameplayAbilities"
 			]
