@@ -9,16 +9,7 @@
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
 
-UGA_Destruction::UGA_Destruction()
-{
-	// 객체 생성 정책: GA를 소유한 액터마다 '하나의 GA 객체만' 생성
-	// 메모리 효율적이며, 상태를 액터별로 관리할 수 있음
-	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-
-	// 서버-클라이언트 통신 정책: 클라이언트의 입력이 발생하면, 서버의 응답을 기다리지 않고 즉시(예측) 실행
-	// 네트워크 지연 시에도 반응성이 좋음
-	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-}
+UGA_Destruction::UGA_Destruction() {}
 
 void UGA_Destruction::ActivateAbility(
 	const FGameplayAbilitySpecHandle Handle, 
@@ -28,6 +19,7 @@ void UGA_Destruction::ActivateAbility(
 {
 	// CommitAbility: 자원 소모(마나, 스태미너 등) 및 쿨다운을 검사하고, 모두 충족되면 자원을 소모하고 쿨다운을 시작
 	// Cost와 Cooldown GE가 설정되어 있다면 이 단계에서 처리됨
+	// GA_SkillBase에서 룬이 적용된 쿨타임이 자동으로 적용됨
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
 	{
 		// 자원 소모 또는 쿨다운 검사 실패 시 GA 즉시 종료
@@ -43,15 +35,19 @@ void UGA_Destruction::ActivateAbility(
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
-	else {
-		// UE_LOG(LogTemp, Log, TEXT("GA_Destruction: OwnerActor is available: %s"), *AvatarActor->GetName());
-	}
+
+	// 룬이 적용된 범위 값 가져오기
+	float ModifiedRange = GetRuneModifiedRange();
+	
+	// BoxExtent를 범위 배율만큼 조정
+	// BaseRange는 BoxExtent의 기준 크기를 의미하므로, 비율을 곱함
+	FVector AdjustedBoxExtent = BoxExtent * (ModifiedRange / BaseRange);
 
 	// 직육면체 범위의 중심 위치 계산
-	// 플레이어의 위치에서 전방 방향으로 (BoxDistance + BoxExtent.X) 만큼 이동한 지점이 박스의 중심
+	// 플레이어의 위치에서 전방 방향으로 (BoxDistance + AdjustedBoxExtent.X) 만큼 이동한 지점이 박스의 중심
 	FVector OwnerLocation = AvatarActor->GetActorLocation();
 	FVector ForwardVector = AvatarActor->GetActorForwardVector();
-	FVector BoxCenter = OwnerLocation + ForwardVector * (BoxDistance + BoxExtent.X);
+	FVector BoxCenter = OwnerLocation + ForwardVector * (BoxDistance + AdjustedBoxExtent.X);
 
 	// 충돌 검사를 위한 파라미터 설정
 	FCollisionQueryParams QueryParams;
@@ -67,19 +63,19 @@ void UGA_Destruction::ActivateAbility(
 		BoxCenter,
 		AvatarActor->GetActorQuat(), // 플레이어의 회전값을 사용하여 박스도 같은 방향으로 회전
 		ECC_Pawn, // Pawn 채널에 대해 Overlap/Block 한다면 검사
-		FCollisionShape::MakeBox(BoxExtent), // 직육면체 모양 생성
+		FCollisionShape::MakeBox(AdjustedBoxExtent), // 룬이 적용된 직육면체 모양 생성
 		QueryParams
 	);
 
-	// 디버그용 박스 시각화 - 1초간 초록색 박스로 표시
+	// 디버그용 박스 시각화 - 설정된 시간 동안 초록색 박스로 표시
 	DrawDebugBox(
 		GetWorld(),
 		BoxCenter,
-		BoxExtent,
+		AdjustedBoxExtent,
 		AvatarActor->GetActorQuat(),
 		FColor::Green,
 		false, // 영구적으로 표시하지 않음
-		DebugDrawDuration, // 1초간 표시
+		DebugDrawDuration, // 설정된 시간 동안 표시
 		0,
 		5.0f // 박스 선의 두께
 	);
@@ -87,14 +83,6 @@ void UGA_Destruction::ActivateAbility(
 	// 충돌한 액터가 있는 경우 처리
 	if (bHit)
 	{
-		// DestructionEffect가 설정되어 있는지 확인
-		if (!DestructionEffect)
-		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Destruction: DestructionEffect is null. Please set it in Blueprint."));
-			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-			return;
-		}
-
 		// 겹친 모든 액터에 대해 반복 처리
 		for (const FOverlapResult& Overlap : OverlapResults)
 		{
@@ -115,28 +103,39 @@ void UGA_Destruction::ActivateAbility(
 			// 타겟에게 ASC가 있으면 GE 적용
 			if (TargetASC)
 			{
-				// Gameplay Effect Context 생성 - 이 효과가 어디서 왔는지 등의 정보를 담음
-				FGameplayEffectContextHandle EffectContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
-				EffectContext.AddSourceObject(AvatarActor); // 효과의 발생 주체(플레이어) 기록
-
-				// Gameplay Effect Spec 생성. Spec은 무거우므로 Handle로 관리
-				// Spec: GE는 데이터 에셋, Spec은 그것을 기반한 실제 인스턴스
-				// SpecHandle은 무거운 Spec을 래핑하여 관리하도록 지원
-				FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(
-					DestructionEffect, 
-					GetAbilityLevel(), // GA의 현재 레벨을 GE에도 적용
-					EffectContext // GE의 출처 등을 담은 EffectContext
-				);
-
-				// Spec이 유효한지 확인 후 타겟에게 적용
-				if (SpecHandle.IsValid())
+				// 데미지 Effect 적용 (GA_SkillBase의 DamageEffect, 룬 적용됨)
+				FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(Handle, ActorInfo);
+				if (DamageSpecHandle.IsValid())
 				{
 					GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(
-						*SpecHandle.Data.Get(), // SpecHandle.Data는 TSharedPtbWasCancelledr로서 FGameplayEffectSpec을 가리킴
+						*DamageSpecHandle.Data.Get(),
 						TargetASC
 					);
+				}
 
-					UE_LOG(LogTemp, Log, TEXT("GA_Destruction: Applied DestructionEffect to %s"), *HitActor->GetName());
+				// 파괴 Effect 적용 (GA_Destruction의 DestructionEffect, 블록 파괴용)
+				if (DestructionEffect)
+				{
+					// Gameplay Effect Context 생성 - 이 효과가 어디서 왔는지 등의 정보를 담음
+					FGameplayEffectContextHandle DestructionContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
+					DestructionContext.AddSourceObject(AvatarActor);
+
+					// Gameplay Effect Spec 생성. Spec은 무거우므로 Handle로 관리
+					// Spec: GE는 데이터 에셋, Spec은 그것을 기반한 실제 인스턴스
+					// SpecHandle은 무거운 Spec을 래핑하여 관리하도록 지원
+					FGameplayEffectSpecHandle DestructionSpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(
+						DestructionEffect,
+						GetAbilityLevel(), // GA의 현재 레벨을 GE에도 적용
+						DestructionContext // GE의 출처 등을 담은 EffectContext
+					);
+
+					if (DestructionSpecHandle.IsValid())
+					{
+						GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(
+							*DestructionSpecHandle.Data.Get(),
+							TargetASC
+						);
+					}
 				}
 				else
 				{

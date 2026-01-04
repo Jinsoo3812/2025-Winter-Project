@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Abilities/GameplayAbility.h"
+#include "GA/GA_SkillBase.h"
 #include "GA_Destruction.generated.h"
 
 class UGameplayEffect;
@@ -12,7 +12,7 @@ class UGameplayEffect;
  * 전방 직육면체(Box) 범위에 '파괴' 공격을 가하는 Gameplay Ability
  */
 UCLASS(Blueprintable)
-class SKILL_API UGA_Destruction : public UGameplayAbility
+class SKILL_API UGA_Destruction : public UGA_SkillBase
 {
 	GENERATED_BODY()
 	
@@ -43,10 +43,6 @@ protected:
 	// 블록에게 적용할 Gameplay Effect (파괴 효과)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay Effect")
 	TSubclassOf<UGameplayEffect> DestructionEffect;
-
-	// 적에게 적용할 Gameplay Effect (피해 효과)
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay Effect")
-	TSubclassOf<UGameplayEffect> DamageEffect;
 
 	// 디버그용 박스를 화면에 표시할 시간 (초)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Debug")
