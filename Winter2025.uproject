@@ -22,7 +22,12 @@
 				"Engine",
 				"GameplayAbilities"
 			]
-		}
+		},
+		{
+       			"Name": "World",
+        		"Type": "Runtime",
+        		"LoadingPhase": "Default"
+    		}
 	],
 	"Plugins": [
 		{
