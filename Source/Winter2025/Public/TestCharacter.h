@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Winter2025Character.h"
 #include "AbilitySystemInterface.h"
+#include "Interface/ISkillManagerProvider.h"
 #include "AbilitySystemComponent.h"
 #include "TestCharacter.generated.h"
 
@@ -20,7 +21,7 @@ UCLASS()
  * 클라이언트는 입력을 받으며 화면에 표시하는 역할을 담당한다.
  * 따라서 소스 코드를 사용해도 서버만이 사용할 수 있는 함수 등이 존재할 수 있다.
  */
-class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbilitySystemInterface
+class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbilitySystemInterface, public ISkillManagerProvider
 {
 	GENERATED_BODY()
 
@@ -30,6 +31,10 @@ public:
 	// IAbilitySystemInterface 구현
 	// PlayerState의 ASC를 반환
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	// ISkillManagerProvider 인터페이스 구현
+	// PlayerState의 캐싱된 SkillManager를 반환
+	virtual USkillManagerComponent* GetSkillManager() const override { return CachedSkillManager; }
 
 	// 입력 컴포넌트 설정
 	// 로컬 플레이어의 입력만 바인딩됨
@@ -52,10 +57,6 @@ protected:
 	// 서버와 클라이언트 양쪽에서 호출되는 공통 초기화 함수
 	// PlayerState로 부터 가져온 ASC와 SkillManager를 초기화
 	void InitializeAbilitySystem();
-
-	// CachedSkillManager를 반환하는 Get 함수 선언 및 정의
-	UFUNCTION(BlueprintCallable, Category = "Skill System")
-	USkillManagerComponent* GetSkillManager() const { return CachedSkillManager; }
 
 	// 스킬 슬롯별 입력 핸들러 (InputID 기반)
 	void OnAbilityInputPressed(int32 InputID);

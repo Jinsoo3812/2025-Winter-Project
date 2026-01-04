@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GA/GA_SkillBase.h"
+#include "Interface/ISkillManagerProvider.h"
 #include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
 
@@ -18,17 +19,49 @@ UGA_SkillBase::UGA_SkillBase()
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 }
 
+USkillManagerComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
+{
+	// 캐싱된 SkillManager가 유효하면 재사용 (성능 최적화)
+	if (CachedSkillManager.IsValid())
+	{
+		return CachedSkillManager.Get();
+	}
+
+	// Avatar 가져오기
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetSkillManagerFromAvatar: Avatar is null"));
+		return nullptr;
+	}
+
+	// ISkillManagerProvider 인터페이스를 구현했는지 확인
+	ISkillManagerProvider* Provider = Cast<ISkillManagerProvider>(Avatar);
+	if (Provider)
+	{
+		// 인터페이스를 통해 SkillManager 가져오기 (캐싱된 값)
+		USkillManagerComponent* SkillManager = Provider->GetSkillManager();
+		if (SkillManager)
+		{
+			// 다음 호출을 위해 캐싱
+			CachedSkillManager = SkillManager;
+			return SkillManager;
+		}
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetSkillManagerFromAvatar: Avatar does not implement ISkillManagerProvider or SkillManager is null"));
+	return nullptr;
+}
+
 float UGA_SkillBase::GetRuneModifiedDamage() const
 {
 	// 현재 이 스킬이 장착된 슬롯 번호(InputID) 가져오기
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	AActor* Avatar = GetAvatarActorFromActorInfo();
-	USkillManagerComponent* SkillManager = Avatar->FindComponentByClass<USkillManagerComponent>();
+	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetRuneModifiedDamage: SkillManagerComponent not found on Avatar"));
 		return BaseDamage; // 매니저가 없으면 기본 데미지 반환
 	}
 
@@ -45,11 +78,9 @@ float UGA_SkillBase::GetRuneModifiedRange() const
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	AActor* Avatar = GetAvatarActorFromActorInfo();
-	USkillManagerComponent* SkillManager = Avatar->FindComponentByClass<USkillManagerComponent>();
+	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetRuneModifiedRange: SkillManagerComponent not found on Avatar"));
 		return BaseRange; // 매니저가 없으면 기본 범위 반환
 	}
 
@@ -63,11 +94,9 @@ float UGA_SkillBase::GetRuneModifiedCooldown() const
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	AActor* Avatar = GetAvatarActorFromActorInfo();
-	USkillManagerComponent* SkillManager = Avatar->FindComponentByClass<USkillManagerComponent>();
+	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetRuneModifiedCooldown: SkillManagerComponent not found on Avatar"));
 		return BaseCooldown; // 매니저가 없으면 기본 쿨타임 반환
 	}
 

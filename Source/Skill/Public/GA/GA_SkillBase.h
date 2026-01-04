@@ -7,12 +7,14 @@
 #include "NativeGameplayTags.h"
 #include "GA_SkillBase.generated.h"
 
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // 데미지 전달용
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Cooldown); // 쿨타임 전달용
+class USkillManagerComponent;
+
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // 데미지 태그용
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Cooldown); // 쿨타임 태그용
 
 /**
  * 모든 액티브 스킬의 부모 클래스
- * 룬 처리 로직 포함
+ * 룬 적용 로직 포함
  */
 UCLASS()
 class SKILL_API UGA_SkillBase : public UGameplayAbility
@@ -52,8 +54,17 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Skill|Calculation")
 	float GetRuneModifiedCooldown() const;
 
-	// 데미지 GE Spec을 만들고 룬 수치를 주입해서 반환하는 함수
+	// 데미지 GE Spec을 생성할 때 수치를 주입해서 반환하는 함수
 	FGameplayEffectSpecHandle MakeRuneDamageEffectSpec(
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo) const;
+
+private:
+	// SkillManager를 가져오는 헬퍼 함수
+	// 성능 최적화를 위해 캐싱된 값이 있으면 재사용
+	USkillManagerComponent* GetSkillManagerFromAvatar() const;
+
+	// 캐싱된 SkillManager (성능 최적화용)
+	// mutable: const 함수에서도 수정 가능
+	mutable TWeakObjectPtr<USkillManagerComponent> CachedSkillManager;
 };
