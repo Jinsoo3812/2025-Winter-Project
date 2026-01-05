@@ -3,6 +3,7 @@
 #include "Player/Test/TestPlayerState.h"
 #include "AbilitySystemComponent.h"
 #include "SkillManagerComponent.h"
+#include "Player/PlayerAttributeSet.h"
 
 ATestPlayerState::ATestPlayerState()
 {
@@ -19,6 +20,10 @@ ATestPlayerState::ATestPlayerState()
 
 	// 스킬 매니저 컴포넌트 생성
 	SkillManager = CreateDefaultSubobject<USkillManagerComponent>(TEXT("SkillManagerComponent"));
+
+	// AttributeSet 생성 (체력, 최대체력 등의 수치 관리)
+	// PlayerState에서 관리하므로 플레이어가 죽어도 데이터가 유지됨
+	AttributeSet = CreateDefaultSubobject<UPlayerAttributeSet>(TEXT("AttributeSet"));
 
 	// 서버가 PlayerState의 상태를 클라이언트에 복제하는 주기(per second)
 	// 기본값은 낮기 때문에 ASC의 변경사항이 느리게 동기화될 수 있음

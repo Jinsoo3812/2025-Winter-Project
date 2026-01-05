@@ -16,10 +16,9 @@ class UInputAction;
 
 UCLASS()
 /**
- * 서버와 클라이언트 모두 TestCharacter의 객체를 소유하며
- * 서버는 실제 게임 로직을 처리하고,
- * 클라이언트는 입력을 받으며 화면에 표시하는 역할을 담당한다.
- * 따라서 소스 코드를 사용해도 서버만이 사용할 수 있는 함수 등이 존재할 수 있다.
+ * 서버는 클라이언트 모두 TestCharacter의 인스턴스를 생성하며
+ * 서버는 권한 있는 진짜를 처리하고,
+ * 클라이언트는 입력과 결과를 화면에 표시하는 역할을 담당한다.
  */
 class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbilitySystemInterface, public ISkillManagerProvider
 {
@@ -33,11 +32,11 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	// ISkillManagerProvider 인터페이스 구현
-	// PlayerState의 캐싱된 SkillManager를 반환
+	// PlayerState에 캐싱된 SkillManager를 반환
 	virtual USkillManagerComponent* GetSkillManager() const override { return CachedSkillManager; }
 
 	// 입력 컴포넌트 설정
-	// 로컬 플레이어의 입력만 바인딩됨
+	// 로컬 플레이어의 입력을 바인딩함
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 protected:

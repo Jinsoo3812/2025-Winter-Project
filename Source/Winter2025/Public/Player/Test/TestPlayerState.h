@@ -10,6 +10,7 @@
 class UAbilitySystemComponent;
 class USkillManagerComponent;
 class UGameplayAbility;
+class UPlayerAttributeSet;
 
 /**
  * 멀티플레이 환경에서 플레이어의 GAS 및 각종 상태 정보를 관리하는 PlayerState
@@ -30,6 +31,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	USkillManagerComponent* GetSkillManager() const { return SkillManager; }
 
+	// AttributeSet 접근자 (체력/마나 등의 수치 데이터)
+	UFUNCTION(BlueprintCallable, Category = "GAS")
+	UPlayerAttributeSet* GetAttributeSet() const { return AttributeSet; }
+
 	// DefaultSkills 접근자
 	const TArray<TSubclassOf<UGameplayAbility>>& GetDefaultSkills() const { return DefaultSkills; }
 
@@ -41,6 +46,10 @@ protected:
 	// 스킬 매니저 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill System")
 	TObjectPtr<USkillManagerComponent> SkillManager;
+
+	// 플레이어의 체력, 최대체력 등의 수치를 관리하는 AttributeSet
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	TObjectPtr<UPlayerAttributeSet> AttributeSet;
 
 	// 스테이지 시작 시 자동으로 장착할 기본 스킬 목록
 	UPROPERTY(EditDefaultsOnly, Category = "Skill System")
