@@ -8,9 +8,11 @@ public class World: ModuleRules
             "Core",
             "CoreUObject",
             "Engine",
+            "InputCore",
             "GameplayAbilities",
             "GameplayTasks",
-            "GameplayTags"
+            "GameplayTags",
+            "NavigationSystem"
         });
     }
 }
