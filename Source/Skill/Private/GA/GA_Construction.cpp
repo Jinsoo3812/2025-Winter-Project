@@ -16,16 +16,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Components/InputComponent.h"
 
-UGA_Construction::UGA_Construction()
-{
-	// 객체 생성 정책: GA를 소유한 액터마다 '하나의 GA 객체만' 생성
-	// 메모리 효율적이며, 상태를 액터별로 관리할 수 있음
-	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-
-	// 서버-클라이언트 통신 정책: 클라이언트의 입력이 발생하면, 서버의 응답을 기다리지 않고 즉시(예측) 실행
-	// 네트워크 지연 시에도 반응성이 좋음
-	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-}
+UGA_Construction::UGA_Construction() {}
 
 void UGA_Construction::ActivateAbility(
 	const FGameplayAbilitySpecHandle Handle,

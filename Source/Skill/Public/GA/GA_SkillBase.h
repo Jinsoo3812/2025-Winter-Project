@@ -36,7 +36,7 @@ protected:
 	float BaseCooldown = 5.0f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Stats")
-	float BaseRange = 1000.0f;
+	float BaseRange = 1.0f;
 
 	// 데미지 적용을 위한 GE 클래스
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Effects")
