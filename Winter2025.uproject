@@ -24,10 +24,23 @@
 			]
 		},
 		{
-       			"Name": "World",
-        		"Type": "Runtime",
-        		"LoadingPhase": "Default"
-    		}
+			"Name": "World",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GameplayAbilities"
+			]
+		},
+		{
+			"Name": "Skill",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"GameplayAbilities"
+			]
+		}
 	],
 	"Plugins": [
 		{
