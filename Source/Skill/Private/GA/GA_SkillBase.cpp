@@ -155,8 +155,10 @@ FGameplayEffectSpecHandle UGA_SkillBase::MakeRuneDamageEffectSpec(const FGamepla
 void UGA_SkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
 {
 	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
-	if (!CooldownGE) return;
-	// 아직 쿨타임 GE가 없어서 예외처리 로그를 남기지 않음
+	if (!CooldownGE) {
+		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::ApplyCooldown: CooldownGE is not set"));
+		return;
+	}
 
 	// 1. 쿨타임용 Spec 생성
 	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
@@ -221,9 +223,4 @@ void UGA_SkillBase::EndAbility(
 	}
 	// 부모 클래스의 EndAbility 호출
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
-}
-
-const FGameplayTagContainer* UGA_SkillBase::GetCooldownTags() const
-{
-	return &UniqueCooldownTags;
 }

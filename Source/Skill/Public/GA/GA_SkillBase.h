@@ -76,7 +76,9 @@ protected:
 		const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo) const override;
 
-	virtual const FGameplayTagContainer* GetCooldownTags() const override;
+	virtual const FGameplayTagContainer* GetCooldownTags() const override {
+		return &UniqueCooldownTags;
+	}
 
 	// 실제 스킬이 발동될 때 호출되는 함수
 	// 프리뷰 단계가 아닌 실제 시작단계에서 이 함수를 호출한다.
