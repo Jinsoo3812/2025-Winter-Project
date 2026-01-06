@@ -26,14 +26,6 @@ void UGA_Construction::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// Ability 활성화 커밋 (Cost, Cooldown 등 체크 및 적용)
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to commit ability"));
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
 	// LastPlayerLocation 초기화 (첫 실행 시 무조건 하이라이트 갱신되도록)
 	LastPlayerLocation = FVector(FLT_MAX, FLT_MAX, FLT_MAX);
 
@@ -383,6 +375,15 @@ void UGA_Construction::UpdatePreview()
 
 void UGA_Construction::SpawnBlock()
 {
+	// Ability 활성화 커밋 (Cost, Cooldown 등 체크 및 적용)
+
+	if (!CommitAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to commit ability"));
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
+		return;
+	}
+
 	if (!PreviewBlock || PreviewBlock->IsHidden()) return;
 
 	if (!BlockToSpawn)

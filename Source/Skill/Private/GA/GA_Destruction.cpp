@@ -23,14 +23,6 @@ void UGA_Destruction::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// CommitAbility: 자원 소모 및 쿨다운 검사
-	// 시전 준비 단계에 진입하면 코스트를 지불한 것으로 간주 
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-	{
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
 	// 프리뷰 업데이트 타이머 시작 (매 프레임 갱신)
 	if (UWorld* World = GetWorld())
 	{
@@ -367,6 +359,13 @@ void UGA_Destruction::OnCancelPressed(float TimeWaited)
 
 void UGA_Destruction::PerformDestruction()
 {
+	if (!CommitAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to commit ability"));
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
+		return;
+	}
+
 	AActor* AvatarActor = GetAvatarActorFromActorInfo();
 	if (!AvatarActor)
 	{

@@ -169,6 +169,9 @@ void UGA_SkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const
 		// SetByCaller 태그(Data.Cooldown)에 수치 주입
 		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Cooldown, FinalDuration);
 
+		// 스킬별 고유 쿨타임 태그
+		SpecHandle.Data->DynamicGrantedTags.AppendTags(UniqueCooldownTags);
+
 		// 적용
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
@@ -218,4 +221,9 @@ void UGA_SkillBase::EndAbility(
 	}
 	// 부모 클래스의 EndAbility 호출
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+const FGameplayTagContainer* UGA_SkillBase::GetCooldownTags() const
+{
+	return &UniqueCooldownTags;
 }

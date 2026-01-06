@@ -41,6 +41,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Effects")
 	TSubclassOf<UGameplayEffect> DamageEffect;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Stats|Cooldown")
+	FGameplayTagContainer UniqueCooldownTags;
+
 	// 빨강 룬이 적용된 최종 데미지 값을 계산해서 반환
 	UFUNCTION(BlueprintCallable, Category = "Skill|Calculation")
 	float GetRuneModifiedDamage() const;
@@ -72,6 +75,8 @@ protected:
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo) const override;
+
+	virtual const FGameplayTagContainer* GetCooldownTags() const override;
 
 	// 실제 스킬이 발동될 때 호출되는 함수
 	// 프리뷰 단계가 아닌 실제 시작단계에서 이 함수를 호출한다.
