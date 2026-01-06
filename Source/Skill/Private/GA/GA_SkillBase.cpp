@@ -5,6 +5,8 @@
 #include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
 
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Busy");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
 
@@ -17,6 +19,18 @@ UGA_SkillBase::UGA_SkillBase()
 	// 서버-클라이언트 통신 정책: 클라이언트의 입력이 발생하면, 서버의 응답을 기다리지 않고 즉시(예측) 실행
 	// 네트워크 지연 시에도 반응성이 좋음
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+
+	FGameplayTagContainer NewAbilityTags;
+	NewAbilityTags.AddTag(TAG_Skill);
+	SetAssetTags(NewAbilityTags);
+
+	// CancelAbilitiesWithTag는 "다른 GA의 ASC에 붙은 Tag"를 검사
+	// 자신이 Skill 임을 표시
+	CancelAbilitiesWithTag.AddTag(TAG_Skill);
+
+	// ActivationBlockedTags는 "시전자의 ASC에 붙은 Tag"를 검사
+	// 시전자가 다른 GA를 시전 중일 때는 시전되지 않도록 설정
+	ActivationBlockedTags.AddTag(TAG_Skill_Casting);
 }
 
 USkillManagerComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
@@ -161,4 +175,47 @@ void UGA_SkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::ApplyCooldown: Failed to create Cooldown SpecHandle"));
 	}
+}
+
+void UGA_SkillBase::NotifySkillCastStarted()
+{
+	// GA의 시전자에게 "State.Busy" 태그 추가
+	// 시전 중 다른 스킬 시전이나 행동을 제한하기 위함
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		if (ASC)
+		{
+			// Loose 태그로 추가 (중첩형이 아닌 일반 태그)
+			ASC->AddLooseGameplayTag(TAG_Skill_Casting);
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::NotifySkillCastStarted: Avatar is null"));
+	}
+}
+
+void UGA_SkillBase::EndAbility(
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
+	bool bReplicateEndAbility,
+	bool bWasCancelled)
+{
+	// GA 종료 시 "State.Busy" 태그 제거
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		if (ASC && ASC->HasMatchingGameplayTag(TAG_Skill_Casting))
+		{
+			ASC->RemoveLooseGameplayTag(TAG_Skill_Casting);
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::EndAbility: Avatar is null"));
+	}
+	// 부모 클래스의 EndAbility 호출
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

@@ -421,6 +421,9 @@ void UGA_Construction::SpawnBlock()
 
 void UGA_Construction::OnLeftClickPressed()
 {
+	// 실제 스킬 시전 시작 알림
+	// State.Busy 태그를 부여
+	NotifySkillCastStarted();
 	// 좌클릭 시 블록 생성 시도
 	SpawnBlock();
 }

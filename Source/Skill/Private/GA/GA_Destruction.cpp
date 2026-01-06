@@ -352,6 +352,9 @@ void UGA_Destruction::UpdatePreview()
 
 void UGA_Destruction::OnLeftClickPressed()
 {
+	// 실제 스킬 시전 시작 알림
+	// State.Busy 태그를 부여
+	NotifySkillCastStarted();
 	// 좌클릭 시 파괴 로직 수행
 	PerformDestruction();
 }
