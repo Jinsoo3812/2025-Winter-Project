@@ -8,6 +8,8 @@ ADestructibleBlock::ADestructibleBlock()
 	// 블록이 파괴 가능하도록 설정
 	IsDestrictible = true;
 
+	bCanFall = true;
+
 	// Ability System Component 생성
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 }
@@ -72,9 +74,9 @@ void ADestructibleBlock::OnGameplayEffectApplied(UAbilitySystemComponent* Target
 
 void ADestructibleBlock::SelfDestroy()
 {
-	// 레벨에서 자신을 없애는 함수. AActor의 Destroy()를 호출.
-	// 필요에 따라 파괴 효과나 점수 증가 등의 추가 로직을 여기에 구현할 수 있습니다.
-	// 자신의 이름과 함께 로그 출력
 	UE_LOG(LogTemp, Warning, TEXT("Destructible Block %s is destroyed."), *GetName());
+
+	// 위 블록에게 낙하하라고 알림
+	NotifyUpperBlock();
 	Destroy();
 }

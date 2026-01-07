@@ -8,6 +8,8 @@ ABlockBase::ABlockBase()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	// Tick은 사용하지만, 처음에는 비활성화 상태로 시작
+    PrimaryActorTick.bStartWithTickEnabled = false;
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
 	RootComponent = MeshComponent;
@@ -31,6 +33,11 @@ void ABlockBase::BeginPlay()
 void ABlockBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+    // 낙하 기능이 있는 블록만 처리
+	if (bCanFall) {
+		UpdateGravity(DeltaTime);
+	}
 }
 
 void ABlockBase::SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType)
@@ -38,5 +45,135 @@ void ABlockBase::SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType)
 	Location = SpawnLocation;
 	BlockType = NewBlockType;
 	SetActorLocation(Location);
+
+    // 블록이 소환되자마자 떨어져야 하는지 검사하기 위해 Tick 켬
+	SetActorTickEnabled(true);
+}
+
+void ABlockBase::UpdateGravity(float DeltaTime)
+{
+    FVector Start = GetActorLocation();
+
+    // 레이캐스트 길이를 속도에 비례하게 늘려서, 고속 낙하 시 터널링(바닥 뚫음) 방지
+    // 최소 길이는 60
+    float CheckDistance = FMath::Max(60.0f, (FMath::Abs(VerticalVelocity) * DeltaTime) + 10.0f);
+    FVector End = Start + FVector(0.0f, 0.0f, -CheckDistance);
+
+    FHitResult HitResult;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(this);
+
+    bool bHitSomething = GetWorld()->LineTraceSingleByChannel(
+        HitResult, Start, End, ECC_Visibility, Params
+    );
+
+    // 바닥에 뭔가가 닿았는데, 그게 '추락 중인 블록'이라면 바닥이 없는 것으로 간주해야 함
+    if (bHitSomething)
+    {
+        ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
+        if (HitBlock && HitBlock->IsFalling())
+        {
+            // 아래 있는 블록이 같이 추락 중이라면, 바닥이 없는 것으로 간주
+            bHitSomething = false;
+        }
+    }
+
+    if (bHitSomething)
+    {
+        // 바닥이 확실히 있음
+        if (bIsFalling)
+        {
+            CheckLanding();
+        }
+        else
+        {
+            // 안정적인 상태 유지 (물리를 켜놓으면 어디에 끼거나 진동하거나 하여튼,,)
+            SetActorTickEnabled(false);
+        }
+
+        bIsFalling = false;
+        VerticalVelocity = 0.0f;
+    }
+    else
+    {
+        // 바닥이 없음 -> 낙하 처리
+        if (!bIsFalling)
+        {
+            bIsFalling = true;
+            NotifyUpperBlock(); // 내 위의 블록도 깨움
+            // UE_LOG(LogTemp, Warning, TEXT("BlockBase: %s started falling."), *GetName());
+        }
+
+        // 속도 갱신
+        VerticalVelocity += GravityAcceleration * DeltaTime;
+        FVector DeltaMove = FVector(0.0f, 0.0f, VerticalVelocity * DeltaTime);
+
+        // 옆면 마찰 문제 해결
+        // 매 프레임 아래로 떨어지는 것은 일종의 순간이동인데
+        // 그 때마다 양 옆에 부딪힌다면 제대로 이동하지 못하므로 sweep을 끔
+        AddActorWorldOffset(DeltaMove, false);
+    }
+}
+
+void ABlockBase::CheckLanding()
+{
+    FVector CurrentLoc = GetActorLocation();
+
+	// 152, 99 처럼 중간에 걸친 위치를 그리드에 스냅
+	float HalfSize = GridSize / 2.0f;
+    float SnappedZ = FMath::RoundToFloat((CurrentLoc.Z - HalfSize) / GridSize) * GridSize + HalfSize;
+    float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize; // X, Y는 중심이 0 기준이면 그대로 둠
+    float SnappedY = FMath::RoundToFloat(CurrentLoc.Y / GridSize) * GridSize;
+
+    FVector NewLoc = FVector(SnappedX, SnappedY, SnappedZ);
+
+    if (SetActorLocation(NewLoc))
+    {
+        // 스냅 성공 및 가상 물리 연산 종료
+        bIsFalling = false;
+        VerticalVelocity = 0.0f;
+        SetActorTickEnabled(false);
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("BlockBase: Failed to snap to grid %s"), *GetName());
+    }
+}
+
+void ABlockBase::NotifyUpperBlock()
+{
+    // 내 위치에서 위로 100 + 10(offset) 만큼 레이캐스트
+    FVector Start = GetActorLocation();
+    FVector End = Start + FVector(0.0f, 0.0f, 110.0f);
+
+    FHitResult HitResult;
+    FCollisionQueryParams Params;
+    Params.AddIgnoredActor(this);
+
+    // 위쪽에 블록이 있는지 검사.
+    bool bHit = GetWorld()->LineTraceSingleByChannel(
+        HitResult, Start, End, ECC_Visibility, Params
+    );
+
+    if (bHit && HitResult.GetActor())
+    {
+        // 닿은 액터가 BlockBase인지 확인하고 깨움
+        ABlockBase* UpperBlock = Cast<ABlockBase>(HitResult.GetActor());
+        if (UpperBlock)
+        {
+            // 잠자던 위쪽 블록의 Tick을 켜서 추락하게 함
+            UpperBlock->SetActorTickEnabled(true);
+            // 로그 확인용
+            // UE_LOG(LogTemp, Log, TEXT("BlockBase: %s woke up %s"), *GetName(), *UpperBlock->GetName());
+        }
+        else
+        {
+            // 블록이 아닌 다른 물체일 경우 (로그 생략 가능)
+        }
+    }
+    else
+    {
+        // 위에 아무것도 없으므로 아무 작업도 하지 않음 (정상 상황)
+    }
 }
 
