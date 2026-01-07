@@ -141,7 +141,7 @@ FGameplayEffectSpecHandle UGA_SkillBase::MakeRuneDamageEffectSpec(const FGamepla
 		float FinalDamage = GetRuneModifiedDamage();
 
 		// SetByCaller 태그(Data.Damage)에 수치 주입
-		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, FinalDamage);
+		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, -FinalDamage);
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::MakeRuneDamageEffectSpec: Failed to create SpecHandle"));

@@ -8,7 +8,8 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Engine/OverlapResult.h"
-#include "Components/StaticMeshComponent.h"
+// #include "Components/StaticMeshComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 
 UGA_SummonBarrier::UGA_SummonBarrier()
@@ -333,6 +334,15 @@ void UGA_SummonBarrier::SpawnBlock()
 		return;
 	}
 
+	// [추가] 1단계(건설) 동작이 완료되었으므로, 다른 행동을 할 수 있도록 State.Busy 태그 즉시 제거
+	// EndAbility가 호출될 때까지 기다리지 않고 여기서 풀어줍니다.
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (ASC)
+	{
+		// GA_SkillBase에 선언된 TAG_Skill_Casting (State.Busy) 사용
+		ASC->RemoveLooseGameplayTag(TAG_Skill_Casting);
+	}
+
 	// 2. 돌진 방향 설정
 	if (SpawnedBlocks.Num() > 0 && SpawnedBlocks[0])
 	{
@@ -471,6 +481,23 @@ void UGA_SummonBarrier::TickBarrierCharge()
 			if (SpawnedBlocks.Contains(HitActor)) continue;
 			if (HitActor == GetAvatarActorFromActorInfo()) continue;
 
+			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
+			if (TargetASC)
+			{
+				// SkillBase의 헬퍼 함수를 사용하여 룬 데미지가 적용된 Spec 생성
+				// (MakeRuneDamageEffectSpec은 부모인 GA_SkillBase에 정의됨)
+				FGameplayEffectSpecHandle SpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
+
+				if (SpecHandle.IsValid())
+				{
+					// 시전자의 ASC를 통해 타겟 ASC에게 효과 적용
+					GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(
+						*SpecHandle.Data.Get(),
+						TargetASC
+					);
+				}
+			}
+
 			UE_LOG(LogTemp, Log, TEXT("GA_SummonBarrier: Block %s hit obstacle %s"), *Block->GetName(), *GetNameSafe(HitActor));
 
 			Block->SelfDestroy();
@@ -497,4 +524,18 @@ void UGA_SummonBarrier::OnCancelPressed(float TimeWaited)
 			StartBarrierCharge(TimeWaited);
 		}
 	}
+}
+
+bool UGA_SummonBarrier::CanBeCanceled() const
+{
+	// 1. 방벽이 이미 생성되어 관리 목록(SpawnedBlocks)에 있다면?
+	// -> 대기 중이거나 돌진 중인 "지속 상태"이므로 취소되면 안 됨.
+	if (SpawnedBlocks.Num() > 0)
+	{
+		return false;
+	}
+
+	// 2. 방벽이 없다면?
+	// -> 아직 건설 전(프리뷰) 상태이므로, 다른 스킬 입력 시 취소(교체)되어야 함.
+	return Super::CanBeCanceled();
 }

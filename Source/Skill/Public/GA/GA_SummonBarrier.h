@@ -69,6 +69,9 @@ protected:
 	// 입력 취소/재입력 처리 (W키 등)
 	virtual void OnCancelPressed(float TimeWaited);
 
+	// [추가] 취소 가능 여부를 판단하는 함수 오버라이드
+	virtual bool CanBeCanceled() const override;
+
 private:
 	// 중심 위치와 플레이어 위치를 기반으로 6개 블록의 트랜스폼 계산
 	void CalculateBarrierTransforms(const FVector& CenterLocation, const FVector& PlayerLocation, TArray<FTransform>& OutTransforms);
