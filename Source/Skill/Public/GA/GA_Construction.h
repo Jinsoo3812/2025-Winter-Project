@@ -89,10 +89,10 @@ protected:
 	void ClearHighlights();
 
 	// 마우스 커서 아래 블록 찾기 및 프리뷰 업데이트
-	void UpdatePreview();
+	virtual void UpdatePreview();
 
 	// 블록 생성
-	void SpawnBlock();
+	virtual void SpawnBlock();
 
 	// 좌클릭 입력 콜백
 	void OnLeftClickPressed();

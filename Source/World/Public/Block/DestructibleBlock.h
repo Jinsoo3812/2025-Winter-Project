@@ -24,6 +24,8 @@ public:
 	// 순수 가상 함수이므로 반드시 구현
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	// 자신을 파괴하는 함수
+	void SelfDestroy();
 protected:
 	virtual void BeginPlay() override;
 
@@ -34,9 +36,6 @@ protected:
 	// 파괴 트리거 태그 (이 태그를 가진 GE를 받으면 파괴됨)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
 	FGameplayTag DestructionTag;
-
-	// 자신을 파괴하는 함수
-	void SelfDestroy();
 
 	// GE를 적용받았을 때 호출할 콜백 함수. 이 곳에서 태그를 검사한다.
 	// Target: GE가 적용된 대상의 ASC (보통 본인)

@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "BlockBase.generated.h"
 
 UENUM()
@@ -47,6 +48,10 @@ protected:
 	// 블록의 외형 및 물리 충돌을 담당할 Mesh Component
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
+
+	// 외형과 별개인 충돌 컴포넌트
+	UPROPERTY(VisibleAnywhere, Category = "Block")
+	TObjectPtr<UBoxComponent> CollisionComponent;
 
 	// BP에서 설정 가능한 기본 메시 (기본값: Cube)
 	UPROPERTY(EditDefaultsOnly, Category = "Block")
@@ -90,4 +95,6 @@ public:
 	UStaticMeshComponent* GetBlockMesh() const { return MeshComponent; }
 
 	bool IsFalling() const { return bIsFalling; }
+
+	void SetCanFall(bool bNewCanFall) { bCanFall = bNewCanFall; }
 };
