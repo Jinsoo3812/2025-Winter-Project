@@ -88,6 +88,7 @@ public:
 
 	EBlockType GetBlockType() const { return BlockType; }
 	FVector GetBlockLocation() const { return Location; }
+	float GetGridSize() const { return GridSize; }
 
 	virtual bool CanBeDestroyed() const { return IsDestrictible; }
 
@@ -97,4 +98,5 @@ public:
 	bool IsFalling() const { return bIsFalling; }
 
 	void SetCanFall(bool bNewCanFall) { bCanFall = bNewCanFall; }
+
 };

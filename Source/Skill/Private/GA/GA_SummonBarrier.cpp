@@ -14,9 +14,6 @@
 
 UGA_SummonBarrier::UGA_SummonBarrier()
 {
-	// 기본 사거리 설정
-	ConstructionRangeXY = 600.0f;
-
 	// 기본값 초기화
 	CurrentMovedDistance = 0.0f;
 	bIsCharging = false;
@@ -32,6 +29,7 @@ void UGA_SummonBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	SpawnedBlocks.Empty();
 	CurrentMovedDistance = 0.0f;
 	bIsCharging = false;
+	GridSize = BlockToSpawn ? BlockToSpawn->GetDefaultObject<ADestructibleBlock>()->GetGridSize() : 100.0f;
 }
 
 void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
@@ -53,7 +51,7 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 	BarrierPreviewBlocks.Empty();
 
-	// 돌진 중 스킬이 취소/종료되면 남은 블록들도 모두 제거 (관리 책임이 스킬에 있음)
+	// 스킬이 취소/종료되면 남은 블록들도 모두 제거
 	for (TObjectPtr<ADestructibleBlock>& Block : SpawnedBlocks)
 	{
 		if (Block && IsValid(Block))
@@ -63,6 +61,24 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 
 	SpawnedBlocks.Empty();
+
+	// 남은 바인딩 제거
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (OwnerPawn)
+	{
+		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+		if (PC && PC->InputComponent)
+		{
+			// InputComponent에서 이 객체에 바인딩된 모든 키 바인딩 제거
+			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
+			{
+				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
+				{
+					PC->InputComponent->KeyBindings.RemoveAt(i);
+				}
+			}
+		}
+	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -86,7 +102,7 @@ void UGA_SummonBarrier::UpdatePreview()
 		return;
 	}
 
-	// 위치 변경 시 하이라이트 갱신 (부모 로직)
+	// 이전 위치에서 움직였을 때만 하이라이트 갱신 
 	FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
 	if (!LastPlayerLocation.Equals(CurrentPlayerLocation, 10.0f))
 	{
@@ -108,8 +124,9 @@ void UGA_SummonBarrier::UpdatePreview()
 		if (HitBlock && HighlightedBlocks.Contains(HitBlock))
 		{
 			bValidTargetFound = true;
-			// 타겟 블록 위쪽을 기준으로 계산
-			FVector CenterBaseLocation = HitBlock->GetActorLocation() + FVector(0, 0, BlockSize);
+			// 방벽의 중심 블록의 생성 위치 계산
+			// 중심 블록은 마우스를 가져간 블록의 바로 윗 블록
+			FVector CenterBaseLocation = HitBlock->GetActorLocation() + FVector(0, 0, GridSize);
 			CalculateBarrierTransforms(CenterBaseLocation, CurrentPlayerLocation, TargetTransforms);
 		}
 	}
@@ -129,32 +146,52 @@ void UGA_SummonBarrier::UpdatePreview()
 
 void UGA_SummonBarrier::CalculateBarrierTransforms(const FVector& CenterLocation, const FVector& PlayerLocation, TArray<FTransform>& OutTransforms)
 {
+	// Player에서 Center로 향하는 방향 벡터 계산
 	FVector Direction = CenterLocation - PlayerLocation;
 	FRotator WallRotation;
 	FVector RightVector;
 
 	// 방향 결정 로직
+	// 생성 지점이 플레이어 동서방향인 경우
 	if (FMath::Abs(Direction.X) > FMath::Abs(Direction.Y))
 	{
 		WallRotation = FRotator(0, 90.0f, 0);
-		RightVector = FVector(0, 1.0f, 0); // Y축
+		RightVector = FVector(0, 1.0f, 0); // Y축 방향으로 뻗는 방벽
 	}
+	// 생성 지점이 플레이어 남북방향인 경우
 	else
 	{
 		WallRotation = FRotator::ZeroRotator;
-		RightVector = FVector(1.0f, 0, 0); // X축
+		RightVector = FVector(1.0f, 0, 0); // X축 방향으로 뻗는 방벽
 	}
 
 	OutTransforms.Empty();
+	/**
+	* [벽 생성 구조 및 오프셋 설명]
+	* 기준점(CenterLocation)을 중심으로 좌우 대칭인 3칸 너비, 2층 높이의 벽을 생성합니다.
+	* Offsets 배열 { 0, -1, 1 }을 사용하여 기준점으로부터의 가로 위치를 결정합니다.
+	* 
+	*    [ -1 ] [ 0 ] [ 1 ]   <-- 2층 (UpperPos: BasePos + Z축 높이)
+	*    [ -1 ] [ 0 ] [ 1 ]   <-- 1층 (BasePos: 기준 바닥 위치)
+	*      ↑      ↑      ↑
+	*     Left  Center Right
+	* 
+	* - 0.0f : 중앙 (Center, 마우스가 가리키는 기준점)
+	* - -1.0f: 왼쪽 (Left, RightVector 반대 방향으로 1칸)
+	* - 1.0f : 오른쪽 (Right, RightVector 방향으로 1칸)
+	*/
 	float Offsets[] = { 0.0f, -1.0f, 1.0f };
 
+	// 첫 순회에서 가운데 블록, 두 번째 순회에서 왼쪽 블록, 세 번째 순회에서 오른쪽 블록 생성
 	for (float OffsetMultiplier : Offsets)
 	{
-		FVector BasePos = CenterLocation + (RightVector * (BlockSize * OffsetMultiplier));
-		// 1층
+		FVector BasePos = CenterLocation + (RightVector * (GridSize * OffsetMultiplier));
+
+		// 1층 추가
 		OutTransforms.Add(FTransform(WallRotation, BasePos));
-		// 2층
-		FVector UpperPos = BasePos + FVector(0, 0, BlockSize);
+
+		// 2층 추가
+		FVector UpperPos = BasePos + FVector(0, 0, GridSize);
 		OutTransforms.Add(FTransform(WallRotation, UpperPos));
 	}
 }
@@ -162,7 +199,10 @@ void UGA_SummonBarrier::CalculateBarrierTransforms(const FVector& CenterLocation
 void UGA_SummonBarrier::UpdateBarrierPreviewActors(const TArray<FTransform>& Transforms)
 {
 	UWorld* World = GetWorld();
-	if (!World) return;
+	if (!World) {
+		UE_LOG(LogTemp, Warning, TEXT("GA_SummonBarrier: World is null in UpdateBarrierPreviewActors"));
+		return;
+	}
 
 	if (!PreviewBlockClass)
 	{
@@ -170,7 +210,7 @@ void UGA_SummonBarrier::UpdateBarrierPreviewActors(const TArray<FTransform>& Tra
 		return;
 	}
 
-	// 풀링(Pooling) 방식으로 개수 맞추기
+	// 프리뷰 블록은 한 번만 만들어놓고 재사용
 	while (BarrierPreviewBlocks.Num() < Transforms.Num())
 	{
 		FActorSpawnParameters SpawnParams;
@@ -189,11 +229,14 @@ void UGA_SummonBarrier::UpdateBarrierPreviewActors(const TArray<FTransform>& Tra
 		AActor* Preview = BarrierPreviewBlocks[i];
 		if (!Preview) continue;
 
+		// 만들어 놓은 프리뷰 블록(BarrierPreviewBlocks)이
+		// 소환 할 블록 개수(Transforms.Num())보다 많다면 숨김 처리
 		if (i < Transforms.Num())
 		{
 			const FTransform& TargetTransform = Transforms[i];
 			if (IsLocationOccupied(TargetTransform.GetLocation()))
 			{
+				// 소환 할 수 없는 곳은 프리뷰하지 않음
 				Preview->SetActorHiddenInGame(true);
 			}
 			else
@@ -218,7 +261,9 @@ bool UGA_SummonBarrier::IsLocationOccupied(const FVector& Location) const
 		return true;
 	}
 
-	FVector BoxExtent = FVector(BlockSize * 0.4f, BlockSize * 0.4f, BlockSize * 0.4f);
+	// MakeBox는 인자를 반지름으로 사용함
+	// 0.5를 넣으면 100 * 100 * 100 크기의 박스가 되어 꽉 차므로 0.4 사용
+	FVector BoxExtent = FVector(GridSize * 0.4f, GridSize * 0.4f, GridSize * 0.4f);
 	FCollisionShape CheckShape = FCollisionShape::MakeBox(BoxExtent);
 
 	FCollisionObjectQueryParams ObjectQueryParams;
@@ -228,6 +273,7 @@ bool UGA_SummonBarrier::IsLocationOccupied(const FVector& Location) const
 	FCollisionQueryParams QueryParams;
 	for (const auto& Preview : BarrierPreviewBlocks)
 	{
+		// 프리뷰 블록끼리는 충돌 무시
 		if (Preview) QueryParams.AddIgnoredActor(Preview);
 	}
 
@@ -254,7 +300,7 @@ void UGA_SummonBarrier::SpawnBlock()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// 기존 프리뷰 제거 및 좌클릭 바인딩 해제
+	// 좌클릭 바인딩'만' 해제
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
@@ -300,11 +346,11 @@ void UGA_SummonBarrier::SpawnBlock()
 			// 생성 직후 중력/스냅 로직 끄기
 			NewBlock->SetActorTickEnabled(false);
 
-			// [추가] 방벽을 구성하는 블록은 지지대가 없어져도 스스로 추락하지 않도록 설정
-			// (BlockBase.h에 SetCanFall 함수 추가 필요)
+			// 방벽을 구성하는 파괴가능블록은 추락 옵션 비활성화
 			NewBlock->SetCanFall(false);
 
-			// 이동 가능 설정
+			// StaticMeshComponent는 기본적으로 런타임에 움직일 수 없음
+			// 따라서 Mobility를 Movable로 설정
 			if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(NewBlock->GetRootComponent()))
 			{
 				RootPrim->SetMobility(EComponentMobility::Movable);
@@ -328,14 +374,14 @@ void UGA_SummonBarrier::SpawnBlock()
 	BarrierPreviewBlocks.Empty();
 	ClearHighlights();
 
+	// 소환된 블록이 없으면 종료
 	if (Count == 0)
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
 
-	// [추가] 1단계(건설) 동작이 완료되었으므로, 다른 행동을 할 수 있도록 State.Busy 태그 즉시 제거
-	// EndAbility가 호출될 때까지 기다리지 않고 여기서 풀어줍니다.
+	// 방벽 건설이 완료되었으므로, 다른 스킬을 쓸 수 있도록 State.Busy 태그 즉시 제거
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	if (ASC)
 	{
@@ -348,6 +394,7 @@ void UGA_SummonBarrier::SpawnBlock()
 	{
 		FVector PlayerLoc = OwnerPawn->GetActorLocation();
 		AverageLocation /= Count;
+		// 건설 당시 플레이어 위치를 기준으로 발사 방향	결정
 		FVector DirectionToWall = (AverageLocation - PlayerLoc).GetSafeNormal2D();
 
 		// 방향이 0(플레이어와 겹침)이면 시선 방향
@@ -368,7 +415,8 @@ void UGA_SummonBarrier::SpawnBlock()
 
 	UE_LOG(LogTemp, Log, TEXT("GA_SummonBarrier: Wall spawned. Waiting for charge input."));
 
-	// 3. 재입력 대기
+	// 기존 태스크를 종료시키지 않고 새로운 태스크를 만들면
+	// 이전 태스크가 남아있게 되어 다중 바인딩 문제가 발생할 수 있음
 	if (WaitInputTask)
 	{
 		WaitInputTask->EndTask();
@@ -406,7 +454,7 @@ void UGA_SummonBarrier::StartBarrierCharge(float TimeWaited)
 		// 2. 약간 띄우기 (바닥 마찰 방지)
 		MyBlock->AddActorWorldOffset(FVector(0, 0, 5.0f), false);
 
-		// 3. [수정] 형제 블록 무시 설정
+		// 형제 블록 무시 설정
 		// AActor가 아닌 RootComponent(UPrimitiveComponent) 수준에서 설정해야 함
 		if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(MyBlock->GetRootComponent()))
 		{
@@ -450,6 +498,7 @@ void UGA_SummonBarrier::TickBarrierCharge()
 
 	CurrentMovedDistance += MoveDist;
 
+	// 최대 거리 도달 시 종료(방벽 사라짐)
 	if (CurrentMovedDistance >= MaxChargeDistance)
 	{
 		UE_LOG(LogTemp, Log, TEXT("GA_SummonBarrier: Max distance reached. Destroying wall."));
@@ -477,7 +526,7 @@ void UGA_SummonBarrier::TickBarrierCharge()
 		{
 			AActor* HitActor = HitResult.GetActor();
 
-			// Ignore 설정을 했더라도 혹시 모를 안전장치
+			// 부딪힌 액터가 자기 자신이거나 동료 방벽 블록이면 무시
 			if (SpawnedBlocks.Contains(HitActor)) continue;
 			if (HitActor == GetAvatarActorFromActorInfo()) continue;
 
@@ -485,7 +534,6 @@ void UGA_SummonBarrier::TickBarrierCharge()
 			if (TargetASC)
 			{
 				// SkillBase의 헬퍼 함수를 사용하여 룬 데미지가 적용된 Spec 생성
-				// (MakeRuneDamageEffectSpec은 부모인 GA_SkillBase에 정의됨)
 				FGameplayEffectSpecHandle SpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
 				if (SpecHandle.IsValid())
@@ -515,10 +563,12 @@ void UGA_SummonBarrier::OnCancelPressed(float TimeWaited)
 {
 	if (SpawnedBlocks.Num() == 0)
 	{
+		// 방벽이 아직 생성되지 않은 상태이므로 스킬 취소
 		Super::OnCancelPressed(TimeWaited);
 	}
 	else
-	{
+	{	
+		// 방벽이 이미 생성된 상태이므로 돌진 시작
 		if (!bIsCharging)
 		{
 			StartBarrierCharge(TimeWaited);
@@ -528,14 +578,14 @@ void UGA_SummonBarrier::OnCancelPressed(float TimeWaited)
 
 bool UGA_SummonBarrier::CanBeCanceled() const
 {
-	// 1. 방벽이 이미 생성되어 관리 목록(SpawnedBlocks)에 있다면?
-	// -> 대기 중이거나 돌진 중인 "지속 상태"이므로 취소되면 안 됨.
+	// 방벽이 이미 생성되어 관리 목록(SpawnedBlocks)에 있다면?
+	// 대기 중이거나 돌진 중인 상태이므로 취소되면 안 됨.
 	if (SpawnedBlocks.Num() > 0)
 	{
 		return false;
 	}
 
-	// 2. 방벽이 없다면?
-	// -> 아직 건설 전(프리뷰) 상태이므로, 다른 스킬 입력 시 취소(교체)되어야 함.
+	// 방벽이 없다면?
+	// 아직 건설 전(프리뷰) 상태이므로, 다른 스킬 입력 시 취소(교체)되어야 함.
 	return Super::CanBeCanceled();
 }

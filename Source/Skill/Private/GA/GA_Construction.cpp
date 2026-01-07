@@ -33,6 +33,7 @@ void UGA_Construction::ActivateAbility(
 	if (UWorld* World = GetWorld())
 	{	
 		// 60FPS 간격으로 UpdatePreview 함수 호출
+		// 자식이 재정의한 UpdatePreview 또한 호출될 수 있음.
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Construction::UpdatePreview, 0.016f, true);
 	}
 
