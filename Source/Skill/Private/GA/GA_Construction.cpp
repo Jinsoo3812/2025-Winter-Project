@@ -16,16 +16,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Components/InputComponent.h"
 
-UGA_Construction::UGA_Construction()
-{
-	// 객체 생성 정책: GA를 소유한 액터마다 '하나의 GA 객체만' 생성
-	// 메모리 효율적이며, 상태를 액터별로 관리할 수 있음
-	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-
-	// 서버-클라이언트 통신 정책: 클라이언트의 입력이 발생하면, 서버의 응답을 기다리지 않고 즉시(예측) 실행
-	// 네트워크 지연 시에도 반응성이 좋음
-	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-}
+UGA_Construction::UGA_Construction() {}
 
 void UGA_Construction::ActivateAbility(
 	const FGameplayAbilitySpecHandle Handle,
@@ -34,14 +25,6 @@ void UGA_Construction::ActivateAbility(
 	const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	// Ability 활성화 커밋 (Cost, Cooldown 등 체크 및 적용)
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to commit ability"));
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
 
 	// LastPlayerLocation 초기화 (첫 실행 시 무조건 하이라이트 갱신되도록)
 	LastPlayerLocation = FVector(FLT_MAX, FLT_MAX, FLT_MAX);
@@ -392,6 +375,15 @@ void UGA_Construction::UpdatePreview()
 
 void UGA_Construction::SpawnBlock()
 {
+	// Ability 활성화 커밋 (Cost, Cooldown 등 체크 및 적용)
+
+	if (!CommitAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to commit ability"));
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
+		return;
+	}
+
 	if (!PreviewBlock || PreviewBlock->IsHidden()) return;
 
 	if (!BlockToSpawn)
@@ -430,6 +422,9 @@ void UGA_Construction::SpawnBlock()
 
 void UGA_Construction::OnLeftClickPressed()
 {
+	// 실제 스킬 시전 시작 알림
+	// State.Busy 태그를 부여
+	NotifySkillCastStarted();
 	// 좌클릭 시 블록 생성 시도
 	SpawnBlock();
 }
