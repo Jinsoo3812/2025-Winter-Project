@@ -5,11 +5,28 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "GameplayAbilitySpec.h"
+#include "Engine/DataTable.h"
 #include "SkillManagerComponent.generated.h"
 
 class UAbilitySystemComponent;
 class UGameplayAbility;
 class UDA_Rune;
+
+/**
+ * 룬 슬롯 구조체
+ * 개별 룬 슬롯의 상태를 관리
+ */
+USTRUCT(BlueprintType)
+struct FRuneSlot
+{
+	GENERATED_BODY()
+
+	// 장착된 룬 에셋
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
+	TObjectPtr<UDA_Rune> RuneAsset;
+
+	FRuneSlot() : RuneAsset(nullptr) {}
+};
 
 /**
  * 스킬 슬롯 구조체
@@ -32,26 +49,15 @@ struct FSkillSlot
 	UPROPERTY(BlueprintReadOnly, Category = "Skill")
 	FGameplayAbilitySpecHandle AbilityHandle;
 
+
+	// 장착된 룬 슬롯들
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
-	TArray<TObjectPtr<UDA_Rune>> EquippedRunes;
+	TArray<FRuneSlot> RuneSlots;
 
 	// 기본 생성자
 	FSkillSlot() : EquippedSkill(nullptr), AbilityHandle() {
-		EquippedRunes.SetNum(3); // 룬 슬롯 3칸 확보
+		RuneSlots.SetNum(3); // 룬 슬롯 3칸 확보
 	}
-
-	// TODO: 추후 필요하면 구현 예정
-	// // 슬롯 이름 (UI용)
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	// FName SlotName;
-
-	// // 슬롯 활성화 여부
-	// UPROPERTY(BlueprintReadOnly, Category = "Skill")
-	// bool bIsActive = true;
-
-	// // 입력 바인딩 ID (옵션)
-	// UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
-	// int32 InputID = 0;
 };
 
 /**
@@ -124,9 +130,16 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
 	float GetTotalCooldownReduction(int32 SlotIndex) const;
 
-	// 해당 슬롯의 '범위(Orange)' 룬 합계 반환
+	// 해당 슬롯의 '범위(Blue)' 룬 합계 반환
 	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
 	float GetTotalRangeMultiplier(int32 SlotIndex) const;
+
+	// 룬 ID(RowName)를 통해 데이터 테이블에서 룬을 찾아 장착하는 함수
+	// @param SlotIndex: 스킬 슬롯 인덱스
+	// @param RuneSlotIndex: 룬 슬롯 인덱스
+	// @param RuneID: 데이터 테이블의 행 이름 (RowName)
+	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
+	bool EquipRuneByID(int32 SlotIndex, int32 RuneSlotIndex, FName RuneID);
 
 protected:
 	// ASC 참조 (소유하지 않고 캐릭터로부터 받아서 사용)
@@ -136,6 +149,10 @@ protected:
 	// 스킬 슬롯 배열
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Manager")
 	TArray<FSkillSlot> SkillSlots;
+
+	// 룬 데이터베이스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Manager|Data")
+	TObjectPtr<UDataTable> RuneDataTable;
 
 	// 슬롯 인덱스가 유효한지 검사하는 헬퍼 함수
 	bool IsValidSlotIndex(int32 SlotIndex) const;

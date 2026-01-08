@@ -208,7 +208,7 @@ void ATestCharacter::InitializeAbilitySystem()
 	// SkillManager 초기화
 	CachedSkillManager->SkillManagerInitialize(CachedAbilitySystemComponent);
 
-	// PlayerState에서 DefaultSkills를 가져와서 장착
+	// PlayerState에서 DefaultSkillSets를 가져와서 장착
 	// 서버가 스폰한 TestCharacter만이 권한을 가진 진짜
 	// 각 클라이언트(유저들)이 스폰한 TestCharacter는 복제본이므로 권한 없음
 	if (HasAuthority())
@@ -216,13 +216,26 @@ void ATestCharacter::InitializeAbilitySystem()
 		ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 		if (PS)
 		{
-			const TArray<TSubclassOf<UGameplayAbility>>& DefaultSkills = PS->GetDefaultSkills();
-			for (int32 i = 0; i < DefaultSkills.Num(); ++i)
+			const TArray<FSkillSlot>& DefaultSkillSets = PS->GetDefaultSkillSets();
+			for (int32 i = 0; i < DefaultSkillSets.Num(); ++i)
 			{
-				if (DefaultSkills[i])
+				const FSkillSlot& SkillSlot = DefaultSkillSets[i];
+				
+				// 스킬 장착
+				if (SkillSlot.EquippedSkill)
 				{
-					CachedSkillManager->EquipSkill(i, DefaultSkills[i]);
+					CachedSkillManager->EquipSkill(i, SkillSlot.EquippedSkill);
 					UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Equipped skill at slot %d"), i);
+
+					// 해당 스킬의 룬 슬롯들 장착
+					for (int32 RuneIdx = 0; RuneIdx < SkillSlot.RuneSlots.Num(); ++RuneIdx)
+					{
+						if (SkillSlot.RuneSlots[RuneIdx].RuneAsset)
+						{
+							CachedSkillManager->EquipRune(i, RuneIdx, SkillSlot.RuneSlots[RuneIdx].RuneAsset);
+							UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Equipped rune at slot %d, rune slot %d"), i, RuneIdx);
+						}
+					}
 				}
 			}
 		}

@@ -148,7 +148,7 @@ bool USkillManagerComponent::EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA
 	}
 
 	// 2. 룬 슬롯 인덱스 유효성 검사 (0~2)
-	if (!SkillSlots[SlotIndex].EquippedRunes.IsValidIndex(RuneSlotIndex))
+	if (!SkillSlots[SlotIndex].RuneSlots.IsValidIndex(RuneSlotIndex))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipRune: Invalid RuneSlotIndex %d"), RuneSlotIndex);
 		return false;
@@ -162,21 +162,21 @@ bool USkillManagerComponent::EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA
 	}
 
 	// 4. 룬 장착 (배열의 해당 인덱스를 덮어씀)
-	SkillSlots[SlotIndex].EquippedRunes[RuneSlotIndex] = RuneData;
+	SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex].RuneAsset = RuneData;
 
 	return true;
 }
 
 bool USkillManagerComponent::UnequipRune(int32 SlotIndex, int32 RuneSlotIndex)
 {
-	if (!IsValidSlotIndex(SlotIndex) || !SkillSlots[SlotIndex].EquippedRunes.IsValidIndex(RuneSlotIndex))
+	if (!IsValidSlotIndex(SlotIndex) || !SkillSlots[SlotIndex].RuneSlots.IsValidIndex(RuneSlotIndex))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("UnequipRune: Invalid SlotIndex %d or RuneSlotIndex %d"), SlotIndex, RuneSlotIndex);
 		return false;
 	}
 
 	// 해당 칸을 비움 (nullptr)
-	SkillSlots[SlotIndex].EquippedRunes[RuneSlotIndex] = nullptr;
+	SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex].RuneAsset = nullptr;
 
 	return true;
 }
@@ -192,14 +192,13 @@ float USkillManagerComponent::GetTotalDamageMultiplier(int32 SlotIndex) const
 	float TotalMultiplier = 1.0f;
 
 	// 해당 스킬 슬롯에 장착된 3개의 룬을 순회
-	for (const UDA_Rune* Rune : SkillSlots[SlotIndex].EquippedRunes)
+	for (const FRuneSlot& Slot : SkillSlots[SlotIndex].RuneSlots)
 	{
-		// 룬이 있고, 타입이 Red(피해량)라면
+		const UDA_Rune* Rune = Slot.RuneAsset;
 		if (Rune && Rune->RuneTag == TAG_Rune_Red)
 		{
-			// 룬의 값을 더함 (예: 0.2 = 20% 증가)
-			// 현재는 합연산 방식 사용
-			TotalMultiplier += Rune->RuneValue;
+			// 곱셈 방식으로 변경: RuneValue가 2.0이면 2배가 됨
+			TotalMultiplier *= Rune->RuneValue;
 		}
 	}
 	return TotalMultiplier;
@@ -215,11 +214,11 @@ float USkillManagerComponent::GetTotalCooldownReduction(int32 SlotIndex) const
 	// 쿨타임 감소량 합계 (0.0에서 시작)
 	float TotalReduction = 0.0f;
 
-	for (const UDA_Rune* Rune : SkillSlots[SlotIndex].EquippedRunes)
+	for (const FRuneSlot& Slot : SkillSlots[SlotIndex].RuneSlots)
 	{
+		const UDA_Rune* Rune = Slot.RuneAsset;
 		if (Rune && Rune->RuneTag == TAG_Rune_Yellow)
 		{
-			// 예: RuneValue가 0.1(10%)라면 누적
 			TotalReduction += Rune->RuneValue;
 		}
 	}
@@ -235,14 +234,16 @@ float USkillManagerComponent::GetTotalRangeMultiplier(int32 SlotIndex) const
 		return 1.0f; // 기본값 반환
 	}
 
-	// 기본 범위 1.0배
+	// 기본 배율 1.0배
 	float TotalMultiplier = 1.0f;
 
-	for (const UDA_Rune* Rune : SkillSlots[SlotIndex].EquippedRunes)
+	for (const FRuneSlot& Slot : SkillSlots[SlotIndex].RuneSlots)
 	{
-		if (Rune && Rune->RuneTag == TAG_Rune_Orange)
+		const UDA_Rune* Rune = Slot.RuneAsset;
+		if (Rune && Rune->RuneTag == TAG_Rune_Blue)
 		{
-			TotalMultiplier += Rune->RuneValue;
+			// 곱셈 방식으로 변경: RuneValue가 2.0이면 2배가 됨
+			TotalMultiplier *= Rune->RuneValue;
 		}
 	}
 
@@ -253,5 +254,40 @@ bool USkillManagerComponent::IsValidSlotIndex(int32 SlotIndex) const
 {
 	// 슬롯 인덱스가 배열 범위 내에 있는지 확인
 	return SkillSlots.IsValidIndex(SlotIndex);
+}
+
+bool USkillManagerComponent::EquipRuneByID(int32 SlotIndex, int32 RuneSlotIndex, FName RuneID)
+{
+	// 데이터 테이블 유효성 검사
+	if (!RuneDataTable)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SkillManagerComponent: RuneDataTable is null.Please assign it in the blueprint."));
+		return false;
+	}
+
+	// 데이터 테이블에서 행(Row) 찾기
+	// ContextString: 오류 메시지에 사용되는 문자열
+	static const FString ContextString(TEXT("Rune Lookup"));
+	FRuneDataRow* Row = RuneDataTable->FindRow<FRuneDataRow>(RuneID, ContextString);
+
+	if (Row)
+	{
+		// 룬 에셋 유효성 검사
+		if (Row->RuneAsset)
+		{
+			// 기존 EquipRune 함수 재사용
+			return EquipRune(SlotIndex, RuneSlotIndex, Row->RuneAsset);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("SkillManagerComponent: RuneAsset in Row '%s' is null."), *RuneID.ToString());
+			return false;
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("EquipRuneByID: RuneID '%s' not found in DataTable."), *RuneID.ToString());
+		return false;
+	}
 }
 

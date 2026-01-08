@@ -34,6 +34,12 @@ ATestPlayerState::ATestPlayerState()
 	SetMinNetUpdateFrequency(2.0f);
 }
 
+void ATestPlayerState::BeginPlay()
+{
+	Super::BeginPlay();
+	// 추가적인 초기화 코드 작성 가능
+}
+
 UAbilitySystemComponent* ATestPlayerState::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;

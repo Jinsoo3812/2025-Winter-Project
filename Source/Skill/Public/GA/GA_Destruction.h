@@ -47,7 +47,7 @@ protected:
 
 	// 직육면체 범위의 크기 (X: 전방 길이, Y: 좌우 폭, Z: 상하 높이)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Range")
-	FVector BoxExtent = FVector(200.0f, 100.0f, 100.0f);
+	FVector BoxExtent = FVector(100.0f, 50.0f, 50.0f);
 
 	// 블록에게 적용할 Gameplay Effect (파괴 효과)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay Effect")

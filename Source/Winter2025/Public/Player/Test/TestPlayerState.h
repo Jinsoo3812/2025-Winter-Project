@@ -5,13 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
+#include "SkillManagerComponent.h"
 #include "TestPlayerState.generated.h"
 
 class UAbilitySystemComponent;
 class USkillManagerComponent;
 class UGameplayAbility;
 class UPlayerAttributeSet;
-
 /**
  * 멀티플레이 환경에서 플레이어의 GAS 및 각종 상태 정보를 관리하는 PlayerState
  * 플레이어가 죽었다 부활해도 유지되어야 하는 정보들을 담고 있다.
@@ -24,6 +24,8 @@ class WINTER2025_API ATestPlayerState : public APlayerState, public IAbilitySyst
 public:
 	ATestPlayerState();
 
+	virtual void BeginPlay() override;
+
 	// IAbilitySystemInterface 구현 및 GAS 접근자
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
@@ -35,8 +37,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	UPlayerAttributeSet* GetAttributeSet() const { return AttributeSet; }
 
-	// DefaultSkills 접근자
-	const TArray<TSubclassOf<UGameplayAbility>>& GetDefaultSkills() const { return DefaultSkills; }
+	// DefaultRunes 접근자
+	const TArray<FSkillSlot>& GetDefaultSkillSets() const { return DefaultSkillSets; }
 
 protected:
 	// PlayerState가 소유하는 AbilitySystemComponent
@@ -51,7 +53,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UPlayerAttributeSet> AttributeSet;
 
-	// 스테이지 시작 시 자동으로 장착할 기본 스킬 목록
+	// FSkillSlot 구조체를 사용하여 스킬과 해당 스킬의 룬을 한 번에 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Skill System")
-	TArray<TSubclassOf<UGameplayAbility>> DefaultSkills;
+	TArray<FSkillSlot> DefaultSkillSets;
 };
