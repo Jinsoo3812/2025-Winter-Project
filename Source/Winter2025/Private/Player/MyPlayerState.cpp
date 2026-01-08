@@ -28,7 +28,7 @@ AMyPlayerState::AMyPlayerState()
 	// ------------------------------------------------------------------------
 	// 기본값은 매우 낮게 설정되어 있어, 빠른 액션 게임에서는 정보 갱신이 느릴 수 있습니다.
 	// 100.0f로 설정하여 초당 100회 빈도로 상태를 동기화합니다. (부드러운 멀티플레이 필수)
-	NetUpdateFrequency = 100.0f;
+	SetNetUpdateFrequency(100.0f);
 }
 
 UAbilitySystemComponent* AMyPlayerState::GetAbilitySystemComponent() const

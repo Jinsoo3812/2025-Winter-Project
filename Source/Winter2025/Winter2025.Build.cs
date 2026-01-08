@@ -23,6 +23,7 @@ public class Winter2025 : ModuleRules
 			"Slate",
 			"World",
 			"Skill",
+			"Enemy",
 			"GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks"
