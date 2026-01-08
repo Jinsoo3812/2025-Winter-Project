@@ -589,3 +589,27 @@ bool UGA_SummonBarrier::CanBeCanceled() const
 	// 아직 건설 전(프리뷰) 상태이므로, 다른 스킬 입력 시 취소(교체)되어야 함.
 	return Super::CanBeCanceled();
 }
+
+void UGA_SummonBarrier::OnLeftClickPressed()
+{
+	// BarrierPreviewBlocks 배열 중 하나라도 유효하고(보이고) 있다면 설치 가능한 상태로 간주
+	bool bCanSpawn = false;
+
+	for (const auto& Preview : BarrierPreviewBlocks)
+	{
+		// IsHidden()이 false여야 화면에 보이고 있다는 뜻 
+		if (Preview && !Preview->IsHidden())
+		{
+			bCanSpawn = true;
+			break;
+		}
+	}
+
+	if (bCanSpawn)
+	{
+		// 실제 스킬 시전 시작 알림 (State.Busy 태그 부여)
+		NotifySkillCastStarted();
+		// 블록 생성 시도
+		SpawnBlock();
+	}
+}

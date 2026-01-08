@@ -350,9 +350,31 @@ void UGA_Construction::UpdatePreview()
 				// 블록 크기만큼 위로 올림 (블록이 100x100x100이라 가정)
 				FVector PreviewLocation = BlockLocation + FVector(0, 0, 100.0f);
 				
-				PreviewBlock->SetActorLocation(PreviewLocation);
-				PreviewBlock->SetActorRotation(BlockRotation);
-				PreviewBlock->SetActorHiddenInGame(false);
+				FCollisionQueryParams CheckParams;
+				CheckParams.AddIgnoredActor(PreviewBlock);
+				CheckParams.AddIgnoredActor(OwnerPawn); // 플레이어 충돌 제외
+
+				// 블록 크기(50)보다 약간 작게(45) 설정하여 인접 블록과의 미세한 간섭 방지
+				bool bIsOccupied = GetWorld()->OverlapBlockingTestByChannel(
+					PreviewLocation,
+					FQuat::Identity,
+					ECC_WorldStatic,
+					FCollisionShape::MakeBox(FVector(45.0f)),
+					CheckParams
+				);
+
+				if (!bIsOccupied)
+				{
+					// 비어있는 공간이면 프리뷰 표시
+					PreviewBlock->SetActorLocation(PreviewLocation);
+					PreviewBlock->SetActorRotation(BlockRotation);
+					PreviewBlock->SetActorHiddenInGame(false);
+				}
+				else
+				{
+					// 이미 자리에 블록이 있으면 숨김 처리
+					PreviewBlock->SetActorHiddenInGame(true);
+				}
 			}
 		}
 		else
@@ -423,11 +445,15 @@ void UGA_Construction::SpawnBlock()
 
 void UGA_Construction::OnLeftClickPressed()
 {
-	// 실제 스킬 시전 시작 알림
-	// State.Busy 태그를 부여
-	NotifySkillCastStarted();
-	// 좌클릭 시 블록 생성 시도
-	SpawnBlock();
+	// 프리뷰 블록이 존재하고, 숨겨져 있지 않을 때만 블록 생성 시도
+	if (PreviewBlock && !PreviewBlock->IsHidden())
+	{
+		// 실제 스킬 시전 시작 알림
+		// State.Busy 태그를 부여
+		NotifySkillCastStarted();
+		// 좌클릭 시 블록 생성 시도
+		SpawnBlock();
+	}
 }
 
 void UGA_Construction::OnCancelPressed(float TimeWaited)

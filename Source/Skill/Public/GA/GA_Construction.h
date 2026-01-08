@@ -95,7 +95,7 @@ protected:
 	virtual void SpawnBlock();
 
 	// 좌클릭 입력 콜백
-	void OnLeftClickPressed();
+	virtual void OnLeftClickPressed();
 
 	// W키 재입력 콜백 (스킬 취소)
 	UFUNCTION()
