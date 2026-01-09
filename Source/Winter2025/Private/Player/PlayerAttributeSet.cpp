@@ -12,6 +12,18 @@ UPlayerAttributeSet::UPlayerAttributeSet()
 
 	MaxHealth.SetBaseValue(100.0f);
 	MaxHealth.SetCurrentValue(100.0f);
+
+	Mana.SetBaseValue(100.0f);
+	Mana.SetCurrentValue(100.0f);
+
+	MaxMana.SetBaseValue(100.0f);
+	MaxMana.SetCurrentValue(100.0f);
+
+	AttackPower.SetBaseValue(10.0f);
+	AttackPower.SetCurrentValue(10.0f);
+
+	MovementSpeed.SetBaseValue(600.0f);
+	MovementSpeed.SetCurrentValue(600.0f);
 }
 
 void UPlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -22,6 +34,10 @@ void UPlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	// "Health 변수는 서버에서 바뀌면 무조건(Always) 클라이언트한테 알려줘라"
 	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, Mana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, MaxMana, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, AttackPower, COND_None, REPNOTIFY_Always);
+	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, MovementSpeed, COND_None, REPNOTIFY_Always);
 }
 
 void UPlayerAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
@@ -34,6 +50,26 @@ void UPlayerAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 void UPlayerAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, MaxHealth, OldMaxHealth);
+}
+
+void UPlayerAttributeSet::OnRep_Mana(const FGameplayAttributeData& OldMana)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, Mana, OldMana);
+}
+
+void UPlayerAttributeSet::OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, MaxMana, OldMaxMana);
+}
+
+void UPlayerAttributeSet::OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, AttackPower, OldAttackPower);
+}
+
+void UPlayerAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed)
+{
+	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, MovementSpeed, OldMovementSpeed);
 }
 
 void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
@@ -59,5 +95,11 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 			UE_LOG(LogTemp, Error, TEXT("[Player] Player Died! (체력이 0이 되었습니다)"));
 			// 여기에 사망 애니메이션 재생, 조작 불능 처리 등을 추가하면 됩니다.
 		}
+	}
+
+	// [마나 변동 처리]
+	if (Data.EvaluatedData.Attribute == GetManaAttribute())
+	{
+		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
 	}
 }

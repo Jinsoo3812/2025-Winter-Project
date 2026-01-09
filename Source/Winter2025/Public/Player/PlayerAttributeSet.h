@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
 #include "AbilitySystemComponent.h"
+#include "Engine/DataTable.h"
 #include "PlayerAttributeSet.generated.h"
 
 // [매크로] Getter, Setter, Init 함수 자동 생성기
@@ -11,6 +12,45 @@
 		GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 		GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 		GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
+
+/**
+ * 플레이어 초기 스탯 데이터 테이블 구조체
+ * 레벨별로 플레이어의 초기 능력치를 정의
+ */
+USTRUCT(BlueprintType)
+struct FPlayerInitialStatsRow : public FTableRowBase
+{
+	GENERATED_BODY()
+
+public:
+	// 플레이어 레벨
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	int32 Level = 1;
+
+	// 초기 체력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float InitialHealth = 100.0f;
+
+	// 초기 최대 체력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float InitialMaxHealth = 100.0f;
+
+	// 초기 마나
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float InitialMana = 100.0f;
+
+	// 초기 최대 마나
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float InitialMaxMana = 100.0f;
+
+	// 초기 공격력
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float InitialAttackPower = 10.0f;
+
+	// 초기 이동속도
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float InitialMovementSpeed = 600.0f;
+};
 
 /**
  * UPlayerAttributeSet
@@ -55,6 +95,34 @@ public:
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, MaxHealth);
 
+	/**
+	 * [Mana: 현재 마나]
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Mana)
+	FGameplayAttributeData Mana;
+	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, Mana);
+
+	/**
+	 * [MaxMana: 최대 마나]
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxMana)
+	FGameplayAttributeData MaxMana;
+	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, MaxMana);
+
+	/**
+	 * [AttackPower: 공격력]
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_AttackPower)
+	FGameplayAttributeData AttackPower;
+	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, AttackPower);
+
+	/**
+	 * [MovementSpeed: 이동속도]
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MovementSpeed)
+	FGameplayAttributeData MovementSpeed;
+	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, MovementSpeed);
+
 protected:
 	// [OnRep 함수들]
 	// 서버로부터 바뀐 값을 받아왔을 때, 클라이언트 쪽에서 갱신 처리를 하는 함수들입니다.
@@ -65,4 +133,16 @@ protected:
 
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);
+
+	UFUNCTION()
+	virtual void OnRep_Mana(const FGameplayAttributeData& OldMana);
+
+	UFUNCTION()
+	virtual void OnRep_MaxMana(const FGameplayAttributeData& OldMaxMana);
+
+	UFUNCTION()
+	virtual void OnRep_AttackPower(const FGameplayAttributeData& OldAttackPower);
+
+	UFUNCTION()
+	virtual void OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed);
 };

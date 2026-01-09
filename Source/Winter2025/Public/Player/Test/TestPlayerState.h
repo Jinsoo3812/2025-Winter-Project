@@ -12,6 +12,8 @@ class UAbilitySystemComponent;
 class USkillManagerComponent;
 class UGameplayAbility;
 class UPlayerAttributeSet;
+class UDataTable;
+
 /**
  * 멀티플레이 환경에서 플레이어의 GAS 및 각종 상태 정보를 관리하는 PlayerState
  * 플레이어가 죽었다 부활해도 유지되어야 하는 정보들을 담고 있다.
@@ -44,6 +46,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Skill System")
 	void InitializeSkills();
 
+	// 데이터 테이블에서 플레이어 초기 스탯 로드
+	UFUNCTION(BlueprintCallable, Category = "GAS")
+	void InitializePlayerStats(int32 PlayerLevel = 1);
+
 protected:
 	// PlayerState가 소유하는 AbilitySystemComponent
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
@@ -61,7 +67,11 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Skill System")
 	TArray<FSkillSlot> DefaultSkillSets;
 
-	// 초록 룬(값 1.0) 장착 시 GA_Destruction을 대체할 GA_SpinDestruction 블루프린트
-	UPROPERTY(EditDefaultsOnly, Category = "Skill System|Green Rune")
-	TSubclassOf<UGameplayAbility> SpinDestructionSkillClass;
+	// 플레이어 초기 스탯 데이터 테이블
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data|Player Stats")
+	TObjectPtr<UDataTable> PlayerStatsDataTable;
+
+	// 플레이어 레벨 (데이터 테이블에서 스탯을 가져올 때 사용)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player")
+	int32 PlayerLevel = 1;
 };
