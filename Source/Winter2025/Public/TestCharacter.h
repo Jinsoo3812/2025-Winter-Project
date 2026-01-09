@@ -6,6 +6,7 @@
 #include "Winter2025Character.h"
 #include "AbilitySystemInterface.h"
 #include "Interface/ISkillManagerProvider.h"
+#include "Interface/IAttributeSetProvider.h"
 #include "AbilitySystemComponent.h"
 #include "TestCharacter.generated.h"
 
@@ -13,14 +14,15 @@ class UGameplayAbility;
 class USkillManagerComponent;
 class UInputMappingContext;
 class UInputAction;
+class UAttributeSet;
 
 UCLASS()
 /**
- * 서버는 클라이언트 모두 TestCharacter의 인스턴스를 생성하며
- * 서버는 권한 있는 진짜를 처리하고,
- * 클라이언트는 입력과 결과를 화면에 표시하는 역할을 담당한다.
+ * 서버와 클라이언트 모두 TestCharacter의 인스턴스를 생성하며
+ * 서버는 게임 로직을 처리하고,
+ * 클라이언트는 입력과 렌더링 화면에 표시하는 역할을 담당한다.
  */
-class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbilitySystemInterface, public ISkillManagerProvider
+class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbilitySystemInterface, public ISkillManagerProvider, public IAttributeSetProvider
 {
 	GENERATED_BODY()
 
@@ -32,8 +34,12 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	// ISkillManagerProvider 인터페이스 구현
-	// PlayerState에 캐싱된 SkillManager를 반환
+	// PlayerState의 캐시된 SkillManager를 반환
 	virtual USkillManagerComponent* GetSkillManager() const override { return CachedSkillManager; }
+
+	// IAttributeSetProvider 인터페이스 구현
+	// PlayerState의 캐시된 AttributeSet을 반환
+	virtual UAttributeSet* GetAttributeSet() const override { return CachedAttributeSet; }
 
 	// 입력 컴포넌트 설정
 	// 로컬 플레이어의 입력을 바인딩함
@@ -62,13 +68,17 @@ protected:
 	void OnAbilityInputReleased(int32 InputID);
 
 protected:
-	// PlayerState의 ASC 캐시 (빠른 접근을 위해)
+	// PlayerState의 ASC 캐시 (성능 최적화 용도)
 	UPROPERTY(BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;
 
 	// PlayerState의 SkillManager 캐시
 	UPROPERTY(BlueprintReadOnly, Category = "Skill System")
 	TObjectPtr<USkillManagerComponent> CachedSkillManager;
+
+	// PlayerState의 AttributeSet 캐시
+	UPROPERTY(BlueprintReadOnly, Category = "GAS")
+	TObjectPtr<UAttributeSet> CachedAttributeSet;
 
 	// 초기화 완료 플래그
 	bool bAbilitySystemInitialized = false;

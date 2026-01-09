@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/BoxComponent.h"
 #include "BlockBase.generated.h"
 
 UENUM()
@@ -48,6 +49,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
+	// 외형과 별개인 충돌 컴포넌트
+	UPROPERTY(VisibleAnywhere, Category = "Block")
+	TObjectPtr<UBoxComponent> CollisionComponent;
+
 	// BP에서 설정 가능한 기본 메시 (기본값: Cube)
 	UPROPERTY(EditDefaultsOnly, Category = "Block")
 	TObjectPtr<UStaticMesh> DefaultBlockMesh;
@@ -83,6 +88,7 @@ public:
 
 	EBlockType GetBlockType() const { return BlockType; }
 	FVector GetBlockLocation() const { return Location; }
+	float GetGridSize() const { return GridSize; }
 
 	virtual bool CanBeDestroyed() const { return IsDestrictible; }
 
@@ -90,4 +96,7 @@ public:
 	UStaticMeshComponent* GetBlockMesh() const { return MeshComponent; }
 
 	bool IsFalling() const { return bIsFalling; }
+
+	void SetCanFall(bool bNewCanFall) { bCanFall = bNewCanFall; }
+
 };

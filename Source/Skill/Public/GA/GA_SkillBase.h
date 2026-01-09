@@ -56,6 +56,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Skill|Calculation")
 	float GetRuneModifiedCooldown() const;
 
+	// SkillManager를 가져오는 헬퍼 함수
+	// 성능 최적화를 위해 캐싱된 값이 있으면 재사용
+	USkillManagerComponent* GetSkillManagerFromAvatar() const;
+
 	// 데미지 GE Spec을 생성할 때 수치를 주입해서 반환하는 함수
 	FGameplayEffectSpecHandle MakeRuneDamageEffectSpec(
 		const FGameplayAbilitySpecHandle Handle,
@@ -85,10 +89,6 @@ protected:
 	void NotifySkillCastStarted();
 
 private:
-	// SkillManager를 가져오는 헬퍼 함수
-	// 성능 최적화를 위해 캐싱된 값이 있으면 재사용
-	USkillManagerComponent* GetSkillManagerFromAvatar() const;
-
 	// 캐싱된 SkillManager (성능 최적화용)
 	// mutable: const 함수에서도 수정 가능
 	mutable TWeakObjectPtr<USkillManagerComponent> CachedSkillManager;

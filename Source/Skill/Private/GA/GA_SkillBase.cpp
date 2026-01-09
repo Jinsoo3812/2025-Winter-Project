@@ -2,8 +2,10 @@
 
 #include "GA/GA_SkillBase.h"
 #include "Interface/ISkillManagerProvider.h"
+#include "Interface/IAttributeSetProvider.h"
 #include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
+#include "AttributeSet.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Busy");
@@ -76,15 +78,40 @@ float UGA_SkillBase::GetRuneModifiedDamage() const
 	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
-		return BaseDamage; // 매니저가 없으면 기본 데미지 반환
+		return BaseDamage; // 매니저가 없으면 기본 피해량 반환
 	}
 
-	// 룬 배율 가져오기
+	// 캐릭터 공격력 가져오기
+	float CharacterAttackPower = 0.0f;
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		// IAttributeSetProvider 인터페이스를 구현했는지 확인
+		IAttributeSetProvider* Provider = Cast<IAttributeSetProvider>(Avatar);
+		if (Provider)
+		{
+			UAttributeSet* AttributeSet = Provider->GetAttributeSet();
+			if (AttributeSet)
+			{
+				// AttackPower 속성 가져오기 (FGameplayAttribute 사용)
+				static FProperty* AttackPowerProperty = FindFProperty<FProperty>(AttributeSet->GetClass(), FName("AttackPower"));
+				if (AttackPowerProperty)
+				{
+					const FGameplayAttributeData* AttackPowerData = AttackPowerProperty->ContainerPtrToValuePtr<FGameplayAttributeData>(AttributeSet);
+					if (AttackPowerData)
+					{
+						CharacterAttackPower = AttackPowerData->GetCurrentValue();
+					}
+				}
+			}
+		}
+	}
+
+	// 룬 계수 가져오기
 	float Multiplier = SkillManager->GetTotalDamageMultiplier(SlotIndex);
 
-	// 최종 데미지 반환
-	// 플레이어의 공격력과도 합쳐진 식이 필요하지만, 현재는 스킬 자체의 데미지와 룬 배율만 적용
-	return BaseDamage * Multiplier;
+	// 최종 피해량 = (캐릭터 공격력 + 스킬 기본 피해량) * 룬 계수
+	return (CharacterAttackPower + BaseDamage) * Multiplier;
 }
 
 float UGA_SkillBase::GetRuneModifiedRange() const
@@ -118,6 +145,7 @@ float UGA_SkillBase::GetRuneModifiedCooldown() const
 	float Reduction = SkillManager->GetTotalCooldownReduction(SlotIndex);
 
 	// 최종 쿨타임 = 기본 쿨타임 * (1 - 감소율)
+	// 범위는 캐릭터 기본값이 없으므로 그대로 유지
 	return BaseCooldown * (1.0f - Reduction);
 }
 
@@ -141,7 +169,7 @@ FGameplayEffectSpecHandle UGA_SkillBase::MakeRuneDamageEffectSpec(const FGamepla
 		float FinalDamage = GetRuneModifiedDamage();
 
 		// SetByCaller 태그(Data.Damage)에 수치 주입
-		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, FinalDamage);
+		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, -FinalDamage);
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::MakeRuneDamageEffectSpec: Failed to create SpecHandle"));

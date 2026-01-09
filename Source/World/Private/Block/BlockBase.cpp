@@ -11,8 +11,25 @@ ABlockBase::ABlockBase()
 	// Tick은 사용하지만, 처음에는 비활성화 상태로 시작
     PrimaryActorTick.bStartWithTickEnabled = false;
 
-	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
-	RootComponent = MeshComponent;
+    // [수정] 1. 물리 충돌을 담당할 BoxComponent 생성 (Root)
+    CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+    RootComponent = CollisionComponent;
+
+    // 박스 크기 설정: 100의 절반인 50에서 아주 살짝 줄인 49.5로 설정 (전체 크기 99)
+    // 시각적(Mesh)으로는 100으로 꽉 차 보이지만, 물리적으로는 1.0의 틈이 생겨 마찰/끼임 방지
+    CollisionComponent->SetBoxExtent(FVector(49.5f, 49.5f, 49.5f));
+
+    // 충돌 프로필 설정 (기존 Mesh가 하던 역할)
+    CollisionComponent->SetCollisionProfileName(TEXT("BlockAll"));
+    // 물리 시뮬레이션 관련 설정이 필요하다면 여기서 추가 (예: SetSimulatePhysics)
+
+
+    // [수정] 2. 외형을 담당할 StaticMeshComponent 생성 (Child)
+    MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
+    MeshComponent->SetupAttachment(RootComponent); // 루트인 박스에 부착
+
+    // 메시는 충돌을 끔 (충돌은 부모인 Box가 담당하므로)
+    MeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
 
 	// 기본 Cube 메시 로드
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
