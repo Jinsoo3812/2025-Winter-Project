@@ -14,7 +14,10 @@
 #include "Components/InputComponent.h"
 #include "SkillManagerComponent.h"
 
-UGA_Destruction::UGA_Destruction() {}
+UGA_Destruction::UGA_Destruction()
+{
+	UE_LOG(LogTemp, Warning, TEXT("[GA_Destruction] Constructor called - This is the NORMAL (box) version!"));
+}
 
 void UGA_Destruction::ActivateAbility(
 	const FGameplayAbilitySpecHandle Handle, 
@@ -22,6 +25,8 @@ void UGA_Destruction::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo, 
 	const FGameplayEventData* TriggerEventData)
 {
+	UE_LOG(LogTemp, Warning, TEXT("[GA_Destruction] ActivateAbility called - NORMAL BOX SKILL"));
+	
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	// 프리뷰 업데이트 타이머 시작 (매 프레임 갱신)

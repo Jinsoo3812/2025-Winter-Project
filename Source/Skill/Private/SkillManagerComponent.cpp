@@ -5,6 +5,44 @@
 #include "Abilities/GameplayAbility.h"
 #include "Rune/DA_Rune.h"
 
+// FSkillSlot의 UpdateGreenRuneCache 구현
+void FSkillSlot::UpdateGreenRuneCache()
+{
+	EquippedGreenRune = nullptr;
+	
+	// 초록 룬 태그
+	FGameplayTag GreenRuneTag = FGameplayTag::RequestGameplayTag(FName("Rune.Green"));
+	
+	UE_LOG(LogTemp, Log, TEXT("[Green Rune Cache] Starting UpdateGreenRuneCache - Checking %d rune slots"), RuneSlots.Num());
+	
+	// 모든 룬 슬롯을 확인하여 초록 룬 찾기
+	for (int32 i = 0; i < RuneSlots.Num(); ++i)
+	{
+		const FRuneSlot& Slot = RuneSlots[i];
+		if (Slot.RuneAsset)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[Green Rune Cache] RuneSlot[%d]: RuneAsset found, Tag=%s, Value=%.2f"), 
+				i, *Slot.RuneAsset->RuneTag.ToString(), Slot.RuneAsset->RuneValue);
+			
+			if (Slot.RuneAsset->RuneTag.MatchesTagExact(GreenRuneTag))
+			{
+				EquippedGreenRune = Slot.RuneAsset;
+				UE_LOG(LogTemp, Warning, TEXT("[Green Rune Cache] ? GREEN RUNE FOUND in slot %d! Value=%.2f"), i, Slot.RuneAsset->RuneValue);
+				break; // 초록 룬은 하나만 가능하므로 찾으면 중단
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("[Green Rune Cache] RuneSlot[%d]: Empty"), i);
+		}
+	}
+	
+	if (!EquippedGreenRune)
+	{
+		UE_LOG(LogTemp, Log, TEXT("[Green Rune Cache] No green rune found in this skill slot"));
+	}
+}
+
 // Sets default values for this component's properties
 USkillManagerComponent::USkillManagerComponent()
 {
@@ -161,8 +199,29 @@ bool USkillManagerComponent::EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA
 		return false;
 	}
 
-	// 4. 룬 장착 (배열의 해당 인덱스를 덮어씀)
+	// 4. 초록 룬 중복 검사 및 제거
+	if (RuneData->RuneTag == TAG_Rune_Green)
+	{
+		// 해당 스킬 슬롯의 모든 룬 슬롯을 순회하며 기존 초록 룬 제거
+		for (int32 i = 0; i < SkillSlots[SlotIndex].RuneSlots.Num(); ++i)
+		{
+			// 현재 장착하려는 슬롯은 제외
+			if (i != RuneSlotIndex)
+			{
+				UDA_Rune* ExistingRune = SkillSlots[SlotIndex].RuneSlots[i].RuneAsset;
+				if (ExistingRune && ExistingRune->RuneTag == TAG_Rune_Green)
+				{
+					SkillSlots[SlotIndex].RuneSlots[i].RuneAsset = nullptr;
+				}
+			}
+		}
+	}
+
+	// 5. 룬 장착 (배열의 해당 인덱스를 덮어씀)
 	SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex].RuneAsset = RuneData;
+
+	// 초록 룬 캐시 업데이트
+	SkillSlots[SlotIndex].UpdateGreenRuneCache();
 
 	return true;
 }
@@ -177,6 +236,9 @@ bool USkillManagerComponent::UnequipRune(int32 SlotIndex, int32 RuneSlotIndex)
 
 	// 해당 칸을 비움 (nullptr)
 	SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex].RuneAsset = nullptr;
+
+	// 초록 룬 캐시 업데이트
+	SkillSlots[SlotIndex].UpdateGreenRuneCache();
 
 	return true;
 }
@@ -290,4 +352,3 @@ bool USkillManagerComponent::EquipRuneByID(int32 SlotIndex, int32 RuneSlotIndex,
 		return false;
 	}
 }
-

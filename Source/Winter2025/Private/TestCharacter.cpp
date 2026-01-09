@@ -205,39 +205,20 @@ void ATestCharacter::InitializeAbilitySystem()
 		return;
 	}
 
-	// SkillManager 초기화
-	CachedSkillManager->SkillManagerInitialize(CachedAbilitySystemComponent);
-
-	// PlayerState에서 DefaultSkillSets를 가져와서 장착
-	// 서버가 스폰한 TestCharacter만이 권한을 가진 진짜
-	// 각 클라이언트(유저들)이 스폰한 TestCharacter는 복제본이므로 권한 없음
+	// 서버에서만 스킬 초기화 수행 (권한이 있는 진짜 캐릭터)
 	if (HasAuthority())
 	{
 		ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 		if (PS)
 		{
-			const TArray<FSkillSlot>& DefaultSkillSets = PS->GetDefaultSkillSets();
-			for (int32 i = 0; i < DefaultSkillSets.Num(); ++i)
-			{
-				const FSkillSlot& SkillSlot = DefaultSkillSets[i];
-				
-				// 스킬 장착
-				if (SkillSlot.EquippedSkill)
-				{
-					CachedSkillManager->EquipSkill(i, SkillSlot.EquippedSkill);
-					UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Equipped skill at slot %d"), i);
-
-					// 해당 스킬의 룬 슬롯들 장착
-					for (int32 RuneIdx = 0; RuneIdx < SkillSlot.RuneSlots.Num(); ++RuneIdx)
-					{
-						if (SkillSlot.RuneSlots[RuneIdx].RuneAsset)
-						{
-							CachedSkillManager->EquipRune(i, RuneIdx, SkillSlot.RuneSlots[RuneIdx].RuneAsset);
-							UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Equipped rune at slot %d, rune slot %d"), i, RuneIdx);
-						}
-					}
-				}
-			}
+			// PlayerState의 InitializeSkills 호출
+			// 이 함수가 초록 룬 감지 및 GA 교체를 포함한 모든 스킬 초기화 수행
+			PS->InitializeSkills();
+			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skills initialized via PlayerState"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ATestCharacter: PlayerState is null during skill initialization"));
 		}
 	}
 

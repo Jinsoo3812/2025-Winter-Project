@@ -34,7 +34,7 @@ struct FRuneSlot
  * Skill의 GA와 그 SpecHandle을 보관
  */
 USTRUCT(BlueprintType)
-struct FSkillSlot
+struct SKILL_API FSkillSlot
 {
 	GENERATED_BODY()
 
@@ -49,15 +49,22 @@ struct FSkillSlot
 	UPROPERTY(BlueprintReadOnly, Category = "Skill")
 	FGameplayAbilitySpecHandle AbilityHandle;
 
-
 	// 장착된 룬 슬롯들
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
 	TArray<FRuneSlot> RuneSlots;
 
+	// 장착된 초록 룬 (캐싱) - nullptr이면 초록 룬 없음
+	UPROPERTY(BlueprintReadOnly, Category = "Rune")
+	TObjectPtr<UDA_Rune> EquippedGreenRune;
+
 	// 기본 생성자
-	FSkillSlot() : EquippedSkill(nullptr), AbilityHandle() {
+	FSkillSlot() : EquippedSkill(nullptr), AbilityHandle(), EquippedGreenRune(nullptr) {
 		RuneSlots.SetNum(3); // 룬 슬롯 3칸 확보
 	}
+
+	// 초록 룬 캐시 업데이트 (룬 장착/해제 시 호출)
+	// 구현은 SkillManagerComponent.cpp에 위치
+	void UpdateGreenRuneCache();
 };
 
 /**
@@ -133,6 +140,7 @@ public:
 	// 해당 슬롯의 '범위(Blue)' 룬 합계 반환
 	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
 	float GetTotalRangeMultiplier(int32 SlotIndex) const;
+
 
 	// 룬 ID(RowName)를 통해 데이터 테이블에서 룬을 찾아 장착하는 함수
 	// @param SlotIndex: 스킬 슬롯 인덱스

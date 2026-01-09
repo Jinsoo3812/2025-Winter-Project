@@ -6,3 +6,4 @@
 UE_DEFINE_GAMEPLAY_TAG(TAG_Rune_Red, "Rune.Red");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Rune_Yellow, "Rune.Yellow");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Rune_Blue, "Rune.Blue");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Rune_Green, "Rune.Green");

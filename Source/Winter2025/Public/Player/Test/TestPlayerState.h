@@ -40,6 +40,10 @@ public:
 	// DefaultRunes 접근자
 	const TArray<FSkillSlot>& GetDefaultSkillSets() const { return DefaultSkillSets; }
 
+	// 스킬 슬롯 초기화 함수 (초록 룬 감지 및 GA 교체 포함)
+	UFUNCTION(BlueprintCallable, Category = "Skill System")
+	void InitializeSkills();
+
 protected:
 	// PlayerState가 소유하는 AbilitySystemComponent
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
@@ -56,4 +60,8 @@ protected:
 	// FSkillSlot 구조체를 사용하여 스킬과 해당 스킬의 룬을 한 번에 설정
 	UPROPERTY(EditDefaultsOnly, Category = "Skill System")
 	TArray<FSkillSlot> DefaultSkillSets;
+
+	// 초록 룬(값 1.0) 장착 시 GA_Destruction을 대체할 GA_SpinDestruction 블루프린트
+	UPROPERTY(EditDefaultsOnly, Category = "Skill System|Green Rune")
+	TSubclassOf<UGameplayAbility> SpinDestructionSkillClass;
 };
