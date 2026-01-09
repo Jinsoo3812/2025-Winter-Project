@@ -8,9 +8,9 @@
 UENUM(BlueprintType)
 enum class EDragonAttackType : uint8
 {
-	None = 0,			// 공격 안함 (추격 중)
-	Melee_Claw,			// 2연타 앞발 (가까움)
-	Range_Breath		// 브레스/바람 (멂)
+	None = 0 UMETA(DisplayName = "None"),			// 공격 안함 (추격 중)
+	Melee_Claw UMETA(DisplayName = "Melee Claw"),			// 2연타 앞발 (가까움)
+	Rush_Charge UMETA(DisplayName = "Rush Charge")		// 이속 디버프 함성 이후 돌진
 };
 
 /**
@@ -36,7 +36,7 @@ protected:
 	float MeleeRange = 350.0f;  // 앞발 공격 사거리
 
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")
-	float BreathRange = 1200.0f; // 브레스 공격 사거리
+	float RushRange = 1200.0f; // 브레스 공격 사거리
 
 	// --- 블랙보드 키 이름 ---
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")

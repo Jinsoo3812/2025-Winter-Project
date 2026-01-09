@@ -19,47 +19,27 @@ void ADragonAI::UpdateAIState()
 	APawn* MyPawn = GetPawn();
 
 	// --- [디버깅] 타겟 상태 확인 ---
-	if (!Target)
-	{
-		// 타겟이 없으면 노란색 메시지
-		if (GEngine) GEngine->AddOnScreenDebugMessage(1, 1.0f, FColor::Yellow, TEXT("Dragon AI: No Target Found!"));
-
-		// 공격/이동 모두 멈춤
-		Blackboard->SetValueAsEnum(BBKey_AttackType, (uint8)EDragonAttackType::None);
-		return;
-	}
-
-	if (MyPawn)
+	if (MyPawn && Target)
 	{
 		// 2. 거리 계산
 		float Distance = MyPawn->GetDistanceTo(Target);
 
-		// 3. 공격 타입 결정
-		uint8 SelectedAttack = (uint8)EDragonAttackType::None; // 0: 추격만 함
+		// 공격 타입을 여기서 정하지 말고, "거리"만 블랙보드에 저장합니다.
+		// 블랙보드에 'DistanceToTarget'이라는 키가 있다고 가정하고 값을 쏴줍니다.
+		// (블랙보드 키 이름은 프로젝트 설정에 맞춰주세요. 보통 FName 변수로 관리하시겠지만, 일단 문자열로 적습니다.)
+		Blackboard->SetValueAsFloat(TEXT("DistanceToTarget"), Distance);
 
-		FString StateString = TEXT("Chasing"); // 디버그용 문자열
-
-		if (Distance <= MeleeRange) // 350.0f
-		{
-			SelectedAttack = (uint8)EDragonAttackType::Melee_Claw;
-			StateString = TEXT("ATTACK: Melee Claw");
-		}
-		else if (Distance <= BreathRange) // 1200.0f
-		{
-			SelectedAttack = (uint8)EDragonAttackType::Range_Breath;
-			StateString = TEXT("ATTACK: Breath");
-		}
-
-		// 블랙보드 업데이트
-		Blackboard->SetValueAsEnum(BBKey_AttackType, SelectedAttack);
-
-		// --- [디버깅] 현재 상태 화면 출력 (초록색) ---
-		// 예: "Dist: 500.0 / State: ATTACK: Breath"
+		// --- [디버깅] 거리 확인용 ---
 		if (GEngine)
 		{
-			FString Msg = FString::Printf(TEXT("Dist: %.1f / State: %s"), Distance, *StateString);
+			FString Msg = FString::Printf(TEXT("Dragon Eye: Distance %.1f"), Distance);
 			GEngine->AddOnScreenDebugMessage(2, 1.0f, FColor::Green, Msg);
 		}
+	}
+	else
+	{
+		// 타겟 없으면 거리 0 (또는 아주 큰 값)
+		Blackboard->SetValueAsFloat(TEXT("DistanceToTarget"), 99999.0f);
 	}
 
 	// 4. 페이즈 판단 로직 (생략 없이 그대로 유지)
