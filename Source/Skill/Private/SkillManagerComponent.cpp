@@ -13,33 +13,14 @@ void FSkillSlot::UpdateGreenRuneCache()
 	// 초록 룬 태그
 	FGameplayTag GreenRuneTag = FGameplayTag::RequestGameplayTag(FName("Rune.Green"));
 	
-	UE_LOG(LogTemp, Log, TEXT("[Green Rune Cache] Starting UpdateGreenRuneCache - Checking %d rune slots"), RuneSlots.Num());
-	
 	// 모든 룬 슬롯을 확인하여 초록 룬 찾기
-	for (int32 i = 0; i < RuneSlots.Num(); ++i)
+	for (const FRuneSlot& Slot : RuneSlots)
 	{
-		const FRuneSlot& Slot = RuneSlots[i];
-		if (Slot.RuneAsset)
+		if (Slot.RuneAsset && Slot.RuneAsset->RuneTag.MatchesTagExact(GreenRuneTag))
 		{
-			UE_LOG(LogTemp, Log, TEXT("[Green Rune Cache] RuneSlot[%d]: RuneAsset found, Tag=%s, Value=%.2f"), 
-				i, *Slot.RuneAsset->RuneTag.ToString(), Slot.RuneAsset->RuneValue);
-			
-			if (Slot.RuneAsset->RuneTag.MatchesTagExact(GreenRuneTag))
-			{
-				EquippedGreenRune = Slot.RuneAsset;
-				UE_LOG(LogTemp, Warning, TEXT("[Green Rune Cache] ? GREEN RUNE FOUND in slot %d! Value=%.2f"), i, Slot.RuneAsset->RuneValue);
-				break; // 초록 룬은 하나만 가능하므로 찾으면 중단
-			}
+			EquippedGreenRune = Slot.RuneAsset;
+			break; // 초록 룬은 하나만 가능하므로 찾으면 중단
 		}
-		else
-		{
-			UE_LOG(LogTemp, Log, TEXT("[Green Rune Cache] RuneSlot[%d]: Empty"), i);
-		}
-	}
-	
-	if (!EquippedGreenRune)
-	{
-		UE_LOG(LogTemp, Log, TEXT("[Green Rune Cache] No green rune found in this skill slot"));
 	}
 }
 

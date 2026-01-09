@@ -56,8 +56,6 @@ void ATestPlayerState::InitializeSkills()
 		return;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("========== [SKILL INITIALIZATION] START =========="));
-
 	// SkillManager 초기화
 	SkillManager->SkillManagerInitialize(AbilitySystemComponent);
 
@@ -65,10 +63,6 @@ void ATestPlayerState::InitializeSkills()
 	for (int32 SlotIndex = 0; SlotIndex < DefaultSkillSets.Num(); ++SlotIndex)
 	{
 		FSkillSlot& SkillSlot = DefaultSkillSets[SlotIndex];
-
-		UE_LOG(LogTemp, Warning, TEXT("[Slot %d] Processing skill slot..."), SlotIndex);
-		UE_LOG(LogTemp, Log, TEXT("[Slot %d] Original EquippedSkill: %s"), 
-			SlotIndex, SkillSlot.EquippedSkill ? *SkillSlot.EquippedSkill->GetName() : TEXT("None"));
 
 		// 초록 룬 캐시 업데이트 (블루프린트에서 설정한 룬 반영)
 		SkillSlot.UpdateGreenRuneCache();
@@ -79,14 +73,9 @@ void ATestPlayerState::InitializeSkills()
 		// 캐싱된 초록 룬 확인 (O(1) 접근)
 		if (SkillSlot.EquippedGreenRune)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[Slot %d] ? Green Rune detected! Value=%.2f"), 
-				SlotIndex, SkillSlot.EquippedGreenRune->RuneValue);
-			
 			// 초록 룬의 값이 1.0이고 기본 스킬이 GA_Destruction인 경우
 			if (SkillSlot.EquippedGreenRune->RuneValue == 1.0f)
 			{
-				UE_LOG(LogTemp, Warning, TEXT("[Slot %d] Green Rune value is 1.0!"), SlotIndex);
-				
 				// BP 클래스도 체크하기 위해 IsChildOf 사용
 				if (SkillToEquip && SkillToEquip->IsChildOf(UGA_Destruction::StaticClass()))
 				{
@@ -95,42 +84,19 @@ void ATestPlayerState::InitializeSkills()
 					{
 						// BP_GA_SpinDestruction으로 교체
 						SkillToEquip = SpinDestructionSkillClass;
-						UE_LOG(LogTemp, Error, TEXT("[Slot %d] === REPLACING %s -> %s ==="), 
-							SlotIndex, 
-							*SkillSlot.EquippedSkill->GetName(), 
-							*SpinDestructionSkillClass->GetName());
 					}
 					else
 					{
 						UE_LOG(LogTemp, Error, TEXT("[Slot %d] SpinDestructionSkillClass is not set! Please assign BP_GA_SpinDestruction in BP_TestPlayerState"), SlotIndex);
 					}
 				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("[Slot %d] Base skill is NOT GA_Destruction or its child (it's %s), skipping replacement"), 
-						SlotIndex, SkillToEquip ? *SkillToEquip->GetName() : TEXT("None"));
-				}
 			}
-			else
-			{
-				UE_LOG(LogTemp, Log, TEXT("[Slot %d] Green Rune value (%.2f) is not 1.0, no skill replacement"), 
-					SlotIndex, SkillSlot.EquippedGreenRune->RuneValue);
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Log, TEXT("[Slot %d] No green rune in this slot"), SlotIndex);
 		}
 
 		// 스킬 장착
 		if (SkillToEquip)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[Slot %d] Equipping skill: %s"), SlotIndex, *SkillToEquip->GetName());
 			SkillManager->EquipSkill(SlotIndex, SkillToEquip);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("[Slot %d] No skill to equip"), SlotIndex);
 		}
 
 		// 룬 장착
@@ -138,16 +104,8 @@ void ATestPlayerState::InitializeSkills()
 		{
 			if (SkillSlot.RuneSlots[RuneSlotIndex].RuneAsset)
 			{
-				UE_LOG(LogTemp, Log, TEXT("[Slot %d] Equipping rune in RuneSlot[%d]: Tag=%s, Value=%.2f"), 
-					SlotIndex, RuneSlotIndex,
-					*SkillSlot.RuneSlots[RuneSlotIndex].RuneAsset->RuneTag.ToString(),
-					SkillSlot.RuneSlots[RuneSlotIndex].RuneAsset->RuneValue);
 				SkillManager->EquipRune(SlotIndex, RuneSlotIndex, SkillSlot.RuneSlots[RuneSlotIndex].RuneAsset);
 			}
 		}
-
-		UE_LOG(LogTemp, Warning, TEXT("[Slot %d] ========== Slot processing complete =========="), SlotIndex);
 	}
-
-	UE_LOG(LogTemp, Error, TEXT("========== [SKILL INITIALIZATION] COMPLETE =========="));
 }

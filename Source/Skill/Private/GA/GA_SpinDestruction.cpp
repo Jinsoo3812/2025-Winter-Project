@@ -11,15 +11,7 @@
 #include "TimerManager.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 
-UGA_SpinDestruction::UGA_SpinDestruction()
-{
-	// 기본 스킬 스펙 설정 (회전 스킬은 별도의 밸런스를 가짐)
-	BaseDamage = 5.0f;      // 0.5초마다 적용되므로 단발 스킬보다 낮게 설정
-	BaseCooldown = 8.0f;    // 회전 스킬의 쿨다운
-	BaseRange = 1.0f;       // 범위 배율 기준값
-	
-	UE_LOG(LogTemp, Warning, TEXT("[GA_SpinDestruction] Constructor called - This is the SPIN version!"));
-}
+UGA_SpinDestruction::UGA_SpinDestruction() {}
 
 void UGA_SpinDestruction::ActivateAbility(
 	const FGameplayAbilitySpecHandle Handle,
@@ -27,8 +19,6 @@ void UGA_SpinDestruction::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	UE_LOG(LogTemp, Error, TEXT("=== [GA_SpinDestruction] ActivateAbility called - SPIN SKILL ACTIVATED! ==="));
-	
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	// 회전 스킬 시작
@@ -67,8 +57,6 @@ void UGA_SpinDestruction::EndAbility(
 
 void UGA_SpinDestruction::StartSpin()
 {
-	UE_LOG(LogTemp, Error, TEXT("=== [GA_SpinDestruction] StartSpin - Beginning rotation skill! ==="));
-	
 	// 스킬 시전 시작 알림 (State.Busy 태그 추가)
 	NotifySkillCastStarted();
 
@@ -129,14 +117,10 @@ void UGA_SpinDestruction::StartSpin()
 		SpinDuration,
 		false
 	);
-
-	UE_LOG(LogTemp, Error, TEXT("=== [GA_SpinDestruction] Spin started successfully! You should see a green sphere! ==="));
 }
 
 void UGA_SpinDestruction::StopSpin()
 {
-	UE_LOG(LogTemp, Log, TEXT("GA_SpinDestruction: Spin stopped"));
-
 	// 회전 스킬 종료 시 쿨다운 적용
 	ApplyCooldown(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo());
 

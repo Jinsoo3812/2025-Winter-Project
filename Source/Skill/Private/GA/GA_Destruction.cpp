@@ -14,19 +14,14 @@
 #include "Components/InputComponent.h"
 #include "SkillManagerComponent.h"
 
-UGA_Destruction::UGA_Destruction()
-{
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Destruction] Constructor called - This is the NORMAL (box) version!"));
-}
+UGA_Destruction::UGA_Destruction() {}
 
 void UGA_Destruction::ActivateAbility(
-	const FGameplayAbilitySpecHandle Handle, 
-	const FGameplayAbilityActorInfo* ActorInfo, 
-	const FGameplayAbilityActivationInfo ActivationInfo, 
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[GA_Destruction] ActivateAbility called - NORMAL BOX SKILL"));
-	
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	// 프리뷰 업데이트 타이머 시작 (매 프레임 갱신)
@@ -83,7 +78,7 @@ void UGA_Destruction::EndAbility(
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
-	
+
 	// 타이머 핸들 무효화
 	TickTimerHandle.Invalidate();
 
@@ -252,7 +247,7 @@ void UGA_Destruction::PerformDestruction()
 				DirectionVector = (TargetLocation - StartLocation).GetSafeNormal();
 				BoxRotation = FRotationMatrix::MakeFromX(DirectionVector).ToQuat();
 			}
-			
+
 		}
 		else {
 			UE_LOG(LogTemp, Error, TEXT("GA_Destruction: PlayerController is null in PerformDestruction"));
