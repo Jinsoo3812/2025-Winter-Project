@@ -7,6 +7,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Player/Test/TestPlayerState.h"
+#include "Player/PlayerAttributeSet.h"
 
 ATestCharacter::ATestCharacter()
 {
@@ -120,18 +121,19 @@ void ATestCharacter::PossessedBy(AController* NewController)
 	ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 	if (PS)
 	{
-		// ASC와 SkillManager 캐싱
+		// ASC, SkillManager, AttributeSet 캐시
 		CachedAbilitySystemComponent = PS->GetAbilitySystemComponent();
 		CachedSkillManager = PS->GetSkillManager();
+		CachedAttributeSet = Cast<UAttributeSet>(PS->GetAttributeSet());
 
 		if (CachedAbilitySystemComponent)
 		{
 			// InitAbilityActorInfo 호출
 			// OwnerActor: PlayerState (ASC를 소유)
-			// AvatarActor: TestCharacter (레벨에서 실제로 행동하는 액터)
+			// AvatarActor: TestCharacter (실제로 게임에서 행동하는 액터)
 			CachedAbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
-			// 공통 초기화 함수 호출
+			// 나머지 초기화 함수 호출
 			InitializeAbilitySystem();
 			
 			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Server - AbilitySystem initialized successfully"));
@@ -151,23 +153,24 @@ void ATestCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// 클라이언트에서만 호출됨
+	// 클라이언트에서 호출됨
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter::OnRep_PlayerState - Client initialization"));
 
 	// PlayerState에서 ASC와 SkillManager 가져오기
 	ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 	if (PS)
 	{
-		// ASC와 SkillManager 캐싱
+		// ASC, SkillManager, AttributeSet 캐시
 		CachedAbilitySystemComponent = PS->GetAbilitySystemComponent();
 		CachedSkillManager = PS->GetSkillManager();
+		CachedAttributeSet = Cast<UAttributeSet>(PS->GetAttributeSet());
 
 		if (CachedAbilitySystemComponent)
 		{
 			// InitAbilityActorInfo 호출
 			CachedAbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
-			// 공통 초기화 함수 호출
+			// 나머지 초기화 함수 호출
 			InitializeAbilitySystem();
 			
 			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Client - AbilitySystem initialized successfully"));
