@@ -2,9 +2,13 @@
 
 #include "GA/GA_SkillBase.h"
 #include "Interface/ISkillManagerProvider.h"
+#include "Interface/IAttributeSetProvider.h"
 #include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
+#include "AttributeSet.h"
 
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Busy");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
 
@@ -17,6 +21,18 @@ UGA_SkillBase::UGA_SkillBase()
 	// 서버-클라이언트 통신 정책: 클라이언트의 입력이 발생하면, 서버의 응답을 기다리지 않고 즉시(예측) 실행
 	// 네트워크 지연 시에도 반응성이 좋음
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
+
+	FGameplayTagContainer NewAbilityTags;
+	NewAbilityTags.AddTag(TAG_Skill);
+	SetAssetTags(NewAbilityTags);
+
+	// CancelAbilitiesWithTag는 "다른 GA의 ASC에 붙은 Tag"를 검사
+	// 자신이 Skill 임을 표시
+	CancelAbilitiesWithTag.AddTag(TAG_Skill);
+
+	// ActivationBlockedTags는 "시전자의 ASC에 붙은 Tag"를 검사
+	// 시전자가 다른 GA를 시전 중일 때는 시전되지 않도록 설정
+	ActivationBlockedTags.AddTag(TAG_Skill_Casting);
 }
 
 USkillManagerComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
@@ -62,15 +78,40 @@ float UGA_SkillBase::GetRuneModifiedDamage() const
 	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
-		return BaseDamage; // 매니저가 없으면 기본 데미지 반환
+		return BaseDamage; // 매니저가 없으면 기본 피해량 반환
 	}
 
-	// 룬 배율 가져오기
+	// 캐릭터 공격력 가져오기
+	float CharacterAttackPower = 0.0f;
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		// IAttributeSetProvider 인터페이스를 구현했는지 확인
+		IAttributeSetProvider* Provider = Cast<IAttributeSetProvider>(Avatar);
+		if (Provider)
+		{
+			UAttributeSet* AttributeSet = Provider->GetAttributeSet();
+			if (AttributeSet)
+			{
+				// AttackPower 속성 가져오기 (FGameplayAttribute 사용)
+				static FProperty* AttackPowerProperty = FindFProperty<FProperty>(AttributeSet->GetClass(), FName("AttackPower"));
+				if (AttackPowerProperty)
+				{
+					const FGameplayAttributeData* AttackPowerData = AttackPowerProperty->ContainerPtrToValuePtr<FGameplayAttributeData>(AttributeSet);
+					if (AttackPowerData)
+					{
+						CharacterAttackPower = AttackPowerData->GetCurrentValue();
+					}
+				}
+			}
+		}
+	}
+
+	// 룬 계수 가져오기
 	float Multiplier = SkillManager->GetTotalDamageMultiplier(SlotIndex);
 
-	// 최종 데미지 반환
-	// 플레이어의 공격력과도 합쳐진 식이 필요하지만, 현재는 스킬 자체의 데미지와 룬 배율만 적용
-	return BaseDamage * Multiplier;
+	// 최종 피해량 = (캐릭터 공격력 + 스킬 기본 피해량) * 룬 계수
+	return (CharacterAttackPower + BaseDamage) * Multiplier;
 }
 
 float UGA_SkillBase::GetRuneModifiedRange() const
@@ -104,6 +145,7 @@ float UGA_SkillBase::GetRuneModifiedCooldown() const
 	float Reduction = SkillManager->GetTotalCooldownReduction(SlotIndex);
 
 	// 최종 쿨타임 = 기본 쿨타임 * (1 - 감소율)
+	// 범위는 캐릭터 기본값이 없으므로 그대로 유지
 	return BaseCooldown * (1.0f - Reduction);
 }
 
@@ -127,7 +169,7 @@ FGameplayEffectSpecHandle UGA_SkillBase::MakeRuneDamageEffectSpec(const FGamepla
 		float FinalDamage = GetRuneModifiedDamage();
 
 		// SetByCaller 태그(Data.Damage)에 수치 주입
-		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, FinalDamage);
+		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, -FinalDamage);
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::MakeRuneDamageEffectSpec: Failed to create SpecHandle"));
@@ -141,8 +183,10 @@ FGameplayEffectSpecHandle UGA_SkillBase::MakeRuneDamageEffectSpec(const FGamepla
 void UGA_SkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
 {
 	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
-	if (!CooldownGE) return;
-	// 아직 쿨타임 GE가 없어서 예외처리 로그를 남기지 않음
+	if (!CooldownGE) {
+		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::ApplyCooldown: CooldownGE is not set"));
+		return;
+	}
 
 	// 1. 쿨타임용 Spec 생성
 	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
@@ -155,10 +199,56 @@ void UGA_SkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const
 		// SetByCaller 태그(Data.Cooldown)에 수치 주입
 		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Cooldown, FinalDuration);
 
+		// 스킬별 고유 쿨타임 태그
+		SpecHandle.Data->DynamicGrantedTags.AppendTags(UniqueCooldownTags);
+
 		// 적용
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::ApplyCooldown: Failed to create Cooldown SpecHandle"));
 	}
+}
+
+void UGA_SkillBase::NotifySkillCastStarted()
+{
+	// GA의 시전자에게 "State.Busy" 태그 추가
+	// 시전 중 다른 스킬 시전이나 행동을 제한하기 위함
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		if (ASC)
+		{
+			// Loose 태그로 추가 (중첩형이 아닌 일반 태그)
+			ASC->AddLooseGameplayTag(TAG_Skill_Casting);
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::NotifySkillCastStarted: Avatar is null"));
+	}
+}
+
+void UGA_SkillBase::EndAbility(
+	const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
+	bool bReplicateEndAbility,
+	bool bWasCancelled)
+{
+	// GA 종료 시 "State.Busy" 태그 제거
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		if (ASC && ASC->HasMatchingGameplayTag(TAG_Skill_Casting))
+		{
+			ASC->RemoveLooseGameplayTag(TAG_Skill_Casting);
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::EndAbility: Avatar is null"));
+	}
+	// 부모 클래스의 EndAbility 호출
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

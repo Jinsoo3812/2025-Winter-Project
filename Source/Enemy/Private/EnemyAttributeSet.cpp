@@ -67,12 +67,18 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 		// 체력은 0.0보다 작아질 수 없고, MaxHealth보다 커질 수 없습니다.
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 
+		// [김관희에 의해 수정]
+		// 데미지가 제대로 들어갔는지 확인하기 위해 로그를 찍습니다.
+		UE_LOG(LogTemp, Warning, TEXT("[Scarecrow] Took Damage! Current HP: %f"), GetHealth());
+
 		// [사망 확인 및 디버깅]
 		// 현재 체력이 0 이하이고, 아직 죽은 상태가 아니라면 사망 처리를 할 수 있습니다.
 		if (GetHealth() <= 0.0f)
 		{
-			// 팀원에게: "여기서 사망 애니메이션이나 래그돌 함수를 호출하면 됩니다."
-			UE_LOG(LogTemp, Warning, TEXT("[EnemyAttributeSet] Enemy HP is 0! Logic for Death needed here."));
+			// [김관희에 의해 수정] 
+			// 허수아비로 쓰기 위해 체력을 100으로 다시 채웁니다.
+			UE_LOG(LogTemp, Error, TEXT("[Scarecrow] Died! Resetting Health to Max for next test."));
+			SetHealth(GetMaxHealth());
 
 			// 예시: 소유자 액터(EnemyBase)를 찾아 죽음 함수 호출
 			// AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();

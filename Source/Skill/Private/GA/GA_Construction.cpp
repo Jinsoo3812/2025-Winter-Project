@@ -16,16 +16,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Components/InputComponent.h"
 
-UGA_Construction::UGA_Construction()
-{
-	// 객체 생성 정책: GA를 소유한 액터마다 '하나의 GA 객체만' 생성
-	// 메모리 효율적이며, 상태를 액터별로 관리할 수 있음
-	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-
-	// 서버-클라이언트 통신 정책: 클라이언트의 입력이 발생하면, 서버의 응답을 기다리지 않고 즉시(예측) 실행
-	// 네트워크 지연 시에도 반응성이 좋음
-	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
-}
+UGA_Construction::UGA_Construction() {}
 
 void UGA_Construction::ActivateAbility(
 	const FGameplayAbilitySpecHandle Handle,
@@ -35,14 +26,6 @@ void UGA_Construction::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// Ability 활성화 커밋 (Cost, Cooldown 등 체크 및 적용)
-	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to commit ability"));
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
-	}
-
 	// LastPlayerLocation 초기화 (첫 실행 시 무조건 하이라이트 갱신되도록)
 	LastPlayerLocation = FVector(FLT_MAX, FLT_MAX, FLT_MAX);
 
@@ -50,6 +33,7 @@ void UGA_Construction::ActivateAbility(
 	if (UWorld* World = GetWorld())
 	{	
 		// 60FPS 간격으로 UpdatePreview 함수 호출
+		// 자식이 재정의한 UpdatePreview 또한 호출될 수 있음.
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Construction::UpdatePreview, 0.016f, true);
 	}
 
@@ -366,9 +350,31 @@ void UGA_Construction::UpdatePreview()
 				// 블록 크기만큼 위로 올림 (블록이 100x100x100이라 가정)
 				FVector PreviewLocation = BlockLocation + FVector(0, 0, 100.0f);
 				
-				PreviewBlock->SetActorLocation(PreviewLocation);
-				PreviewBlock->SetActorRotation(BlockRotation);
-				PreviewBlock->SetActorHiddenInGame(false);
+				FCollisionQueryParams CheckParams;
+				CheckParams.AddIgnoredActor(PreviewBlock);
+				CheckParams.AddIgnoredActor(OwnerPawn); // 플레이어 충돌 제외
+
+				// 블록 크기(50)보다 약간 작게(45) 설정하여 인접 블록과의 미세한 간섭 방지
+				bool bIsOccupied = GetWorld()->OverlapBlockingTestByChannel(
+					PreviewLocation,
+					FQuat::Identity,
+					ECC_WorldStatic,
+					FCollisionShape::MakeBox(FVector(45.0f)),
+					CheckParams
+				);
+
+				if (!bIsOccupied)
+				{
+					// 비어있는 공간이면 프리뷰 표시
+					PreviewBlock->SetActorLocation(PreviewLocation);
+					PreviewBlock->SetActorRotation(BlockRotation);
+					PreviewBlock->SetActorHiddenInGame(false);
+				}
+				else
+				{
+					// 이미 자리에 블록이 있으면 숨김 처리
+					PreviewBlock->SetActorHiddenInGame(true);
+				}
 			}
 		}
 		else
@@ -392,6 +398,15 @@ void UGA_Construction::UpdatePreview()
 
 void UGA_Construction::SpawnBlock()
 {
+	// Ability 활성화 커밋 (Cost, Cooldown 등 체크 및 적용)
+
+	if (!CommitAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to commit ability"));
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
+		return;
+	}
+
 	if (!PreviewBlock || PreviewBlock->IsHidden()) return;
 
 	if (!BlockToSpawn)
@@ -430,8 +445,15 @@ void UGA_Construction::SpawnBlock()
 
 void UGA_Construction::OnLeftClickPressed()
 {
-	// 좌클릭 시 블록 생성 시도
-	SpawnBlock();
+	// 프리뷰 블록이 존재하고, 숨겨져 있지 않을 때만 블록 생성 시도
+	if (PreviewBlock && !PreviewBlock->IsHidden())
+	{
+		// 실제 스킬 시전 시작 알림
+		// State.Busy 태그를 부여
+		NotifySkillCastStarted();
+		// 좌클릭 시 블록 생성 시도
+		SpawnBlock();
+	}
 }
 
 void UGA_Construction::OnCancelPressed(float TimeWaited)

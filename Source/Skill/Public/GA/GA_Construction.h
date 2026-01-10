@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "GA/GA_SkillBase.h"
 #include "GA_Construction.generated.h"
 
 class ABlockBase;
@@ -15,7 +16,7 @@ class UAbilityTask_WaitInputPress;
  * 블록 건설 스킬 - 스킬 키로 활성화하여 범위 내 블록을 찾고 생성할 수 있음
  */
 UCLASS()
-class SKILL_API UGA_Construction : public UGameplayAbility
+class SKILL_API UGA_Construction : public UGA_SkillBase
 {
 	GENERATED_BODY()
 
@@ -30,11 +31,11 @@ public:
 
 protected:
 	// 건설 가능 범위 (XY 평면 반지름)
-	UPROPERTY(EditDefaultsOnly, Category = "Construction")
+	UPROPERTY(EditDefaultsOnly, Category = "Range")
 	float ConstructionRangeXY = 500.0f;
 
 	// 건설 가능 범위 (Z축 위아래)
-	UPROPERTY(EditDefaultsOnly, Category = "Construction")
+	UPROPERTY(EditDefaultsOnly, Category = "Range")
 	float ConstructionRangeZ = 200.0f;
 
 	// 생성할 블록 클래스
@@ -42,10 +43,10 @@ protected:
 	TSubclassOf<ADestructibleBlock> BlockToSpawn;
 
 	// 프리뷰로 표시할 블록 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "Construction")
+	UPROPERTY(EditDefaultsOnly, Category = "Preview")
 	TSubclassOf<AActor> PreviewBlockClass;
 
-	// 생성된 블록 인스턴스
+	// 프리뷰로 생성된 블록 인스턴스
 	UPROPERTY()
 	TObjectPtr<AActor> PreviewBlock;
 
@@ -88,13 +89,13 @@ protected:
 	void ClearHighlights();
 
 	// 마우스 커서 아래 블록 찾기 및 프리뷰 업데이트
-	void UpdatePreview();
+	virtual void UpdatePreview();
 
 	// 블록 생성
-	void SpawnBlock();
+	virtual void SpawnBlock();
 
 	// 좌클릭 입력 콜백
-	void OnLeftClickPressed();
+	virtual void OnLeftClickPressed();
 
 	// W키 재입력 콜백 (스킬 취소)
 	UFUNCTION()

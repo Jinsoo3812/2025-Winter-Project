@@ -7,6 +7,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Player/Test/TestPlayerState.h"
+#include "Player/PlayerAttributeSet.h"
 
 ATestCharacter::ATestCharacter()
 {
@@ -120,18 +121,19 @@ void ATestCharacter::PossessedBy(AController* NewController)
 	ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 	if (PS)
 	{
-		// ASC와 SkillManager 캐싱
+		// ASC, SkillManager, AttributeSet 캐시
 		CachedAbilitySystemComponent = PS->GetAbilitySystemComponent();
 		CachedSkillManager = PS->GetSkillManager();
+		CachedAttributeSet = Cast<UAttributeSet>(PS->GetAttributeSet());
 
 		if (CachedAbilitySystemComponent)
 		{
 			// InitAbilityActorInfo 호출
 			// OwnerActor: PlayerState (ASC를 소유)
-			// AvatarActor: TestCharacter (레벨에서 실제로 행동하는 액터)
+			// AvatarActor: TestCharacter (실제로 게임에서 행동하는 액터)
 			CachedAbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
-			// 공통 초기화 함수 호출
+			// 나머지 초기화 함수 호출
 			InitializeAbilitySystem();
 			
 			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Server - AbilitySystem initialized successfully"));
@@ -151,23 +153,24 @@ void ATestCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// 클라이언트에서만 호출됨
+	// 클라이언트에서 호출됨
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter::OnRep_PlayerState - Client initialization"));
 
 	// PlayerState에서 ASC와 SkillManager 가져오기
 	ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 	if (PS)
 	{
-		// ASC와 SkillManager 캐싱
+		// ASC, SkillManager, AttributeSet 캐시
 		CachedAbilitySystemComponent = PS->GetAbilitySystemComponent();
 		CachedSkillManager = PS->GetSkillManager();
+		CachedAttributeSet = Cast<UAttributeSet>(PS->GetAttributeSet());
 
 		if (CachedAbilitySystemComponent)
 		{
 			// InitAbilityActorInfo 호출
 			CachedAbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
-			// 공통 초기화 함수 호출
+			// 나머지 초기화 함수 호출
 			InitializeAbilitySystem();
 			
 			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Client - AbilitySystem initialized successfully"));
@@ -205,26 +208,20 @@ void ATestCharacter::InitializeAbilitySystem()
 		return;
 	}
 
-	// SkillManager 초기화
-	CachedSkillManager->SkillManagerInitialize(CachedAbilitySystemComponent);
-
-	// PlayerState에서 DefaultSkills를 가져와서 장착
-	// 서버가 스폰한 TestCharacter만이 권한을 가진 진짜
-	// 각 클라이언트(유저들)이 스폰한 TestCharacter는 복제본이므로 권한 없음
+	// 서버에서만 스킬 초기화 수행 (권한이 있는 진짜 캐릭터)
 	if (HasAuthority())
 	{
 		ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 		if (PS)
 		{
-			const TArray<TSubclassOf<UGameplayAbility>>& DefaultSkills = PS->GetDefaultSkills();
-			for (int32 i = 0; i < DefaultSkills.Num(); ++i)
-			{
-				if (DefaultSkills[i])
-				{
-					CachedSkillManager->EquipSkill(i, DefaultSkills[i]);
-					UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Equipped skill at slot %d"), i);
-				}
-			}
+			// PlayerState의 InitializeSkills 호출
+			// 이 함수가 초록 룬 감지 및 GA 교체를 포함한 모든 스킬 초기화 수행
+			PS->InitializeSkills();
+			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skills initialized via PlayerState"));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ATestCharacter: PlayerState is null during skill initialization"));
 		}
 	}
 
