@@ -6,6 +6,8 @@
 #include "Player/PlayerAttributeSet.h"
 #include "Rune/DA_Rune.h"
 #include "Engine/DataTable.h"
+#include "GameFramework/Character.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ATestPlayerState::ATestPlayerState()
 {
@@ -74,6 +76,17 @@ void ATestPlayerState::InitializePlayerStats(int32 Level)
 
 		UE_LOG(LogTemp, Log, TEXT("ATestPlayerState: Loaded stats for Level %d - HP: %f, Mana: %f, AttackPower: %f, MovementSpeed: %f"),
 			Level, StatsRow->InitialMaxHealth, StatsRow->InitialMaxMana, StatsRow->InitialAttackPower, StatsRow->InitialMovementSpeed);
+
+		// [추가] 2. 실제 캐릭터 이동 속도도 초기값으로 맞춰주기
+		// PlayerState의 Owner는 Controller일 수도 있고 Pawn일 수도 있어서 확인 필요
+		APawn* Pawn = GetPawn();
+		if (ACharacter* Character = Cast<ACharacter>(Pawn))
+		{
+			if (UCharacterMovementComponent* CMC = Character->GetCharacterMovement())
+			{
+				CMC->MaxWalkSpeed = StatsRow->InitialMovementSpeed;
+			}
+		}
 	}
 	else
 	{
