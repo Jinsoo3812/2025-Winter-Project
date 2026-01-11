@@ -123,6 +123,10 @@ public:
 	FGameplayAttributeData MovementSpeed;
 	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, MovementSpeed);
 
+
+	// Attribute 수치가 변하면(버프/디버프 포함) 무조건 호출되는 함수
+	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
+
 protected:
 	// [OnRep 함수들]
 	// 서버로부터 바뀐 값을 받아왔을 때, 클라이언트 쪽에서 갱신 처리를 하는 함수들입니다.

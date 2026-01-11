@@ -3,6 +3,7 @@
 #include "Components/BoxComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h" // GAS 라이브러리 필수
+#include "MotionWarpingComponent.h"
 
 ABossDragon::ABossDragon()
 {
@@ -12,6 +13,9 @@ ABossDragon::ABossDragon()
 	RushHitBox->SetupAttachment(GetMesh());
 	// 평소에는 꺼둡니다 (NoCollision)
 	RushHitBox->SetCollisionProfileName(TEXT("NoCollision"));
+
+	// 캐릭터가 모션 워핑 기능을 가질 수 있게 해줍니다.
+	MotionWarpingComp = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComp"));
 }
 
 void ABossDragon::BeginPlay()
@@ -80,5 +84,24 @@ void ABossDragon::OnRushOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor
 				UE_LOG(LogTemp, Warning, TEXT("[BossDragon] Rush HIT! Damaged Actor: %s"), *OtherActor->GetName());
 			}
 		}
+	}
+}
+
+
+// 이 함수는 블루프린트(비헤이비어 트리 서비스 등)에서 호출할 예정입니다.
+void ABossDragon::UpdateMotionWarpTarget(AActor* TargetActor)
+{
+	if (MotionWarpingComp && TargetActor)
+	{
+		// "FaceTarget": 몽타주 노티파이에서 사용할 이름입니다. (꼭 기억하세요!)
+		// 타겟의 현재 위치와 회전값을 'FaceTarget'이라는 지점으로 등록합니다.
+		MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
+			FName("FaceTarget"),
+			TargetActor->GetActorLocation(),
+			TargetActor->GetActorRotation()
+		);
+
+		// 로그로 확인 (디버깅용)
+		// UE_LOG(LogTemp, Log, TEXT("[BossDragon] Motion Warp Target Updated: %s"), *TargetActor->GetName());
 	}
 }

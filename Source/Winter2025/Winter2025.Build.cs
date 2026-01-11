@@ -26,8 +26,9 @@ public class Winter2025 : ModuleRules
 			"Enemy",
 			"GameplayAbilities",
 			"GameplayTags",
-			"GameplayTasks"
-		});
+			"GameplayTasks",
+            "MotionWarping"
+        });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
 
