@@ -1,6 +1,7 @@
 #include "EnemyAttributeSet.h"
 #include "Net/UnrealNetwork.h" // DOREPLIFETIME 매크로 사용을 위해 필수
 #include "GameplayEffectExtension.h" // PostGameplayEffectExecute 데이터 접근용
+#include "EnemyBase.h" // 사망 처리용
 
 UEnemyAttributeSet::UEnemyAttributeSet()
 {
@@ -57,32 +58,23 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	// 변경된 속성(Attribute)이 무엇인지 확인합니다.
 	FGameplayAttribute ChangedAttribute = Data.EvaluatedData.Attribute;
 
-	// 1. 체력(Health)이 변경되었을 경우
 	if (ChangedAttribute == GetHealthAttribute())
 	{
-		// [값 보정 (Clamping)]
-		// 체력은 0.0보다 작아질 수 없고, MaxHealth보다 커질 수 없습니다.
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 
-		// [김관희에 의해 수정]
-		// 데미지가 제대로 들어갔는지 확인하기 위해 로그를 찍습니다.
-		UE_LOG(LogTemp, Warning, TEXT("[Scarecrow] Took Damage! Current HP: %f"), GetHealth());
-
-		// [사망 확인 및 디버깅]
-		// 현재 체력이 0 이하이고, 아직 죽은 상태가 아니라면 사망 처리를 할 수 있습니다.
+		// [수정된 부분: 실제 사망 로직 연결]
 		if (GetHealth() <= 0.0f)
 		{
-			// [김관희에 의해 수정] 
-			// 허수아비로 쓰기 위해 체력을 100으로 다시 채웁니다.
-			UE_LOG(LogTemp, Error, TEXT("[Scarecrow] Died! Resetting Health to Max for next test."));
-			SetHealth(GetMaxHealth());
+			// 데이터로부터 Target Actor(이 AttributeSet의 주인)를 찾습니다.
+			AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
 
-			// 예시: 소유자 액터(EnemyBase)를 찾아 죽음 함수 호출
-			// AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
-			// if(AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor)) { Enemy->Die(); }
+			// AEnemyBase로 형변환하여 Die() 함수 호출
+			if (AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor))
+			{
+				Enemy->Die(); // <-- 여기서 드디어 죽습니다!
+			}
 		}
 	}
 }

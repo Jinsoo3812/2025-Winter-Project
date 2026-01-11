@@ -31,6 +31,21 @@ public:
 	// 외부에서 적의 AttributeSet(체력 등)을 가져올 수 있게 Getter 제공
 	UEnemyAttributeSet* GetAttributeSet() const { return Attributes; }
 
+
+	// [공격 적중 처리]
+	// AnimNotifyState에서 호출하며, 실제 데미지(GameplayEffect)를 타겟에게 적용합니다.
+	virtual void OnAttackHit(AActor* TargetActor);
+
+	// [사망 처리]
+	// AttributeSet에서 체력이 0이 되었을 때 호출합니다.
+	virtual void Die();
+
+	// [피격 반응 인터페이스 (일반 데미지 함수 오버라이드)]
+	// 혹시 GAS 외의 방식(ApplyDamage 등)으로 맞았을 때를 대비합니다.
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
+
+
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -71,4 +86,12 @@ protected:
 	/** 캐릭터가 기본적으로 가질 태그 (예: Enemy.Type.Boss) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Tags")
 	FGameplayTagContainer InitialGameplayTags;
+
+	/** 적이 공격했을 때 적용할 데미지 이펙트 (BP에서 GE_Damage_Enemy 등에서 할당) */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Combat")
+	TSubclassOf<UGameplayEffect> AttackDamageEffect;
+
+	// 사망 애니메이션 몽타주
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
+	TObjectPtr<UAnimMontage> DeadMontage;
 };
