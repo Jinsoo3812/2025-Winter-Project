@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -31,60 +31,87 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(VisibleAnywhere, Category = "Block")
-	// ºí·ÏÀÇ Å¸ÀÔÀ» ´ã´Â º¯¼ö
+	// ë¸”ë¡ì˜ íƒ€ì…ì„ ë‹´ëŠ” ë³€ìˆ˜
 	EBlockType BlockType = EBlockType::IMMUTABLE;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Grid")
 	float GridSize = 100.0f;
 	
 	UPROPERTY(VisibleAnywhere, Category = "Block")
-	// ºí·ÏÀÇ À§Ä¡¸¦ ´ã´Â º¯¼ö (AActor¿¡ BlockLocationÀÌ¸§ÀÌ ÀÌ¹Ì Á¸ÀçÇÏ¿© LocationÀ¸·Î º¯°æ)
+	// ë¸”ë¡ì˜ ìœ„ì¹˜ë¥¼ ë‹´ëŠ” ë³€ìˆ˜ (AActorì— BlockLocationì´ë¦„ì´ ì´ë¯¸ ì¡´ì¬í•˜ì—¬ Locationìœ¼ë¡œ ë³€ê²½)
 	FVector Location;
 
-	// ºí·ÏÀÌ ÆÄ±« °¡´ÉÇÑÁö ¿©ºÎ¸¦ ´ã´Â º¯¼ö
+	// ë¸”ë¡ì´ íŒŒê´´ ê°€ëŠ¥í•œì§€ ì—¬ë¶€ë¥¼ ë‹´ëŠ” ë³€ìˆ˜
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	bool IsDestrictible = false;
 
-	// ºí·ÏÀÇ ¿ÜÇü ¹× ¹°¸® Ãæµ¹À» ´ã´çÇÒ Mesh Component
+	// ë¸”ë¡ì˜ ì™¸í˜• ë° ë¬¼ë¦¬ ì¶©ëŒì„ ë‹´ë‹¹í•  Mesh Component
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
-	// ¿ÜÇü°ú º°°³ÀÎ Ãæµ¹ ÄÄÆ÷³ÍÆ®
+	// ì™¸í˜•ê³¼ ë³„ê°œì¸ ì¶©ëŒ ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UBoxComponent> CollisionComponent;
 
-	// BP¿¡¼­ ¼³Á¤ °¡´ÉÇÑ ±âº» ¸Ş½Ã (±âº»°ª: Cube)
+	// BPì—ì„œ ì„¤ì • ê°€ëŠ¥í•œ ê¸°ë³¸ ë©”ì‹œ (ê¸°ë³¸ê°’: Cube)
 	UPROPERTY(EditDefaultsOnly, Category = "Block")
 	TObjectPtr<UStaticMesh> DefaultBlockMesh;
 
-	// ³«ÇÏÇØµµ µÇ´Â ºí·ÏÀÎÁö
+	// ë‚™í•˜í•´ë„ ë˜ëŠ” ë¸”ë¡ì¸ì§€
 	bool bCanFall = false;
 
-	// ºí·ÏÀÌ ÇöÀç ³«ÇÏ ÁßÀÎÁö
+	// ë¸”ë¡ì´ í˜„ì¬ ë‚™í•˜ ì¤‘ì¸ì§€
 	bool bIsFalling = false;
 
-	// ÇöÀç ³«ÇÏ ¼Óµµ (ZÃà)
+	// í˜„ì¬ ë‚™í•˜ ì†ë„ (Zì¶•)
 	float VerticalVelocity = 0.0f;
 
-	// Áß·Â °¡¼Óµµ
+	// ì¤‘ë ¥ ê°€ì†ë„
 	const float GravityAcceleration = -980.0f;
 
-	// ³«ÇÏ ·ÎÁ÷À» Ã³¸®ÇÏ´Â ÇÔ¼ö
+	// ë‚™í•˜ ë¡œì§ì„ ì²˜ë¦¬í•˜ëŠ” í•¨ìˆ˜
 	void UpdateGravity(float DeltaTime);
 
-	// ¹Ù´Ú¿¡ ´ê¾Ò´ÂÁö Ã¼Å©ÇÏ°í ±×¸®µå¿¡ ½º³ÀÇÏ´Â ÇÔ¼ö
+	// ë°”ë‹¥ì— ë‹¿ì•˜ëŠ”ì§€ ì²´í¬í•˜ê³  ê·¸ë¦¬ë“œì— ìŠ¤ëƒ…í•˜ëŠ” í•¨ìˆ˜
 	void CheckLanding();
 
-	// ÀÚ½ÅÀÇ À§ ºí·ÏÀÌ Ãß¶ôÇÒ ¼ö ÀÖµµ·Ï ±ú¿ì´Â ÇÔ¼ö
+	// ìì‹ ì˜ ìœ„ ë¸”ë¡ì´ ì¶”ë½í•  ìˆ˜ ìˆë„ë¡ ê¹¨ìš°ëŠ” í•¨ìˆ˜
 	void NotifyUpperBlock();
 
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// ºí·ÏÀÇ À§Ä¡¿Í Å¸ÀÔ º¯¼ö¸¦ ¼³Á¤ÇÏ°í ¼ÒÈ¯ÇÕ´Ï´Ù.
-	UFUNCTION()
+	// [ë ˆê±°ì‹œ] ë¸”ë¡ì˜ ìœ„ì¹˜ì™€ íƒ€ì… ë³€ìˆ˜ë¥¼ ì„¤ì •í•˜ê³  ì†Œí™˜í•©ë‹ˆë‹¤.
 	virtual void SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType);
+
+	// ì§€ì •ëœ ìœ„ì¹˜ì— ë¸”ë¡ì„ ì†Œí™˜í•©ë‹ˆë‹¤. 
+	// ì ìœ  í™•ì¸ ë° ì¤‘ë ¥ ì„¤ì •ì„ í¬í•¨í•œ ê°œì„ ëœ ìŠ¤í° ë¡œì§
+	// @param World: ë¸”ë¡ì„ ìƒì„±í•  ì›”ë“œ
+	// @param BlockClass: ìƒì„±í•  ë¸”ë¡ì˜ í´ë˜ìŠ¤ (BP_DestructibleBlock ë“±)
+	// @param SpawnLocation: ë¸”ë¡ì„ ìƒì„±í•  ìœ„ì¹˜
+	// @param bEnableGravity: ìƒì„± í›„ ì¤‘ë ¥ì„ í™œì„±í™”í• ì§€ ì—¬ë¶€
+	// @return ìƒì„±ëœ ë¸”ë¡ (ìƒì„± ì‹¤íŒ¨ ì‹œ nullptr)
+	UFUNCTION(BlueprintCallable, Category = "Block")
+	static ABlockBase* SpawnBlock(
+		UWorld* World,
+		TSubclassOf<ABlockBase> BlockClass,
+		const FVector& SpawnLocation,
+		bool bEnableGravity
+	);
+
+	// ì§€ì •ëœ ìœ„ì¹˜ê°€ ì ìœ ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸í•˜ëŠ” í—¬í¼ í•¨ìˆ˜
+	// @param World: ì²´í¬í•  ì›”ë“œ
+	// @param CheckLocation: ì²´í¬í•  ìœ„ì¹˜
+	// @param CheckGridSize: ë¸”ë¡ì˜ ê·¸ë¦¬ë“œ í¬ê¸°
+	// @return ì ìœ ë˜ì–´ ìˆìœ¼ë©´ true, ë¹„ì–´ìˆìœ¼ë©´ false
+	// @note í”„ë¦¬ë·° ë¸”ë¡(ECC_GameTraceChannel1)ì€ ì ìœ  íŒì •ì—ì„œ ì œì™¸ë¨
+	UFUNCTION(BlueprintCallable, Category = "Block")
+	static bool IsLocationOccupied(
+		UWorld* World,
+		const FVector& CheckLocation,
+		float CheckGridSize
+	);
 
 	EBlockType GetBlockType() const { return BlockType; }
 	FVector GetBlockLocation() const { return Location; }
@@ -92,7 +119,7 @@ public:
 
 	virtual bool CanBeDestroyed() const { return IsDestrictible; }
 
-	// ºí·ÏÀÇ ¸Ş½Ã ÄÄÆ÷³ÍÆ®¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö (¸ÓÆ¼¸®¾ó º¯°æ µî¿¡ »ç¿ë)
+	// ë¸”ë¡ì˜ ë©”ì‹œ ì»´í¬ë„ŒíŠ¸ë¥¼ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜ (ë¨¸í‹°ë¦¬ì–¼ ë³€ê²½ ë“±ì— ì‚¬ìš©)
 	UStaticMeshComponent* GetBlockMesh() const { return MeshComponent; }
 
 	bool IsFalling() const { return bIsFalling; }

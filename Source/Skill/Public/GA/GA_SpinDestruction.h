@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -10,8 +10,8 @@ class UGameplayEffect;
 class UAbilityTask_WaitInputPress;
 
 /**
- * È¸ÀüÇÏ¸ç ÁÖº¯ Àûµé¿¡°Ô Áö¼Ó µ¥¹ÌÁö¸¦ ÁÖ´Â ÆÄ±« ½ºÅ³
- * GA_DestructionÀÇ ÃÊ·Ï ·é(°ª 1.0) º¯Çü ¹öÀü
+ * íšŒì „í•˜ë©° ì£¼ë³€ ì ë“¤ì—ê²Œ ì§€ì† ë°ë¯¸ì§€ë¥¼ ì£¼ëŠ” íŒŒê´´ ìŠ¤í‚¬
+ * GA_Destructionì˜ ì´ˆë¡ ë£¬(ê°’ 1.0) ë³€í˜• ë²„ì „
  */
 UCLASS(Blueprintable)
 class SKILL_API UGA_SpinDestruction : public UGA_SkillBase
@@ -21,7 +21,7 @@ class SKILL_API UGA_SpinDestruction : public UGA_SkillBase
 public:
 	UGA_SpinDestruction();
 
-	// GA È°¼ºÈ­ ½Ã È£ÃâµÇ´Â ÇÔ¼ö
+	// GA í™œì„±í™” ì‹œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -38,44 +38,44 @@ public:
 	) override;
 
 protected:
-	// ¹üÀ§¿¡¼­ Àû¿ëÇÒ Gameplay Effect (ÆÄ±« È¿°ú)
+	// ë²”ìœ„ì—ì„œ ì ìš©í•  Gameplay Effect (íŒŒê´´ íš¨ê³¼)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay Effect")
 	TSubclassOf<UGameplayEffect> DestructionEffect;
 
-	// È¸Àü ½ºÅ³ Áö¼Ó ½Ã°£ (ÃÊ)
+	// íšŒì „ ìŠ¤í‚¬ ì§€ì† ì‹œê°„ (ì´ˆ)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spin Settings")
 	float SpinDuration = 5.0f;
 
-	// È¸Àü ½ºÅ³ÀÇ ¿øÇü ¹İÁö¸§
+	// íšŒì „ ìŠ¤í‚¬ì˜ ì›í˜• ë°˜ì§€ë¦„
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spin Settings")
 	float SpinRadius = 300.0f;
 
-	// µ¥¹ÌÁö Àû¿ë ÁÖ±â (ÃÊ)
+	// ë°ë¯¸ì§€ ì ìš© ì£¼ê¸° (ì´ˆ)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Spin Settings")
 	float DamageTickInterval = 0.5f;
 
-	// ½ºÅ³ Å° ÀçÀÔ·Â °¨Áö¿ë Ability Task
+	// ìŠ¤í‚¬ í‚¤ ì¬ì…ë ¥ ê°ì§€ìš© Ability Task
 	UPROPERTY()
 	TObjectPtr<UAbilityTask_WaitInputPress> WaitInputTask;
 
-	// È¸Àü ½ºÅ³ Å¸ÀÌ¸Ó ÇÚµéµé
+	// íšŒì „ ìŠ¤í‚¬ íƒ€ì´ë¨¸ í•¸ë“¤ë“¤
 	FTimerHandle SpinDurationTimerHandle;
 	FTimerHandle DamageTickTimerHandle;
 	FTimerHandle DebugDrawTimerHandle;
 
-	// È¸Àü ½ºÅ³ ½ÃÀÛ
+	// íšŒì „ ìŠ¤í‚¬ ì‹œì‘
 	void StartSpin();
 
-	// È¸Àü ½ºÅ³ Á¾·á
+	// íšŒì „ ìŠ¤í‚¬ ì¢…ë£Œ
 	void StopSpin();
 
-	// È¸Àü ½ºÅ³ÀÇ µ¥¹ÌÁö Àû¿ë (ÁÖ±âÀû È£Ãâ)
+	// íšŒì „ ìŠ¤í‚¬ì˜ ë°ë¯¸ì§€ ì ìš© (ì£¼ê¸°ì  í˜¸ì¶œ)
 	void ApplySpinDamage();
 
-	// È¸Àü ½ºÅ³ µğ¹ö±× µå·Î¿ì ¾÷µ¥ÀÌÆ®
+	// íšŒì „ ìŠ¤í‚¬ ë””ë²„ê·¸ ë“œë¡œìš° ì—…ë°ì´íŠ¸
 	void UpdateDebugDraw();
 
-	// ½ºÅ³ Å° ÀçÀÔ·Â Äİ¹é (Á¶±â Á¾·á)
+	// ìŠ¤í‚¬ í‚¤ ì¬ì…ë ¥ ì½œë°± (ì¡°ê¸° ì¢…ë£Œ)
 	UFUNCTION()
 	void OnSkillKeyPressed(float TimeWaited);
 };

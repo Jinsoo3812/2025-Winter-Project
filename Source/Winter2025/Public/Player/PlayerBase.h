@@ -1,8 +1,8 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Character.h"   //ºÎ¸ğ Å¬·¡½º
-#include "AbilitySystemInterface.h" // GAS ½Ã½ºÅÛ°ú ¼ÒÅëÇÏ±â À§ÇÑ ÀÎÅÍÆäÀÌ½º
+#include "GameFramework/Character.h"   //ë¶€ëª¨ í´ë˜ìŠ¤
+#include "AbilitySystemInterface.h" // GAS ì‹œìŠ¤í…œê³¼ ì†Œí†µí•˜ê¸° ìœ„í•œ ì¸í„°í˜ì´ìŠ¤
 #include "PlayerBase.generated.h"
 
 class UCameraComponent;
@@ -11,12 +11,12 @@ class USpringArmComponent;
 
 /**
  * APlayerBase
- * ACharacter (¾ğ¸®¾ó ±âº») -> AWinter2025Character (Å¾´Ù¿î ÀÌµ¿, Ä«¸Ş¶ó ±â´É Æ÷ÇÔ)
- * -> APlayerBase (GAS ÀüÅõ ½Ã½ºÅÛ Ãß°¡)
- * * [ÁÖ¿ä ¿ªÇÒ]
- * 1. ºÎ¸ğ(Winter2025Character)¿¡°Ô¼­ ¹°·Á¹ŞÀº ÀÌµ¿ ±â´ÉÀ» ±×´ë·Î »ç¿ëÇÕ´Ï´Ù.
- * 2. GAS(Ability System)¸¦ ÀåÂøÇÏ¿© ½ºÅ³À» ¾²°í, Ã¼·Â(HP)À» °¡Áı´Ï´Ù.
- * 3. ³ªÁß¿¡ Àü»ç, ¸¶¹ı»ç °°Àº Á÷¾÷ÀÌ »ı±ä´Ù¸é ÀÌ Å¬·¡½º¸¦ »ó¼Ó¹Ş¾Æ ¸¸µì´Ï´Ù.
+ * ACharacter (ì–¸ë¦¬ì–¼ ê¸°ë³¸) -> AWinter2025Character (íƒ‘ë‹¤ìš´ ì´ë™, ì¹´ë©”ë¼ ê¸°ëŠ¥ í¬í•¨)
+ * -> APlayerBase (GAS ì „íˆ¬ ì‹œìŠ¤í…œ ì¶”ê°€)
+ * * [ì£¼ìš” ì—­í• ]
+ * 1. ë¶€ëª¨(Winter2025Character)ì—ê²Œì„œ ë¬¼ë ¤ë°›ì€ ì´ë™ ê¸°ëŠ¥ì„ ê·¸ëŒ€ë¡œ ì‚¬ìš©í•©ë‹ˆë‹¤.
+ * 2. GAS(Ability System)ë¥¼ ì¥ì°©í•˜ì—¬ ìŠ¤í‚¬ì„ ì“°ê³ , ì²´ë ¥(HP)ì„ ê°€ì§‘ë‹ˆë‹¤.
+ * 3. ë‚˜ì¤‘ì— ì „ì‚¬, ë§ˆë²•ì‚¬ ê°™ì€ ì§ì—…ì´ ìƒê¸´ë‹¤ë©´ ì´ í´ë˜ìŠ¤ë¥¼ ìƒì†ë°›ì•„ ë§Œë“­ë‹ˆë‹¤.
  */
 UCLASS()
 class WINTER2025_API APlayerBase : public ACharacter, public IAbilitySystemInterface
@@ -24,11 +24,11 @@ class WINTER2025_API APlayerBase : public ACharacter, public IAbilitySystemInter
 	GENERATED_BODY()
 
 public:
-	// »ı¼ºÀÚ: ÄÄÆ÷³ÍÆ®(ºÎÇ°)µéÀ» Á¶¸³ÇÏ´Â °÷
+	// ìƒì„±ì: ì»´í¬ë„ŒíŠ¸(ë¶€í’ˆ)ë“¤ì„ ì¡°ë¦½í•˜ëŠ” ê³³
 	APlayerBase();
 
-	// [ÀÎÅÍÆäÀÌ½º À¯Áö] 
-	// ³» ¸ö¿¡ ASC°¡ ¾ø´õ¶óµµ, ¿¬°áµÈ PlayerStateÀÇ ASC¸¦ Ã£¾Æ¼­ ¸®ÅÏÇØÁà¾ß ÇÕ´Ï´Ù.
+	// [ì¸í„°í˜ì´ìŠ¤ ìœ ì§€] 
+	// ë‚´ ëª¸ì— ASCê°€ ì—†ë”ë¼ë„, ì—°ê²°ëœ PlayerStateì˜ ASCë¥¼ ì°¾ì•„ì„œ ë¦¬í„´í•´ì¤˜ì•¼ í•©ë‹ˆë‹¤.
 	virtual class UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 private:
@@ -41,7 +41,7 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
-	// Áßº¹ ÄÚµå¸¦ ¹æÁöÇÏ±â À§ÇØ GAS ÃÊ±âÈ­ ·ÎÁ÷À» º°µµ ÇÔ¼ö·Î »°½À´Ï´Ù.
+	// ì¤‘ë³µ ì½”ë“œë¥¼ ë°©ì§€í•˜ê¸° ìœ„í•´ GAS ì´ˆê¸°í™” ë¡œì§ì„ ë³„ë„ í•¨ìˆ˜ë¡œ ëºìŠµë‹ˆë‹¤.
 	void InitAbilityActorInfo();
 
 protected:
@@ -49,10 +49,10 @@ protected:
 	/*virtual void BeginPlay() override;*/
 
 
-	// [¼­¹ö¿ë] ÄÁÆ®·Ñ·¯°¡ ºùÀÇ(Possess)ÇßÀ» ¶§ È£ÃâµË´Ï´Ù.
+	// [ì„œë²„ìš©] ì»¨íŠ¸ë¡¤ëŸ¬ê°€ ë¹™ì˜(Possess)í–ˆì„ ë•Œ í˜¸ì¶œë©ë‹ˆë‹¤.
 	virtual void PossessedBy(AController* NewController) override;
 
-	// [Å¬¶óÀÌ¾ğÆ®¿ë] PlayerState°¡ ¼­¹ö·ÎºÎÅÍ º¹Á¦µÇ¾î ³»°Ô µµÂøÇßÀ» ¶§ È£ÃâµË´Ï´Ù.
+	// [í´ë¼ì´ì–¸íŠ¸ìš©] PlayerStateê°€ ì„œë²„ë¡œë¶€í„° ë³µì œë˜ì–´ ë‚´ê²Œ ë„ì°©í–ˆì„ ë•Œ í˜¸ì¶œë©ë‹ˆë‹¤.
 	virtual void OnRep_PlayerState() override;
 
 public:

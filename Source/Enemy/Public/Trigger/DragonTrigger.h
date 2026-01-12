@@ -1,11 +1,11 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "GameplayTagContainer.h" // GAS ÅÂ±×(FGameplayTag) »ç¿ëÀ» À§ÇØ ÇÊ¼ö
+#include "GameplayTagContainer.h" // GAS íƒœê·¸(FGameplayTag) ì‚¬ìš©ì„ ìœ„í•´ í•„ìˆ˜
 #include "DragonTrigger.generated.h"
 
-// Àü¹æ ¼±¾ğ: Çì´õ¿¡¼­´Â "ÀÌ·± Å¬·¡½º°¡ ÀÖ´Ù"°í¸¸ ¾Ë·ÁÁÖ°í, ½ÇÁ¦ include´Â cpp¿¡¼­ ÇÕ´Ï´Ù.
+// ì „ë°© ì„ ì–¸: í—¤ë”ì—ì„œëŠ” "ì´ëŸ° í´ë˜ìŠ¤ê°€ ìˆë‹¤"ê³ ë§Œ ì•Œë ¤ì£¼ê³ , ì‹¤ì œ includeëŠ” cppì—ì„œ í•©ë‹ˆë‹¤.
 class UBoxComponent;
 class ABossDragon;
 
@@ -22,31 +22,31 @@ protected:
 
 public:
 	// -------------------------------------------------------------------------
-	// ÄÄÆ÷³ÍÆ®
+	// ì»´í¬ë„ŒíŠ¸
 	// -------------------------------------------------------------------------
 
-	// Æ®¸®°Å ¿µ¿ª (¹Ú½º)
+	// íŠ¸ë¦¬ê±° ì˜ì—­ (ë°•ìŠ¤)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Trigger")
 	UBoxComponent* TriggerBox;
 
 	// -------------------------------------------------------------------------
-	// ¼³Á¤ º¯¼ö
+	// ì„¤ì • ë³€ìˆ˜
 	// -------------------------------------------------------------------------
 
-	// ±ú¿ï º¸½º (¿¡µğÅÍ¿¡¼­ ½ºÆ÷ÀÌµå·Î ÁöÁ¤)
+	// ê¹¨ìš¸ ë³´ìŠ¤ (ì—ë””í„°ì—ì„œ ìŠ¤í¬ì´ë“œë¡œ ì§€ì •)
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Trigger")
 	ABossDragon* TargetBoss;
 
-	// º¸½º¿¡°Ô º¸³¾ ÀÌº¥Æ® ÅÂ±× (¿¹: Event.Boss.WakeUp)
+	// ë³´ìŠ¤ì—ê²Œ ë³´ë‚¼ ì´ë²¤íŠ¸ íƒœê·¸ (ì˜ˆ: Event.Boss.WakeUp)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trigger")
 	FGameplayTag WakeUpTag;
 
-	// ÇÑ ¹ø¸¸ ÀÛµ¿ÇÒÁö ¿©ºÎ
+	// í•œ ë²ˆë§Œ ì‘ë™í• ì§€ ì—¬ë¶€
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trigger")
 	bool bTriggerOnce = true;
 
 private:
-	// °ãÄ§ °¨Áö ÇÔ¼ö
+	// ê²¹ì¹¨ ê°ì§€ í•¨ìˆ˜
 	UFUNCTION()
 	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };

@@ -1,10 +1,10 @@
-#include "Dragon_RushCheck.h"
-#include "BossDragon.h" // BossDragonÀÇ ÇÔ¼ö¸¦ È£ÃâÇØ¾ß ÇÏ¹Ç·Î Çì´õ Æ÷ÇÔ ÇÊ¼ö
+ï»¿#include "Dragon_RushCheck.h"
+#include "BossDragon.h" // BossDragonì˜ í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•´ì•¼ í•˜ë¯€ë¡œ í—¤ë” í¬í•¨ í•„ìˆ˜
 
 UDragon_RushCheck::UDragon_RushCheck()
 {
-	// ¿¡µğÅÍ¿¡¼­ ³ëÆ¼ÆÄÀÌ¸¦ ºÃÀ» ¶§ ±¸ºĞÇÏ±â ½¬¿î »ö»óÀ¸·Î ¼³Á¤ (¼±ÅÃ »çÇ×)
-	// ¿¹: ºÓÀº»ö °è¿­
+	// ì—ë””í„°ì—ì„œ ë…¸í‹°íŒŒì´ë¥¼ ë´¤ì„ ë•Œ êµ¬ë¶„í•˜ê¸° ì‰¬ìš´ ìƒ‰ìƒìœ¼ë¡œ ì„¤ì • (ì„ íƒ ì‚¬í•­)
+	// ì˜ˆ: ë¶‰ì€ìƒ‰ ê³„ì—´
 	NotifyColor = FColor::Red;
 }
 
@@ -12,15 +12,15 @@ void UDragon_RushCheck::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSeque
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
-	// 1. ¸Ş½¬¿Í ¸Ş½¬ÀÇ ÁÖÀÎ(Owner Actor)ÀÌ Á¸ÀçÇÏ´ÂÁö È®ÀÎ (¾ÈÀüÀåÄ¡)
+	// 1. ë©”ì‰¬ì™€ ë©”ì‰¬ì˜ ì£¼ì¸(Owner Actor)ì´ ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸ (ì•ˆì „ì¥ì¹˜)
 	if (MeshComp && MeshComp->GetOwner())
 	{
-		// 2. ÁÖÀÎÀ» ABossDragon Å¬·¡½º·Î Çüº¯È¯(Cast) ÇÕ´Ï´Ù.
-		// ÀÌÀ¯: SetRushCollisionEnabled ÇÔ¼ö´Â ºÎ¸ğ(EnemyBase)°¡ ¾Æ´Ñ ÀÚ½Ä(BossDragon)¿¡¸¸ ÀÖ±â ¶§¹®ÀÔ´Ï´Ù.
+		// 2. ì£¼ì¸ì„ ABossDragon í´ë˜ìŠ¤ë¡œ í˜•ë³€í™˜(Cast) í•©ë‹ˆë‹¤.
+		// ì´ìœ : SetRushCollisionEnabled í•¨ìˆ˜ëŠ” ë¶€ëª¨(EnemyBase)ê°€ ì•„ë‹Œ ìì‹(BossDragon)ì—ë§Œ ìˆê¸° ë•Œë¬¸ì…ë‹ˆë‹¤.
 		if (ABossDragon* Dragon = Cast<ABossDragon>(MeshComp->GetOwner()))
 		{
-			// 3. ¹Ú½º Äİ¸®Àü È°¼ºÈ­ (ON)
-			// ÀÌÁ¦ºÎÅÍ ÇÃ·¹ÀÌ¾î°¡ ¹Ú½º¿¡ ´êÀ¸¸é µ¥¹ÌÁö¸¦ ÀÔ½À´Ï´Ù.
+			// 3. ë°•ìŠ¤ ì½œë¦¬ì „ í™œì„±í™” (ON)
+			// ì´ì œë¶€í„° í”Œë ˆì´ì–´ê°€ ë°•ìŠ¤ì— ë‹¿ìœ¼ë©´ ë°ë¯¸ì§€ë¥¼ ì…ìŠµë‹ˆë‹¤.
 			Dragon->SetRushCollisionEnabled(true);
 		}
 	}
@@ -30,14 +30,14 @@ void UDragon_RushCheck::NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenc
 {
 	Super::NotifyEnd(MeshComp, Animation, EventReference);
 
-	// 1. ¸Ş½¬¿Í ÁÖÀÎ È®ÀÎ
+	// 1. ë©”ì‰¬ì™€ ì£¼ì¸ í™•ì¸
 	if (MeshComp && MeshComp->GetOwner())
 	{
-		// 2. ´Ù½Ã Çüº¯È¯
+		// 2. ë‹¤ì‹œ í˜•ë³€í™˜
 		if (ABossDragon* Dragon = Cast<ABossDragon>(MeshComp->GetOwner()))
 		{
-			// 3. ¹Ú½º Äİ¸®Àü ºñÈ°¼ºÈ­ (OFF)
-			// µ¹ÁøÀÌ ³¡³µÀ¸¹Ç·Î ´ê¾Æµµ µ¥¹ÌÁö¸¦ ÀÔÁö ¾Ê°Ô ÇÕ´Ï´Ù.
+			// 3. ë°•ìŠ¤ ì½œë¦¬ì „ ë¹„í™œì„±í™” (OFF)
+			// ëŒì§„ì´ ëë‚¬ìœ¼ë¯€ë¡œ ë‹¿ì•„ë„ ë°ë¯¸ì§€ë¥¼ ì…ì§€ ì•Šê²Œ í•©ë‹ˆë‹¤.
 			Dragon->SetRushCollisionEnabled(false);
 		}
 	}

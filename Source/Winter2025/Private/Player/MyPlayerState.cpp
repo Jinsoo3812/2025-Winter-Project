@@ -1,33 +1,33 @@
-#include "Player/MyPlayerState.h"
+ï»¿#include "Player/MyPlayerState.h"
 #include "Net/UnrealNetwork.h"
 
 AMyPlayerState::AMyPlayerState()
 {
 	// ------------------------------------------------------------------------
-	// 1. Ability System Component (ASC) »ı¼º
+	// 1. Ability System Component (ASC) ìƒì„±
 	// ------------------------------------------------------------------------
-	// Ä³¸¯ÅÍ(PlayerBase)°¡ ¾Æ´Ï¶ó ¿©±â¼­ ASC¸¦ »ı¼ºÇÕ´Ï´Ù.
+	// ìºë¦­í„°(PlayerBase)ê°€ ì•„ë‹ˆë¼ ì—¬ê¸°ì„œ ASCë¥¼ ìƒì„±í•©ë‹ˆë‹¤.
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 
-	// ³×Æ®¿öÅ© µ¿±âÈ­ ÄÑ±â (¼­¹öÀÇ µ¥ÀÌÅÍ°¡ Å¬¶óÀÌ¾ğÆ®·Î Àü¼ÛµÊ)
+	// ë„¤íŠ¸ì›Œí¬ ë™ê¸°í™” ì¼œê¸° (ì„œë²„ì˜ ë°ì´í„°ê°€ í´ë¼ì´ì–¸íŠ¸ë¡œ ì „ì†¡ë¨)
 	AbilitySystemComponent->SetIsReplicated(true);
 
-	// [Replication Mode º¯°æ: Mixed]
-	// - PlayerState¿¡ ASC°¡ ÀÖÀ» ¶§´Â 'Mixed' ¸ğµå¸¦ »ç¿ëÇÏ´Â °ÍÀÌ ±¹·êÀÔ´Ï´Ù.
-	// - ÁÖÀÎ(Owner, ³ª): GameplayEffect¸¦ ¿¹Ãø(Prediction)ÇÏ¿© Áï½Ã ¹İÀÀ. (·¢ÀÌ ¾ø¾î º¸ÀÓ)
-	// - ³²µé(Simulated Proxy): ¼­¹ö°¡ º¸³»ÁØ °á°ú°ª¸¸ ¹ŞÀ½.
+	// [Replication Mode ë³€ê²½: Mixed]
+	// - PlayerStateì— ASCê°€ ìˆì„ ë•ŒëŠ” 'Mixed' ëª¨ë“œë¥¼ ì‚¬ìš©í•˜ëŠ” ê²ƒì´ êµ­ë£°ì…ë‹ˆë‹¤.
+	// - ì£¼ì¸(Owner, ë‚˜): GameplayEffectë¥¼ ì˜ˆì¸¡(Prediction)í•˜ì—¬ ì¦‰ì‹œ ë°˜ì‘. (ë™ì´ ì—†ì–´ ë³´ì„)
+	// - ë‚¨ë“¤(Simulated Proxy): ì„œë²„ê°€ ë³´ë‚´ì¤€ ê²°ê³¼ê°’ë§Œ ë°›ìŒ.
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	// ------------------------------------------------------------------------
-	// 2. Attribute Set (Ã¼·ÂÅë) »ı¼º
+	// 2. Attribute Set (ì²´ë ¥í†µ) ìƒì„±
 	// ------------------------------------------------------------------------
 	AttributeSet = CreateDefaultSubobject<UPlayerAttributeSet>(TEXT("AttributeSet"));
 
 	// ------------------------------------------------------------------------
-	// 3. ³×Æ®¿öÅ© ¾÷µ¥ÀÌÆ® ºóµµ ¼³Á¤
+	// 3. ë„¤íŠ¸ì›Œí¬ ì—…ë°ì´íŠ¸ ë¹ˆë„ ì„¤ì •
 	// ------------------------------------------------------------------------
-	// ±âº»°ªÀº ¸Å¿ì ³·°Ô ¼³Á¤µÇ¾î ÀÖ¾î, ºü¸¥ ¾×¼Ç °ÔÀÓ¿¡¼­´Â Á¤º¸ °»½ÅÀÌ ´À¸± ¼ö ÀÖ½À´Ï´Ù.
-	// 100.0f·Î ¼³Á¤ÇÏ¿© ÃÊ´ç 100È¸ ºóµµ·Î »óÅÂ¸¦ µ¿±âÈ­ÇÕ´Ï´Ù. (ºÎµå·¯¿î ¸ÖÆ¼ÇÃ·¹ÀÌ ÇÊ¼ö)
+	// ê¸°ë³¸ê°’ì€ ë§¤ìš° ë‚®ê²Œ ì„¤ì •ë˜ì–´ ìˆì–´, ë¹ ë¥¸ ì•¡ì…˜ ê²Œì„ì—ì„œëŠ” ì •ë³´ ê°±ì‹ ì´ ëŠë¦´ ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+	// 100.0fë¡œ ì„¤ì •í•˜ì—¬ ì´ˆë‹¹ 100íšŒ ë¹ˆë„ë¡œ ìƒíƒœë¥¼ ë™ê¸°í™”í•©ë‹ˆë‹¤. (ë¶€ë“œëŸ¬ìš´ ë©€í‹°í”Œë ˆì´ í•„ìˆ˜)
 	SetNetUpdateFrequency(100.0f);
 }
 

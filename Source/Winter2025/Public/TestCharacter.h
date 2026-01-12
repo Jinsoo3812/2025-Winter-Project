@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -18,9 +18,9 @@ class UAttributeSet;
 
 UCLASS()
 /**
- * ¼­¹ö¿Í Å¬¶óÀÌ¾ğÆ® ¸ğµÎ TestCharacterÀÇ ÀÎ½ºÅÏ½º¸¦ »ı¼ºÇÏ¸ç
- * ¼­¹ö´Â °ÔÀÓ ·ÎÁ÷À» Ã³¸®ÇÏ°í,
- * Å¬¶óÀÌ¾ğÆ®´Â ÀÔ·Â°ú ·»´õ¸µ È­¸é¿¡ Ç¥½ÃÇÏ´Â ¿ªÇÒÀ» ´ã´çÇÑ´Ù.
+ * ì„œë²„ì™€ í´ë¼ì´ì–¸íŠ¸ ëª¨ë‘ TestCharacterì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ìƒì„±í•˜ë©°
+ * ì„œë²„ëŠ” ê²Œì„ ë¡œì§ì„ ì²˜ë¦¬í•˜ê³ ,
+ * í´ë¼ì´ì–¸íŠ¸ëŠ” ì…ë ¥ê³¼ ë Œë”ë§ í™”ë©´ì— í‘œì‹œí•˜ëŠ” ì—­í• ì„ ë‹´ë‹¹í•œë‹¤.
  */
 class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbilitySystemInterface, public ISkillManagerProvider, public IAttributeSetProvider
 {
@@ -29,65 +29,70 @@ class WINTER2025_API ATestCharacter : public AWinter2025Character, public IAbili
 public:
 	ATestCharacter();
 
-	// IAbilitySystemInterface ±¸Çö
-	// PlayerStateÀÇ ASC¸¦ ¹İÈ¯
+	// IAbilitySystemInterface êµ¬í˜„
+	// PlayerStateì˜ ASCë¥¼ ë°˜í™˜
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	// ISkillManagerProvider ÀÎÅÍÆäÀÌ½º ±¸Çö
-	// PlayerStateÀÇ Ä³½ÃµÈ SkillManager¸¦ ¹İÈ¯
+	// ISkillManagerProvider ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„
+	// PlayerStateì˜ ìºì‹œëœ SkillManagerë¥¼ ë°˜í™˜
 	virtual USkillManagerComponent* GetSkillManager() const override { return CachedSkillManager; }
 
-	// IAttributeSetProvider ÀÎÅÍÆäÀÌ½º ±¸Çö
-	// PlayerStateÀÇ Ä³½ÃµÈ AttributeSetÀ» ¹İÈ¯
+	// IAttributeSetProvider ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„
+	// PlayerStateì˜ ìºì‹œëœ AttributeSetì„ ë°˜í™˜
 	virtual UAttributeSet* GetAttributeSet() const override { return CachedAttributeSet; }
 
-	// ÀÔ·Â ÄÄÆ÷³ÍÆ® ¼³Á¤
-	// ·ÎÄÃ ÇÃ·¹ÀÌ¾îÀÇ ÀÔ·ÂÀ» ¹ÙÀÎµùÇÔ
+	// ì…ë ¥ ì»´í¬ë„ŒíŠ¸ ì„¤ì •
+	// ë¡œì»¬ í”Œë ˆì´ì–´ì˜ ì…ë ¥ì„ ë°”ì¸ë”©í•¨
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 protected:
 	virtual void BeginPlay() override;
 
-	// ¼­¹ö¿¡¼­ ÄÁÆ®·Ñ·¯°¡ ÇØ´ç PawnÀ» Á¦¾îÇÏ±â ½ÃÀÛÇÒ ¶§ È£ÃâµÇ´Â ÇÔ¼ö
-	// ¼­¹ö¿¡¼­¸¸ È£ÃâµÇ¸ç PlayerState°¡ ÀÌ¹Ì ÇÒ´çµÈ »óÅÂÀÓÀÌ º¸ÀåµÊ
-	// PlayerState·ÎºÎÅÍ ASC¿Í SkillManager¸¦ °¡Á®¿Í Ä³½Ì ¹× ÃÊ±âÈ­
-	// @param NewController: ÀÌ PawnÀ» Á¦¾îÇÏ´Â »õ·Î¿î ÄÁÆ®·Ñ·¯
+	// ì„œë²„ì—ì„œ ì»¨íŠ¸ë¡¤ëŸ¬ê°€ í•´ë‹¹ Pawnì„ ì œì–´í•˜ê¸° ì‹œì‘í•  ë•Œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
+	// ì„œë²„ì—ì„œë§Œ í˜¸ì¶œë˜ë©° PlayerStateê°€ ì´ë¯¸ í• ë‹¹ëœ ìƒíƒœì„ì´ ë³´ì¥ë¨
+	// PlayerStateë¡œë¶€í„° ASCì™€ SkillManagerë¥¼ ê°€ì ¸ì™€ ìºì‹± ë° ì´ˆê¸°í™”
+	// @param NewController: ì´ Pawnì„ ì œì–´í•˜ëŠ” ìƒˆë¡œìš´ ì»¨íŠ¸ë¡¤ëŸ¬
 	virtual void PossessedBy(AController* NewController) override;
 
-	// ¼­¹ö°¡ Å¬¶óÀÌ¾ğÆ®·ÎÀÇ PlayerState º¹Á¦¸¦ ¿Ï·áÇÑ ÈÄ È£ÃâµÇ´Â ÇÔ¼ö
-	// Å¬¶óÀÌ¾ğÆ®¿¡¼­¸¸ È£ÃâµÇ¸ç PlayerState°¡ ÀÌ¹Ì ÇÒ´çµÈ »óÅÂÀÓÀÌ º¸ÀåµÊ
-	// PlayerState·ÎºÎÅÍ ASC¿Í SkillManager¸¦ °¡Á®¿Í Ä³½Ì ¹× ÃÊ±âÈ­
+	// ì„œë²„ê°€ í´ë¼ì´ì–¸íŠ¸ë¡œì˜ PlayerState ë³µì œë¥¼ ì™„ë£Œí•œ í›„ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
+	// í´ë¼ì´ì–¸íŠ¸ì—ì„œë§Œ í˜¸ì¶œë˜ë©° PlayerStateê°€ ì´ë¯¸ í• ë‹¹ëœ ìƒíƒœì„ì´ ë³´ì¥ë¨
+	// PlayerStateë¡œë¶€í„° ASCì™€ SkillManagerë¥¼ ê°€ì ¸ì™€ ìºì‹± ë° ì´ˆê¸°í™”
 	virtual void OnRep_PlayerState() override;
 
-	// ¼­¹ö¿Í Å¬¶óÀÌ¾ğÆ® ¾çÂÊ¿¡¼­ È£ÃâµÇ´Â °øÅë ÃÊ±âÈ­ ÇÔ¼ö
-	// PlayerState·Î ºÎÅÍ °¡Á®¿Â ASC¿Í SkillManager¸¦ ÃÊ±âÈ­
+	/*
+	* Attribute ë³€ê²½ ì½œë°± í•¨ìˆ˜ë“¤
+	*/
+	virtual void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+
+	// ì„œë²„ì™€ í´ë¼ì´ì–¸íŠ¸ ì–‘ìª½ì—ì„œ í˜¸ì¶œë˜ëŠ” ê³µí†µ ì´ˆê¸°í™” í•¨ìˆ˜
+	// PlayerStateë¡œ ë¶€í„° ê°€ì ¸ì˜¨ ASCì™€ SkillManagerë¥¼ ì´ˆê¸°í™”
 	void InitializeAbilitySystem();
 
-	// ½ºÅ³ ½½·Ôº° ÀÔ·Â ÇÚµé·¯ (InputID ±â¹İ)
+	// ìŠ¤í‚¬ ìŠ¬ë¡¯ë³„ ì…ë ¥ í•¸ë“¤ëŸ¬ (InputID ê¸°ë°˜)
 	void OnAbilityInputPressed(int32 InputID);
 	void OnAbilityInputReleased(int32 InputID);
 
 protected:
-	// PlayerStateÀÇ ASC Ä³½Ã (¼º´É ÃÖÀûÈ­ ¿ëµµ)
+	// PlayerStateì˜ ASC ìºì‹œ (ì„±ëŠ¥ ìµœì í™” ìš©ë„)
 	UPROPERTY(BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;
 
-	// PlayerStateÀÇ SkillManager Ä³½Ã
+	// PlayerStateì˜ SkillManager ìºì‹œ
 	UPROPERTY(BlueprintReadOnly, Category = "Skill System")
 	TObjectPtr<USkillManagerComponent> CachedSkillManager;
 
-	// PlayerStateÀÇ AttributeSet Ä³½Ã
+	// PlayerStateì˜ AttributeSet ìºì‹œ
 	UPROPERTY(BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAttributeSet> CachedAttributeSet;
 
-	// ÃÊ±âÈ­ ¿Ï·á ÇÃ·¡±×
+	// ì´ˆê¸°í™” ì™„ë£Œ í”Œë˜ê·¸
 	bool bAbilitySystemInitialized = false;
 
-	// Input Mapping Context ÇÒ´ç º¯¼ö
+	// Input Mapping Context í• ë‹¹ ë³€ìˆ˜
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputMappingContext> InputMappingContext;
 
-	// ½ºÅ³ ½½·Ôº° Input Action
+	// ìŠ¤í‚¬ ìŠ¬ë¡¯ë³„ Input Action
 	UPROPERTY(EditAnywhere, Category = "Input|Skills")
 	TArray<TObjectPtr<UInputAction>> SkillSlotActions;
 };

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
@@ -6,12 +6,12 @@
 
 /**
  * [UDragon_RushCheck]
- * * µå·¡°ïÀÇ µ¹Áø(Rush) °ø°İ ½Ã, ¸öÅë¿¡ ºÙÀº ÆÇÁ¤ ¹Ú½º(Box Collision)¸¦
- * Æ¯Á¤ ±¸°£ µ¿¾È¸¸ È°¼ºÈ­(ON) ½ÃÅ°´Â ³ëÆ¼ÆÄÀÌÀÔ´Ï´Ù.
- * * - µ¿ÀÛ ¿ø¸®:
- * 1. NotifyBegin (±¸°£ ½ÃÀÛ): ¹Ú½º Äİ¸®ÀüÀ» ÄÕ´Ï´Ù (QueryOnly).
- * 2. ¹°¸® ¿£Áø: ÄÑÁø ¹Ú½º¿¡ ÇÃ·¹ÀÌ¾î°¡ ´êÀ¸¸é BossDragonÀÇ OnRushOverlapBeginÀÌ ½ÇÇàµË´Ï´Ù.
- * 3. NotifyEnd (±¸°£ Á¾·á): ¹Ú½º Äİ¸®ÀüÀ» ²ü´Ï´Ù (NoCollision).
+ * * ë“œë˜ê³¤ì˜ ëŒì§„(Rush) ê³µê²© ì‹œ, ëª¸í†µì— ë¶™ì€ íŒì • ë°•ìŠ¤(Box Collision)ë¥¼
+ * íŠ¹ì • êµ¬ê°„ ë™ì•ˆë§Œ í™œì„±í™”(ON) ì‹œí‚¤ëŠ” ë…¸í‹°íŒŒì´ì…ë‹ˆë‹¤.
+ * * - ë™ì‘ ì›ë¦¬:
+ * 1. NotifyBegin (êµ¬ê°„ ì‹œì‘): ë°•ìŠ¤ ì½œë¦¬ì „ì„ ì¼­ë‹ˆë‹¤ (QueryOnly).
+ * 2. ë¬¼ë¦¬ ì—”ì§„: ì¼œì§„ ë°•ìŠ¤ì— í”Œë ˆì´ì–´ê°€ ë‹¿ìœ¼ë©´ BossDragonì˜ OnRushOverlapBeginì´ ì‹¤í–‰ë©ë‹ˆë‹¤.
+ * 3. NotifyEnd (êµ¬ê°„ ì¢…ë£Œ): ë°•ìŠ¤ ì½œë¦¬ì „ì„ ë•ë‹ˆë‹¤ (NoCollision).
  */
 UCLASS()
 class ENEMY_API UDragon_RushCheck : public UAnimNotifyState
@@ -19,14 +19,14 @@ class ENEMY_API UDragon_RushCheck : public UAnimNotifyState
 	GENERATED_BODY()
 
 public:
-	// »ı¼ºÀÚ
+	// ìƒì„±ì
 	UDragon_RushCheck();
 
-	// [¾Ö´Ï¸ŞÀÌ¼Ç ³ëÆ¼ÆÄÀÌ ±¸°£ÀÌ ½ÃÀÛµÉ ¶§ 1È¸ È£Ãâ]
-	// ¿¹: µå·¡°ïÀÌ ¹ßÀ» ±¸¸£°í ¾ÕÀ¸·Î Æ¢¾î³ª°¡´Â ¼ø°£
+	// [ì• ë‹ˆë©”ì´ì…˜ ë…¸í‹°íŒŒì´ êµ¬ê°„ì´ ì‹œì‘ë  ë•Œ 1íšŒ í˜¸ì¶œ]
+	// ì˜ˆ: ë“œë˜ê³¤ì´ ë°œì„ êµ¬ë¥´ê³  ì•ìœ¼ë¡œ íŠ€ì–´ë‚˜ê°€ëŠ” ìˆœê°„
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference) override;
 
-	// [¾Ö´Ï¸ŞÀÌ¼Ç ³ëÆ¼ÆÄÀÌ ±¸°£ÀÌ ³¡³¯ ¶§ 1È¸ È£Ãâ]
-	// ¿¹: µå·¡°ïÀÌ ¸ØÃç ¼­°Å³ª, µ¹Áø µ¿ÀÛÀÌ ³¡³ª´Â ¼ø°£
+	// [ì• ë‹ˆë©”ì´ì…˜ ë…¸í‹°íŒŒì´ êµ¬ê°„ì´ ëë‚  ë•Œ 1íšŒ í˜¸ì¶œ]
+	// ì˜ˆ: ë“œë˜ê³¤ì´ ë©ˆì¶° ì„œê±°ë‚˜, ëŒì§„ ë™ì‘ì´ ëë‚˜ëŠ” ìˆœê°„
 	virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 };

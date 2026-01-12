@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 
 class UAttributeSet;
 
-// ¾ğ¸®¾ó ¸®ÇÃ·º¼Ç ½Ã½ºÅÛÀ» À§ÇÑ Å¬·¡½º
+// ì–¸ë¦¬ì–¼ ë¦¬í”Œë ‰ì…˜ ì‹œìŠ¤í…œì„ ìœ„í•œ í´ë˜ìŠ¤
 UINTERFACE(MinimalAPI, Blueprintable)
 class UAttributeSetProvider : public UInterface
 {
@@ -16,15 +16,15 @@ class UAttributeSetProvider : public UInterface
 };
 
 /**
- * AttributeSetÀ» Á¦°øÇÏ´Â ÀÎÅÍÆäÀÌ½º
- * TestCharacter µî PlayerStateÀÇ AttributeSetÀ» Ä³½ÌÇÏ°í ÀÖ´Â Å¬·¡½º°¡ ±¸Çö
- * Skill ¸ğµâÀÌ Winter2025 ¸ğµâ¿¡ ÀÇÁ¸ÇÏÁö ¾Ê°íµµ AttributeSet¿¡ Á¢±Ù °¡´É
+ * AttributeSetì„ ì œê³µí•˜ëŠ” ì¸í„°í˜ì´ìŠ¤
+ * TestCharacter ë“± PlayerStateì˜ AttributeSetì„ ìºì‹±í•˜ê³  ìˆëŠ” í´ë˜ìŠ¤ê°€ êµ¬í˜„
+ * Skill ëª¨ë“ˆì´ Winter2025 ëª¨ë“ˆì— ì˜ì¡´í•˜ì§€ ì•Šê³ ë„ AttributeSetì— ì ‘ê·¼ ê°€ëŠ¥
  */
 class SKILL_API IAttributeSetProvider
 {
 	GENERATED_BODY()
 
 public:
-	// AttributeSetÀ» ¹İÈ¯ÇÏ´Â ¼ø¼ö °¡»ó ÇÔ¼ö
+	// AttributeSetì„ ë°˜í™˜í•˜ëŠ” ìˆœìˆ˜ ê°€ìƒ í•¨ìˆ˜
 	virtual UAttributeSet* GetAttributeSet() const = 0;
 };

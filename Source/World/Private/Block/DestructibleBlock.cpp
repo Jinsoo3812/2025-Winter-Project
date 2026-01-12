@@ -1,32 +1,32 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Block/DestructibleBlock.h"
 #include "AbilitySystemComponent.h"
 
 ADestructibleBlock::ADestructibleBlock()
 {
-	// ºí·ÏÀÌ ÆÄ±« °¡´ÉÇÏµµ·Ï ¼³Á¤
+	// ë¸”ë¡ì´ íŒŒê´´ ê°€ëŠ¥í•˜ë„ë¡ ì„¤ì •
 	IsDestrictible = true;
 
 	bCanFall = true;
 
-	// Ability System Component »ı¼º
+	// Ability System Component ìƒì„±
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 }
 
 void ADestructibleBlock::BeginPlay()
 {
 	Super::BeginPlay();
-	// ASC°¡ À¯È¿ÇÑ °æ¿ì Gameplay Effect Àû¿ë Äİ¹é µî·Ï
+	// ASCê°€ ìœ íš¨í•œ ê²½ìš° Gameplay Effect ì ìš© ì½œë°± ë“±ë¡
 	if (AbilitySystemComponent)
 	{	
-		// Gameplay Effect°¡ Àû¿ëµÉ ¶§ È£ÃâµÇ´Â µ¨¸®°ÔÀÌÆ® ¹ÙÀÎµù
+		// Gameplay Effectê°€ ì ìš©ë  ë•Œ í˜¸ì¶œë˜ëŠ” ë¸ë¦¬ê²Œì´íŠ¸ ë°”ì¸ë”©
 		AbilitySystemComponent->OnGameplayEffectAppliedDelegateToSelf.AddUObject(this, &ADestructibleBlock::OnGameplayEffectApplied);
 
-		// ASC ÃÊ±âÈ­
+		// ASC ì´ˆê¸°í™”
 		// void UAbilitySystemComponent::InitAbilityActorInfo(AActor* OwnerActor, AActor* AvatarActor);
-		// ÀÏ¹İÀûÀ¸·Î Owner¿Í Avatar´Â µ¿ÀÏÇÑ ¾×ÅÍ(ÀÚ½Å)À¸·Î ¼³Á¤ÇÑ´Ù.
-		// ¸ÖÆ¼ÇÃ·¹ÀÌ °ÔÀÓ¿¡¼­´Â Owner¿Í Avatar°¡ ´Ù¸¦ ¼ö ÀÖ´Ù.
+		// ì¼ë°˜ì ìœ¼ë¡œ Ownerì™€ AvatarëŠ” ë™ì¼í•œ ì•¡í„°(ìì‹ )ìœ¼ë¡œ ì„¤ì •í•œë‹¤.
+		// ë©€í‹°í”Œë ˆì´ ê²Œì„ì—ì„œëŠ” Ownerì™€ Avatarê°€ ë‹¤ë¥¼ ìˆ˜ ìˆë‹¤.
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 	else {
@@ -42,30 +42,30 @@ UAbilitySystemComponent* ADestructibleBlock::GetAbilitySystemComponent() const
 void ADestructibleBlock::OnGameplayEffectApplied(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
 {
 	UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock: %s received a Gameplay Effect."), *GetName());
-	// DestructionTagÀÌ À¯È¿ÇÏÁö ¾ÊÀ¸¸é ¸®ÅÏ
+	// DestructionTagì´ ìœ íš¨í•˜ì§€ ì•Šìœ¼ë©´ ë¦¬í„´
 	if (!DestructionTag.IsValid())
 	{
 		UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock: DestructionTag is not valid in DestructibleBlock %s"), *GetName());
 		return;
 	}
 
-	// GE¸¦ ¸¸µç ÁÖÃ¼ÀÇ Tag. GE ÀÚÃ¼¿¡ Tag°¡ ¹Ì¸® ºÎ¿©µÇ¾î ÀÖÀ¸¹Ç·Î ÇÊ¿ä X
+	// GEë¥¼ ë§Œë“  ì£¼ì²´ì˜ Tag. GE ìì²´ì— Tagê°€ ë¯¸ë¦¬ ë¶€ì—¬ë˜ì–´ ìˆìœ¼ë¯€ë¡œ í•„ìš” X
 	// const FGameplayTagContainer* SourceTags = SpecApplied.CapturedSourceTags.GetAggregatedTags();
 	
-	// GE ÀÚÃ¼ÀÇ Tag
+	// GE ìì²´ì˜ Tag
 	const FGameplayTagContainer& SpecTags = SpecApplied.Def->InheritableGameplayEffectTags.CombinedTags;
 
-	// ÅÂ±× ºñ±³: SpecTags¿¡ DestructionTag°¡ Æ÷ÇÔµÇ¾î ÀÖ´ÂÁö È®ÀÎ
+	// íƒœê·¸ ë¹„êµ: SpecTagsì— DestructionTagê°€ í¬í•¨ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸
 	bool bHasDestructionTag = false;
 
-	// ÀÚ½ÅÀÌ ¹ŞÀº GEÀÇ Tag Ãâ·Â
+	// ìì‹ ì´ ë°›ì€ GEì˜ Tag ì¶œë ¥
 	// UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock: %s received GE with Tags: %s"), *GetName(), *SpecTags.ToString());
 	if (SpecTags.HasTag(DestructionTag))
 	{
 		bHasDestructionTag = true;
 	}
 
-	// DestructionTag°¡ ÀÖÀ¸¸é ÀÚ½ÅÀ» ÆÄ±«
+	// DestructionTagê°€ ìˆìœ¼ë©´ ìì‹ ì„ íŒŒê´´
 	if (bHasDestructionTag)
 	{
 		SelfDestroy();
@@ -76,7 +76,7 @@ void ADestructibleBlock::SelfDestroy()
 {
 	UE_LOG(LogTemp, Warning, TEXT("Destructible Block %s is destroyed."), *GetName());
 
-	// À§ ºí·Ï¿¡°Ô ³«ÇÏÇÏ¶ó°í ¾Ë¸²
+	// ìœ„ ë¸”ë¡ì—ê²Œ ë‚™í•˜í•˜ë¼ê³  ì•Œë¦¼
 	NotifyUpperBlock();
 	Destroy();
 }

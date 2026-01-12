@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
@@ -6,7 +6,7 @@
 #include "Engine/DataTable.h"
 #include "PlayerAttributeSet.generated.h"
 
-// [¸ÅÅ©·Î] Getter, Setter, Init ÇÔ¼ö ÀÚµ¿ »ı¼º±â
+// [ë§¤í¬ë¡œ] Getter, Setter, Init í•¨ìˆ˜ ìë™ ìƒì„±ê¸°
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 		GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
 		GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
@@ -14,8 +14,8 @@
 		GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
 /**
- * ÇÃ·¹ÀÌ¾î ÃÊ±â ½ºÅÈ µ¥ÀÌÅÍ Å×ÀÌºí ±¸Á¶Ã¼
- * ·¹º§º°·Î ÇÃ·¹ÀÌ¾îÀÇ ÃÊ±â ´É·ÂÄ¡¸¦ Á¤ÀÇ
+ * í”Œë ˆì´ì–´ ì´ˆê¸° ìŠ¤íƒ¯ ë°ì´í„° í…Œì´ë¸” êµ¬ì¡°ì²´
+ * ë ˆë²¨ë³„ë¡œ í”Œë ˆì´ì–´ì˜ ì´ˆê¸° ëŠ¥ë ¥ì¹˜ë¥¼ ì •ì˜
  */
 USTRUCT(BlueprintType)
 struct FPlayerInitialStatsRow : public FTableRowBase
@@ -23,40 +23,40 @@ struct FPlayerInitialStatsRow : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	// ÇÃ·¹ÀÌ¾î ·¹º§
+	// í”Œë ˆì´ì–´ ë ˆë²¨
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	int32 Level = 1;
 
-	// ÃÊ±â Ã¼·Â
+	// ì´ˆê¸° ì²´ë ¥
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float InitialHealth = 100.0f;
 
-	// ÃÊ±â ÃÖ´ë Ã¼·Â
+	// ì´ˆê¸° ìµœëŒ€ ì²´ë ¥
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float InitialMaxHealth = 100.0f;
 
-	// ÃÊ±â ¸¶³ª
+	// ì´ˆê¸° ë§ˆë‚˜
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float InitialMana = 100.0f;
 
-	// ÃÊ±â ÃÖ´ë ¸¶³ª
+	// ì´ˆê¸° ìµœëŒ€ ë§ˆë‚˜
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float InitialMaxMana = 100.0f;
 
-	// ÃÊ±â °ø°İ·Â
+	// ì´ˆê¸° ê³µê²©ë ¥
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float InitialAttackPower = 10.0f;
 
-	// ÃÊ±â ÀÌµ¿¼Óµµ
+	// ì´ˆê¸° ì´ë™ì†ë„
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
 	float InitialMovementSpeed = 600.0f;
 };
 
 /**
  * UPlayerAttributeSet
- * * [¿ªÇÒ]
- * ÇÃ·¹ÀÌ¾îÀÇ Ã¼·Â, ÃÖ´ë Ã¼·Â µîÀÇ ¼öÄ¡ µ¥ÀÌÅÍ¸¦ º¸°ü.
- * ÇÃ·¹ÀÌ¾î°¡ µ¥¹ÌÁö¸¦ ÀÔÀ¸¸é ÀÌ Å¬·¡½ºÀÇ ÇÔ¼öµéÀÌ È£ÃâµÇ¾î ¼öÄ¡¸¦ ±ğ½À´Ï´Ù.
+ * * [ì—­í• ]
+ * í”Œë ˆì´ì–´ì˜ ì²´ë ¥, ìµœëŒ€ ì²´ë ¥ ë“±ì˜ ìˆ˜ì¹˜ ë°ì´í„°ë¥¼ ë³´ê´€.
+ * í”Œë ˆì´ì–´ê°€ ë°ë¯¸ì§€ë¥¼ ì…ìœ¼ë©´ ì´ í´ë˜ìŠ¤ì˜ í•¨ìˆ˜ë“¤ì´ í˜¸ì¶œë˜ì–´ ìˆ˜ì¹˜ë¥¼ ê¹ìŠµë‹ˆë‹¤.
  */
 UCLASS()
 class WINTER2025_API UPlayerAttributeSet : public UAttributeSet
@@ -64,73 +64,73 @@ class WINTER2025_API UPlayerAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 
 public:
-	// »ı¼ºÀÚ: º¯¼ö ÃÊ±âÈ­¸¦ ´ã´çÇÕ´Ï´Ù.
+	// ìƒì„±ì: ë³€ìˆ˜ ì´ˆê¸°í™”ë¥¼ ë‹´ë‹¹í•©ë‹ˆë‹¤.
 	UPlayerAttributeSet();
 
-	// [³×Æ®¿öÅ© ÇÊ¼ö] º¯¼ö µ¿±âÈ­ ±ÔÄ¢À» ¼³Á¤ÇÏ´Â ÇÔ¼öÀÔ´Ï´Ù.
+	// [ë„¤íŠ¸ì›Œí¬ í•„ìˆ˜] ë³€ìˆ˜ ë™ê¸°í™” ê·œì¹™ì„ ì„¤ì •í•˜ëŠ” í•¨ìˆ˜ì…ë‹ˆë‹¤.
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// [GAS ÇÙ½É] GE(Gameplay Effect)°¡ Àû¿ëµÈ 'Á÷ÈÄ'¿¡ È£ÃâµÇ´Â ÇÔ¼öÀÔ´Ï´Ù.
-	// ¿¹: µ¥¹ÌÁö¸¦ ¸Â°í ³ª¼­ Ã¼·ÂÀÌ -10ÀÌ µÈ ¼ø°£, Ã¼·ÂÀÌ 0 ¹ØÀ¸·Î ¾È ³»·Á°¡°Ô ¸·´Â Ã³¸®¸¦ ¿©±â¼­ ÇÕ´Ï´Ù.
+	// [GAS í•µì‹¬] GE(Gameplay Effect)ê°€ ì ìš©ëœ 'ì§í›„'ì— í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜ì…ë‹ˆë‹¤.
+	// ì˜ˆ: ë°ë¯¸ì§€ë¥¼ ë§ê³  ë‚˜ì„œ ì²´ë ¥ì´ -10ì´ ëœ ìˆœê°„, ì²´ë ¥ì´ 0 ë°‘ìœ¼ë¡œ ì•ˆ ë‚´ë ¤ê°€ê²Œ ë§‰ëŠ” ì²˜ë¦¬ë¥¼ ì—¬ê¸°ì„œ í•©ë‹ˆë‹¤.
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 
 	// -------------------------------------------------------------------------
-	// ¼Ó¼º(Attribute) Á¤ÀÇ
+	// ì†ì„±(Attribute) ì •ì˜
 	// -------------------------------------------------------------------------
 
 	/**
-	 * [Health: ÇöÀç Ã¼·Â]
-	 * - ReplicatedUsing = OnRep_Health: ¼­¹ö¿¡¼­ Ã¼·ÂÀÌ ¹Ù²î¸é Å¬¶óÀÌ¾ğÆ®(ÇÃ·¹ÀÌ¾î È­¸é)ÀÇ OnRep_Health ÇÔ¼ö¸¦ ½ÇÇàÇØ¶ó! ¶ó´Â ¶æÀÔ´Ï´Ù.
-	 * - Áï, ¼­¹ö°¡ "³Ê ¸Â¾Ò¾î" ÇÏ¸é Å¬¶óÀÌ¾ğÆ®°¡ "¾ÆÀ¹!" ÇÏ°í ¹İÀÀÇÏ°Ô ¸¸µì´Ï´Ù.
+	 * [Health: í˜„ì¬ ì²´ë ¥]
+	 * - ReplicatedUsing = OnRep_Health: ì„œë²„ì—ì„œ ì²´ë ¥ì´ ë°”ë€Œë©´ í´ë¼ì´ì–¸íŠ¸(í”Œë ˆì´ì–´ í™”ë©´)ì˜ OnRep_Health í•¨ìˆ˜ë¥¼ ì‹¤í–‰í•´ë¼! ë¼ëŠ” ëœ»ì…ë‹ˆë‹¤.
+	 * - ì¦‰, ì„œë²„ê°€ "ë„ˆ ë§ì•˜ì–´" í•˜ë©´ í´ë¼ì´ì–¸íŠ¸ê°€ "ì•„ìœ½!" í•˜ê³  ë°˜ì‘í•˜ê²Œ ë§Œë“­ë‹ˆë‹¤.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, Health);
 
 	/**
-	 * [MaxHealth: ÃÖ´ë Ã¼·Â]
-	 * - Ã¼·Â È¸º¹ ½Ã ÀÌ ¼öÄ¡¸¦ ³ÑÁö ¾Êµµ·Ï Á¦ÇÑÇÏ´Â ±âÁØ°ªÀÌ µË´Ï´Ù.
+	 * [MaxHealth: ìµœëŒ€ ì²´ë ¥]
+	 * - ì²´ë ¥ íšŒë³µ ì‹œ ì´ ìˆ˜ì¹˜ë¥¼ ë„˜ì§€ ì•Šë„ë¡ ì œí•œí•˜ëŠ” ê¸°ì¤€ê°’ì´ ë©ë‹ˆë‹¤.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxHealth)
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, MaxHealth);
 
 	/**
-	 * [Mana: ÇöÀç ¸¶³ª]
+	 * [Mana: í˜„ì¬ ë§ˆë‚˜]
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Mana)
 	FGameplayAttributeData Mana;
 	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, Mana);
 
 	/**
-	 * [MaxMana: ÃÖ´ë ¸¶³ª]
+	 * [MaxMana: ìµœëŒ€ ë§ˆë‚˜]
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxMana)
 	FGameplayAttributeData MaxMana;
 	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, MaxMana);
 
 	/**
-	 * [AttackPower: °ø°İ·Â]
+	 * [AttackPower: ê³µê²©ë ¥]
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_AttackPower)
 	FGameplayAttributeData AttackPower;
 	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, AttackPower);
 
 	/**
-	 * [MovementSpeed: ÀÌµ¿¼Óµµ]
+	 * [MovementSpeed: ì´ë™ì†ë„]
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MovementSpeed)
 	FGameplayAttributeData MovementSpeed;
 	ATTRIBUTE_ACCESSORS(UPlayerAttributeSet, MovementSpeed);
 
 
-	// Attribute ¼öÄ¡°¡ º¯ÇÏ¸é(¹öÇÁ/µğ¹öÇÁ Æ÷ÇÔ) ¹«Á¶°Ç È£ÃâµÇ´Â ÇÔ¼ö
+	// Attribute ìˆ˜ì¹˜ê°€ ë³€í•˜ë©´(ë²„í”„/ë””ë²„í”„ í¬í•¨) ë¬´ì¡°ê±´ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
 	virtual void PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue) override;
 
 protected:
-	// [OnRep ÇÔ¼öµé]
-	// ¼­¹ö·ÎºÎÅÍ ¹Ù²ï °ªÀ» ¹Ş¾Æ¿ÔÀ» ¶§, Å¬¶óÀÌ¾ğÆ® ÂÊ¿¡¼­ °»½Å Ã³¸®¸¦ ÇÏ´Â ÇÔ¼öµéÀÔ´Ï´Ù.
-	// UI ¾÷µ¥ÀÌÆ®(Ã¼·Â¹Ù ÁÙ¾îµê) µîÀ» ¿©±â¼­ ¿¬°áÇÒ ¼öµµ ÀÖ½À´Ï´Ù.
+	// [OnRep í•¨ìˆ˜ë“¤]
+	// ì„œë²„ë¡œë¶€í„° ë°”ë€ ê°’ì„ ë°›ì•„ì™”ì„ ë•Œ, í´ë¼ì´ì–¸íŠ¸ ìª½ì—ì„œ ê°±ì‹  ì²˜ë¦¬ë¥¼ í•˜ëŠ” í•¨ìˆ˜ë“¤ì…ë‹ˆë‹¤.
+	// UI ì—…ë°ì´íŠ¸(ì²´ë ¥ë°” ì¤„ì–´ë“¦) ë“±ì„ ì—¬ê¸°ì„œ ì—°ê²°í•  ìˆ˜ë„ ìˆìŠµë‹ˆë‹¤.
 
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);

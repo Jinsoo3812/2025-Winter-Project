@@ -1,12 +1,12 @@
-#include "EnemyAI.h"
+ï»¿#include "EnemyAI.h"
 #include "BehaviorTree/BlackboardComponent.h"
-#include "BehaviorTree/BehaviorTree.h" // Çì´õ Ãß°¡ ÇÊ¿ä
+#include "BehaviorTree/BehaviorTree.h" // í—¤ë” ì¶”ê°€ í•„ìš”
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 
 AEnemyAI::AEnemyAI()
 {
-	// ±âº»°ª ¼³Á¤
+	// ê¸°ë³¸ê°’ ì„¤ì •
 }
 
 void AEnemyAI::OnPossess(APawn* InPawn)
@@ -16,10 +16,10 @@ void AEnemyAI::OnPossess(APawn* InPawn)
 	if (BehaviorTreeAsset)
 	{
 
-		//ºñÇìÀÌºñ¾î Æ®¸® ½ÇÇà
+		//ë¹„í—¤ì´ë¹„ì–´ íŠ¸ë¦¬ ì‹¤í–‰
 		RunBehaviorTree(BehaviorTreeAsset);
 
-		//0.5ÃÊ¸¶´Ù AI »óÅÂ °»½Å
+		//0.5ì´ˆë§ˆë‹¤ AI ìƒíƒœ ê°±ì‹ 
 		GetWorld()->GetTimerManager().SetTimer(TimerHandle_AIUpdate, this, &AEnemyAI::UpdateAIState, 0.5f, true);
 	}
 }
@@ -32,7 +32,7 @@ void AEnemyAI::OnUnPossess()
 
 void AEnemyAI::UpdateAIState()
 {
-	// ºÎ¸ð Å¬·¡½º´Â ´Ü¼øÈ÷ Å¸°Ù¸¸ Ã£¾Æ¼­ ºí·¢º¸µå¿¡ ³Ö½À´Ï´Ù.
+	// ë¶€ëª¨ í´ëž˜ìŠ¤ëŠ” ë‹¨ìˆœížˆ íƒ€ê²Ÿë§Œ ì°¾ì•„ì„œ ë¸”ëž™ë³´ë“œì— ë„£ìŠµë‹ˆë‹¤.
 	AActor* NewTarget = FindBestTarget();
 
 	if (Blackboard)
@@ -50,14 +50,14 @@ AActor* AEnemyAI::FindBestTarget()
 	UGameplayStatics::GetAllActorsWithTag(GetWorld(), FName("Player"), Players);
 
 	AActor* NearestPlayer = nullptr;
-	float MinDistanceSq = FLT_MAX; // Á¦°ö °Å¸® »ç¿ë (¿¬»ê ÃÖÀûÈ­)
+	float MinDistanceSq = FLT_MAX; // ì œê³± ê±°ë¦¬ ì‚¬ìš© (ì—°ì‚° ìµœì í™”)
 	FVector MyLoc = OwningPawn->GetActorLocation();
 
 	for (AActor* Player : Players)
 	{
 		if (!Player) continue;
 
-		// DistSquared°¡ Sqrt ¿¬»êÀÌ ¾ø¾î ´õ ºü¸¨´Ï´Ù.
+		// DistSquaredê°€ Sqrt ì—°ì‚°ì´ ì—†ì–´ ë” ë¹ ë¦…ë‹ˆë‹¤.
 		float DistSq = FVector::DistSquared(MyLoc, Player->GetActorLocation());
 		if (DistSq < MinDistanceSq)
 		{

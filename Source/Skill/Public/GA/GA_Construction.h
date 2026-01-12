@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -13,7 +13,7 @@ class UMaterialInstanceDynamic;
 class UAbilityTask_WaitInputPress;
 
 /**
- * ºí·Ï °Ç¼³ ½ºÅ³ - ½ºÅ³ Å°·Î È°¼ºÈ­ÇÏ¿© ¹üÀ§ ³» ºí·ÏÀ» Ã£°í »ı¼ºÇÒ ¼ö ÀÖÀ½
+ * ë¸”ë¡ ê±´ì„¤ ìŠ¤í‚¬ - ìŠ¤í‚¬ í‚¤ë¡œ í™œì„±í™”í•˜ì—¬ ë²”ìœ„ ë‚´ ë¸”ë¡ì„ ì°¾ê³  ìƒì„±í•  ìˆ˜ ìˆìŒ
  */
 UCLASS()
 class SKILL_API UGA_Construction : public UGA_SkillBase
@@ -23,81 +23,81 @@ class SKILL_API UGA_Construction : public UGA_SkillBase
 public:
 	UGA_Construction();
 
-	// ¾îºô¸®Æ¼ È°¼ºÈ­
+	// ì–´ë¹Œë¦¬í‹° í™œì„±í™”
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 
-	// ¾îºô¸®Æ¼ Á¾·á
+	// ì–´ë¹Œë¦¬í‹° ì¢…ë£Œ
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	// °Ç¼³ °¡´É ¹üÀ§ (XY Æò¸é ¹İÁö¸§)
+	// ê±´ì„¤ ê°€ëŠ¥ ë²”ìœ„ (XY í‰ë©´ ë°˜ì§€ë¦„)
 	UPROPERTY(EditDefaultsOnly, Category = "Range")
 	float ConstructionRangeXY = 500.0f;
 
-	// °Ç¼³ °¡´É ¹üÀ§ (ZÃà À§¾Æ·¡)
+	// ê±´ì„¤ ê°€ëŠ¥ ë²”ìœ„ (Zì¶• ìœ„ì•„ë˜)
 	UPROPERTY(EditDefaultsOnly, Category = "Range")
 	float ConstructionRangeZ = 200.0f;
 
-	// »ı¼ºÇÒ ºí·Ï Å¬·¡½º
+	// ìƒì„±í•  ë¸”ë¡ í´ë˜ìŠ¤
 	UPROPERTY(EditDefaultsOnly, Category = "Construction")
 	TSubclassOf<ADestructibleBlock> BlockToSpawn;
 
-	// ÇÁ¸®ºä·Î Ç¥½ÃÇÒ ºí·Ï Å¬·¡½º
+	// í”„ë¦¬ë·°ë¡œ í‘œì‹œí•  ë¸”ë¡ í´ë˜ìŠ¤
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
 	TSubclassOf<AActor> PreviewBlockClass;
 
-	// ÇÁ¸®ºä·Î »ı¼ºµÈ ºí·Ï ÀÎ½ºÅÏ½º
+	// í”„ë¦¬ë·°ë¡œ ìƒì„±ëœ ë¸”ë¡ ì¸ìŠ¤í„´ìŠ¤
 	UPROPERTY()
 	TObjectPtr<AActor> PreviewBlock;
 
-	// ÇÏÀÌ¶óÀÌÆ®µÈ ºí·Ïµé (±× À§¿¡ ºí·ÏÀ» »ı¼ºÇÒ ¼ö ÀÖ´Â ºí·ÏµéÀÇ ¸ñ·Ï)
-	// TSet ÀÚ·á±¸Á¶ Contains ¸Ş¼­µå O(1) ÇØ½Ã Å½»öÀ» ÃÖÀûÈ­ÇÔ
+	// í•˜ì´ë¼ì´íŠ¸ëœ ë¸”ë¡ë“¤ (ê·¸ ìœ„ì— ë¸”ë¡ì„ ìƒì„±í•  ìˆ˜ ìˆëŠ” ë¸”ë¡ë“¤ì˜ ëª©ë¡)
+	// TSet ìë£Œêµ¬ì¡° Contains ë©”ì„œë“œ O(1) í•´ì‹œ íƒìƒ‰ì„ ìµœì í™”í•¨
 	UPROPERTY()
 	TSet<TObjectPtr<ABlockBase>> HighlightedBlocks;
 
-	// °¢ ºí·Ïº°·Î µ¿ÀûÀ¸·Î ¸ÓÆ¼¸®¾ó ÀÎ½ºÅÏ½º¸¦ ÀúÀå
-	// ÀÌ¹Ì ÇÏÀÌ¶óÀÌÆ®µÈ ºí·ÏµéÀ» Àç»ç¿ëÇÏ¿© Áßº¹ »ı¼º ¹æÁö
+	// ê° ë¸”ë¡ë³„ë¡œ ë™ì ìœ¼ë¡œ ë¨¸í‹°ë¦¬ì–¼ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ì €ì¥
+	// ì´ë¯¸ í•˜ì´ë¼ì´íŠ¸ëœ ë¸”ë¡ë“¤ì„ ì¬ì‚¬ìš©í•˜ì—¬ ì¤‘ë³µ ìƒì„± ë°©ì§€
 	UPROPERTY()
 	TMap<TObjectPtr<ABlockBase>, TObjectPtr<UMaterialInstanceDynamic>> DynamicMaterials;
 
-	// °¢ ºí·Ïº°·Î ¿øº» ¸ÓÆ¼¸®¾ó ÀúÀå
+	// ê° ë¸”ë¡ë³„ë¡œ ì›ë³¸ ë¨¸í‹°ë¦¬ì–¼ ì €ì¥
 	UPROPERTY()
 	TMap<TObjectPtr<ABlockBase>, TObjectPtr<UMaterialInterface>> OriginalMaterials;
 
-	// °¢ ºí·Ïº°·Î ¿øº» EmissivePower °ª ÀúÀå
+	// ê° ë¸”ë¡ë³„ë¡œ ì›ë³¸ EmissivePower ê°’ ì €ì¥
 	UPROPERTY()
 	TMap<TObjectPtr<ABlockBase>, float> OriginalEmissivePowers;
 
-	// ÇÏÀÌ¶óÀÌÆ® ½Ã Àû¿ëÇÒ EmissivePower °ª
+	// í•˜ì´ë¼ì´íŠ¸ ì‹œ ì ìš©í•  EmissivePower ê°’
 	UPROPERTY(EditDefaultsOnly, Category = "Construction")
 	float HighlightEmissivePower = 0.1f;
 
-	// Å¸ÀÌ¸Ó ÇÚµé
+	// íƒ€ì´ë¨¸ í•¸ë“¤
 	FTimerHandle TickTimerHandle;
 
-	// ÀÌÀüÀÇ ÇÃ·¹ÀÌ¾î À§Ä¡ (ÇÏÀÌ¶óÀÌÆ® ¾÷µ¥ÀÌÆ® ÃÖÀûÈ­¿ë)
+	// ì´ì „ì˜ í”Œë ˆì´ì–´ ìœ„ì¹˜ (í•˜ì´ë¼ì´íŠ¸ ì—…ë°ì´íŠ¸ ìµœì í™”ìš©)
 	FVector LastPlayerLocation;
 
-	// WÅ° ÀçÀÔ·Â °¨Áö¸¦ À§ÇÑ Ability Task
+	// Wí‚¤ ì¬ì…ë ¥ ê°ì§€ë¥¼ ìœ„í•œ Ability Task
 	UPROPERTY()
 	TObjectPtr<UAbilityTask_WaitInputPress> WaitInputTask;
 
-	// ¹üÀ§ ³» ºí·ÏµéÀ» Ã£¾Æ¼­ ÇÏÀÌ¶óÀÌÆ®
+	// ë²”ìœ„ ë‚´ ë¸”ë¡ë“¤ì„ ì°¾ì•„ì„œ í•˜ì´ë¼ì´íŠ¸
 	void HighlightBlocksInRange();
 
-	// ÇÏÀÌ¶óÀÌÆ® Á¦°Å
+	// í•˜ì´ë¼ì´íŠ¸ ì œê±°
 	void ClearHighlights();
 
-	// ¸¶¿ì½º Ä¿¼­ ¾Æ·¡ ºí·Ï Ã£±â ¹× ÇÁ¸®ºä ¾÷µ¥ÀÌÆ®
+	// ë§ˆìš°ìŠ¤ ì»¤ì„œ ì•„ë˜ ë¸”ë¡ ì°¾ê¸° ë° í”„ë¦¬ë·° ì—…ë°ì´íŠ¸
 	virtual void UpdatePreview();
 
-	// ºí·Ï »ı¼º
+	// ë¸”ë¡ ìƒì„±
 	virtual void SpawnBlock();
 
-	// ÁÂÅ¬¸¯ ÀÔ·Â Äİ¹é
+	// ì¢Œí´ë¦­ ì…ë ¥ ì½œë°±
 	virtual void OnLeftClickPressed();
 
-	// WÅ° ÀçÀÔ·Â Äİ¹é (½ºÅ³ Ãë¼Ò)
+	// Wí‚¤ ì¬ì…ë ¥ ì½œë°± (ìŠ¤í‚¬ ì·¨ì†Œ)
 	UFUNCTION()
 	void OnCancelPressed(float TimeWaited);
 };

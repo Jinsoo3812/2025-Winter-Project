@@ -1,34 +1,34 @@
-// BossDragon.cpp
+ï»¿// BossDragon.cpp
 #include "BossDragon.h"
 #include "Components/BoxComponent.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemBlueprintLibrary.h" // GAS ¶óÀÌºê·¯¸® ÇÊ¼ö
+#include "AbilitySystemBlueprintLibrary.h" // GAS ë¼ì´ë¸ŒëŸ¬ë¦¬ í•„ìˆ˜
 #include "MotionWarpingComponent.h"
 
 ABossDragon::ABossDragon()
 {
-	// 1. ¹Ú½º ÄÄÆ÷³ÍÆ® »ı¼º
+	// 1. ë°•ìŠ¤ ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	RushHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("RushHitBox"));
-	// ¸Ş½¬¿¡ ºÙÀÔ´Ï´Ù (³ªÁß¿¡ ¿¡µğÅÍ¿¡¼­ ¼ÒÄÏÀÌ³ª À§Ä¡ Á¶Á¤ °¡´É)
+	// ë©”ì‰¬ì— ë¶™ì…ë‹ˆë‹¤ (ë‚˜ì¤‘ì— ì—ë””í„°ì—ì„œ ì†Œì¼“ì´ë‚˜ ìœ„ì¹˜ ì¡°ì • ê°€ëŠ¥)
 	RushHitBox->SetupAttachment(GetMesh());
-	// Æò¼Ò¿¡´Â ²¨µÓ´Ï´Ù (NoCollision)
+	// í‰ì†Œì—ëŠ” êº¼ë‘¡ë‹ˆë‹¤ (NoCollision)
 	RushHitBox->SetCollisionProfileName(TEXT("NoCollision"));
 
-	// Ä³¸¯ÅÍ°¡ ¸ğ¼Ç ¿öÇÎ ±â´ÉÀ» °¡Áú ¼ö ÀÖ°Ô ÇØÁİ´Ï´Ù.
+	// ìºë¦­í„°ê°€ ëª¨ì…˜ ì›Œí•‘ ê¸°ëŠ¥ì„ ê°€ì§ˆ ìˆ˜ ìˆê²Œ í•´ì¤ë‹ˆë‹¤.
 	MotionWarpingComp = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComp"));
 }
 
 void ABossDragon::BeginPlay()
 {
 	Super::BeginPlay();
-	// ºÎ¸ğ(EnemyBase)ÀÇ ·ÎÁ÷(HP¹Ù »ı¼º, GAS ÃÊ±âÈ­ µî)ÀÌ ½ÇÇàµË´Ï´Ù.
+	// ë¶€ëª¨(EnemyBase)ì˜ ë¡œì§(HPë°” ìƒì„±, GAS ì´ˆê¸°í™” ë“±)ì´ ì‹¤í–‰ë©ë‹ˆë‹¤.
 }
 
 void ABossDragon::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	// 2. Ãæµ¹ ÀÌº¥Æ® ¿¬°á (BeginPlayº¸´Ù ¾ÈÀüÇÑ À§Ä¡)
+	// 2. ì¶©ëŒ ì´ë²¤íŠ¸ ì—°ê²° (BeginPlayë³´ë‹¤ ì•ˆì „í•œ ìœ„ì¹˜)
 	if (RushHitBox)
 	{
 		RushHitBox->OnComponentBeginOverlap.AddDynamic(this, &ABossDragon::OnRushOverlapBegin);
@@ -41,46 +41,46 @@ void ABossDragon::SetRushCollisionEnabled(bool bEnable)
 
 	if (bEnable)
 	{
-		// ÄÑ±â: Àû(Pawn)¸¸ °¨ÁöÇÏµµ·Ï ¼³Á¤ (QueryOnly)
+		// ì¼œê¸°: ì (Pawn)ë§Œ ê°ì§€í•˜ë„ë¡ ì„¤ì • (QueryOnly)
 		RushHitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		// ¸ğµç Ã¤³Î ¹«½Ã ÈÄ Pawn(ÇÃ·¹ÀÌ¾î)¸¸ °ãÄ§(Overlap) Çã¿ë
+		// ëª¨ë“  ì±„ë„ ë¬´ì‹œ í›„ Pawn(í”Œë ˆì´ì–´)ë§Œ ê²¹ì¹¨(Overlap) í—ˆìš©
 		RushHitBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 		RushHitBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	}
 	else
 	{
-		// ²ô±â: ´Ù½Ã ¹«Àû »óÅÂ
+		// ë„ê¸°: ë‹¤ì‹œ ë¬´ì  ìƒíƒœ
 		RushHitBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
 
 void ABossDragon::OnRushOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// ÀÚ±â ÀÚ½ÅÀÌ³ª nullÀº ¹«½Ã
+	// ìê¸° ìì‹ ì´ë‚˜ nullì€ ë¬´ì‹œ
 	if (OtherActor == this || !OtherActor) return;
 
-	// [µ¥¹ÌÁö Àû¿ë ·ÎÁ÷]
-	// ºÎ¸ğ(EnemyBase)°¡ °¡Áø AbilitySystemComponent¸¦ »ç¿ë
-	// (EnemyBaseÀÇ ASC Á¢±Ù ±ÇÇÑÀÌ protected ÀÌ»óÀÌ¾î¾ß ÇÔ. ¸¸¾à private¶ó¸é GetAbilitySystemComponent() »ç¿ë)
+	// [ë°ë¯¸ì§€ ì ìš© ë¡œì§]
+	// ë¶€ëª¨(EnemyBase)ê°€ ê°€ì§„ AbilitySystemComponentë¥¼ ì‚¬ìš©
+	// (EnemyBaseì˜ ASC ì ‘ê·¼ ê¶Œí•œì´ protected ì´ìƒì´ì–´ì•¼ í•¨. ë§Œì•½ privateë¼ë©´ GetAbilitySystemComponent() ì‚¬ìš©)
 	if (AbilitySystemComponent && RushDamageEffect)
 	{
-		// Å¸°Ù(ÇÃ·¹ÀÌ¾î)ÀÇ ASC °¡Á®¿À±â
+		// íƒ€ê²Ÿ(í”Œë ˆì´ì–´)ì˜ ASC ê°€ì ¸ì˜¤ê¸°
 		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 		if (TargetASC)
 		{
-			// µ¥¹ÌÁö ½ºÆå »ı¼º (Context + Spec)
+			// ë°ë¯¸ì§€ ìŠ¤í™ ìƒì„± (Context + Spec)
 			FGameplayEffectContextHandle ContextHandle = AbilitySystemComponent->MakeEffectContext();
 			ContextHandle.AddSourceObject(this);
 
-			// ·¹º§ 1.0 ±âÁØÀ¸·Î Effect »ı¼º
+			// ë ˆë²¨ 1.0 ê¸°ì¤€ìœ¼ë¡œ Effect ìƒì„±
 			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(RushDamageEffect, 1.0f, ContextHandle);
 
 			if (SpecHandle.IsValid())
 			{
-				// µ¥¹ÌÁö Àû¿ë!
+				// ë°ë¯¸ì§€ ì ìš©!
 				AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
-				// ·Î±× Ãâ·Â
+				// ë¡œê·¸ ì¶œë ¥
 				UE_LOG(LogTemp, Warning, TEXT("[BossDragon] Rush HIT! Damaged Actor: %s"), *OtherActor->GetName());
 			}
 		}
@@ -88,20 +88,20 @@ void ABossDragon::OnRushOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor
 }
 
 
-// ÀÌ ÇÔ¼ö´Â ºí·çÇÁ¸°Æ®(ºñÇìÀÌºñ¾î Æ®¸® ¼­ºñ½º µî)¿¡¼­ È£ÃâÇÒ ¿¹Á¤ÀÔ´Ï´Ù.
+// ì´ í•¨ìˆ˜ëŠ” ë¸”ë£¨í”„ë¦°íŠ¸(ë¹„í—¤ì´ë¹„ì–´ íŠ¸ë¦¬ ì„œë¹„ìŠ¤ ë“±)ì—ì„œ í˜¸ì¶œí•  ì˜ˆì •ì…ë‹ˆë‹¤.
 void ABossDragon::UpdateMotionWarpTarget(AActor* TargetActor)
 {
 	if (MotionWarpingComp && TargetActor)
 	{
-		// "FaceTarget": ¸ùÅ¸ÁÖ ³ëÆ¼ÆÄÀÌ¿¡¼­ »ç¿ëÇÒ ÀÌ¸§ÀÔ´Ï´Ù. (²À ±â¾ïÇÏ¼¼¿ä!)
-		// Å¸°ÙÀÇ ÇöÀç À§Ä¡¿Í È¸Àü°ªÀ» 'FaceTarget'ÀÌ¶ó´Â ÁöÁ¡À¸·Î µî·ÏÇÕ´Ï´Ù.
+		// "FaceTarget": ëª½íƒ€ì£¼ ë…¸í‹°íŒŒì´ì—ì„œ ì‚¬ìš©í•  ì´ë¦„ì…ë‹ˆë‹¤. (ê¼­ ê¸°ì–µí•˜ì„¸ìš”!)
+		// íƒ€ê²Ÿì˜ í˜„ì¬ ìœ„ì¹˜ì™€ íšŒì „ê°’ì„ 'FaceTarget'ì´ë¼ëŠ” ì§€ì ìœ¼ë¡œ ë“±ë¡í•©ë‹ˆë‹¤.
 		MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
 			FName("FaceTarget"),
 			TargetActor->GetActorLocation(),
 			TargetActor->GetActorRotation()
 		);
 
-		// ·Î±×·Î È®ÀÎ (µğ¹ö±ë¿ë)
+		// ë¡œê·¸ë¡œ í™•ì¸ (ë””ë²„ê¹…ìš©)
 		// UE_LOG(LogTemp, Log, TEXT("[BossDragon] Motion Warp Target Updated: %s"), *TargetActor->GetName());
 	}
 }

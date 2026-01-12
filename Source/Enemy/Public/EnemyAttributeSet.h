@@ -1,17 +1,17 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
 #include "AbilitySystemComponent.h"
 #include "EnemyAttributeSet.generated.h"
 
-// GAS ¸ÅÅ©·Î: ¼Ó¼º Á¢±ÙÀÚ(Getter/Setter) ÀÚµ¿ »ı¼º
+// GAS ë§¤í¬ë¡œ: ì†ì„± ì ‘ê·¼ì(Getter/Setter) ìë™ ìƒì„±
 /**
- * [¸ÅÅ©·Î ¼³¸í]
- * ¾ğ¸®¾ó GAS¿¡¼­ ¼Ó¼º(Attribute)¿¡ Á¢±ÙÇÏ±â À§ÇÑ º¸ÀÏ·¯ÇÃ·¹ÀÌÆ® ÄÚµå¸¦ ÀÚµ¿À¸·Î »ı¼ºÇØÁİ´Ï´Ù.
- * - GetHealth(): ÇöÀç Ã¼·Â °ªÀ» °¡Á®¿É´Ï´Ù.
- * - SetHealth(): ÇöÀç Ã¼·Â °ªÀ» °­Á¦·Î ¼³Á¤ÇÕ´Ï´Ù.
- * - InitHealth(): ÃÊ±â Ã¼·Â °ªÀ» ¼³Á¤ÇÕ´Ï´Ù.
+ * [ë§¤í¬ë¡œ ì„¤ëª…]
+ * ì–¸ë¦¬ì–¼ GASì—ì„œ ì†ì„±(Attribute)ì— ì ‘ê·¼í•˜ê¸° ìœ„í•œ ë³´ì¼ëŸ¬í”Œë ˆì´íŠ¸ ì½”ë“œë¥¼ ìë™ìœ¼ë¡œ ìƒì„±í•´ì¤ë‹ˆë‹¤.
+ * - GetHealth(): í˜„ì¬ ì²´ë ¥ ê°’ì„ ê°€ì ¸ì˜µë‹ˆë‹¤.
+ * - SetHealth(): í˜„ì¬ ì²´ë ¥ ê°’ì„ ê°•ì œë¡œ ì„¤ì •í•©ë‹ˆë‹¤.
+ * - InitHealth(): ì´ˆê¸° ì²´ë ¥ ê°’ì„ ì„¤ì •í•©ë‹ˆë‹¤.
  */
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 		GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
@@ -21,13 +21,13 @@
 
  /**
   * UEnemyAttributeSet
-  * * [Å¬·¡½º °³¿ä]
-  * Àû(Enemy) Ä³¸¯ÅÍ°¡ °¡Áö´Â ¸ğµç '¼öÄ¡ µ¥ÀÌÅÍ(Stats)'¸¦ Á¤ÀÇÇÏ°í °ü¸®ÇÏ´Â Å¬·¡½ºÀÔ´Ï´Ù.
-  * ÆÀ¿ø(³×Æ®¿öÅ©/½ºÅ³ ´ã´ç)Àº GameplayEffect¸¦ ÅëÇØ ÀÌ Å¬·¡½ºÀÇ º¯¼öµéÀ» º¯°æÇÏ¿© µ¥¹ÌÁö¸¦ Áİ´Ï´Ù.
-  * * [µ¿ÀÛ ¹æ½Ä]
-  * 1. Health, MaxHealth µîÀÇ º¯¼ö¸¦ °¡Áı´Ï´Ù.
-  * 2. ³×Æ®¿öÅ© ¸®ÇÃ¸®ÄÉÀÌ¼Ç(Replication)À» Áö¿øÇÏ¿© ¼­¹öÀÇ Ã¼·Â º¯°æ »çÇ×À» ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡°Ô µ¿±âÈ­ÇÕ´Ï´Ù.
-  * 3. Ã¼·ÂÀÌ º¯°æµÉ ¶§(PostGameplayEffectExecute), 0 ÀÌÇÏ·Î ¶³¾îÁö´ÂÁö °Ë»çÇÏ¿© »ç¸Á ¿©ºÎ¸¦ ÆÇ´ÜÇÒ ¼ö ÀÖ½À´Ï´Ù.
+  * * [í´ë˜ìŠ¤ ê°œìš”]
+  * ì (Enemy) ìºë¦­í„°ê°€ ê°€ì§€ëŠ” ëª¨ë“  'ìˆ˜ì¹˜ ë°ì´í„°(Stats)'ë¥¼ ì •ì˜í•˜ê³  ê´€ë¦¬í•˜ëŠ” í´ë˜ìŠ¤ì…ë‹ˆë‹¤.
+  * íŒ€ì›(ë„¤íŠ¸ì›Œí¬/ìŠ¤í‚¬ ë‹´ë‹¹)ì€ GameplayEffectë¥¼ í†µí•´ ì´ í´ë˜ìŠ¤ì˜ ë³€ìˆ˜ë“¤ì„ ë³€ê²½í•˜ì—¬ ë°ë¯¸ì§€ë¥¼ ì¤ë‹ˆë‹¤.
+  * * [ë™ì‘ ë°©ì‹]
+  * 1. Health, MaxHealth ë“±ì˜ ë³€ìˆ˜ë¥¼ ê°€ì§‘ë‹ˆë‹¤.
+  * 2. ë„¤íŠ¸ì›Œí¬ ë¦¬í”Œë¦¬ì¼€ì´ì…˜(Replication)ì„ ì§€ì›í•˜ì—¬ ì„œë²„ì˜ ì²´ë ¥ ë³€ê²½ ì‚¬í•­ì„ ëª¨ë“  í´ë¼ì´ì–¸íŠ¸ì—ê²Œ ë™ê¸°í™”í•©ë‹ˆë‹¤.
+  * 3. ì²´ë ¥ì´ ë³€ê²½ë  ë•Œ(PostGameplayEffectExecute), 0 ì´í•˜ë¡œ ë–¨ì–´ì§€ëŠ”ì§€ ê²€ì‚¬í•˜ì—¬ ì‚¬ë§ ì—¬ë¶€ë¥¼ íŒë‹¨í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
   */
 UCLASS()
 class ENEMY_API UEnemyAttributeSet : public UAttributeSet
@@ -35,34 +35,34 @@ class ENEMY_API UEnemyAttributeSet : public UAttributeSet
 	GENERATED_BODY()
 
 public:
-	// »ı¼ºÀÚ: ¼Ó¼ºµéÀÇ ÃÊ±âÈ­¸¦ ´ã´çÇÒ ¼ö ÀÖ½À´Ï´Ù.
+	// ìƒì„±ì: ì†ì„±ë“¤ì˜ ì´ˆê¸°í™”ë¥¼ ë‹´ë‹¹í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
 	UEnemyAttributeSet();
 
-	// [³×Æ®¿öÅ© µ¿±âÈ­ ÇÊ¼ö ÇÔ¼ö]
-	// ¾î¶² º¯¼öµéÀÌ ³×Æ®¿öÅ©¸¦ ÅëÇØ º¹Á¦µÉÁö(Replicated) ±ÔÄ¢À» Á¤ÀÇÇÕ´Ï´Ù.
+	// [ë„¤íŠ¸ì›Œí¬ ë™ê¸°í™” í•„ìˆ˜ í•¨ìˆ˜]
+	// ì–´ë–¤ ë³€ìˆ˜ë“¤ì´ ë„¤íŠ¸ì›Œí¬ë¥¼ í†µí•´ ë³µì œë ì§€(Replicated) ê·œì¹™ì„ ì •ì˜í•©ë‹ˆë‹¤.
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// [°ª º¯°æ Ã³¸® ÇÔ¼ö]
-	// GameplayEffect(½ºÅ³ µî)°¡ ½ÇÇàµÈ Á÷ÈÄ È£ÃâµË´Ï´Ù.
-	// ¿¹: µ¥¹ÌÁö¸¦ ÀÔ¾î Health°¡ °¨¼ÒÇßÀ» ¶§, À½¼ö°¡ µÇÁö ¾Êµµ·Ï 0À¸·Î º¸Á¤(Clamp)ÇÏ´Â ·ÎÁ÷ÀÌ µé¾î°©´Ï´Ù.
+	// [ê°’ ë³€ê²½ ì²˜ë¦¬ í•¨ìˆ˜]
+	// GameplayEffect(ìŠ¤í‚¬ ë“±)ê°€ ì‹¤í–‰ëœ ì§í›„ í˜¸ì¶œë©ë‹ˆë‹¤.
+	// ì˜ˆ: ë°ë¯¸ì§€ë¥¼ ì…ì–´ Healthê°€ ê°ì†Œí–ˆì„ ë•Œ, ìŒìˆ˜ê°€ ë˜ì§€ ì•Šë„ë¡ 0ìœ¼ë¡œ ë³´ì •(Clamp)í•˜ëŠ” ë¡œì§ì´ ë“¤ì–´ê°‘ë‹ˆë‹¤.
 	virtual void PostGameplayEffectExecute(const struct FGameplayEffectModCallbackData& Data) override;
 
 	// -------------------------------------------------------------------------
-	// ¼Ó¼º Á¤ÀÇ (Attributes)
+	// ì†ì„± ì •ì˜ (Attributes)
 	// -------------------------------------------------------------------------
 
 	/**
-	 * [Health: ÇöÀç Ã¼·Â]
-	 * - ReplicatedUsing = OnRep_Health: ¼­¹ö¿¡¼­ °ªÀÌ ¹Ù²î¸é Å¬¶óÀÌ¾ğÆ®ÀÇ OnRep_Health ÇÔ¼ö°¡ È£ÃâµË´Ï´Ù.
-	 * - FGameplayAttributeData: GAS¿¡¼­ °ªÀ» ÀúÀåÇÏ´Â Àü¿ë ±¸Á¶Ã¼ÀÔ´Ï´Ù (BaseValue, CurrentValue Æ÷ÇÔ).
+	 * [Health: í˜„ì¬ ì²´ë ¥]
+	 * - ReplicatedUsing = OnRep_Health: ì„œë²„ì—ì„œ ê°’ì´ ë°”ë€Œë©´ í´ë¼ì´ì–¸íŠ¸ì˜ OnRep_Health í•¨ìˆ˜ê°€ í˜¸ì¶œë©ë‹ˆë‹¤.
+	 * - FGameplayAttributeData: GASì—ì„œ ê°’ì„ ì €ì¥í•˜ëŠ” ì „ìš© êµ¬ì¡°ì²´ì…ë‹ˆë‹¤ (BaseValue, CurrentValue í¬í•¨).
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UEnemyAttributeSet, Health);
 
 	/**
-	 * [MaxHealth: ÃÖ´ë Ã¼·Â]
-	 * - Ã¼·Â È¸º¹ ½Ã ÇöÀç Ã¼·ÂÀÌ ÀÌ °ªÀ» ³ÑÁö ¾Êµµ·Ï Á¦ÇÑÇÏ´Â ¿ëµµ·Î ¾²ÀÔ´Ï´Ù.
+	 * [MaxHealth: ìµœëŒ€ ì²´ë ¥]
+	 * - ì²´ë ¥ íšŒë³µ ì‹œ í˜„ì¬ ì²´ë ¥ì´ ì´ ê°’ì„ ë„˜ì§€ ì•Šë„ë¡ ì œí•œí•˜ëŠ” ìš©ë„ë¡œ ì“°ì…ë‹ˆë‹¤.
 	 */
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxHealth)
 	FGameplayAttributeData MaxHealth;
@@ -70,18 +70,18 @@ public:
 
 protected:
 	// -------------------------------------------------------------------------
-	// OnRep ÇÔ¼öµé (Å¬¶óÀÌ¾ğÆ® µ¿±âÈ­ Ã³¸®)
+	// OnRep í•¨ìˆ˜ë“¤ (í´ë¼ì´ì–¸íŠ¸ ë™ê¸°í™” ì²˜ë¦¬)
 	// -------------------------------------------------------------------------
 
 	/**
-	 * ¼­¹ö¿¡¼­ Health °ªÀÌ º¯°æµÇ¾ú´Ù´Â ½ÅÈ£¸¦ ¹Ş¾ÒÀ» ¶§ Å¬¶óÀÌ¾ğÆ®¿¡¼­ ½ÇÇàµË´Ï´Ù.
-	 * ÁÖ·Î Ã¼·Â¹Ù UI¸¦ °»½ÅÇÏ°Å³ª, ÇÇ°İ È¿°ú¸¦ ¿¬ÃâÇÒ ¶§ »ç¿ëµË´Ï´Ù.
+	 * ì„œë²„ì—ì„œ Health ê°’ì´ ë³€ê²½ë˜ì—ˆë‹¤ëŠ” ì‹ í˜¸ë¥¼ ë°›ì•˜ì„ ë•Œ í´ë¼ì´ì–¸íŠ¸ì—ì„œ ì‹¤í–‰ë©ë‹ˆë‹¤.
+	 * ì£¼ë¡œ ì²´ë ¥ë°” UIë¥¼ ê°±ì‹ í•˜ê±°ë‚˜, í”¼ê²© íš¨ê³¼ë¥¼ ì—°ì¶œí•  ë•Œ ì‚¬ìš©ë©ë‹ˆë‹¤.
 	 */
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 
 	/**
-	 * ¼­¹ö¿¡¼­ MaxHealth °ªÀÌ º¯°æµÇ¾úÀ» ¶§ Å¬¶óÀÌ¾ğÆ®¿¡¼­ ½ÇÇàµË´Ï´Ù.
+	 * ì„œë²„ì—ì„œ MaxHealth ê°’ì´ ë³€ê²½ë˜ì—ˆì„ ë•Œ í´ë¼ì´ì–¸íŠ¸ì—ì„œ ì‹¤í–‰ë©ë‹ˆë‹¤.
 	 */
 	UFUNCTION()
 	virtual void OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth);

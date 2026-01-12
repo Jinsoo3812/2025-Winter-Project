@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -10,7 +10,7 @@ class UGameplayEffect;
 class UAbilityTask_WaitInputPress;
 
 /**
- * Àü¹æ Á÷À°¸éÃ¼(Box) ¹üÀ§¿¡ 'ÆÄ±«' °ø°İÀ» °¡ÇÏ´Â Gameplay Ability
+ * ì „ë°© ì§ìœ¡ë©´ì²´(Box) ë²”ìœ„ì— 'íŒŒê´´' ê³µê²©ì„ ê°€í•˜ëŠ” Gameplay Ability
  */
 UCLASS(Blueprintable)
 class SKILL_API UGA_Destruction : public UGA_SkillBase
@@ -20,11 +20,11 @@ class SKILL_API UGA_Destruction : public UGA_SkillBase
 public:
 	UGA_Destruction();
 
-	// GA ¹ßµ¿ ½Ã È£ÃâµÇ´Â ÇÔ¼ö
-	// Handle: GA ½Äº°ÀÚ
-	// ActorInfo: GA¸¦ ¼ÒÀ¯ÇÑ ¾×ÅÍ(Owner, Avatar)ÀÇ Á¤º¸
-	// ActivationInfo: GA ¹ßµ¿¿¡ ´ëÇÑ Ãß°¡ Á¤º¸ (¿¹Ãø, ¼­¹ö Àü¿ë, ¼­¹ö ´ë±â µî)
-	// TriggerEventData: GA°¡ GameplayEvent¿¡ ÀÇÇØ ¹ßµ¿µÈ °æ¿ìÀÇ ÀÌº¥Æ® µ¥ÀÌÅÍ. ÀÔ·Â/Á÷Á¢ È£ÃâÀÇ °æ¿ì nullptr
+	// GA ë°œë™ ì‹œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
+	// Handle: GA ì‹ë³„ì
+	// ActorInfo: GAë¥¼ ì†Œìœ í•œ ì•¡í„°(Owner, Avatar)ì˜ ì •ë³´
+	// ActivationInfo: GA ë°œë™ì— ëŒ€í•œ ì¶”ê°€ ì •ë³´ (ì˜ˆì¸¡, ì„œë²„ ì „ìš©, ì„œë²„ ëŒ€ê¸° ë“±)
+	// TriggerEventData: GAê°€ GameplayEventì— ì˜í•´ ë°œë™ëœ ê²½ìš°ì˜ ì´ë²¤íŠ¸ ë°ì´í„°. ì…ë ¥/ì§ì ‘ í˜¸ì¶œì˜ ê²½ìš° nullptr
 	virtual void ActivateAbility(
 		const FGameplayAbilitySpecHandle Handle, 
 		const FGameplayAbilityActorInfo* ActorInfo, 
@@ -41,47 +41,47 @@ public:
 	) override;
 
 protected:
-	// Á÷À°¸éÃ¼ ¹üÀ§ÀÇ Àü¹æ °Å¸® (ÇÃ·¹ÀÌ¾î·ÎºÎÅÍ ¾ó¸¶³ª ¾Õ¿¡¼­ ½ÃÀüÇÒÁö)
+	// ì§ìœ¡ë©´ì²´ ë²”ìœ„ì˜ ì „ë°© ê±°ë¦¬ (í”Œë ˆì´ì–´ë¡œë¶€í„° ì–¼ë§ˆë‚˜ ì•ì—ì„œ ì‹œì „í• ì§€)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Range")
 	float BoxDistance = 0.0f;
 
-	// Á÷À°¸éÃ¼ ¹üÀ§ÀÇ Å©±â (X: Àü¹æ ±æÀÌ, Y: ÁÂ¿ì Æø, Z: »óÇÏ ³ôÀÌ)
+	// ì§ìœ¡ë©´ì²´ ë²”ìœ„ì˜ í¬ê¸° (X: ì „ë°© ê¸¸ì´, Y: ì¢Œìš° í­, Z: ìƒí•˜ ë†’ì´)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Range")
 	FVector BoxExtent = FVector(100.0f, 50.0f, 50.0f);
 
-	// ºí·Ï¿¡°Ô Àû¿ëÇÒ Gameplay Effect (ÆÄ±« È¿°ú)
+	// ë¸”ë¡ì—ê²Œ ì ìš©í•  Gameplay Effect (íŒŒê´´ íš¨ê³¼)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Gameplay Effect")
 	TSubclassOf<UGameplayEffect> DestructionEffect;
 
-	// ÇÁ¸®ºä·Î ¹üÀ§¸¦ Ç¥½ÃÇÒ Å¥ºê Å¬·¡½º
+	// í”„ë¦¬ë·°ë¡œ ë²”ìœ„ë¥¼ í‘œì‹œí•  íë¸Œ í´ë˜ìŠ¤
 	UPROPERTY(EditDefaultsOnly, Category = "Preview")
 	TSubclassOf<AActor> RangePreviewActorClass;
 
-	// ÇÁ¸®ºä·Î »ı¼ºµÈ Å¥ºê ÀÎ½ºÅÏ½º
+	// í”„ë¦¬ë·°ë¡œ ìƒì„±ëœ íë¸Œ ì¸ìŠ¤í„´ìŠ¤
 	UPROPERTY()
 	TObjectPtr<AActor> RangePreviewActor;
 
-	// Å¸ÀÌ¸Ó ÇÚµé
+	// íƒ€ì´ë¨¸ í•¸ë“¤
 	FTimerHandle TickTimerHandle;
 
-	// ½ºÅ³ Å° ÀçÀÔ·Â °¨Áö¸¦ À§ÇÑ Ability Task
+	// ìŠ¤í‚¬ í‚¤ ì¬ì…ë ¥ ê°ì§€ë¥¼ ìœ„í•œ Ability Task
 	UPROPERTY()
 	TObjectPtr<UAbilityTask_WaitInputPress> WaitInputTask;
 
-	// µğ¹ö±×¿ë ¹Ú½º¸¦ È­¸é¿¡ Ç¥½ÃÇÒ ½Ã°£ (ÃÊ)
+	// ë””ë²„ê·¸ìš© ë°•ìŠ¤ë¥¼ í™”ë©´ì— í‘œì‹œí•  ì‹œê°„ (ì´ˆ)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Debug")
 	float DebugDrawDuration = 1.0f;
 
-	// ¸Å ÇÁ·¹ÀÓ ÇÁ¸®ºä À§Ä¡ ¹× Å©±â ¾÷µ¥ÀÌÆ®
+	// ë§¤ í”„ë ˆì„ í”„ë¦¬ë·° ìœ„ì¹˜ ë° í¬ê¸° ì—…ë°ì´íŠ¸
 	void UpdatePreview();
 
-	// ½ÇÁ¦ ÆÄ±« ·ÎÁ÷ ¼öÇà (ÁÂÅ¬¸¯ ½Ã È£Ãâ)
+	// ì‹¤ì œ íŒŒê´´ ë¡œì§ ìˆ˜í–‰ (ì¢Œí´ë¦­ ì‹œ í˜¸ì¶œ)
 	void PerformDestruction();
 
-	// ÁÂÅ¬¸¯ ÀÔ·Â Äİ¹é
+	// ì¢Œí´ë¦­ ì…ë ¥ ì½œë°±
 	void OnLeftClickPressed();
 
-	// ½ºÅ³ Å° ÀçÀÔ·Â Äİ¹é (Ãë¼Ò)
+	// ìŠ¤í‚¬ í‚¤ ì¬ì…ë ¥ ì½œë°± (ì·¨ì†Œ)
 	UFUNCTION()
 	void OnCancelPressed(float TimeWaited);
 };

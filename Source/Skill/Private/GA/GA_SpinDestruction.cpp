@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GA/GA_SpinDestruction.h"
 #include "AbilitySystemComponent.h"
@@ -21,7 +21,7 @@ void UGA_SpinDestruction::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// È¸Àü ½ºÅ³ ½ÃÀÛ
+	// íšŒì „ ìŠ¤í‚¬ ì‹œì‘
 	StartSpin();
 }
 
@@ -32,7 +32,7 @@ void UGA_SpinDestruction::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// ¸ğµç Å¸ÀÌ¸Ó Á¤¸®
+	// ëª¨ë“  íƒ€ì´ë¨¸ ì •ë¦¬
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(SpinDurationTimerHandle);
@@ -40,12 +40,12 @@ void UGA_SpinDestruction::EndAbility(
 		World->GetTimerManager().ClearTimer(DebugDrawTimerHandle);
 	}
 
-	// Å¸ÀÌ¸Ó ÇÚµé ¹«È¿È­
+	// íƒ€ì´ë¨¸ í•¸ë“¤ ë¬´íš¨í™”
 	SpinDurationTimerHandle.Invalidate();
 	DamageTickTimerHandle.Invalidate();
 	DebugDrawTimerHandle.Invalidate();
 
-	// ÅÂ½ºÅ© Á¤¸®
+	// íƒœìŠ¤í¬ ì •ë¦¬
 	if (WaitInputTask)
 	{
 		WaitInputTask->EndTask();
@@ -57,10 +57,10 @@ void UGA_SpinDestruction::EndAbility(
 
 void UGA_SpinDestruction::StartSpin()
 {
-	// ½ºÅ³ ½ÃÀü ½ÃÀÛ ¾Ë¸² (State.Busy ÅÂ±× Ãß°¡)
+	// ìŠ¤í‚¬ ì‹œì „ ì‹œì‘ ì•Œë¦¼ (State.Busy íƒœê·¸ ì¶”ê°€)
 	NotifySkillCastStarted();
 
-	// ÄÚ½ºÆ® Ä¿¹Ô (Äğ´Ù¿îÀº ½ºÅ³ Á¾·á ½Ã Àû¿ë)
+	// ì½”ìŠ¤íŠ¸ ì»¤ë°‹ (ì¿¨ë‹¤ìš´ì€ ìŠ¤í‚¬ ì¢…ë£Œ ì‹œ ì ìš©)
 	if (!CommitAbilityCost(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
 	{
 		UE_LOG(LogTemp, Error, TEXT("GA_SpinDestruction: Failed to commit ability cost"));
@@ -76,31 +76,31 @@ void UGA_SpinDestruction::StartSpin()
 		return;
 	}
 
-	// ½ºÅ³ Å° ÀçÀÔ·Â °¨Áö ÅÂ½ºÅ© »ı¼º
+	// ìŠ¤í‚¬ í‚¤ ì¬ì…ë ¥ ê°ì§€ íƒœìŠ¤í¬ ìƒì„±
 	WaitInputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
 	if (WaitInputTask)
 	{
-		// OnPress µ¨¸®°ÔÀÌÆ®¿¡ Äİ¹é ÇÔ¼ö(Á¶±â Á¾·á) ¹ÙÀÎµù
+		// OnPress ë¸ë¦¬ê²Œì´íŠ¸ì— ì½œë°± í•¨ìˆ˜(ì¡°ê¸° ì¢…ë£Œ) ë°”ì¸ë”©
 		WaitInputTask->OnPress.AddDynamic(this, &UGA_SpinDestruction::OnSkillKeyPressed);
 
-		// ¾îºô¸®Æ¼ ÅÂ½ºÅ© È°¼ºÈ­
+		// ì–´ë¹Œë¦¬í‹° íƒœìŠ¤í¬ í™œì„±í™”
 		WaitInputTask->ReadyForActivation();
 	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[GA_SpinDestruction] Setting up timers: Duration=%.1fs, TickInterval=%.2fs, Radius=%.1f"), 
 		SpinDuration, DamageTickInterval, SpinRadius);
 
-	// µ¥¹ÌÁö Àû¿ë ÁÖ±âÀû È£Ãâ (0.5ÃÊ¸¶´Ù)
+	// ë°ë¯¸ì§€ ì ìš© ì£¼ê¸°ì  í˜¸ì¶œ (0.5ì´ˆë§ˆë‹¤)
 	World->GetTimerManager().SetTimer(
 		DamageTickTimerHandle,
 		this,
 		&UGA_SpinDestruction::ApplySpinDamage,
 		DamageTickInterval,
 		true,
-		0.0f // Áï½Ã ½ÃÀÛ
+		0.0f // ì¦‰ì‹œ ì‹œì‘
 	);
 
-	// µğ¹ö±× µå·Î¿ì ¾÷µ¥ÀÌÆ® (¸Å ÇÁ·¹ÀÓ)
+	// ë””ë²„ê·¸ ë“œë¡œìš° ì—…ë°ì´íŠ¸ (ë§¤ í”„ë ˆì„)
 	World->GetTimerManager().SetTimer(
 		DebugDrawTimerHandle,
 		this,
@@ -109,7 +109,7 @@ void UGA_SpinDestruction::StartSpin()
 		true
 	);
 
-	// Áö¼Ó ½Ã°£ ÈÄ ÀÚµ¿ Á¾·á
+	// ì§€ì† ì‹œê°„ í›„ ìë™ ì¢…ë£Œ
 	World->GetTimerManager().SetTimer(
 		SpinDurationTimerHandle,
 		this,
@@ -121,10 +121,10 @@ void UGA_SpinDestruction::StartSpin()
 
 void UGA_SpinDestruction::StopSpin()
 {
-	// È¸Àü ½ºÅ³ Á¾·á ½Ã Äğ´Ù¿î Àû¿ë
+	// íšŒì „ ìŠ¤í‚¬ ì¢…ë£Œ ì‹œ ì¿¨ë‹¤ìš´ ì ìš©
 	ApplyCooldown(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo());
 
-	// ½ºÅ³ Á¾·á
+	// ìŠ¤í‚¬ ì¢…ë£Œ
 	EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, false);
 }
 
@@ -137,20 +137,20 @@ void UGA_SpinDestruction::ApplySpinDamage()
 		return;
 	}
 
-	// ÇÃ·¹ÀÌ¾î À§Ä¡ ±âÁØÀ¸·Î ¿øÇü ¹üÀ§ °è»ê
+	// í”Œë ˆì´ì–´ ìœ„ì¹˜ ê¸°ì¤€ìœ¼ë¡œ ì›í˜• ë²”ìœ„ ê³„ì‚°
 	FVector OwnerLocation = AvatarActor->GetActorLocation();
 
-	// ·é Àû¿ëµÈ ¹İÁö¸§ °è»ê
+	// ë£¬ ì ìš©ëœ ë°˜ì§€ë¦„ ê³„ì‚°
 	float RangeMultiplier = GetRuneModifiedRange() / BaseRange;
 	float AdjustedRadius = SpinRadius * RangeMultiplier;
 
-	// Ãæµ¹ °Ë»ç ÆÄ¶ó¹ÌÅÍ
+	// ì¶©ëŒ ê²€ì‚¬ íŒŒë¼ë¯¸í„°
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(AvatarActor);
 
 	TArray<FOverlapResult> OverlapResults;
 
-	// ±¸Çü ¹üÀ§·Î Ãæµ¹ °Ë»ç
+	// êµ¬í˜• ë²”ìœ„ë¡œ ì¶©ëŒ ê²€ì‚¬
 	bool bHit = GetWorld()->OverlapMultiByChannel(
 		OverlapResults,
 		OwnerLocation,
@@ -167,7 +167,7 @@ void UGA_SpinDestruction::ApplySpinDamage()
 			AActor* HitActor = Overlap.GetActor();
 			if (!HitActor) continue;
 
-			// ASC È®ÀÎ
+			// ASC í™•ì¸
 			UAbilitySystemComponent* TargetASC = nullptr;
 			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
 			{
@@ -176,7 +176,7 @@ void UGA_SpinDestruction::ApplySpinDamage()
 
 			if (TargetASC)
 			{
-				// µ¥¹ÌÁö Effect Àû¿ë
+				// ë°ë¯¸ì§€ Effect ì ìš©
 				FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 				if (DamageSpecHandle.IsValid())
 				{
@@ -186,7 +186,7 @@ void UGA_SpinDestruction::ApplySpinDamage()
 					);
 				}
 
-				// ÆÄ±« Effect Àû¿ë
+				// íŒŒê´´ Effect ì ìš©
 				if (DestructionEffect)
 				{
 					FGameplayEffectContextHandle DestructionContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
@@ -219,30 +219,30 @@ void UGA_SpinDestruction::UpdateDebugDraw()
 		return;
 	}
 
-	// ÇÃ·¹ÀÌ¾î À§Ä¡ ±âÁØ
+	// í”Œë ˆì´ì–´ ìœ„ì¹˜ ê¸°ì¤€
 	FVector OwnerLocation = AvatarActor->GetActorLocation();
 
-	// ·é Àû¿ëµÈ ¹İÁö¸§ °è»ê
+	// ë£¬ ì ìš©ëœ ë°˜ì§€ë¦„ ê³„ì‚°
 	float RangeMultiplier = GetRuneModifiedRange() / BaseRange;
 	float AdjustedRadius = SpinRadius * RangeMultiplier;
 
-	// µğ¹ö±× ¿øÇü ±×¸®±â (ÃÊ·Ï»ö)
+	// ë””ë²„ê·¸ ì›í˜• ê·¸ë¦¬ê¸° (ì´ˆë¡ìƒ‰)
 	DrawDebugSphere(
 		GetWorld(),
 		OwnerLocation,
 		AdjustedRadius,
-		32, // ¼¼±×¸ÕÆ® ¼ö
+		32, // ì„¸ê·¸ë¨¼íŠ¸ ìˆ˜
 		FColor::Green,
 		false,
-		0.05f, // 0.05ÃÊ µ¿¾È Ç¥½Ã (´ÙÀ½ ÇÁ·¹ÀÓ±îÁö)
+		0.05f, // 0.05ì´ˆ ë™ì•ˆ í‘œì‹œ (ë‹¤ìŒ í”„ë ˆì„ê¹Œì§€)
 		0,
-		2.0f // ¼± µÎ²²
+		2.0f // ì„  ë‘ê»˜
 	);
 }
 
 void UGA_SpinDestruction::OnSkillKeyPressed(float TimeWaited)
 {
-	// ½ºÅ³ Å° ÀçÀÔ·Â ½Ã Á¶±â Á¾·á
+	// ìŠ¤í‚¬ í‚¤ ì¬ì…ë ¥ ì‹œ ì¡°ê¸° ì¢…ë£Œ
 	StopSpin();
 }
 

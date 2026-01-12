@@ -1,5 +1,5 @@
-#include "Player/PlayerBase.h" 
-#include "AbilitySystemComponent.h" // ASC ±â´ÉÀ» »ç¿ëÇÏ±â À§ÇØ Æ÷ÇÔ
+ï»¿#include "Player/PlayerBase.h" 
+#include "AbilitySystemComponent.h" // ASC ê¸°ëŠ¥ì„ ì‚¬ìš©í•˜ê¸° ìœ„í•´ í¬í•¨
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -9,7 +9,7 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Materials/Material.h"
 #include "Engine/World.h"
-#include "Player/MyPlayerState.h" //PlayerState Çì´õ Æ÷ÇÔ
+#include "Player/MyPlayerState.h" //PlayerState í—¤ë” í¬í•¨
 
 APlayerBase::APlayerBase()
 {
@@ -63,54 +63,54 @@ void APlayerBase::Tick(float DeltaSeconds)
 
 
 // ------------------------------------------------------------------------
-// [¼­¹ö¿ë ÃÊ±âÈ­]
+// [ì„œë²„ìš© ì´ˆê¸°í™”]
 // ------------------------------------------------------------------------
 void APlayerBase::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// ¼­¹ö¿¡¼­´Â ºùÀÇ°¡ ÀÏ¾î³­ Áï½Ã GAS Á¤º¸¸¦ ÃÊ±âÈ­ÇÕ´Ï´Ù.
+	// ì„œë²„ì—ì„œëŠ” ë¹™ì˜ê°€ ì¼ì–´ë‚œ ì¦‰ì‹œ GAS ì •ë³´ë¥¼ ì´ˆê¸°í™”í•©ë‹ˆë‹¤.
 	InitAbilityActorInfo();
 }
 
 // ------------------------------------------------------------------------
-// [Å¬¶óÀÌ¾ğÆ®¿ë ÃÊ±âÈ­]
+// [í´ë¼ì´ì–¸íŠ¸ìš© ì´ˆê¸°í™”]
 // ------------------------------------------------------------------------
 void APlayerBase::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// Å¬¶óÀÌ¾ğÆ®¿¡¼­´Â PlayerState°¡ º¹Á¦µÇ¾î µµÂøÇÏ´Â ½ÃÁ¡¿¡ ÃÊ±âÈ­ÇÕ´Ï´Ù.
-	// (BeginPlay ½ÃÁ¡¿¡´Â PlayerState°¡ ¾ÆÁ÷ NULLÀÏ ¼ö ÀÖ±â ¶§¹®ÀÔ´Ï´Ù.)
+	// í´ë¼ì´ì–¸íŠ¸ì—ì„œëŠ” PlayerStateê°€ ë³µì œë˜ì–´ ë„ì°©í•˜ëŠ” ì‹œì ì— ì´ˆê¸°í™”í•©ë‹ˆë‹¤.
+	// (BeginPlay ì‹œì ì—ëŠ” PlayerStateê°€ ì•„ì§ NULLì¼ ìˆ˜ ìˆê¸° ë•Œë¬¸ì…ë‹ˆë‹¤.)
 	InitAbilityActorInfo();
 }
 
 // ------------------------------------------------------------------------
-// [GAS ¿¬°á ÇÙ½É ·ÎÁ÷]
+// [GAS ì—°ê²° í•µì‹¬ ë¡œì§]
 // ------------------------------------------------------------------------
 void APlayerBase::InitAbilityActorInfo()
 {
-	// ³» PlayerState¸¦ °¡Á®¿É´Ï´Ù. (MyPlayerState·Î Ä³½ºÆÃ)
+	// ë‚´ PlayerStateë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤. (MyPlayerStateë¡œ ìºìŠ¤íŒ…)
 	AMyPlayerState* PS = GetPlayerState<AMyPlayerState>();
 	if (PS)
 	{
-		// GAS ½Ã½ºÅÛ ÃÊ±âÈ­ (°¡Àå Áß¿äÇÑ ºÎºĞ!)
-		// - OwnerActor (µ¥ÀÌÅÍ ÁÖÀÎ): PlayerState (µ¥ÀÌÅÍ°¡ À¯ÁöµÊ)
-		// - AvatarActor (½ÅÃ¼/Ç¥Çö): This (PlayerBase, È­¸é¿¡ º¸ÀÌ´Â Ä³¸¯ÅÍ)
+		// GAS ì‹œìŠ¤í…œ ì´ˆê¸°í™” (ê°€ì¥ ì¤‘ìš”í•œ ë¶€ë¶„!)
+		// - OwnerActor (ë°ì´í„° ì£¼ì¸): PlayerState (ë°ì´í„°ê°€ ìœ ì§€ë¨)
+		// - AvatarActor (ì‹ ì²´/í‘œí˜„): This (PlayerBase, í™”ë©´ì— ë³´ì´ëŠ” ìºë¦­í„°)
 		PS->GetAbilitySystemComponent()->InitAbilityActorInfo(PS, this);
 
-		// µğ¹ö±ë¿ë ·Î±× (Àß ¿¬°áµÆ´ÂÁö È®ÀÎ)
+		// ë””ë²„ê¹…ìš© ë¡œê·¸ (ì˜ ì—°ê²°ëëŠ”ì§€ í™•ì¸)
 		UE_LOG(LogTemp, Warning, TEXT("GAS Initialized for %s (Owner: PlayerState)"), *GetName());
 	}
 }
 
 // ------------------------------------------------------------------------
-// [ASC °¡Á®¿À±â]
+// [ASC ê°€ì ¸ì˜¤ê¸°]
 // ------------------------------------------------------------------------
 UAbilitySystemComponent* APlayerBase::GetAbilitySystemComponent() const
 {
-	// ³» ¸ö(PlayerBase)¿¡´Â ASC º¯¼ö°¡ ¾ø½À´Ï´Ù.
-	// ´ë½Å PlayerState¿¡ ÀÖ´Â °ÍÀ» ºô·Á¼­ ¹İÈ¯ÇÕ´Ï´Ù.
+	// ë‚´ ëª¸(PlayerBase)ì—ëŠ” ASC ë³€ìˆ˜ê°€ ì—†ìŠµë‹ˆë‹¤.
+	// ëŒ€ì‹  PlayerStateì— ìˆëŠ” ê²ƒì„ ë¹Œë ¤ì„œ ë°˜í™˜í•©ë‹ˆë‹¤.
 	if (AMyPlayerState* PS = GetPlayerState<AMyPlayerState>())
 	{
 		return PS->GetAbilitySystemComponent();

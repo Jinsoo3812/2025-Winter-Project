@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -9,14 +9,14 @@
 
 class USkillManagerComponent;
 
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill); // ½ºÅ³ÀÓÀ» Ç¥½ÃÇÏ´Â ÅÂ±×
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // ½ºÅ³ ½ÃÀü ÁßÀÓÀ» ½ÃÀüÀÚ¿¡°Ô ºÎ¿©ÇÏ´Â ÅÂ±×
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // µ¥¹ÌÁö ÅÂ±×¿ë
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Cooldown); // ÄğÅ¸ÀÓ ÅÂ±×¿ë
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill); // ìŠ¤í‚¬ì„ì„ í‘œì‹œí•˜ëŠ” íƒœê·¸
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // ìŠ¤í‚¬ ì‹œì „ ì¤‘ì„ì„ ì‹œì „ìì—ê²Œ ë¶€ì—¬í•˜ëŠ” íƒœê·¸
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // ë°ë¯¸ì§€ íƒœê·¸ìš©
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Cooldown); // ì¿¨íƒ€ì„ íƒœê·¸ìš©
 
 /**
- * ¸ğµç ¾×Æ¼ºê ½ºÅ³ÀÇ ºÎ¸ğ Å¬·¡½º
- * ·é Àû¿ë ·ÎÁ÷ Æ÷ÇÔ
+ * ëª¨ë“  ì•¡í‹°ë¸Œ ìŠ¤í‚¬ì˜ ë¶€ëª¨ í´ë˜ìŠ¤
+ * ë£¬ ì ìš© ë¡œì§ í¬í•¨
  */
 UCLASS()
 class SKILL_API UGA_SkillBase : public UGameplayAbility
@@ -27,7 +27,7 @@ public:
 	UGA_SkillBase();
 
 protected:
-	// ½ºÅ³ÀÇ ±âº» ½ºÆå (¿¡µğÅÍ ¼³Á¤¿ë)
+	// ìŠ¤í‚¬ì˜ ê¸°ë³¸ ìŠ¤í™ (ì—ë””í„° ì„¤ì •ìš©)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Stats")
 	float BaseDamage = 10.0f;
 
@@ -37,36 +37,36 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Stats")
 	float BaseRange = 1.0f;
 
-	// µ¥¹ÌÁö Àû¿ëÀ» À§ÇÑ GE Å¬·¡½º
+	// ë°ë¯¸ì§€ ì ìš©ì„ ìœ„í•œ GE í´ë˜ìŠ¤
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Effects")
 	TSubclassOf<UGameplayEffect> DamageEffect;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Stats|Cooldown")
 	FGameplayTagContainer UniqueCooldownTags;
 
-	// »¡°­ ·éÀÌ Àû¿ëµÈ ÃÖÁ¾ µ¥¹ÌÁö °ªÀ» °è»êÇØ¼­ ¹İÈ¯
+	// ë¹¨ê°• ë£¬ì´ ì ìš©ëœ ìµœì¢… ë°ë¯¸ì§€ ê°’ì„ ê³„ì‚°í•´ì„œ ë°˜í™˜
 	UFUNCTION(BlueprintCallable, Category = "Skill|Calculation")
 	float GetRuneModifiedDamage() const;
 
-	// ÁÖÈ² ·éÀÌ Àû¿ëµÈ ÃÖÁ¾ ¹üÀ§ °ªÀ» °è»êÇØ¼­ ¹İÈ¯
+	// ì£¼í™© ë£¬ì´ ì ìš©ëœ ìµœì¢… ë²”ìœ„ ê°’ì„ ê³„ì‚°í•´ì„œ ë°˜í™˜
 	UFUNCTION(BlueprintCallable, Category = "Skill|Calculation")
 	float GetRuneModifiedRange() const;
 
-	// ³ë¶û ·éÀÌ Àû¿ëµÈ ÃÖÁ¾ ÄğÅ¸ÀÓ °ªÀ» °è»êÇØ¼­ ¹İÈ¯
+	// ë…¸ë‘ ë£¬ì´ ì ìš©ëœ ìµœì¢… ì¿¨íƒ€ì„ ê°’ì„ ê³„ì‚°í•´ì„œ ë°˜í™˜
 	UFUNCTION(BlueprintCallable, Category = "Skill|Calculation")
 	float GetRuneModifiedCooldown() const;
 
-	// SkillManager¸¦ °¡Á®¿À´Â ÇïÆÛ ÇÔ¼ö
-	// ¼º´É ÃÖÀûÈ­¸¦ À§ÇØ Ä³½ÌµÈ °ªÀÌ ÀÖÀ¸¸é Àç»ç¿ë
+	// SkillManagerë¥¼ ê°€ì ¸ì˜¤ëŠ” í—¬í¼ í•¨ìˆ˜
+	// ì„±ëŠ¥ ìµœì í™”ë¥¼ ìœ„í•´ ìºì‹±ëœ ê°’ì´ ìˆìœ¼ë©´ ì¬ì‚¬ìš©
 	USkillManagerComponent* GetSkillManagerFromAvatar() const;
 
-	// µ¥¹ÌÁö GE SpecÀ» »ı¼ºÇÒ ¶§ ¼öÄ¡¸¦ ÁÖÀÔÇØ¼­ ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+	// ë°ë¯¸ì§€ GE Specì„ ìƒì„±í•  ë•Œ ìˆ˜ì¹˜ë¥¼ ì£¼ì…í•´ì„œ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
 	FGameplayEffectSpecHandle MakeRuneDamageEffectSpec(
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo) const;
 
-	// GA Á¾·á ½Ã È£ÃâµÇ´Â ÇÔ¼ö
-	// State.Busy ÅÂ±× Á¦°Å ¼öÇà
+	// GA ì¢…ë£Œ ì‹œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
+	// State.Busy íƒœê·¸ ì œê±° ìˆ˜í–‰
 	virtual void EndAbility(
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -74,7 +74,7 @@ protected:
 		bool bReplicateEndAbility,
 		bool bWasCancelled) override;
 
-	// ÄğÅ¸ÀÓ Àû¿ë ·ÎÁ÷À» ¿À¹ö¶óÀÌµå (³ë¶û ·é Àû¿ëÀ» À§ÇØ)
+	// ì¿¨íƒ€ì„ ì ìš© ë¡œì§ì„ ì˜¤ë²„ë¼ì´ë“œ (ë…¸ë‘ ë£¬ ì ìš©ì„ ìœ„í•´)
 	virtual void ApplyCooldown(
 		const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -84,12 +84,12 @@ protected:
 		return &UniqueCooldownTags;
 	}
 
-	// ½ÇÁ¦ ½ºÅ³ÀÌ ¹ßµ¿µÉ ¶§ È£ÃâµÇ´Â ÇÔ¼ö
-	// ÇÁ¸®ºä ´Ü°è°¡ ¾Æ´Ñ ½ÇÁ¦ ½ÃÀÛ´Ü°è¿¡¼­ ÀÌ ÇÔ¼ö¸¦ È£ÃâÇÑ´Ù.
+	// ì‹¤ì œ ìŠ¤í‚¬ì´ ë°œë™ë  ë•Œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜
+	// í”„ë¦¬ë·° ë‹¨ê³„ê°€ ì•„ë‹Œ ì‹¤ì œ ì‹œì‘ë‹¨ê³„ì—ì„œ ì´ í•¨ìˆ˜ë¥¼ í˜¸ì¶œí•œë‹¤.
 	void NotifySkillCastStarted();
 
 private:
-	// Ä³½ÌµÈ SkillManager (¼º´É ÃÖÀûÈ­¿ë)
-	// mutable: const ÇÔ¼ö¿¡¼­µµ ¼öÁ¤ °¡´É
+	// ìºì‹±ëœ SkillManager (ì„±ëŠ¥ ìµœì í™”ìš©)
+	// mutable: const í•¨ìˆ˜ì—ì„œë„ ìˆ˜ì • ê°€ëŠ¥
 	mutable TWeakObjectPtr<USkillManagerComponent> CachedSkillManager;
 };

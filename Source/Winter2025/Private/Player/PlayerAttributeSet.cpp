@@ -1,14 +1,14 @@
-#include "Player/PlayerAttributeSet.h"
-#include "Net/UnrealNetwork.h"        // ³×Æ®¿öÅ© µ¿±âÈ­(DOREPLIFETIME)¸¦ À§ÇØ ÇÊ¼ö
-#include "GameplayEffectExtension.h"  // GE µ¥ÀÌÅÍ¸¦ ´Ù·ç±â À§ÇØ ÇÊ¼ö
+ï»¿#include "Player/PlayerAttributeSet.h"
+#include "Net/UnrealNetwork.h"        // ë„¤íŠ¸ì›Œí¬ ë™ê¸°í™”(DOREPLIFETIME)ë¥¼ ìœ„í•´ í•„ìˆ˜
+#include "GameplayEffectExtension.h"  // GE ë°ì´í„°ë¥¼ ë‹¤ë£¨ê¸° ìœ„í•´ í•„ìˆ˜
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
 UPlayerAttributeSet::UPlayerAttributeSet()
 {
-	// [ÃÊ±âÈ­]
-	// °ÔÀÓ ½ÃÀÛ ½Ã ÇÃ·¹ÀÌ¾îÀÇ Ã¼·ÂÀ» 100À¸·Î ¼³Á¤ÇÕ´Ï´Ù.
-	// ³ªÁß¿¡´Â µ¥ÀÌÅÍ Å×ÀÌºí(Excel)¿¡¼­ ºÒ·¯¿Àµµ·Ï ¼öÁ¤ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+	// [ì´ˆê¸°í™”]
+	// ê²Œì„ ì‹œì‘ ì‹œ í”Œë ˆì´ì–´ì˜ ì²´ë ¥ì„ 100ìœ¼ë¡œ ì„¤ì •í•©ë‹ˆë‹¤.
+	// ë‚˜ì¤‘ì—ëŠ” ë°ì´í„° í…Œì´ë¸”(Excel)ì—ì„œ ë¶ˆëŸ¬ì˜¤ë„ë¡ ìˆ˜ì •í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
 	Health.SetBaseValue(100.0f);
 	Health.SetCurrentValue(100.0f);
 
@@ -32,8 +32,8 @@ void UPlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// [µ¿±âÈ­ µî·Ï]
-	// "Health º¯¼ö´Â ¼­¹ö¿¡¼­ ¹Ù²î¸é ¹«Á¶°Ç(Always) Å¬¶óÀÌ¾ğÆ®ÇÑÅ× ¾Ë·ÁÁà¶ó"
+	// [ë™ê¸°í™” ë“±ë¡]
+	// "Health ë³€ìˆ˜ëŠ” ì„œë²„ì—ì„œ ë°”ë€Œë©´ ë¬´ì¡°ê±´(Always) í´ë¼ì´ì–¸íŠ¸í•œí…Œ ì•Œë ¤ì¤˜ë¼"
 	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UPlayerAttributeSet, Mana, COND_None, REPNOTIFY_Always);
@@ -44,8 +44,8 @@ void UPlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 
 void UPlayerAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
-	// GAS ½Ã½ºÅÛ¿¡°Ô "Ã¼·Â °ªÀÌ ¼­¹ö·ÎºÎÅÍ °»½ÅµÇ¾ú½À´Ï´Ù"¶ó°í ¾Ë¸³´Ï´Ù.
-	// ÀÌ ÄÚµå°¡ ÀÖ¾î¾ß ¿¹Ãø(Prediction) ½Ã½ºÅÛÀÌ Á¤»ó ÀÛµ¿ÇÕ´Ï´Ù.
+	// GAS ì‹œìŠ¤í…œì—ê²Œ "ì²´ë ¥ ê°’ì´ ì„œë²„ë¡œë¶€í„° ê°±ì‹ ë˜ì—ˆìŠµë‹ˆë‹¤"ë¼ê³  ì•Œë¦½ë‹ˆë‹¤.
+	// ì´ ì½”ë“œê°€ ìˆì–´ì•¼ ì˜ˆì¸¡(Prediction) ì‹œìŠ¤í…œì´ ì •ìƒ ì‘ë™í•©ë‹ˆë‹¤.
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, Health, OldHealth);
 }
 
@@ -73,7 +73,7 @@ void UPlayerAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldM
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UPlayerAttributeSet, MovementSpeed, OldMovementSpeed);
 
-	// Å¬¶óÀÌ¾ğÆ®µµ ÀÚ±â Ä³¸¯ÅÍÀÇ MaxWalkSpeed¸¦ ¸ÂÃçÁà¾ß ¹ö¹÷ÀÓ(Rubber-banding)ÀÌ ¾øÀ½
+	// í´ë¼ì´ì–¸íŠ¸ë„ ìê¸° ìºë¦­í„°ì˜ MaxWalkSpeedë¥¼ ë§ì¶°ì¤˜ì•¼ ë²„ë²…ì„(Rubber-banding)ì´ ì—†ìŒ
 	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
 	if (ASC && ASC->GetAvatarActor())
 	{
@@ -91,48 +91,31 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 {
 	Super::PostGameplayEffectExecute(Data);
 
-
-	// 1. º¯°æµÈ ¾îÆ®¸®ºäÆ®°¡ 'MovementSpeed'ÀÎÁö È®ÀÎ
-	if (Data.EvaluatedData.Attribute == GetMovementSpeedAttribute())
-	{
-		// 2. ÀÌ ¾îÆ®¸®ºäÆ®ÀÇ ÁÖÀÎÀÌ ´©±¸³Ä (AvatarActor = Ä³¸¯ÅÍ)
-		AActor* AvatarActor = Data.Target.GetAvatarActor();
-
-		if (ACharacter* Character = Cast<ACharacter>(AvatarActor))
-		{
-			if (UCharacterMovementComponent* CMC = Character->GetCharacterMovement())
-			{
-				// 3. ½ÇÁ¦ ¿£ÁøÀÇ ÀÌµ¿ ¼Óµµ(MaxWalkSpeed)¸¦ GAS °ªÀ¸·Î µ¤¾î¾²±â
-				CMC->MaxWalkSpeed = GetMovementSpeed();
-			}
-		}
-	}
-
-	// (Âü°í: Ã¼·ÂÀÌ 0ÀÌ µÇ¾úÀ» ¶§ »ç¸Á Ã³¸® µîµµ ¿©±â¼­ if (Health)·Î Ã³¸®ÇÕ´Ï´Ù)
+	// (ì°¸ê³ : ì²´ë ¥ì´ 0ì´ ë˜ì—ˆì„ ë•Œ ì‚¬ë§ ì²˜ë¦¬ ë“±ë„ ì—¬ê¸°ì„œ if (Health)ë¡œ ì²˜ë¦¬í•©ë‹ˆë‹¤)
 
 
-	// [Ã¼·Â º¯µ¿ Ã³¸®]
-	// º¯°æµÈ ¼Ó¼ºÀÌ 'Health'ÀÎ °æ¿ì¿¡¸¸ ¾Æ·¡ ·ÎÁ÷À» ½ÇÇàÇÕ´Ï´Ù.
+	// [ì²´ë ¥ ë³€ë™ ì²˜ë¦¬]
+	// ë³€ê²½ëœ ì†ì„±ì´ 'Health'ì¸ ê²½ìš°ì—ë§Œ ì•„ë˜ ë¡œì§ì„ ì‹¤í–‰í•©ë‹ˆë‹¤.
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
-		// [Clamp Ã³¸®: ¼öÄ¡ °íÁ¤]
-		// Ã¼·ÂÀº 0º¸´Ù ÀÛ¾ÆÁú ¼ö ¾ø°í, ÃÖ´ë Ã¼·Â(MaxHealth)º¸´Ù Ä¿Áú ¼ö ¾ø½À´Ï´Ù.
-		// ¿¹: Ã¼·Â 100¿¡¼­ 1000 È¸º¹À» ¹Ş¾Æµµ 100À¸·Î °íÁ¤.
+		// [Clamp ì²˜ë¦¬: ìˆ˜ì¹˜ ê³ ì •]
+		// ì²´ë ¥ì€ 0ë³´ë‹¤ ì‘ì•„ì§ˆ ìˆ˜ ì—†ê³ , ìµœëŒ€ ì²´ë ¥(MaxHealth)ë³´ë‹¤ ì»¤ì§ˆ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.
+		// ì˜ˆ: ì²´ë ¥ 100ì—ì„œ 1000 íšŒë³µì„ ë°›ì•„ë„ 100ìœ¼ë¡œ ê³ ì •.
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 
-		// [µğ¹ö±ë ·Î±×]
-		// ÇÃ·¹ÀÌ¾î°¡ ¸Â¾ÒÀ» ¶§ ·Î±×Ã¢¿¡ ÇöÀç Ã¼·ÂÀ» ¶ç¿ó´Ï´Ù.
+		// [ë””ë²„ê¹… ë¡œê·¸]
+		// í”Œë ˆì´ì–´ê°€ ë§ì•˜ì„ ë•Œ ë¡œê·¸ì°½ì— í˜„ì¬ ì²´ë ¥ì„ ë„ì›ë‹ˆë‹¤.
 		UE_LOG(LogTemp, Warning, TEXT("[Player] Ouch! Current HP: %f"), GetHealth());
 
-		// [»ç¸Á Ã³¸®]
+		// [ì‚¬ë§ ì²˜ë¦¬]
 		if (GetHealth() <= 0.0f)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[Player] Player Died! (Ã¼·ÂÀÌ 0ÀÌ µÇ¾ú½À´Ï´Ù)"));
-			// ¿©±â¿¡ »ç¸Á ¾Ö´Ï¸ŞÀÌ¼Ç Àç»ı, Á¶ÀÛ ºÒ´É Ã³¸® µîÀ» Ãß°¡ÇÏ¸é µË´Ï´Ù.
+			UE_LOG(LogTemp, Error, TEXT("[Player] Player Died! (ì²´ë ¥ì´ 0ì´ ë˜ì—ˆìŠµë‹ˆë‹¤)"));
+			// ì—¬ê¸°ì— ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ì¬ìƒ, ì¡°ì‘ ë¶ˆëŠ¥ ì²˜ë¦¬ ë“±ì„ ì¶”ê°€í•˜ë©´ ë©ë‹ˆë‹¤.
 		}
 	}
 
-	// [¸¶³ª º¯µ¿ Ã³¸®]
+	// [ë§ˆë‚˜ ë³€ë™ ì²˜ë¦¬]
 	if (Data.EvaluatedData.Attribute == GetManaAttribute())
 	{
 		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));
@@ -143,32 +126,8 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 
 
 /*
-ÇÃ·¹ÀÌ¾î°¡ ¹öÇÁ/µğ¹öÇÁ¸¦ ¹ŞÀ» ¶§ Àû¿ë µÇ´Â ÇÔ¼öÀÔ´Ï´Ù.
-ÇöÀç´Â ÀÌµ¿¼Óµµ º¯°æ¿¡¸¸ »ç¿ëµÇ°í ÀÖ½À´Ï´Ù.
 */
 void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
-
-	if (Attribute == GetMovementSpeedAttribute())
-	{
-		// 1. ASC¸¦ ¸ÕÀú Ã£½À´Ï´Ù.
-		UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
-
-		// 2. ASC°¡ ºùÀÇÇØ ÀÖ´Â 'Avatar(Ä³¸¯ÅÍ)'¸¦ °¡Á®¿É´Ï´Ù. (¿©±â°¡ ÇÙ½É!)
-		if (ASC && ASC->GetAvatarActor())
-		{
-			// ÀÌÁ¦ PlayerState°¡ ¾Æ´Ï¶ó TestCharacter°¡ ÀâÈü´Ï´Ù.
-			ACharacter* Character = Cast<ACharacter>(ASC->GetAvatarActor());
-
-			if (Character)
-			{
-				if (UCharacterMovementComponent* CMC = Character->GetCharacterMovement())
-				{
-					CMC->MaxWalkSpeed = NewValue;
-					UE_LOG(LogTemp, Warning, TEXT("µåµğ¾î ¼º°ø! ¼Óµµ°¡ º¯°æµÇ¾ú½À´Ï´Ù: %f"), NewValue);
-				}
-			}
-		}
-	}
 }

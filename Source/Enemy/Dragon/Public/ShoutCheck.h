@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
@@ -8,8 +8,8 @@ class UGameplayEffect;
 
 /**
  * [ShoutCheck]
- * Æ÷È¿(Shout) µµÁß, µå·¡°ï Àü¹æ ºÎÃ¤²Ã ¹üÀ§ ³»¿¡ ÀÖ´Â ÇÃ·¹ÀÌ¾î¿¡°Ô µğ¹öÇÁ(ÀÌµ¿¼Óµµ °¨¼Ò)¸¦ °Ì´Ï´Ù.
- * - Æ¯Â¡: ZÃà(³ôÀÌ) Â÷ÀÌ¸¦ ¹«½ÃÇÕ´Ï´Ù.
+ * í¬íš¨(Shout) ë„ì¤‘, ë“œë˜ê³¤ ì „ë°© ë¶€ì±„ê¼´ ë²”ìœ„ ë‚´ì— ìˆëŠ” í”Œë ˆì´ì–´ì—ê²Œ ë””ë²„í”„(ì´ë™ì†ë„ ê°ì†Œ)ë¥¼ ê²ë‹ˆë‹¤.
+ * - íŠ¹ì§•: Zì¶•(ë†’ì´) ì°¨ì´ë¥¼ ë¬´ì‹œí•©ë‹ˆë‹¤.
  */
 UCLASS()
 class ENEMY_API UShoutCheck : public UAnimNotifyState
@@ -24,31 +24,31 @@ public:
 
 protected:
 	// -------------------------------------------------------------------------
-	// ¿¡µğÅÍ ¼³Á¤ º¯¼ö
+	// ì—ë””í„° ì„¤ì • ë³€ìˆ˜
 	// -------------------------------------------------------------------------
 
-	/** ±âÁØÀÌ µÉ ¼ÒÄÏ ÀÌ¸§ (¿¹: MouthSocket) */
+	/** ê¸°ì¤€ì´ ë  ì†Œì¼“ ì´ë¦„ (ì˜ˆ: MouthSocket) */
 	UPROPERTY(EditAnywhere, Category = "Shout")
 	FName SocketName;
 
-	/** ºÎÃ¤²ÃÀÇ ÃÖ´ë °Å¸® (¹İÁö¸§) */
+	/** ë¶€ì±„ê¼´ì˜ ìµœëŒ€ ê±°ë¦¬ (ë°˜ì§€ë¦„) */
 	UPROPERTY(EditAnywhere, Category = "Shout")
 	float ShoutRadius;
 
-	/** ºÎÃ¤²ÃÀÇ °¢µµ (¿¹: 90µµ¸é ÁÂ¿ì 45µµ¾¿) */
+	/** ë¶€ì±„ê¼´ì˜ ê°ë„ (ì˜ˆ: 90ë„ë©´ ì¢Œìš° 45ë„ì”©) */
 	UPROPERTY(EditAnywhere, Category = "Shout", meta = (ClampMin = "0.0", ClampMax = "360.0"))
 	float ShoutConeAngle;
 
-	/** Àû¿ëÇÒ µğ¹öÇÁ (ÀÌµ¿¼Óµµ °¨¼Ò GE) */
+	/** ì ìš©í•  ë””ë²„í”„ (ì´ë™ì†ë„ ê°ì†Œ GE) */
 	UPROPERTY(EditAnywhere, Category = "Shout")
 	TSubclassOf<UGameplayEffect> DebuffEffect;
 
-	/** µğ¹ö±×¿ë ºÎÃ¤²Ã ±×¸®±â */
+	/** ë””ë²„ê·¸ìš© ë¶€ì±„ê¼´ ê·¸ë¦¬ê¸° */
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bDrawDebug;
 
 private:
-	// ÀÌ¹ø Æ÷È¿¿¡¼­ ÀÌ¹Ì ´çÇÑ ÇÃ·¹ÀÌ¾î¸¦ ±â·Ï (Áßº¹ Àû¿ë ¹æÁö)
+	// ì´ë²ˆ í¬íš¨ì—ì„œ ì´ë¯¸ ë‹¹í•œ í”Œë ˆì´ì–´ë¥¼ ê¸°ë¡ (ì¤‘ë³µ ì ìš© ë°©ì§€)
 	UPROPERTY()
 	TArray<AActor*> HitActors;
 };

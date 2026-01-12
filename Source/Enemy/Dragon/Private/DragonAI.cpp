@@ -1,35 +1,35 @@
-#include "DragonAI.h"
+ï»¿#include "DragonAI.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "EnemyBase.h"
 #include "EnemyAttributeSet.h"
 
 ADragonAI::ADragonAI()
 {
-	// ÇÊ¿ä½Ã ÃÊ±â°ª ¼³Á¤
+	// í•„ìš”ì‹œ ì´ˆê¸°ê°’ ì„¤ì •
 }
 
 void ADragonAI::UpdateAIState()
 {
-	Super::UpdateAIState(); // 1. Å¸°Ù Ã£±â ½ÇÇà
+	Super::UpdateAIState(); // 1. íƒ€ê²Ÿ ì°¾ê¸° ì‹¤í–‰
 
 	if (!Blackboard) return;
 
-	// ºí·¢º¸µå¿¡¼­ Å¸°Ù °¡Á®¿À±â
+	// ë¸”ë™ë³´ë“œì—ì„œ íƒ€ê²Ÿ ê°€ì ¸ì˜¤ê¸°
 	AActor* Target = Cast<AActor>(Blackboard->GetValueAsObject(BBKey_TargetActor));
 	APawn* MyPawn = GetPawn();
 
-	// --- [µğ¹ö±ë] Å¸°Ù »óÅÂ È®ÀÎ ---
+	// --- [ë””ë²„ê¹…] íƒ€ê²Ÿ ìƒíƒœ í™•ì¸ ---
 	if (MyPawn && Target)
 	{
-		// 2. °Å¸® °è»ê
+		// 2. ê±°ë¦¬ ê³„ì‚°
 		float Distance = MyPawn->GetDistanceTo(Target);
 
-		// °ø°İ Å¸ÀÔÀ» ¿©±â¼­ Á¤ÇÏÁö ¸»°í, "°Å¸®"¸¸ ºí·¢º¸µå¿¡ ÀúÀåÇÕ´Ï´Ù.
-		// ºí·¢º¸µå¿¡ 'DistanceToTarget'ÀÌ¶ó´Â Å°°¡ ÀÖ´Ù°í °¡Á¤ÇÏ°í °ªÀ» ½÷Áİ´Ï´Ù.
-		// (ºí·¢º¸µå Å° ÀÌ¸§Àº ÇÁ·ÎÁ§Æ® ¼³Á¤¿¡ ¸ÂÃçÁÖ¼¼¿ä. º¸Åë FName º¯¼ö·Î °ü¸®ÇÏ½Ã°ÚÁö¸¸, ÀÏ´Ü ¹®ÀÚ¿­·Î Àû½À´Ï´Ù.)
+		// ê³µê²© íƒ€ì…ì„ ì—¬ê¸°ì„œ ì •í•˜ì§€ ë§ê³ , "ê±°ë¦¬"ë§Œ ë¸”ë™ë³´ë“œì— ì €ì¥í•©ë‹ˆë‹¤.
+		// ë¸”ë™ë³´ë“œì— 'DistanceToTarget'ì´ë¼ëŠ” í‚¤ê°€ ìˆë‹¤ê³  ê°€ì •í•˜ê³  ê°’ì„ ì´ì¤ë‹ˆë‹¤.
+		// (ë¸”ë™ë³´ë“œ í‚¤ ì´ë¦„ì€ í”„ë¡œì íŠ¸ ì„¤ì •ì— ë§ì¶°ì£¼ì„¸ìš”. ë³´í†µ FName ë³€ìˆ˜ë¡œ ê´€ë¦¬í•˜ì‹œê² ì§€ë§Œ, ì¼ë‹¨ ë¬¸ìì—´ë¡œ ì ìŠµë‹ˆë‹¤.)
 		Blackboard->SetValueAsFloat(TEXT("DistanceToTarget"), Distance);
 
-		// --- [µğ¹ö±ë] °Å¸® È®ÀÎ¿ë ---
+		// --- [ë””ë²„ê¹…] ê±°ë¦¬ í™•ì¸ìš© ---
 		if (GEngine)
 		{
 			FString Msg = FString::Printf(TEXT("Dragon Eye: Distance %.1f"), Distance);
@@ -38,11 +38,11 @@ void ADragonAI::UpdateAIState()
 	}
 	else
 	{
-		// Å¸°Ù ¾øÀ¸¸é °Å¸® 0 (¶Ç´Â ¾ÆÁÖ Å« °ª)
+		// íƒ€ê²Ÿ ì—†ìœ¼ë©´ ê±°ë¦¬ 0 (ë˜ëŠ” ì•„ì£¼ í° ê°’)
 		Blackboard->SetValueAsFloat(TEXT("DistanceToTarget"), 99999.0f);
 	}
 
-	// 4. ÆäÀÌÁî ÆÇ´Ü ·ÎÁ÷ (»ı·« ¾øÀÌ ±×´ë·Î À¯Áö)
+	// 4. í˜ì´ì¦ˆ íŒë‹¨ ë¡œì§ (ìƒëµ ì—†ì´ ê·¸ëŒ€ë¡œ ìœ ì§€)
 	AEnemyBase* MyEnemy = Cast<AEnemyBase>(MyPawn);
 	if (MyEnemy && MyEnemy->GetAttributeSet())
 	{

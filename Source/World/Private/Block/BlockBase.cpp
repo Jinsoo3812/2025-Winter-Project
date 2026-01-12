@@ -1,37 +1,39 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Block/BlockBase.h"
+#include "Engine/World.h"
+#include "Engine/OverlapResult.h"
 
 // Sets default values
 ABlockBase::ABlockBase()
 {
 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	// TickÀº »ç¿ëÇÏÁö¸¸, Ã³À½¿¡´Â ºñÈ°¼ºÈ­ »óÅÂ·Î ½ÃÀÛ
+	// Tickì€ ì‚¬ìš©í•˜ì§€ë§Œ, ì²˜ìŒì—ëŠ” ë¹„í™œì„±í™” ìƒíƒœë¡œ ì‹œì‘
     PrimaryActorTick.bStartWithTickEnabled = false;
 
-    // [¼öÁ¤] 1. ¹°¸® Ãæµ¹À» ´ã´çÇÒ BoxComponent »ı¼º (Root)
+    // [ìˆ˜ì •] 1. ë¬¼ë¦¬ ì¶©ëŒì„ ë‹´ë‹¹í•  BoxComponent ìƒì„± (Root)
     CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
     RootComponent = CollisionComponent;
 
-    // ¹Ú½º Å©±â ¼³Á¤: 100ÀÇ Àı¹İÀÎ 50¿¡¼­ ¾ÆÁÖ »ìÂ¦ ÁÙÀÎ 49.5·Î ¼³Á¤ (ÀüÃ¼ Å©±â 99)
-    // ½Ã°¢Àû(Mesh)À¸·Î´Â 100À¸·Î ²Ë Â÷ º¸ÀÌÁö¸¸, ¹°¸®ÀûÀ¸·Î´Â 1.0ÀÇ Æ´ÀÌ »ı°Ü ¸¶Âû/³¢ÀÓ ¹æÁö
+    // ë°•ìŠ¤ í¬ê¸° ì„¤ì •: 100ì˜ ì ˆë°˜ì¸ 50ì—ì„œ ì•„ì£¼ ì‚´ì§ ì¤„ì¸ 49.5ë¡œ ì„¤ì • (ì „ì²´ í¬ê¸° 99)
+    // ì‹œê°ì (Mesh)ìœ¼ë¡œëŠ” 100ìœ¼ë¡œ ê½‰ ì°¨ ë³´ì´ì§€ë§Œ, ë¬¼ë¦¬ì ìœ¼ë¡œëŠ” 1.0ì˜ í‹ˆì´ ìƒê²¨ ë§ˆì°°/ë¼ì„ ë°©ì§€
     CollisionComponent->SetBoxExtent(FVector(49.5f, 49.5f, 49.5f));
 
-    // Ãæµ¹ ÇÁ·ÎÇÊ ¼³Á¤ (±âÁ¸ Mesh°¡ ÇÏ´ø ¿ªÇÒ)
+    // ì¶©ëŒ í”„ë¡œí•„ ì„¤ì • (ê¸°ì¡´ Meshê°€ í•˜ë˜ ì—­í• )
     CollisionComponent->SetCollisionProfileName(TEXT("BlockAll"));
-    // ¹°¸® ½Ã¹Ä·¹ÀÌ¼Ç °ü·Ã ¼³Á¤ÀÌ ÇÊ¿äÇÏ´Ù¸é ¿©±â¼­ Ãß°¡ (¿¹: SetSimulatePhysics)
+    // ë¬¼ë¦¬ ì‹œë®¬ë ˆì´ì…˜ ê´€ë ¨ ì„¤ì •ì´ í•„ìš”í•˜ë‹¤ë©´ ì—¬ê¸°ì„œ ì¶”ê°€ (ì˜ˆ: SetSimulatePhysics)
 
 
-    // [¼öÁ¤] 2. ¿ÜÇüÀ» ´ã´çÇÒ StaticMeshComponent »ı¼º (Child)
+    // [ìˆ˜ì •] 2. ì™¸í˜•ì„ ë‹´ë‹¹í•  StaticMeshComponent ìƒì„± (Child)
     MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
-    MeshComponent->SetupAttachment(RootComponent); // ·çÆ®ÀÎ ¹Ú½º¿¡ ºÎÂø
+    MeshComponent->SetupAttachment(RootComponent); // ë£¨íŠ¸ì¸ ë°•ìŠ¤ì— ë¶€ì°©
 
-    // ¸Ş½Ã´Â Ãæµ¹À» ²û (Ãæµ¹Àº ºÎ¸ğÀÎ Box°¡ ´ã´çÇÏ¹Ç·Î)
+    // ë©”ì‹œëŠ” ì¶©ëŒì„ ë” (ì¶©ëŒì€ ë¶€ëª¨ì¸ Boxê°€ ë‹´ë‹¹í•˜ë¯€ë¡œ)
     MeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
 
-	// ±âº» Cube ¸Ş½Ã ·Îµå
+	// ê¸°ë³¸ Cube ë©”ì‹œ ë¡œë“œ
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
 	if (CubeMesh.Succeeded())
 	{
@@ -51,7 +53,7 @@ void ABlockBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-    // ³«ÇÏ ±â´ÉÀÌ ÀÖ´Â ºí·Ï¸¸ Ã³¸®
+    // ë‚™í•˜ ê¸°ëŠ¥ì´ ìˆëŠ” ë¸”ë¡ë§Œ ì²˜ë¦¬
 	if (bCanFall) {
 		UpdateGravity(DeltaTime);
 	}
@@ -63,16 +65,106 @@ void ABlockBase::SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType)
 	BlockType = NewBlockType;
 	SetActorLocation(Location);
 
-    // ºí·ÏÀÌ ¼ÒÈ¯µÇÀÚ¸¶ÀÚ ¶³¾îÁ®¾ß ÇÏ´ÂÁö °Ë»çÇÏ±â À§ÇØ Tick ÄÔ
+    // ë¸”ë¡ì´ ì†Œí™˜ë˜ìë§ˆì ë–¨ì–´ì ¸ì•¼ í•˜ëŠ”ì§€ ê²€ì‚¬í•˜ê¸° ìœ„í•´ Tick ì¼¬
 	SetActorTickEnabled(true);
+}
+
+ABlockBase* ABlockBase::SpawnBlock(
+	UWorld* World,
+	TSubclassOf<ABlockBase> BlockClass,
+	const FVector& SpawnLocation,
+	bool bEnableGravity)
+{
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - World is null"));
+		return nullptr;
+	}
+
+	if (!BlockClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - BlockClass is null"));
+		return nullptr;
+	}
+
+	// ê¸°ë³¸ GridSize ê°€ì ¸ì˜¤ê¸° (CDO ì‚¬ìš©)
+	ABlockBase* CDO = BlockClass->GetDefaultObject<ABlockBase>();
+	float GridSize = CDO ? CDO->GetGridSize() : 100.0f;
+
+	// ì ìœ  í™•ì¸
+	if (IsLocationOccupied(World, SpawnLocation, GridSize))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase::SpawnBlockAdvanced - Location %s is occupied"), *SpawnLocation.ToString());
+		return nullptr;
+	}
+
+	// ë¸”ë¡ ìƒì„±
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ABlockBase* NewBlock = World->SpawnActor<ABlockBase>(BlockClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+
+	if (!NewBlock)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - Failed to spawn block at %s"), *SpawnLocation.ToString());
+		return nullptr;
+	}
+
+	// ë¸”ë¡ ìœ„ì¹˜ ì„¤ì •
+	NewBlock->Location = SpawnLocation;
+	NewBlock->SetActorLocation(SpawnLocation);
+
+	// ì¤‘ë ¥ ì„¤ì •
+	if (bEnableGravity)
+	{
+		NewBlock->bCanFall = true;
+		NewBlock->SetActorTickEnabled(true);
+	}
+	else
+	{
+		NewBlock->bCanFall = false;
+		NewBlock->SetActorTickEnabled(false);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BlockBase::SpawnBlockAdvanced - Successfully spawned block at %s (Gravity: %s)"), 
+		*SpawnLocation.ToString(), bEnableGravity ? TEXT("ON") : TEXT("OFF"));
+
+	return NewBlock;
+}
+
+bool ABlockBase::IsLocationOccupied(
+	UWorld* World,
+	const FVector& CheckLocation,
+	float CheckGridSize)
+{
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase::IsLocationOccupied - World is null"));
+		return true;
+	}
+
+	// MakeBoxëŠ” ì¸ìë¥¼ ë°˜ì§€ë¦„ìœ¼ë¡œ ì‚¬ìš©í•¨
+	// 0.5ë¥¼ ë„£ìœ¼ë©´ 100 * 100 * 100 í¬ê¸°ì˜ ë°•ìŠ¤ê°€ ë˜ì–´ ê½‰ ì°¨ë¯€ë¡œ 0.4 ì‚¬ìš©
+	FVector BoxExtent = FVector(CheckGridSize * 0.4f, CheckGridSize * 0.4f, CheckGridSize * 0.4f);
+	FCollisionShape CheckShape = FCollisionShape::MakeBox(BoxExtent);
+
+	// ObjectType ê¸°ë°˜ ì¿¼ë¦¬ (WorldStatic, WorldDynamicë§Œ ì²´í¬)
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	FCollisionQueryParams QueryParams;
+
+	// ì¶©ëŒí•œ ë¸”ë¡ë“¤ì„ ë°˜í™˜í•  ê²ƒì´ ì•„ë‹ˆë¯€ë¡œ OverlapMulti ëŒ€ì‹  OverlapAny ì‚¬ìš©
+	return World->OverlapAnyTestByObjectType(CheckLocation, FQuat::Identity, ObjectQueryParams, CheckShape, QueryParams);
 }
 
 void ABlockBase::UpdateGravity(float DeltaTime)
 {
     FVector Start = GetActorLocation();
 
-    // ·¹ÀÌÄ³½ºÆ® ±æÀÌ¸¦ ¼Óµµ¿¡ ºñ·ÊÇÏ°Ô ´Ã·Á¼­, °í¼Ó ³«ÇÏ ½Ã ÅÍ³Î¸µ(¹Ù´Ú ¶ÕÀ½) ¹æÁö
-    // ÃÖ¼Ò ±æÀÌ´Â 60
+    // ë ˆì´ìºìŠ¤íŠ¸ ê¸¸ì´ë¥¼ ì†ë„ì— ë¹„ë¡€í•˜ê²Œ ëŠ˜ë ¤ì„œ, ê³ ì† ë‚™í•˜ ì‹œ í„°ë„ë§(ë°”ë‹¥ ëš«ìŒ) ë°©ì§€
+    // ìµœì†Œ ê¸¸ì´ëŠ” 60
     float CheckDistance = FMath::Max(60.0f, (FMath::Abs(VerticalVelocity) * DeltaTime) + 10.0f);
     FVector End = Start + FVector(0.0f, 0.0f, -CheckDistance);
 
@@ -84,27 +176,27 @@ void ABlockBase::UpdateGravity(float DeltaTime)
         HitResult, Start, End, ECC_Visibility, Params
     );
 
-    // ¹Ù´Ú¿¡ ¹º°¡°¡ ´ê¾Ò´Âµ¥, ±×°Ô 'Ãß¶ô ÁßÀÎ ºí·Ï'ÀÌ¶ó¸é ¹Ù´ÚÀÌ ¾ø´Â °ÍÀ¸·Î °£ÁÖÇØ¾ß ÇÔ
+    // ë°”ë‹¥ì— ë­”ê°€ê°€ ë‹¿ì•˜ëŠ”ë°, ê·¸ê²Œ 'ì¶”ë½ ì¤‘ì¸ ë¸”ë¡'ì´ë¼ë©´ ë°”ë‹¥ì´ ì—†ëŠ” ê²ƒìœ¼ë¡œ ê°„ì£¼í•´ì•¼ í•¨
     if (bHitSomething)
     {
         ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
         if (HitBlock && HitBlock->IsFalling())
         {
-            // ¾Æ·¡ ÀÖ´Â ºí·ÏÀÌ °°ÀÌ Ãß¶ô ÁßÀÌ¶ó¸é, ¹Ù´ÚÀÌ ¾ø´Â °ÍÀ¸·Î °£ÁÖ
+            // ì•„ë˜ ìˆëŠ” ë¸”ë¡ì´ ê°™ì´ ì¶”ë½ ì¤‘ì´ë¼ë©´, ë°”ë‹¥ì´ ì—†ëŠ” ê²ƒìœ¼ë¡œ ê°„ì£¼
             bHitSomething = false;
         }
     }
 
     if (bHitSomething)
     {
-        // ¹Ù´ÚÀÌ È®½ÇÈ÷ ÀÖÀ½
+        // ë°”ë‹¥ì´ í™•ì‹¤íˆ ìˆìŒ
         if (bIsFalling)
         {
             CheckLanding();
         }
         else
         {
-            // ¾ÈÁ¤ÀûÀÎ »óÅÂ À¯Áö (¹°¸®¸¦ ÄÑ³õÀ¸¸é ¾îµğ¿¡ ³¢°Å³ª Áøµ¿ÇÏ°Å³ª ÇÏ¿©Æ°,,)
+            // ì•ˆì •ì ì¸ ìƒíƒœ ìœ ì§€ (ë¬¼ë¦¬ë¥¼ ì¼œë†“ìœ¼ë©´ ì–´ë””ì— ë¼ê±°ë‚˜ ì§„ë™í•˜ê±°ë‚˜ í•˜ì—¬íŠ¼,,)
             SetActorTickEnabled(false);
         }
 
@@ -113,21 +205,21 @@ void ABlockBase::UpdateGravity(float DeltaTime)
     }
     else
     {
-        // ¹Ù´ÚÀÌ ¾øÀ½ -> ³«ÇÏ Ã³¸®
+        // ë°”ë‹¥ì´ ì—†ìŒ -> ë‚™í•˜ ì²˜ë¦¬
         if (!bIsFalling)
         {
             bIsFalling = true;
-            NotifyUpperBlock(); // ³» À§ÀÇ ºí·Ïµµ ±ú¿ò
+            NotifyUpperBlock(); // ë‚´ ìœ„ì˜ ë¸”ë¡ë„ ê¹¨ì›€
             // UE_LOG(LogTemp, Warning, TEXT("BlockBase: %s started falling."), *GetName());
         }
 
-        // ¼Óµµ °»½Å
+        // ì†ë„ ê°±ì‹ 
         VerticalVelocity += GravityAcceleration * DeltaTime;
         FVector DeltaMove = FVector(0.0f, 0.0f, VerticalVelocity * DeltaTime);
 
-        // ¿·¸é ¸¶Âû ¹®Á¦ ÇØ°á
-        // ¸Å ÇÁ·¹ÀÓ ¾Æ·¡·Î ¶³¾îÁö´Â °ÍÀº ÀÏÁ¾ÀÇ ¼ø°£ÀÌµ¿ÀÎµ¥
-        // ±× ¶§¸¶´Ù ¾ç ¿·¿¡ ºÎµúÈù´Ù¸é Á¦´ë·Î ÀÌµ¿ÇÏÁö ¸øÇÏ¹Ç·Î sweepÀ» ²û
+        // ì˜†ë©´ ë§ˆì°° ë¬¸ì œ í•´ê²°
+        // ë§¤ í”„ë ˆì„ ì•„ë˜ë¡œ ë–¨ì–´ì§€ëŠ” ê²ƒì€ ì¼ì¢…ì˜ ìˆœê°„ì´ë™ì¸ë°
+        // ê·¸ ë•Œë§ˆë‹¤ ì–‘ ì˜†ì— ë¶€ë”ªíŒë‹¤ë©´ ì œëŒ€ë¡œ ì´ë™í•˜ì§€ ëª»í•˜ë¯€ë¡œ sweepì„ ë”
         AddActorWorldOffset(DeltaMove, false);
     }
 }
@@ -136,17 +228,17 @@ void ABlockBase::CheckLanding()
 {
     FVector CurrentLoc = GetActorLocation();
 
-	// 152, 99 Ã³·³ Áß°£¿¡ °ÉÄ£ À§Ä¡¸¦ ±×¸®µå¿¡ ½º³À
+	// 152, 99 ì²˜ëŸ¼ ì¤‘ê°„ì— ê±¸ì¹œ ìœ„ì¹˜ë¥¼ ê·¸ë¦¬ë“œì— ìŠ¤ëƒ…
 	float HalfSize = GridSize / 2.0f;
     float SnappedZ = FMath::RoundToFloat((CurrentLoc.Z - HalfSize) / GridSize) * GridSize + HalfSize;
-    float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize; // X, Y´Â Áß½ÉÀÌ 0 ±âÁØÀÌ¸é ±×´ë·Î µÒ
+    float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize; // X, YëŠ” ì¤‘ì‹¬ì´ 0 ê¸°ì¤€ì´ë©´ ê·¸ëŒ€ë¡œ ë‘ 
     float SnappedY = FMath::RoundToFloat(CurrentLoc.Y / GridSize) * GridSize;
 
     FVector NewLoc = FVector(SnappedX, SnappedY, SnappedZ);
 
     if (SetActorLocation(NewLoc))
     {
-        // ½º³À ¼º°ø ¹× °¡»ó ¹°¸® ¿¬»ê Á¾·á
+        // ìŠ¤ëƒ… ì„±ê³µ ë° ê°€ìƒ ë¬¼ë¦¬ ì—°ì‚° ì¢…ë£Œ
         bIsFalling = false;
         VerticalVelocity = 0.0f;
         SetActorTickEnabled(false);
@@ -159,7 +251,7 @@ void ABlockBase::CheckLanding()
 
 void ABlockBase::NotifyUpperBlock()
 {
-    // ³» À§Ä¡¿¡¼­ À§·Î 100 + 10(offset) ¸¸Å­ ·¹ÀÌÄ³½ºÆ®
+    // ë‚´ ìœ„ì¹˜ì—ì„œ ìœ„ë¡œ 100 + 10(offset) ë§Œí¼ ë ˆì´ìºìŠ¤íŠ¸
     FVector Start = GetActorLocation();
     FVector End = Start + FVector(0.0f, 0.0f, 110.0f);
 
@@ -167,30 +259,30 @@ void ABlockBase::NotifyUpperBlock()
     FCollisionQueryParams Params;
     Params.AddIgnoredActor(this);
 
-    // À§ÂÊ¿¡ ºí·ÏÀÌ ÀÖ´ÂÁö °Ë»ç.
+    // ìœ„ìª½ì— ë¸”ë¡ì´ ìˆëŠ”ì§€ ê²€ì‚¬.
     bool bHit = GetWorld()->LineTraceSingleByChannel(
         HitResult, Start, End, ECC_Visibility, Params
     );
 
     if (bHit && HitResult.GetActor())
     {
-        // ´êÀº ¾×ÅÍ°¡ BlockBaseÀÎÁö È®ÀÎÇÏ°í ±ú¿ò
+        // ë‹¿ì€ ì•¡í„°ê°€ BlockBaseì¸ì§€ í™•ì¸í•˜ê³  ê¹¨ì›€
         ABlockBase* UpperBlock = Cast<ABlockBase>(HitResult.GetActor());
         if (UpperBlock)
         {
-            // ÀáÀÚ´ø À§ÂÊ ºí·ÏÀÇ TickÀ» ÄÑ¼­ Ãß¶ôÇÏ°Ô ÇÔ
+            // ì ìë˜ ìœ„ìª½ ë¸”ë¡ì˜ Tickì„ ì¼œì„œ ì¶”ë½í•˜ê²Œ í•¨
             UpperBlock->SetActorTickEnabled(true);
-            // ·Î±× È®ÀÎ¿ë
+            // ë¡œê·¸ í™•ì¸ìš©
             // UE_LOG(LogTemp, Log, TEXT("BlockBase: %s woke up %s"), *GetName(), *UpperBlock->GetName());
         }
         else
         {
-            // ºí·ÏÀÌ ¾Æ´Ñ ´Ù¸¥ ¹°Ã¼ÀÏ °æ¿ì (·Î±× »ı·« °¡´É)
+            // ë¸”ë¡ì´ ì•„ë‹Œ ë‹¤ë¥¸ ë¬¼ì²´ì¼ ê²½ìš° (ë¡œê·¸ ìƒëµ ê°€ëŠ¥)
         }
     }
     else
     {
-        // À§¿¡ ¾Æ¹«°Íµµ ¾øÀ¸¹Ç·Î ¾Æ¹« ÀÛ¾÷µµ ÇÏÁö ¾ÊÀ½ (Á¤»ó »óÈ²)
+        // ìœ„ì— ì•„ë¬´ê²ƒë„ ì—†ìœ¼ë¯€ë¡œ ì•„ë¬´ ì‘ì—…ë„ í•˜ì§€ ì•ŠìŒ (ì •ìƒ ìƒí™©)
     }
 }
 

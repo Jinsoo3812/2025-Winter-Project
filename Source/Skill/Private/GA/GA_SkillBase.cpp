@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GA/GA_SkillBase.h"
 #include "Interface/ISkillManagerProvider.h"
@@ -14,36 +14,36 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
 
 UGA_SkillBase::UGA_SkillBase()
 {
-	// °´Ã¼ »ı¼º Á¤Ã¥: GA¸¦ ¼ÒÀ¯ÇÑ ¾×ÅÍ¸¶´Ù 'ÇÏ³ªÀÇ GA °´Ã¼¸¸' »ı¼º
-	// ¸Ş¸ğ¸® È¿À²ÀûÀÌ¸ç, »óÅÂ¸¦ ¾×ÅÍº°·Î °ü¸®ÇÒ ¼ö ÀÖÀ½
+	// ê°ì²´ ìƒì„± ì •ì±…: GAë¥¼ ì†Œìœ í•œ ì•¡í„°ë§ˆë‹¤ 'í•˜ë‚˜ì˜ GA ê°ì²´ë§Œ' ìƒì„±
+	// ë©”ëª¨ë¦¬ íš¨ìœ¨ì ì´ë©°, ìƒíƒœë¥¼ ì•¡í„°ë³„ë¡œ ê´€ë¦¬í•  ìˆ˜ ìˆìŒ
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 
-	// ¼­¹ö-Å¬¶óÀÌ¾ğÆ® Åë½Å Á¤Ã¥: Å¬¶óÀÌ¾ğÆ®ÀÇ ÀÔ·ÂÀÌ ¹ß»ıÇÏ¸é, ¼­¹öÀÇ ÀÀ´äÀ» ±â´Ù¸®Áö ¾Ê°í Áï½Ã(¿¹Ãø) ½ÇÇà
-	// ³×Æ®¿öÅ© Áö¿¬ ½Ã¿¡µµ ¹İÀÀ¼ºÀÌ ÁÁÀ½
+	// ì„œë²„-í´ë¼ì´ì–¸íŠ¸ í†µì‹  ì •ì±…: í´ë¼ì´ì–¸íŠ¸ì˜ ì…ë ¥ì´ ë°œìƒí•˜ë©´, ì„œë²„ì˜ ì‘ë‹µì„ ê¸°ë‹¤ë¦¬ì§€ ì•Šê³  ì¦‰ì‹œ(ì˜ˆì¸¡) ì‹¤í–‰
+	// ë„¤íŠ¸ì›Œí¬ ì§€ì—° ì‹œì—ë„ ë°˜ì‘ì„±ì´ ì¢‹ìŒ
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 
 	FGameplayTagContainer NewAbilityTags;
 	NewAbilityTags.AddTag(TAG_Skill);
 	SetAssetTags(NewAbilityTags);
 
-	// CancelAbilitiesWithTag´Â "´Ù¸¥ GAÀÇ ASC¿¡ ºÙÀº Tag"¸¦ °Ë»ç
-	// ÀÚ½ÅÀÌ Skill ÀÓÀ» Ç¥½Ã
+	// CancelAbilitiesWithTagëŠ” "ë‹¤ë¥¸ GAì˜ ASCì— ë¶™ì€ Tag"ë¥¼ ê²€ì‚¬
+	// ìì‹ ì´ Skill ì„ì„ í‘œì‹œ
 	CancelAbilitiesWithTag.AddTag(TAG_Skill);
 
-	// ActivationBlockedTags´Â "½ÃÀüÀÚÀÇ ASC¿¡ ºÙÀº Tag"¸¦ °Ë»ç
-	// ½ÃÀüÀÚ°¡ ´Ù¸¥ GA¸¦ ½ÃÀü ÁßÀÏ ¶§´Â ½ÃÀüµÇÁö ¾Êµµ·Ï ¼³Á¤
+	// ActivationBlockedTagsëŠ” "ì‹œì „ìì˜ ASCì— ë¶™ì€ Tag"ë¥¼ ê²€ì‚¬
+	// ì‹œì „ìê°€ ë‹¤ë¥¸ GAë¥¼ ì‹œì „ ì¤‘ì¼ ë•ŒëŠ” ì‹œì „ë˜ì§€ ì•Šë„ë¡ ì„¤ì •
 	ActivationBlockedTags.AddTag(TAG_Skill_Casting);
 }
 
 USkillManagerComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
 {
-	// Ä³½ÌµÈ SkillManager°¡ À¯È¿ÇÏ¸é Àç»ç¿ë (¼º´É ÃÖÀûÈ­)
+	// ìºì‹±ëœ SkillManagerê°€ ìœ íš¨í•˜ë©´ ì¬ì‚¬ìš© (ì„±ëŠ¥ ìµœì í™”)
 	if (CachedSkillManager.IsValid())
 	{
 		return CachedSkillManager.Get();
 	}
 
-	// Avatar °¡Á®¿À±â
+	// Avatar ê°€ì ¸ì˜¤ê¸°
 	AActor* Avatar = GetAvatarActorFromActorInfo();
 	if (!Avatar)
 	{
@@ -51,15 +51,15 @@ USkillManagerComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
 		return nullptr;
 	}
 
-	// ISkillManagerProvider ÀÎÅÍÆäÀÌ½º¸¦ ±¸ÇöÇß´ÂÁö È®ÀÎ
+	// ISkillManagerProvider ì¸í„°í˜ì´ìŠ¤ë¥¼ êµ¬í˜„í–ˆëŠ”ì§€ í™•ì¸
 	ISkillManagerProvider* Provider = Cast<ISkillManagerProvider>(Avatar);
 	if (Provider)
 	{
-		// ÀÎÅÍÆäÀÌ½º¸¦ ÅëÇØ SkillManager °¡Á®¿À±â (Ä³½ÌµÈ °ª)
+		// ì¸í„°í˜ì´ìŠ¤ë¥¼ í†µí•´ SkillManager ê°€ì ¸ì˜¤ê¸° (ìºì‹±ëœ ê°’)
 		USkillManagerComponent* SkillManager = Provider->GetSkillManager();
 		if (SkillManager)
 		{
-			// ´ÙÀ½ È£ÃâÀ» À§ÇØ Ä³½Ì
+			// ë‹¤ìŒ í˜¸ì¶œì„ ìœ„í•´ ìºì‹±
 			CachedSkillManager = SkillManager;
 			return SkillManager;
 		}
@@ -71,29 +71,29 @@ USkillManagerComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
 
 float UGA_SkillBase::GetRuneModifiedDamage() const
 {
-	// ÇöÀç ÀÌ ½ºÅ³ÀÌ ÀåÂøµÈ ½½·Ô ¹øÈ£(InputID) °¡Á®¿À±â
+	// í˜„ì¬ ì´ ìŠ¤í‚¬ì´ ì¥ì°©ëœ ìŠ¬ë¡¯ ë²ˆí˜¸(InputID) ê°€ì ¸ì˜¤ê¸°
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
-	// SkillManager °¡Á®¿À±â
+	// SkillManager ê°€ì ¸ì˜¤ê¸°
 	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
-		return BaseDamage; // ¸Å´ÏÀú°¡ ¾øÀ¸¸é ±âº» ÇÇÇØ·® ¹İÈ¯
+		return BaseDamage; // ë§¤ë‹ˆì €ê°€ ì—†ìœ¼ë©´ ê¸°ë³¸ í”¼í•´ëŸ‰ ë°˜í™˜
 	}
 
-	// Ä³¸¯ÅÍ °ø°İ·Â °¡Á®¿À±â
+	// ìºë¦­í„° ê³µê²©ë ¥ ê°€ì ¸ì˜¤ê¸°
 	float CharacterAttackPower = 0.0f;
 	AActor* Avatar = GetAvatarActorFromActorInfo();
 	if (Avatar)
 	{
-		// IAttributeSetProvider ÀÎÅÍÆäÀÌ½º¸¦ ±¸ÇöÇß´ÂÁö È®ÀÎ
+		// IAttributeSetProvider ì¸í„°í˜ì´ìŠ¤ë¥¼ êµ¬í˜„í–ˆëŠ”ì§€ í™•ì¸
 		IAttributeSetProvider* Provider = Cast<IAttributeSetProvider>(Avatar);
 		if (Provider)
 		{
 			UAttributeSet* AttributeSet = Provider->GetAttributeSet();
 			if (AttributeSet)
 			{
-				// AttackPower ¼Ó¼º °¡Á®¿À±â (FGameplayAttribute »ç¿ë)
+				// AttackPower ì†ì„± ê°€ì ¸ì˜¤ê¸° (FGameplayAttribute ì‚¬ìš©)
 				static FProperty* AttackPowerProperty = FindFProperty<FProperty>(AttributeSet->GetClass(), FName("AttackPower"));
 				if (AttackPowerProperty)
 				{
@@ -107,10 +107,10 @@ float UGA_SkillBase::GetRuneModifiedDamage() const
 		}
 	}
 
-	// ·é °è¼ö °¡Á®¿À±â
+	// ë£¬ ê³„ìˆ˜ ê°€ì ¸ì˜¤ê¸°
 	float Multiplier = SkillManager->GetTotalDamageMultiplier(SlotIndex);
 
-	// ÃÖÁ¾ ÇÇÇØ·® = (Ä³¸¯ÅÍ °ø°İ·Â + ½ºÅ³ ±âº» ÇÇÇØ·®) * ·é °è¼ö
+	// ìµœì¢… í”¼í•´ëŸ‰ = (ìºë¦­í„° ê³µê²©ë ¥ + ìŠ¤í‚¬ ê¸°ë³¸ í”¼í•´ëŸ‰) * ë£¬ ê³„ìˆ˜
 	return (CharacterAttackPower + BaseDamage) * Multiplier;
 }
 
@@ -118,11 +118,11 @@ float UGA_SkillBase::GetRuneModifiedRange() const
 {
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
-	// SkillManager °¡Á®¿À±â
+	// SkillManager ê°€ì ¸ì˜¤ê¸°
 	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
-		return BaseRange; // ¸Å´ÏÀú°¡ ¾øÀ¸¸é ±âº» ¹üÀ§ ¹İÈ¯
+		return BaseRange; // ë§¤ë‹ˆì €ê°€ ì—†ìœ¼ë©´ ê¸°ë³¸ ë²”ìœ„ ë°˜í™˜
 	}
 
 	float Multiplier = SkillManager->GetTotalRangeMultiplier(SlotIndex);
@@ -134,22 +134,22 @@ float UGA_SkillBase::GetRuneModifiedCooldown() const
 {
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
-	// SkillManager °¡Á®¿À±â
+	// SkillManager ê°€ì ¸ì˜¤ê¸°
 	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
-		return BaseCooldown; // ¸Å´ÏÀú°¡ ¾øÀ¸¸é ±âº» ÄğÅ¸ÀÓ ¹İÈ¯
+		return BaseCooldown; // ë§¤ë‹ˆì €ê°€ ì—†ìœ¼ë©´ ê¸°ë³¸ ì¿¨íƒ€ì„ ë°˜í™˜
 	}
 
-	// ÄğÅ¸ÀÓ °¨¼ÒÀ² (¿¹: 0.1 = 10%)
+	// ì¿¨íƒ€ì„ ê°ì†Œìœ¨ (ì˜ˆ: 0.1 = 10%)
 	float Reduction = SkillManager->GetTotalCooldownReduction(SlotIndex);
 
-	// ÃÖÁ¾ ÄğÅ¸ÀÓ = ±âº» ÄğÅ¸ÀÓ * (1 - °¨¼ÒÀ²)
-	// ¹üÀ§´Â Ä³¸¯ÅÍ ±âº»°ªÀÌ ¾øÀ¸¹Ç·Î ±×´ë·Î À¯Áö
+	// ìµœì¢… ì¿¨íƒ€ì„ = ê¸°ë³¸ ì¿¨íƒ€ì„ * (1 - ê°ì†Œìœ¨)
+	// ë²”ìœ„ëŠ” ìºë¦­í„° ê¸°ë³¸ê°’ì´ ì—†ìœ¼ë¯€ë¡œ ê·¸ëŒ€ë¡œ ìœ ì§€
 	return BaseCooldown * (1.0f - Reduction);
 }
 
-// µ¥¹ÌÁö Ã³¸®: SetByCaller·Î µ¥¹ÌÁö ¼öÄ¡ ÁÖÀÔ
+// ë°ë¯¸ì§€ ì²˜ë¦¬: SetByCallerë¡œ ë°ë¯¸ì§€ ìˆ˜ì¹˜ ì£¼ì…
 FGameplayEffectSpecHandle UGA_SkillBase::MakeRuneDamageEffectSpec(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo) const
 {
 	if (!DamageEffect) {
@@ -157,18 +157,18 @@ FGameplayEffectSpecHandle UGA_SkillBase::MakeRuneDamageEffectSpec(const FGamepla
 		return FGameplayEffectSpecHandle();
 	}
 
-	// Context »ı¼º
+	// Context ìƒì„±
 	FGameplayEffectContextHandle Context = MakeEffectContext(Handle, ActorInfo);
 
-	// Spec »ı¼º
+	// Spec ìƒì„±
 	FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(DamageEffect, GetAbilityLevel(), Context);
 
 	if (SpecHandle.Data.IsValid())
 	{
-		// ·é Àû¿ëµÈ µ¥¹ÌÁö °è»ê
+		// ë£¬ ì ìš©ëœ ë°ë¯¸ì§€ ê³„ì‚°
 		float FinalDamage = GetRuneModifiedDamage();
 
-		// SetByCaller ÅÂ±×(Data.Damage)¿¡ ¼öÄ¡ ÁÖÀÔ
+		// SetByCaller íƒœê·¸(Data.Damage)ì— ìˆ˜ì¹˜ ì£¼ì…
 		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, -FinalDamage);
 	}
 	else {
@@ -179,7 +179,7 @@ FGameplayEffectSpecHandle UGA_SkillBase::MakeRuneDamageEffectSpec(const FGamepla
 	return SpecHandle;
 }
 
-// ÄğÅ¸ÀÓ Ã³¸®: CommitAbility ½Ã ÀÚµ¿À¸·Î È£ÃâµÇ´Â ÇÔ¼ö ¿À¹ö¶óÀÌµå
+// ì¿¨íƒ€ì„ ì²˜ë¦¬: CommitAbility ì‹œ ìë™ìœ¼ë¡œ í˜¸ì¶œë˜ëŠ” í•¨ìˆ˜ ì˜¤ë²„ë¼ì´ë“œ
 void UGA_SkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
 {
 	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
@@ -188,21 +188,21 @@ void UGA_SkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const
 		return;
 	}
 
-	// 1. ÄğÅ¸ÀÓ¿ë Spec »ı¼º
+	// 1. ì¿¨íƒ€ì„ìš© Spec ìƒì„±
 	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(CooldownGE->GetClass(), GetAbilityLevel());
 
 	if (SpecHandle.Data.IsValid())
 	{
-		// ·é Àû¿ëµÈ ÄğÅ¸ÀÓ °è»ê
+		// ë£¬ ì ìš©ëœ ì¿¨íƒ€ì„ ê³„ì‚°
 		float FinalDuration = GetRuneModifiedCooldown();
 
-		// SetByCaller ÅÂ±×(Data.Cooldown)¿¡ ¼öÄ¡ ÁÖÀÔ
+		// SetByCaller íƒœê·¸(Data.Cooldown)ì— ìˆ˜ì¹˜ ì£¼ì…
 		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Cooldown, FinalDuration);
 
-		// ½ºÅ³º° °íÀ¯ ÄğÅ¸ÀÓ ÅÂ±×
+		// ìŠ¤í‚¬ë³„ ê³ ìœ  ì¿¨íƒ€ì„ íƒœê·¸
 		SpecHandle.Data->DynamicGrantedTags.AppendTags(UniqueCooldownTags);
 
-		// Àû¿ë
+		// ì ìš©
 		ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 	}
 	else {
@@ -212,15 +212,15 @@ void UGA_SkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle, const
 
 void UGA_SkillBase::NotifySkillCastStarted()
 {
-	// GAÀÇ ½ÃÀüÀÚ¿¡°Ô "State.Busy" ÅÂ±× Ãß°¡
-	// ½ÃÀü Áß ´Ù¸¥ ½ºÅ³ ½ÃÀüÀÌ³ª Çàµ¿À» Á¦ÇÑÇÏ±â À§ÇÔ
+	// GAì˜ ì‹œì „ìì—ê²Œ "State.Busy" íƒœê·¸ ì¶”ê°€
+	// ì‹œì „ ì¤‘ ë‹¤ë¥¸ ìŠ¤í‚¬ ì‹œì „ì´ë‚˜ í–‰ë™ì„ ì œí•œí•˜ê¸° ìœ„í•¨
 	AActor* Avatar = GetAvatarActorFromActorInfo();
 	if (Avatar)
 	{
 		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 		if (ASC)
 		{
-			// Loose ÅÂ±×·Î Ãß°¡ (ÁßÃ¸ÇüÀÌ ¾Æ´Ñ ÀÏ¹İ ÅÂ±×)
+			// Loose íƒœê·¸ë¡œ ì¶”ê°€ (ì¤‘ì²©í˜•ì´ ì•„ë‹Œ ì¼ë°˜ íƒœê·¸)
 			ASC->AddLooseGameplayTag(TAG_Skill_Casting);
 		}
 	}
@@ -236,7 +236,7 @@ void UGA_SkillBase::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// GA Á¾·á ½Ã "State.Busy" ÅÂ±× Á¦°Å
+	// GA ì¢…ë£Œ ì‹œ "State.Busy" íƒœê·¸ ì œê±°
 	AActor* Avatar = GetAvatarActorFromActorInfo();
 	if (Avatar)
 	{
@@ -249,6 +249,6 @@ void UGA_SkillBase::EndAbility(
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::EndAbility: Avatar is null"));
 	}
-	// ºÎ¸ğ Å¬·¡½ºÀÇ EndAbility È£Ãâ
+	// ë¶€ëª¨ í´ë˜ìŠ¤ì˜ EndAbility í˜¸ì¶œ
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

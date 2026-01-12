@@ -1,22 +1,22 @@
-#include "EnemyBase.h"
+ï»¿#include "EnemyBase.h"
 #include "AbilitySystemComponent.h"
 #include "EnemyAttributeSet.h" 
-#include "GameplayEffectExtension.h" // GE °ü·Ã Çì´õ
+#include "GameplayEffectExtension.h" // GE ê´€ë ¨ í—¤ë”
 #include "AbilitySystemBlueprintLibrary.h"
-#include "Components/CapsuleComponent.h" // Ä¸½¶ Äİ¸®Àü ¼³Á¤¿ë
-#include "Components/SkeletalMeshComponent.h" // ¸Ş½¬ ¼³Á¤¿ë
-#include "AIController.h" // AI ÄÁÆ®·Ñ·¯ Á¢±Ù¿ë
-#include "BrainComponent.h" // AI ³ú(ºñÇìÀÌºñ¾î Æ®¸®) Á¤Áö¿ë
-#include "GameFramework/CharacterMovementComponent.h" // (È¤½Ã ÀÌµ¿ ¸ØÃâ ¶§ ÇÊ¿ä)
+#include "Components/CapsuleComponent.h" // ìº¡ìŠ ì½œë¦¬ì „ ì„¤ì •ìš©
+#include "Components/SkeletalMeshComponent.h" // ë©”ì‰¬ ì„¤ì •ìš©
+#include "AIController.h" // AI ì»¨íŠ¸ë¡¤ëŸ¬ ì ‘ê·¼ìš©
+#include "BrainComponent.h" // AI ë‡Œ(ë¹„í—¤ì´ë¹„ì–´ íŠ¸ë¦¬) ì •ì§€ìš©
+#include "GameFramework/CharacterMovementComponent.h" // (í˜¹ì‹œ ì´ë™ ë©ˆì¶œ ë•Œ í•„ìš”)
 
 AEnemyBase::AEnemyBase()
 {
-	// 1. ASC »ı¼º (Minimal ¸ğµå: AI´Â ¿¹ÃøÀÌ ÇÊ¿ä ¾øÀ¸¹Ç·Î È¿À²Àû)
+	// 1. ASC ìƒì„± (Minimal ëª¨ë“œ: AIëŠ” ì˜ˆì¸¡ì´ í•„ìš” ì—†ìœ¼ë¯€ë¡œ íš¨ìœ¨ì )
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal);
 
-	// 2. AttributeSet »ı¼º
+	// 2. AttributeSet ìƒì„±
 	Attributes = CreateDefaultSubobject<UEnemyAttributeSet>(TEXT("Attributes"));
 }
 
@@ -31,17 +31,17 @@ void AEnemyBase::BeginPlay()
 
 	if (AbilitySystemComponent)
 	{
-		// 1. GAS ÃÊ±âÈ­ (AI´Â Owner=Avatar=Self)
+		// 1. GAS ì´ˆê¸°í™” (AIëŠ” Owner=Avatar=Self)
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-		// 2. ÃÊ±â ÅÂ±× ºÎ¿© (¿¡µğÅÍ ¼³Á¤°ª Àû¿ë)
+		// 2. ì´ˆê¸° íƒœê·¸ ë¶€ì—¬ (ì—ë””í„° ì„¤ì •ê°’ ì ìš©)
 		if (InitialGameplayTags.IsValid())
 		{
 			AbilitySystemComponent->AddLooseGameplayTags(InitialGameplayTags);
 		}
 
-		// 3. (¼­¹ö¸¸) ½ºÅÈ ÃÊ±âÈ­ ¹× ½ºÅ³ ºÎ¿©
-		// Å¬¶óÀÌ¾ğÆ®´Â º¹Á¦µÈ °ªÀ» ¹ŞÀ¸¹Ç·Î ¼­¹ö¿¡¼­¸¸ Ã³¸®ÇÏ¸é µË´Ï´Ù.
+		// 3. (ì„œë²„ë§Œ) ìŠ¤íƒ¯ ì´ˆê¸°í™” ë° ìŠ¤í‚¬ ë¶€ì—¬
+		// í´ë¼ì´ì–¸íŠ¸ëŠ” ë³µì œëœ ê°’ì„ ë°›ìœ¼ë¯€ë¡œ ì„œë²„ì—ì„œë§Œ ì²˜ë¦¬í•˜ë©´ ë©ë‹ˆë‹¤.
 		if (HasAuthority())
 		{
 			InitializeAttributes();
@@ -52,19 +52,19 @@ void AEnemyBase::BeginPlay()
 
 void AEnemyBase::InitializeAttributes()
 {
-	// ¿¡µğÅÍ¿¡ ÇÒ´çµÈ GE°¡ ÀÖ°í, ASC°¡ À¯È¿ÇÏ´Ù¸é Àû¿ë
+	// ì—ë””í„°ì— í• ë‹¹ëœ GEê°€ ìˆê³ , ASCê°€ ìœ íš¨í•˜ë‹¤ë©´ ì ìš©
 	if (AbilitySystemComponent && DefaultAttributeEffect)
 	{
-		// GE ÄÁÅØ½ºÆ® »ı¼º (´©°¡ ´©±¸¿¡°Ô Àû¿ëÇÏ´Â°¡?)
+		// GE ì»¨í…ìŠ¤íŠ¸ ìƒì„± (ëˆ„ê°€ ëˆ„êµ¬ì—ê²Œ ì ìš©í•˜ëŠ”ê°€?)
 		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
 		EffectContext.AddSourceObject(this);
 
-		// GE ½ºÆå »ı¼º (Àû¿ëÇÒ È¿°úÀÇ ¸í¼¼¼­)
+		// GE ìŠ¤í™ ìƒì„± (ì ìš©í•  íš¨ê³¼ì˜ ëª…ì„¸ì„œ)
 		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1.0f, EffectContext);
 
 		if (SpecHandle.IsValid())
 		{
-			// ÀÚ½Å¿¡°Ô Àû¿ë (ApplyGameplayEffectSpecToSelf)
+			// ìì‹ ì—ê²Œ ì ìš© (ApplyGameplayEffectSpecToSelf)
 			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		}
 	}
@@ -72,15 +72,15 @@ void AEnemyBase::InitializeAttributes()
 
 void AEnemyBase::GiveDefaultAbilities()
 {
-	// ¿¡µğÅÍ¿¡ ¼³Á¤µÈ ½ºÅ³ ¸ñ·Ï ¼øÈ¸
+	// ì—ë””í„°ì— ì„¤ì •ëœ ìŠ¤í‚¬ ëª©ë¡ ìˆœíšŒ
 	if (HasAuthority() && AbilitySystemComponent)
 	{
 		for (TSubclassOf<UGameplayAbility>& AbilityClass : StartupAbilities)
 		{
 			if (AbilityClass)
 			{
-				// ½ºÅ³ ºÎ¿© (GiveAbility)
-				// Level 1·Î ºÎ¿©, InputID´Â AI¶ó º¸Åë -1(¾øÀ½) »ç¿ë
+				// ìŠ¤í‚¬ ë¶€ì—¬ (GiveAbility)
+				// Level 1ë¡œ ë¶€ì—¬, InputIDëŠ” AIë¼ ë³´í†µ -1(ì—†ìŒ) ì‚¬ìš©
 				FGameplayAbilitySpec Spec(AbilityClass, 1, -1);
 				AbilitySystemComponent->GiveAbility(Spec);
 			}
@@ -92,12 +92,12 @@ void AEnemyBase::OnAttackHit(AActor* TargetActor)
 {
 	if (!TargetActor || !AttackDamageEffect) return;
 
-	// 1. Å¸°Ùµµ GAS ½Ã½ºÅÛ(ASC)À» °¡Áö°í ÀÖ´ÂÁö È®ÀÎ
+	// 1. íƒ€ê²Ÿë„ GAS ì‹œìŠ¤í…œ(ASC)ì„ ê°€ì§€ê³  ìˆëŠ”ì§€ í™•ì¸
 	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
 	if (TargetASC)
 	{
-		// 2. GameplayEffectSpec(¼³°èµµ) »ı¼º
-		// ¿©±â¼­ ·¹º§¿¡ µû¸¥ µ¥¹ÌÁö °è¼ö µîÀ» ¼³Á¤ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+		// 2. GameplayEffectSpec(ì„¤ê³„ë„) ìƒì„±
+		// ì—¬ê¸°ì„œ ë ˆë²¨ì— ë”°ë¥¸ ë°ë¯¸ì§€ ê³„ìˆ˜ ë“±ì„ ì„¤ì •í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
 		FGameplayEffectContextHandle ContextHandle = AbilitySystemComponent->MakeEffectContext();
 		ContextHandle.AddSourceObject(this);
 
@@ -105,7 +105,7 @@ void AEnemyBase::OnAttackHit(AActor* TargetActor)
 
 		if (SpecHandle.IsValid())
 		{
-			// 3. µ¥¹ÌÁö Àû¿ë!
+			// 3. ë°ë¯¸ì§€ ì ìš©!
 			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
 			UE_LOG(LogTemp, Log, TEXT("[EnemyBase] Successfully applied damage to %s"), *TargetActor->GetName());
@@ -115,28 +115,28 @@ void AEnemyBase::OnAttackHit(AActor* TargetActor)
 
 void AEnemyBase::Die()
 {
-	// ÀÌ¹Ì Á×¾úÀ¸¸é ¹«½Ã
+	// ì´ë¯¸ ì£½ì—ˆìœ¼ë©´ ë¬´ì‹œ
 	if (GetLifeSpan() > 0.0f) return;
 
 	UE_LOG(LogTemp, Warning, TEXT("[EnemyBase] %s has Died!"), *GetName());
 
-	// 1. Ãæµ¹ ²ô±â (½ÃÃ¼ ¹â°í Áö³ª°¡µµ·Ï)
+	// 1. ì¶©ëŒ ë„ê¸° (ì‹œì²´ ë°Ÿê³  ì§€ë‚˜ê°€ë„ë¡)
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision); // ·¡±×µ¹ ¾µ°Å¸é QueryAndPhysics
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision); // ë˜ê·¸ëŒ ì“¸ê±°ë©´ QueryAndPhysics
 
-	// 2. »ç¸Á ¸ùÅ¸ÁÖ Àç»ı
+	// 2. ì‚¬ë§ ëª½íƒ€ì£¼ ì¬ìƒ
 	if (DeadMontage)
 	{
 		PlayAnimMontage(DeadMontage);
 	}
 
-	// 3. AI ÄÁÆ®·Ñ·¯ Á¤Áö (BrainComponent Á¤Áö)
+	// 3. AI ì»¨íŠ¸ë¡¤ëŸ¬ ì •ì§€ (BrainComponent ì •ì§€)
 	if (AAIController* AICon = Cast<AAIController>(GetController()))
 	{
 		AICon->BrainComponent->StopLogic("Died");
 	}
 
-	// 4. ÀÏÁ¤ ½Ã°£ µÚ ¾×ÅÍ Á¦°Å (ÇÊ¿äÇÏ´Ù¸é)
+	// 4. ì¼ì • ì‹œê°„ ë’¤ ì•¡í„° ì œê±° (í•„ìš”í•˜ë‹¤ë©´)
 	SetLifeSpan(5.0f);
 }
 
@@ -144,9 +144,9 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 {
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 
-	// ¸¸¾à GAS¸¦ ¾È ¾²´Â ÀÏ¹İ ¹«±â·Î ¸Â¾ÒÀ» ¶§µµ GAS Ã¼·ÂÀ» ±ğ°í ½Í´Ù¸é?
-	// ¿©±â¼­ Self¿¡°Ô 'µ¥¹ÌÁö ¹Ş´Â GE'¸¦ Àû¿ëÇÏ´Â ·ÎÁ÷À» Ãß°¡ÇÏ¸é µË´Ï´Ù.
-	// ÇÏÁö¸¸ º¸ÅëÀº ¶§¸®´Â ÂÊ¿¡¼­ GE¸¦ ½î¹Ç·Î ºñ¿öµÖµµ µË´Ï´Ù.
+	// ë§Œì•½ GASë¥¼ ì•ˆ ì“°ëŠ” ì¼ë°˜ ë¬´ê¸°ë¡œ ë§ì•˜ì„ ë•Œë„ GAS ì²´ë ¥ì„ ê¹ê³  ì‹¶ë‹¤ë©´?
+	// ì—¬ê¸°ì„œ Selfì—ê²Œ 'ë°ë¯¸ì§€ ë°›ëŠ” GE'ë¥¼ ì ìš©í•˜ëŠ” ë¡œì§ì„ ì¶”ê°€í•˜ë©´ ë©ë‹ˆë‹¤.
+	// í•˜ì§€ë§Œ ë³´í†µì€ ë•Œë¦¬ëŠ” ìª½ì—ì„œ GEë¥¼ ì˜ë¯€ë¡œ ë¹„ì›Œë‘¬ë„ ë©ë‹ˆë‹¤.
 
 	return ActualDamage;
 }
