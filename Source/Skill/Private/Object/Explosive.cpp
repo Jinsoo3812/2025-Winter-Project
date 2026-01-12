@@ -5,6 +5,11 @@
 #include "Block/BlockBase.h"
 #include "Components/StaticMeshComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
+#include "TimerManager.h"           
+#include "AbilitySystemComponent.h" 
+#include "AbilitySystemInterface.h" 
+#include "Engine/OverlapResult.h"   
+#include "DrawDebugHelpers.h"
 
 // Sets default values
 AExplosive::AExplosive()
@@ -28,12 +33,26 @@ void AExplosive::BeginPlay()
 	Super::BeginPlay();
 }
 
-void AExplosive::Initialize(FVector StartLoc, ABlockBase* Target, float FlightDuration)
+void AExplosive::Initialize(
+	FVector StartLoc,
+	ABlockBase* Target,
+	float FlightDuration,
+	float InAutoDetonateDelay,
+	float InExplosionRadius,
+	UAbilitySystemComponent* InSourceASC,
+	FGameplayEffectSpecHandle InDamageSpecHandle,
+	TSubclassOf<UGameplayEffect> InDestructionEffectClass)
 {
 	StartLocation = StartLoc;
 	TargetBlock = Target;
 	TotalFlightTime = FlightDuration;
 	CurrentFlightTime = 0.0f;
+
+	AutoDetonateDelay = InAutoDetonateDelay;
+	ExplosionRadius = InExplosionRadius;
+	SourceASC = InSourceASC;
+	DamageSpecHandle = InDamageSpecHandle;
+	DestructionEffectClass = InDestructionEffectClass;
 
 	if (TargetBlock)
 	{
@@ -99,6 +118,17 @@ void AExplosive::OnLanded()
 		UE_LOG(LogTemp, Warning, TEXT("AExplosive::OnLanded: TargetBlock is invalid"));
 	}
 
+	// 자동 폭파 타이머 시작
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(DetonateTimerHandle, this, &AExplosive::OnAutoDetonate, AutoDetonateDelay, false);
+		UE_LOG(LogTemp, Log, TEXT("AExplosive::OnLanded: Timer started for %f seconds"), AutoDetonateDelay);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AExplosive::OnLanded: World is null, cannot start timer"));
+	}
+
 	// GA에게 착륙 사실 알림
 	if (OnLandedDelegate.IsBound())
 	{
@@ -108,7 +138,92 @@ void AExplosive::OnLanded()
 
 void AExplosive::Detonate()
 {
+	// 타이머가 돌고 있다면 중지 (수동 기폭 시 중복 실행 방지)
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(DetonateTimerHandle);
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("AExplosive::Detonate: BOOM!"));
+
+	// 폭발 범위 데미지 처리 
+	FVector ExplosionCenter = GetActorLocation();
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+
+	// 시전자(플레이어)는 피해를 입지 않도록 제외
+	if (SourceASC.IsValid() && SourceASC->GetAvatarActor()) QueryParams.AddIgnoredActor(SourceASC->GetAvatarActor());
+
+	bool bHit = GetWorld()->OverlapMultiByChannel(
+		OverlapResults,
+		ExplosionCenter,
+		FQuat::Identity,
+		ECC_Pawn,
+		FCollisionShape::MakeSphere(ExplosionRadius),
+		QueryParams
+	);
+
+	if (bHit)
+	{
+		for (const FOverlapResult& Overlap : OverlapResults)
+		{
+			AActor* HitActor = Overlap.GetActor();
+			if (!HitActor) continue;
+
+			// ASC 확인
+			UAbilitySystemComponent* TargetASC = nullptr;
+			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
+			{
+				TargetASC = ASI->GetAbilitySystemComponent();
+			}
+
+			if (TargetASC && SourceASC.IsValid())
+			{
+				// 1. 데미지 Effect 적용
+				if (DamageSpecHandle.IsValid())
+				{
+					SourceASC->ApplyGameplayEffectSpecToTarget(
+						*DamageSpecHandle.Data.Get(),
+						TargetASC
+					);
+					UE_LOG(LogTemp, Log, TEXT("AExplosive::Detonate: Applied damage to %s"), *HitActor->GetName());
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: DamageSpecHandle is invalid"));
+				}
+
+				// 2. 파괴 Effect 적용
+				if (DestructionEffectClass)
+				{
+					// Context 생성
+					FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
+					Context.AddSourceObject(this);
+
+					// Spec 생성
+					FGameplayEffectSpecHandle DestSpecHandle = SourceASC->MakeOutgoingSpec(
+						DestructionEffectClass,
+						1.0f, // Level
+						Context
+					);
+
+					if (DestSpecHandle.IsValid())
+					{
+						SourceASC->ApplyGameplayEffectSpecToTarget(
+							*DestSpecHandle.Data.Get(),
+							TargetASC
+						);
+					}
+				}
+			}
+		}
+	}
+
+	// 디버그 구 그리기
+	DrawDebugSphere(GetWorld(), ExplosionCenter, ExplosionRadius, 16, FColor::Red, false, 2.0f, 0, 2.0f);
+
 
 	// 블록 색상 복구
 	if (TargetBlock)
@@ -120,8 +235,15 @@ void AExplosive::Detonate()
 		UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: TargetBlock is invalid during detonation"));
 	}
 
-	// 폭발 처리 (현재는 로그만 남기고 제거)
+	// 폭발 처리
 	Destroy();
+}
+
+// 타이머 콜백
+void AExplosive::OnAutoDetonate()
+{
+	UE_LOG(LogTemp, Log, TEXT("AExplosive::OnAutoDetonate: Time is up!"));
+	Detonate();
 }
 
 void AExplosive::SetBlockColorRed(bool bEnable)

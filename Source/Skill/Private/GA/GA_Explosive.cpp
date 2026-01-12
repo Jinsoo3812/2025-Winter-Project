@@ -5,7 +5,6 @@
 #include "Object/Explosive.h"
 #include "Block/BlockBase.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
-#include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -27,6 +26,13 @@ void UGA_Explosive::ActivateAbility(
 {
 	// 조준 모드(프리뷰) 진입
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	// 이미 던져놓은 폭발물이 아직 유효하다면 기폭 및 종료
+	if (CurrentExplosive.IsValid())
+	{
+		PerformDetonateAndEnd();
+		return;
+	}
 
 	// 프리뷰 타이머 시작
 	if (UWorld* World = GetWorld())
@@ -77,22 +83,11 @@ void UGA_Explosive::EndAbility(
 	// 하이라이트 정리
 	ClearHighlights();
 
-	// 폭발물 객체의 착륙 델리게이트 해제
-	if (CurrentExplosive && CurrentExplosive->OnLandedDelegate.IsBound())
-	{
-		CurrentExplosive->OnLandedDelegate.RemoveDynamic(this, &UGA_Explosive::OnExplosiveLanded);
-	}
-
 	// 태스크 정리
 	if (InputTask)
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
-	}
-	if (DelayTask)
-	{
-		DelayTask->EndTask();
-		DelayTask = nullptr;
 	}
 
 	// 입력 바인딩 해제
@@ -112,6 +107,7 @@ void UGA_Explosive::EndAbility(
 		}
 	}
 
+	// 폭발물에게 정보를 넘겨줄 것이므로 리셋해도 됨
 	SavedTargetBlock.Reset();
 
 	NotifySkillCastFinished();
@@ -184,24 +180,21 @@ void UGA_Explosive::OnLeftClickPressed()
 		// 스킬 시전 시작 (Busy 태그 등 적용)
 		NotifySkillCastStarted();
 
-		// 폭발물 투척
+		// 폭발물 투척 및 스킬 종료
 		SpawnExplosive();
-
-		// 스킬 시전 종료(현재는 즉발식, 추후 애니메이션 등 추가 시점에 맞춰 조정 필요)
-		NotifySkillCastFinished();
 	}
 }
 
 void UGA_Explosive::OnCancelPressed(float TimeWaited)
 {
-	// 시전 취소
+	// 조준 취소 및 종료
 	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 }
 
 void UGA_Explosive::SpawnExplosive()
 {
-	// 커밋 (쿨타임, 비용 지불)
-	if (!CommitAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
+	// 투척 시점에는 쿨타임이 적용되지 않음
+	if (!CommitAbilityCost(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit ability"));
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
@@ -262,15 +255,26 @@ void UGA_Explosive::SpawnExplosive()
 	{
 		CurrentExplosive = NewExplosive;
 
-		// 착륙 델리게이트 바인딩
-		CurrentExplosive->OnLandedDelegate.AddDynamic(this, &UGA_Explosive::OnExplosiveLanded);
+		// GA가 종료된 후에도 액터가 데미지를 줄 수 있도록 SpecHandle을 생성하여 전달
+		FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
-		// 투척 (1.5초 비행)
-		CurrentExplosive->Initialize(SpawnLoc, SavedTargetBlock.Get(), 1.5f);
+		// 폭발물 초기화
+		NewExplosive->Initialize(
+			SpawnLoc,
+			SavedTargetBlock.Get(),
+			1.5f,
+			AutoDetonateDelay,
+			ExplosionRadius,
+			GetAbilitySystemComponentFromActorInfo(),
+			DamageSpecHandle,
+			DestructionEffect
+		);
 
-		UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Bomb thrown, waiting for landing..."));
+		UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Bomb thrown. GA Phase 1 Finished."));
 
-		// EndAbility를 호출하지 않음! (Latent 상태 유지)
+		// 성공적으로 던졌으므로 bWasCancelled = false.
+		// 폭발 대기는 이제 액터가 스스로 하거나, 플레이어가 다시 스킬을 눌러 처리
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 	}
 	else {
 		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to spawn bomb or invalid target"));
@@ -278,149 +282,26 @@ void UGA_Explosive::SpawnExplosive()
 	}
 }
 
-void UGA_Explosive::OnExplosiveLanded()
-{
-	UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Bomb landed. Waiting for manual detonation or timeout."));
-
-	// 착탄한 블록만 빨간색(2.0)으로 다시 켭니다.
-	if (SavedTargetBlock.IsValid())
-	{
-		ABlockBase* LandedBlock = SavedTargetBlock.Get();
-		UStaticMeshComponent* Mesh = LandedBlock->GetBlockMesh();
-		if (Mesh)
-		{
-			Mesh->SetCustomPrimitiveDataFloat(0, 2.0f);
-
-			// 나중에 EndAbility에서 ClearHighlights 호출 시 꺼지도록 목록에 추가
-			PreviewedBlocks.Add(LandedBlock);
-		}
-	}
-
-	// 1. 자동 폭파 타이머 태스크 시작
-	DelayTask = UAbilityTask_WaitDelay::WaitDelay(this, AutoDetonateDelay);
-	if (DelayTask)
-	{
-		DelayTask->OnFinish.AddDynamic(this, &UGA_Explosive::OnAutoDetonateTimeFinish);
-		DelayTask->ReadyForActivation();
-	}
-
-	// 2. 수동 기폭 입력 태스크 시작 (스킬 키 재입력)
-	InputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
-	if (InputTask)
-	{
-		InputTask->OnPress.AddDynamic(this, &UGA_Explosive::OnManualDetonatePress);
-		InputTask->ReadyForActivation();
-	}
-}
-
-void UGA_Explosive::OnManualDetonatePress(float TimeWaited)
-{
-	UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Manual detonation triggered."));
-	PerformDetonateAndEnd();
-}
-
-void UGA_Explosive::OnAutoDetonateTimeFinish()
-{
-	UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Auto detonation timer finished."));
-	PerformDetonateAndEnd();
-}
-
 void UGA_Explosive::PerformDetonateAndEnd()
 {
-	if (CurrentExplosive)
+	// 기폭 시점에 쿨타임 적용
+	if (!CommitAbilityCooldown(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false))
 	{
-		// 폭발 중심 위치: 폭발물이 부착된 블록의 윗면 중앙
-		FVector ExplosionCenter = CurrentExplosive->GetActorLocation();
-
-		// 폭발 범위 내 객체 탐색
-		TArray<FOverlapResult> OverlapResults;
-		FCollisionQueryParams QueryParams;
-		QueryParams.AddIgnoredActor(CurrentExplosive);
-		QueryParams.AddIgnoredActor(GetAvatarActorFromActorInfo());
-
-		bool bHit = GetWorld()->OverlapMultiByChannel(
-			OverlapResults,
-			ExplosionCenter,
-			FQuat::Identity,
-			ECC_Pawn,
-			FCollisionShape::MakeSphere(ExplosionRadius),
-			QueryParams
-		);
-
-		if (bHit)
-		{
-			for (const FOverlapResult& Overlap : OverlapResults)
-			{
-				AActor* HitActor = Overlap.GetActor();
-				if (!HitActor) continue;
-
-				// ASC를 가진 액터만 GE 적용 가능
-				UAbilitySystemComponent* TargetASC = nullptr;
-				if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
-				{
-					TargetASC = ASI->GetAbilitySystemComponent();
-				}
-
-				if (TargetASC)
-				{
-					// 데미지 Effect 적용
-					FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
-					if (DamageSpecHandle.IsValid())
-					{
-						GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(
-							*DamageSpecHandle.Data.Get(),
-							TargetASC
-						);
-
-						UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Applied damage to %s"), *HitActor->GetName());
-					}
-
-					// 파괴 Effect 적용
-					if (DestructionEffect)
-					{
-						FGameplayEffectContextHandle DestructionContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
-						DestructionContext.AddSourceObject(GetAvatarActorFromActorInfo());
-
-						FGameplayEffectSpecHandle DestructionSpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(
-							DestructionEffect,
-							GetAbilityLevel(),
-							DestructionContext
-						);
-
-						if (DestructionSpecHandle.IsValid())
-						{
-							GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(
-								*DestructionSpecHandle.Data.Get(),
-								TargetASC
-							);
-
-							UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Applied destruction to %s"), *HitActor->GetName());
-						}
-					}
-				}
-			}
-		}
-
-		// 디버그 구 그리기 (폭발 범위 시각화)
-		DrawDebugSphere(
-			GetWorld(),
-			ExplosionCenter,
-			ExplosionRadius,
-			16,
-			FColor::Red,
-			false,
-			2.0f,
-			0,
-			2.0f
-		);
-
-		UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Explosion at %s with radius %f"), *ExplosionCenter.ToString(), ExplosionRadius);
-
-		CurrentExplosive->Detonate();
-		CurrentExplosive = nullptr;
+		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit cooldown"));
 	}
 
-	// 모든 작업 완료, 정상 종료
+	if (CurrentExplosive.IsValid())
+	{
+		// 폭발물 폭파. 피해 및 파괴 처리 로직은 폭발물 액터 내부에서 처리됨
+		CurrentExplosive->Detonate();
+
+		CurrentExplosive.Reset();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Detonate requested but bomb is gone (Already auto-detonated?)."));
+	}
+
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 

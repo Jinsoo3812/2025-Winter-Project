@@ -5,9 +5,13 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "UObject/ObjectMacros.h"
+#include "GameplayEffectTypes.h"
 #include "Explosive.generated.h"
 
 class ABlockBase;
+class ABlockBase;
+class UAbilitySystemComponent;
+class UGameplayEffect;
 
 // 착륙 시점을 GA_Explosive에 알리기 위한 델리게이트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExplosiveLanded);
@@ -33,7 +37,21 @@ public:
 	// @param StartLoc: 폭발물의 시작 위치
 	// @param Target: 목표 블록
 	// @param FlightDuration: 목표까지 도달하는 데 걸리는 시간 (초)
-	void Initialize(FVector StartLoc, ABlockBase* Target, float FlightDuration);
+	// @param InAutoDetonateDelay: 자동 기폭 대기 시간 (초)
+	// @param InExplosionRadius: 폭발 반경
+	// @param InSourceASC: 데미지 적용에 사용할 소스 ASC
+	// @param InDamageSpecHandle: 데미지 적용에 사용할 GE Spec Handle
+	// @param InDestructionEffectClass: 파괴 효과로 적용할 GE 클래스
+	void Initialize(
+		FVector StartLoc,
+		ABlockBase* Target,
+		float FlightDuration,
+		float InAutoDetonateDelay,
+		float InExplosionRadius,
+		UAbilitySystemComponent* InSourceASC,
+		FGameplayEffectSpecHandle InDamageSpecHandle,
+		TSubclassOf<UGameplayEffect> InDestructionEffectClass
+	);
 
 	// 폭발 로직 실행 (외부에서 호출)
 	void Detonate();
@@ -48,6 +66,10 @@ public:
 protected:
 	// 목표 지점에 도착했을 때 처리
 	void OnLanded();
+
+	// 자동 폭파 타이머에 의해 호출됨
+	UFUNCTION()
+	void OnAutoDetonate();
 
 	// 블록의 색상을 변경하는 헬퍼 함수
 	void SetBlockColorRed(bool bEnable);
@@ -78,4 +100,24 @@ protected:
 	float TotalFlightTime = 1.0f;
 	float CurrentFlightTime = 0.0f;
 	float ArcHeight = 300.0f; // 포물선 높이
+
+	/**
+	 *  폭발 관련 변수
+	 */
+	float AutoDetonateDelay = 3.0f;
+	float ExplosionRadius = 300.0f;
+
+	// 데미지 적용을 위한 시전자의 ASC
+	UPROPERTY()
+	TWeakObjectPtr<UAbilitySystemComponent> SourceASC;
+
+	// 데미지 스펙 핸들 (스냅샷 된 데미지 데이터)
+	FGameplayEffectSpecHandle DamageSpecHandle;
+
+	// 추가 파괴 이펙트 클래스
+	UPROPERTY()
+	TSubclassOf<UGameplayEffect> DestructionEffectClass;
+
+	// 자동 폭파 타이머 핸들
+	FTimerHandle DetonateTimerHandle;
 };

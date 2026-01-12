@@ -9,7 +9,6 @@
 class AExplosive;
 class ABlockBase;
 class UAbilityTask_WaitInputPress;
-class UAbilityTask_WaitDelay;
 
 /**
  * 원거리 블록에 폭발물을 던지고, 재시전하여 폭발시키는 어빌리티
@@ -50,18 +49,6 @@ protected:
 	// 폭발물 투척 로직
 	void SpawnExplosive();
 
-	// 폭발물 착륙 시 호출 (Delegate 바인딩)
-	UFUNCTION()
-	void OnExplosiveLanded();
-
-	// 스킬 키 재입력 시 호출
-	UFUNCTION()
-	void OnManualDetonatePress(float TimeWaited);
-
-	// 시간이 다 되었을 때 호출
-	UFUNCTION()
-	void OnAutoDetonateTimeFinish();
-
 	// 최종 폭발 처리 및 종료
 	void PerformDetonateAndEnd();
 
@@ -87,7 +74,7 @@ protected:
 
 	// 생성된 폭발물 인스턴스 (InstancedPerActor 정책이므로 멤버 변수 유지 가능)
 	UPROPERTY()
-	TObjectPtr<AExplosive> CurrentExplosive;
+	TWeakObjectPtr<AExplosive> CurrentExplosive;
 
 	// 프리뷰 타이머 핸들
 	FTimerHandle TickTimerHandle;
@@ -95,9 +82,6 @@ protected:
 	// 태스크 참조 보관
 	UPROPERTY()
 	UAbilityTask_WaitInputPress* InputTask;
-
-	UPROPERTY()
-	UAbilityTask_WaitDelay* DelayTask;
 
 	// 현재 투척 목표로 하이라이트된 블록 (매 프레임 변할 수 있음)
 	UPROPERTY()
