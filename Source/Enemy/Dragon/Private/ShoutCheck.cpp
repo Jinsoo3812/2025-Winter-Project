@@ -1,4 +1,4 @@
-#include "ShoutCheck.h"
+ï»¿#include "ShoutCheck.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -8,15 +8,15 @@
 UShoutCheck::UShoutCheck()
 {
 	SocketName = FName("MouthSocket");
-	ShoutRadius = 1500.0f; // ²Ï ³ĞÀº ¹üÀ§
-	ShoutConeAngle = 35.0f; // Àü¹æ 90µµ
+	ShoutRadius = 1500.0f; // ê½¤ ë„“ì€ ë²”ìœ„
+	ShoutConeAngle = 35.0f; // ì „ë°© 90ë„
 	bDrawDebug = true;
 }
 
 void UShoutCheck::NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference)
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
-	HitActors.Empty(); // ÃÊ±âÈ­
+	HitActors.Empty(); // ì´ˆê¸°í™”
 }
 
 void UShoutCheck::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference)
@@ -28,54 +28,54 @@ void UShoutCheck::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase
 	AActor* OwnerActor = MeshComp->GetOwner();
 	UWorld* World = MeshComp->GetWorld();
 
-	// 1. ±âÁØ À§Ä¡(ÀÔ)¿Í ¹æÇâ °è»ê
+	// 1. ê¸°ì¤€ ìœ„ì¹˜(ì…)ì™€ ë°©í–¥ ê³„ì‚°
 	FVector MouthLocation = MeshComp->GetSocketLocation(SocketName);
 	FVector MouthForward = MeshComp->GetSocketRotation(SocketName).Vector();
 
-	// ³ôÀÌ ¹«½Ã¸¦ À§ÇØ Z°ª Á¦°Å ¹× Á¤±ÔÈ­(Normalize)
+	// ë†’ì´ ë¬´ì‹œë¥¼ ìœ„í•´ Zê°’ ì œê±° ë° ì •ê·œí™”(Normalize)
 	MouthForward.Z = 0.0f;
 	MouthForward.Normalize();
 
-	// 2. ÇÃ·¹ÀÌ¾î Ã£±â (º¸Åë PlayerController 0¹øÀÌ ÇÃ·¹ÀÌ¾î)
-	// ¸ÖÆ¼ÇÃ·¹ÀÌ¶ó¸é OverlapSphere µîÀ¸·Î ¸ğµç PawnÀ» Ã£¾Æ¾ß ÇÏÁö¸¸, ½Ì±ÛÀÌ¶ó¸é ÀÌ°Ô ºü¸¨´Ï´Ù.
+	// 2. í”Œë ˆì´ì–´ ì°¾ê¸° (ë³´í†µ PlayerController 0ë²ˆì´ í”Œë ˆì´ì–´)
+	// ë©€í‹°í”Œë ˆì´ë¼ë©´ OverlapSphere ë“±ìœ¼ë¡œ ëª¨ë“  Pawnì„ ì°¾ì•„ì•¼ í•˜ì§€ë§Œ, ì‹±ê¸€ì´ë¼ë©´ ì´ê²Œ ë¹ ë¦…ë‹ˆë‹¤.
 	ACharacter* PlayerCharacter = UGameplayStatics::GetPlayerCharacter(World, 0);
 	if (!PlayerCharacter || HitActors.Contains(PlayerCharacter)) return;
 
-	// 3. ÆÇÁ¤ ·ÎÁ÷ (¼öÇĞ)
+	// 3. íŒì • ë¡œì§ (ìˆ˜í•™)
 	FVector PlayerLocation = PlayerCharacter->GetActorLocation();
 	FVector DirToPlayer = PlayerLocation - MouthLocation;
 
-	// ³ôÀÌ ¹«½Ã (2D °Å¸® °è»ê)
+	// ë†’ì´ ë¬´ì‹œ (2D ê±°ë¦¬ ê³„ì‚°)
 	DirToPlayer.Z = 0.0f;
-	float DistanceSq = DirToPlayer.SizeSquared(); // Á¦°ö °Å¸® (·çÆ® ¿¬»ê ÃÖÀûÈ­)
+	float DistanceSq = DirToPlayer.SizeSquared(); // ì œê³± ê±°ë¦¬ (ë£¨íŠ¸ ì—°ì‚° ìµœì í™”)
 
-	// (1) °Å¸® °Ë»ç
+	// (1) ê±°ë¦¬ ê²€ì‚¬
 	if (DistanceSq <= (ShoutRadius * ShoutRadius))
 	{
-		DirToPlayer.Normalize(); // ¹æÇâ º¤ÅÍÈ­
+		DirToPlayer.Normalize(); // ë°©í–¥ ë²¡í„°í™”
 
-		// (2) °¢µµ °Ë»ç (³»Àû Dot Product)
-		// ³»Àû °ª 1.0 = 0µµ(Á¤¸é), 0.0 = 90µµ, -1.0 = 180µµ
+		// (2) ê°ë„ ê²€ì‚¬ (ë‚´ì  Dot Product)
+		// ë‚´ì  ê°’ 1.0 = 0ë„(ì •ë©´), 0.0 = 90ë„, -1.0 = 180ë„
 		float DotResult = FVector::DotProduct(MouthForward, DirToPlayer);
 
-		// °¢µµ¸¦ ¶óµğ¾ÈÀ¸·Î º¯È¯ÇÏ¿© ÄÚ»çÀÎ °ª ºñ±³
-		// ¿¹: 90µµ ¹üÀ§¶ó¸é ÁÂ¿ì 45µµÀÌ¹Ç·Î, HalfAngle = 45µµ
+		// ê°ë„ë¥¼ ë¼ë””ì•ˆìœ¼ë¡œ ë³€í™˜í•˜ì—¬ ì½”ì‚¬ì¸ ê°’ ë¹„êµ
+		// ì˜ˆ: 90ë„ ë²”ìœ„ë¼ë©´ ì¢Œìš° 45ë„ì´ë¯€ë¡œ, HalfAngle = 45ë„
 		float HalfAngleRad = FMath::DegreesToRadians(ShoutConeAngle * 0.5f);
 		float Threshold = FMath::Cos(HalfAngleRad);
 
 		if (DotResult >= Threshold)
 		{
-			// [ÀûÁß!] Á¶°Ç ¸¸Á·
+			// [ì ì¤‘!] ì¡°ê±´ ë§Œì¡±
 			HitActors.Add(PlayerCharacter);
 
-			// 4. µğ¹öÇÁ(GE) Àû¿ë
+			// 4. ë””ë²„í”„(GE) ì ìš©
 			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(PlayerCharacter);
 			if (TargetASC && DebuffEffect)
 			{
 				FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
 				ContextHandle.AddSourceObject(OwnerActor);
 
-				// ·¹º§ 1.0À¸·Î Àû¿ë
+				// ë ˆë²¨ 1.0ìœ¼ë¡œ ì ìš©
 				FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(DebuffEffect, 1.0f, ContextHandle);
 				if (SpecHandle.IsValid())
 				{
@@ -86,12 +86,12 @@ void UShoutCheck::NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase
 		}
 	}
 
-	// 5. µğ¹ö±× µå·ÎÀ× (¹üÀ§ ´«À¸·Î È®ÀÎ)
+	// 5. ë””ë²„ê·¸ ë“œë¡œì‰ (ë²”ìœ„ ëˆˆìœ¼ë¡œ í™•ì¸)
 	if (bDrawDebug)
 	{
-		// ºÎÃ¤²Ã ±×¸®±â
+		// ë¶€ì±„ê¼´ ê·¸ë¦¬ê¸°
 		FVector Center = MouthLocation;
-		Center.Z = PlayerLocation.Z; // ÇÃ·¹ÀÌ¾î ³ôÀÌ¿¡ ¸ÂÃç¼­ ±×¸² (º¸±â ÆíÇÏ°Ô)
+		Center.Z = PlayerLocation.Z; // í”Œë ˆì´ì–´ ë†’ì´ì— ë§ì¶°ì„œ ê·¸ë¦¼ (ë³´ê¸° í¸í•˜ê²Œ)
 
 		UKismetSystemLibrary::DrawDebugCone(
 			World, Center, MouthForward, ShoutRadius,

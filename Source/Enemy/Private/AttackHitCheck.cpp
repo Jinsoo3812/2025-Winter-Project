@@ -1,11 +1,11 @@
-#include "AttackHitCheck.h"
-#include "EnemyBase.h" // AEnemyBaseÀÇ OnAttackHit ÇÔ¼ö È£ÃâÀ» À§ÇØ
+ï»¿#include "AttackHitCheck.h"
+#include "EnemyBase.h" // AEnemyBaseì˜ OnAttackHit í•¨ìˆ˜ í˜¸ì¶œì„ ìœ„í•´
 #include "Engine/OverlapResult.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 UAnimNotifyState_AttackHitCheck::UAnimNotifyState_AttackHitCheck()
 {
-	// ±âº»°ª ¼³Á¤
+	// ê¸°ë³¸ê°’ ì„¤ì •
 	SocketName = FName("AttackSocket");
 	AttackRadius = 50.0f;
 	bDrawDebug = true;
@@ -15,7 +15,7 @@ void UAnimNotifyState_AttackHitCheck::NotifyBegin(USkeletalMeshComponent* MeshCo
 {
 	Super::NotifyBegin(MeshComp, Animation, TotalDuration, EventReference);
 
-	// »õ·Î¿î °ø°İÀÌ ½ÃÀÛµÇ¾úÀ¸¹Ç·Î, Å¸°İÇß´ø ¾×ÅÍ ¸ñ·ÏÀ» ºñ¿ó´Ï´Ù.
+	// ìƒˆë¡œìš´ ê³µê²©ì´ ì‹œì‘ë˜ì—ˆìœ¼ë¯€ë¡œ, íƒ€ê²©í–ˆë˜ ì•¡í„° ëª©ë¡ì„ ë¹„ì›ë‹ˆë‹¤.
 	HitActors.Empty();
 }
 
@@ -25,24 +25,24 @@ void UAnimNotifyState_AttackHitCheck::NotifyTick(USkeletalMeshComponent* MeshCom
 
 	if (!MeshComp || !MeshComp->GetOwner()) return;
 
-	// 1. ¼ÒÄÏÀÇ ÇöÀç À§Ä¡¸¦ °¡Á®¿É´Ï´Ù.
+	// 1. ì†Œì¼“ì˜ í˜„ì¬ ìœ„ì¹˜ë¥¼ ê°€ì ¸ì˜µë‹ˆë‹¤.
 	FVector SocketLocation = MeshComp->GetSocketLocation(SocketName);
 
-	// 2. ÆÇÁ¤ ¼öÇà (Sphere Trace)
-	// Pawn Ã¤³Î(Ä³¸¯ÅÍ)¸¸ °¨ÁöÇÏµµ·Ï ¼³Á¤ÇÕ´Ï´Ù. ÇÊ¿ä¿¡ µû¶ó º¯°æ °¡´ÉÇÕ´Ï´Ù.
+	// 2. íŒì • ìˆ˜í–‰ (Sphere Trace)
+	// Pawn ì±„ë„(ìºë¦­í„°)ë§Œ ê°ì§€í•˜ë„ë¡ ì„¤ì •í•©ë‹ˆë‹¤. í•„ìš”ì— ë”°ë¼ ë³€ê²½ ê°€ëŠ¥í•©ë‹ˆë‹¤.
 	TArray<FHitResult> HitResults;
 	TArray<AActor*> ActorsToIgnore;
-	ActorsToIgnore.Add(MeshComp->GetOwner()); // ÀÚ±â ÀÚ½ÅÀº ¶§¸®¸é ¾È µÊ
+	ActorsToIgnore.Add(MeshComp->GetOwner()); // ìê¸° ìì‹ ì€ ë•Œë¦¬ë©´ ì•ˆ ë¨
 
-	// * ÇÙ½É: ´Ü¼øÈ÷ Á¡À» Âï´Â °Ô ¾Æ´Ï¶ó, ÀÌÀü ÇÁ·¹ÀÓ À§Ä¡¸¦ ±â¾ïÇØ¼­ Sweep ÇÏ¸é ÁÁÁö¸¸,
-	//   ¿©±â¼­´Â °£´ÜÇÏ°Ô ¸Å ÇÁ·¹ÀÓ ±¸Ã¼¸¦ »ı¼ºÇÏ´Â ¹æ½ÄÀ» »ç¿ëÇÕ´Ï´Ù. 
-	//   (´õ Á¤±³ÇÏ°Ô ÇÏ·Á¸é NotifyBegin¿¡¼­ LastLocationÀ» ÀúÀåÇÏ°í Tick¿¡¼­ SweepSingleByChannel »ç¿ë)
+	// * í•µì‹¬: ë‹¨ìˆœíˆ ì ì„ ì°ëŠ” ê²Œ ì•„ë‹ˆë¼, ì´ì „ í”„ë ˆì„ ìœ„ì¹˜ë¥¼ ê¸°ì–µí•´ì„œ Sweep í•˜ë©´ ì¢‹ì§€ë§Œ,
+	//   ì—¬ê¸°ì„œëŠ” ê°„ë‹¨í•˜ê²Œ ë§¤ í”„ë ˆì„ êµ¬ì²´ë¥¼ ìƒì„±í•˜ëŠ” ë°©ì‹ì„ ì‚¬ìš©í•©ë‹ˆë‹¤. 
+	//   (ë” ì •êµí•˜ê²Œ í•˜ë ¤ë©´ NotifyBeginì—ì„œ LastLocationì„ ì €ì¥í•˜ê³  Tickì—ì„œ SweepSingleByChannel ì‚¬ìš©)
 	bool bHit = UKismetSystemLibrary::SphereTraceMulti(
 		MeshComp->GetWorld(),
 		SocketLocation,
-		SocketLocation, // ½ÃÀÛ°ú ³¡ÀÌ °°À¸¸é Á¦ÀÚ¸® °Ë»ç
+		SocketLocation, // ì‹œì‘ê³¼ ëì´ ê°™ìœ¼ë©´ ì œìë¦¬ ê²€ì‚¬
 		AttackRadius,
-		UEngineTypes::ConvertToTraceType(ECC_Pawn), // È¤Àº GameTraceChannel »ç¿ë
+		UEngineTypes::ConvertToTraceType(ECC_Pawn), // í˜¹ì€ GameTraceChannel ì‚¬ìš©
 		false, // TraceComplex
 		ActorsToIgnore,
 		bDrawDebug ? EDrawDebugTrace::ForOneFrame : EDrawDebugTrace::None,
@@ -55,13 +55,13 @@ void UAnimNotifyState_AttackHitCheck::NotifyTick(USkeletalMeshComponent* MeshCom
 		for (const FHitResult& Result : HitResults)
 		{
 			AActor* HitActor = Result.GetActor();
-			// ÀÌ¹Ì ÀÌ¹ø °ø°İ¿¡ ¸ÂÀº ¾Ö°¡ ¾Æ´Ï¶ó¸é?
+			// ì´ë¯¸ ì´ë²ˆ ê³µê²©ì— ë§ì€ ì• ê°€ ì•„ë‹ˆë¼ë©´?
 			if (HitActor && !HitActors.Contains(HitActor))
 			{
 				HitActors.Add(HitActor);
 
-				// [Áß¿ä] °ø°İ ÁÖÃ¼(EnemyBase)¿¡°Ô "³ª ¾ê ¶§·È¾î!"¶ó°í ¾Ë¸³´Ï´Ù.
-				// ÀÌ·¸°Ô ÇÏ¸é µ¥¹ÌÁö °è»ê ·ÎÁ÷Àº EnemyBase³ª Ability¿¡¼­ °ü¸®ÇÒ ¼ö ÀÖ½À´Ï´Ù.
+				// [ì¤‘ìš”] ê³µê²© ì£¼ì²´(EnemyBase)ì—ê²Œ "ë‚˜ ì–˜ ë•Œë ¸ì–´!"ë¼ê³  ì•Œë¦½ë‹ˆë‹¤.
+				// ì´ë ‡ê²Œ í•˜ë©´ ë°ë¯¸ì§€ ê³„ì‚° ë¡œì§ì€ EnemyBaseë‚˜ Abilityì—ì„œ ê´€ë¦¬í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
 				if (AEnemyBase* Attacker = Cast<AEnemyBase>(MeshComp->GetOwner()))
 				{
 					Attacker->OnAttackHit(HitActor);

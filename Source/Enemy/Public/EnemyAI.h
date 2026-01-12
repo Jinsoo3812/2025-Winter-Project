@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,8 +7,8 @@
 #include "EnemyAI.generated.h"
 
 /**
- * Àû Ä³¸¯ÅÍÀÇ ÀÎ°øÁö´ÉÀ» Á¦¾îÇÏ´Â ÄÁÆ®·Ñ·¯ Å¬·¡½ºÀÔ´Ï´Ù.
- * °¡Àå °¡±î¿î ÇÃ·¹ÀÌ¾î¸¦ Å½»öÇÏ°í, ºñÇìÀÌºñ¾î Æ®¸®¸¦ ½ÇÇàÇÏ´Â ¿ªÇÒÀ» ÇÕ´Ï´Ù.
+ * ì  ìºë¦­í„°ì˜ ì¸ê³µì§€ëŠ¥ì„ ì œì–´í•˜ëŠ” ì»¨íŠ¸ë¡¤ëŸ¬ í´ëž˜ìŠ¤ìž…ë‹ˆë‹¤.
+ * ê°€ìž¥ ê°€ê¹Œìš´ í”Œë ˆì´ì–´ë¥¼ íƒìƒ‰í•˜ê³ , ë¹„í—¤ì´ë¹„ì–´ íŠ¸ë¦¬ë¥¼ ì‹¤í–‰í•˜ëŠ” ì—­í• ì„ í•©ë‹ˆë‹¤.
  */
 UCLASS()
 class ENEMY_API AEnemyAI : public AAIController
@@ -24,26 +24,26 @@ protected:
 
 	/**
 	 * [UpdateAIState]
-	 * ÁÖ±âÀûÀ¸·Î È£ÃâµÇ¾î AIÀÇ ÆÇ´ÜÀ» °»½ÅÇÏ´Â ¸ÞÀÎ ÇÔ¼öÀÔ´Ï´Ù.
-	 * ÀÚ½Ä Å¬·¡½º(Dragon)´Â ÀÌ ÇÔ¼ö¸¦ ¿À¹ö¶óÀÌµåÇÏ¿© °ø°Ý ÆÐÅÏ µîÀ» Ãß°¡ ÆÇ´ÜÇÕ´Ï´Ù.
+	 * ì£¼ê¸°ì ìœ¼ë¡œ í˜¸ì¶œë˜ì–´ AIì˜ íŒë‹¨ì„ ê°±ì‹ í•˜ëŠ” ë©”ì¸ í•¨ìˆ˜ìž…ë‹ˆë‹¤.
+	 * ìžì‹ í´ëž˜ìŠ¤(Dragon)ëŠ” ì´ í•¨ìˆ˜ë¥¼ ì˜¤ë²„ë¼ì´ë“œí•˜ì—¬ ê³µê²© íŒ¨í„´ ë“±ì„ ì¶”ê°€ íŒë‹¨í•©ë‹ˆë‹¤.
 	 */
 	virtual void UpdateAIState();
 
 	/**
 	 * [FindBestTarget]
-	 * Å¸°ÙÀ» ¼±Á¤ÇÏ´Â ·ÎÁ÷¸¸ ºÐ¸®Çß½À´Ï´Ù.
-	 * ±âº» µ¿ÀÛ: ÇÃ·¹ÀÌ¾î ÅÂ±×¸¦ °¡Áø ¾×ÅÍ Áß °¡Àå °¡±î¿î ´ë»ó ¹ÝÈ¯.
+	 * íƒ€ê²Ÿì„ ì„ ì •í•˜ëŠ” ë¡œì§ë§Œ ë¶„ë¦¬í–ˆìŠµë‹ˆë‹¤.
+	 * ê¸°ë³¸ ë™ìž‘: í”Œë ˆì´ì–´ íƒœê·¸ë¥¼ ê°€ì§„ ì•¡í„° ì¤‘ ê°€ìž¥ ê°€ê¹Œìš´ ëŒ€ìƒ ë°˜í™˜.
 	 */
 	virtual AActor* FindBestTarget();
 
-	/** AIÀÇ Çàµ¿ ·ÎÁ÷ÀÌ ´ã±ä ºñÇìÀÌºñ¾î Æ®¸® ¿¡¼Â */
+	/** AIì˜ í–‰ë™ ë¡œì§ì´ ë‹´ê¸´ ë¹„í—¤ì´ë¹„ì–´ íŠ¸ë¦¬ ì—ì…‹ */
 	UPROPERTY(EditAnywhere, Category = "AI")
 	class UBehaviorTree* BehaviorTreeAsset;
 
-	/** ºí·¢º¸µå Å° ÀÌ¸§ (ÇÏµåÄÚµù ¹æÁö¿ë) */
+	/** ë¸”ëž™ë³´ë“œ í‚¤ ì´ë¦„ (í•˜ë“œì½”ë”© ë°©ì§€ìš©) */
 	UPROPERTY(EditDefaultsOnly, Category = "AI")
 	FName BBKey_TargetActor = "TargetActor";
 
-	/** Å¸°Ù Å½»ö Å¸ÀÌ¸Ó ÇÚµé */
+	/** íƒ€ê²Ÿ íƒìƒ‰ íƒ€ì´ë¨¸ í•¸ë“¤ */
 	FTimerHandle TimerHandle_AIUpdate;
 };

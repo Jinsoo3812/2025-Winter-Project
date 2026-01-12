@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "TestCharacter.h"
 // #include "GameplayAbilitySpec.h"
@@ -12,16 +12,16 @@
 
 ATestCharacter::ATestCharacter()
 {
-	// ASC¿Í SkillManager´Â ´õ ÀÌ»ó ¿©±â¼­ »ı¼ºÇÏÁö ¾ÊÀ½
-	// PlayerState¿¡¼­ °ü¸®µÊ
+	// ASCì™€ SkillManagerëŠ” ë” ì´ìƒ ì—¬ê¸°ì„œ ìƒì„±í•˜ì§€ ì•ŠìŒ
+	// PlayerStateì—ì„œ ê´€ë¦¬ë¨
 	
-	// ½ºÅ³ ½½·Ô Input Action ¹è¿­ ÃÊ±âÈ­ (ÃÖ´ë 3°³)
+	// ìŠ¤í‚¬ ìŠ¬ë¡¯ Input Action ë°°ì—´ ì´ˆê¸°í™” (ìµœëŒ€ 3ê°œ)
 	SkillSlotActions.SetNum(3);
 }
 
 UAbilitySystemComponent* ATestCharacter::GetAbilitySystemComponent() const
 {
-	// Ä³½ÃµÈ ASC ¹İÈ¯
+	// ìºì‹œëœ ASC ë°˜í™˜
 	return CachedAbilitySystemComponent;
 }
 
@@ -29,14 +29,14 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// ÀÌ TestCharacter°¡ ÀÌ Å¬¶óÀÌ¾ğÆ®°¡ Á¶Á¾ÇØ¾ß ÇÏ´Â ·ÎÄÃ Ä³¸¯ÅÍÀÎÁö È®ÀÎ
+	// ì´ TestCharacterê°€ ì´ í´ë¼ì´ì–¸íŠ¸ê°€ ì¡°ì¢…í•´ì•¼ í•˜ëŠ” ë¡œì»¬ ìºë¦­í„°ì¸ì§€ í™•ì¸
 	if (!IsLocallyControlled())
 	{
 		return;
 	}
 
-	// Enhanced Input Component·Î Ä³½ºÆÃ
-	// Actor ¼öÁØ¿¡¼­ ÀÛµ¿ÇÏ¸ç, IA¿Í C++/BP ÇÔ¼ö¸¦ ¹ÙÀÎµùÇÏ±â À§ÇØ »ç¿ë
+	// Enhanced Input Componentë¡œ ìºìŠ¤íŒ…
+	// Actor ìˆ˜ì¤€ì—ì„œ ì‘ë™í•˜ë©°, IAì™€ C++/BP í•¨ìˆ˜ë¥¼ ë°”ì¸ë”©í•˜ê¸° ìœ„í•´ ì‚¬ìš©
 	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
 	if (!EnhancedInputComponent)
 	{
@@ -44,7 +44,7 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		return;
 	}
 
-	// PlayerController °¡Á®¿À±â
+	// PlayerController ê°€ì ¸ì˜¤ê¸°
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC)
 	{
@@ -52,9 +52,9 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		return;
 	}
 
-	// Enhanced Input Subsystem °¡Á®¿À±â
-	// LocalPlayer ´ÜÀ§·Î µ¿ÀÛÇÏ´Â ¼­ºê½Ã½ºÅÛ
-	// IMCÀÇ Ãß°¡, Á¦°Å ¹× ¹°¸® Å°(WASD µî)¿Í IAÀÇ ¸ÅÇÎ °ü¸®
+	// Enhanced Input Subsystem ê°€ì ¸ì˜¤ê¸°
+	// LocalPlayer ë‹¨ìœ„ë¡œ ë™ì‘í•˜ëŠ” ì„œë¸Œì‹œìŠ¤í…œ
+	// IMCì˜ ì¶”ê°€, ì œê±° ë° ë¬¼ë¦¬ í‚¤(WASD ë“±)ì™€ IAì˜ ë§¤í•‘ ê´€ë¦¬
 	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
 	if (!Subsystem)
 	{
@@ -62,24 +62,24 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 		return;
 	}
 
-	// Input Mapping Context Ãß°¡
+	// Input Mapping Context ì¶”ê°€
 	if (InputMappingContext)
 	{
 		Subsystem->AddMappingContext(InputMappingContext, 0);
 		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Input Mapping Context added"));
 	}
 
-	// ½ºÅ³ ½½·Ôº° ÀÔ·Â ¹ÙÀÎµù (¹è¿­ ±â¹İ)
+	// ìŠ¤í‚¬ ìŠ¬ë¡¯ë³„ ì…ë ¥ ë°”ì¸ë”© (ë°°ì—´ ê¸°ë°˜)
 	for (int32 i = 0; i < SkillSlotActions.Num(); ++i)
 	{
 		if (SkillSlotActions[i])
 		{
-			// Pressed ÀÌº¥Æ®
-			// @param SkillSlotActions[i]: ¹ÙÀÎµùÇÒ Input Action
-			// @param ETriggerEvent::Started: ¾×¼ÇÀÌ ½ÃÀÛµÉ ¶§ Æ®¸®°Å
-			// @param this: ¹ÙÀÎµùÇÒ ´ë»ó °´Ã¼(È£ÃâÇÒ ÇÔ¼ö°¡ ÀÖ´Â °´Ã¼)
-			// @param OnAbilityInputPressed: È£ÃâÇÒ ¸â¹ö ÇÔ¼ö Æ÷ÀÎÅÍ
-			// @param i: Ãß°¡ Àü´ŞÇÒ Á¤¼ö ¸Å°³º¯¼ö (InputID)
+			// Pressed ì´ë²¤íŠ¸
+			// @param SkillSlotActions[i]: ë°”ì¸ë”©í•  Input Action
+			// @param ETriggerEvent::Started: ì•¡ì…˜ì´ ì‹œì‘ë  ë•Œ íŠ¸ë¦¬ê±°
+			// @param this: ë°”ì¸ë”©í•  ëŒ€ìƒ ê°ì²´(í˜¸ì¶œí•  í•¨ìˆ˜ê°€ ìˆëŠ” ê°ì²´)
+			// @param OnAbilityInputPressed: í˜¸ì¶œí•  ë©¤ë²„ í•¨ìˆ˜ í¬ì¸í„°
+			// @param i: ì¶”ê°€ ì „ë‹¬í•  ì •ìˆ˜ ë§¤ê°œë³€ìˆ˜ (InputID)
 			EnhancedInputComponent->BindAction(
 				SkillSlotActions[i], 
 				ETriggerEvent::Started, 
@@ -88,7 +88,7 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 				i
 			);
 			
-			// Released ÀÌº¥Æ® 
+			// Released ì´ë²¤íŠ¸ 
 			EnhancedInputComponent->BindAction(
 				SkillSlotActions[i], 
 				ETriggerEvent::Completed, 
@@ -106,35 +106,35 @@ void ATestCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
-	// BeginPlay¿¡¼­´Â ÃÊ±âÈ­ÇÏÁö ¾ÊÀ½
-	// PlayerState´Â ¼­¹ö¿¡¼­ PossessedBy, Å¬¶óÀÌ¾ğÆ®¿¡¼­ OnRep_PlayerState°¡ È£ÃâµÉ ¶§±îÁö º¸ÀåµÇÁö ¾ÊÀ½
-	// PossessedBy(¼­¹ö) ¶Ç´Â OnRep_PlayerState(Å¬¶óÀÌ¾ğÆ®)¿¡¼­ ÃÊ±âÈ­µÊ
+	// BeginPlayì—ì„œëŠ” ì´ˆê¸°í™”í•˜ì§€ ì•ŠìŒ
+	// PlayerStateëŠ” ì„œë²„ì—ì„œ PossessedBy, í´ë¼ì´ì–¸íŠ¸ì—ì„œ OnRep_PlayerStateê°€ í˜¸ì¶œë  ë•Œê¹Œì§€ ë³´ì¥ë˜ì§€ ì•ŠìŒ
+	// PossessedBy(ì„œë²„) ë˜ëŠ” OnRep_PlayerState(í´ë¼ì´ì–¸íŠ¸)ì—ì„œ ì´ˆê¸°í™”ë¨
 }
 
 void ATestCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 
-	// ¼­¹ö¿¡¼­¸¸ È£ÃâµÊ
+	// ì„œë²„ì—ì„œë§Œ í˜¸ì¶œë¨
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter::PossessedBy - Server initialization"));
 
-	// PlayerState¿¡¼­ ASC¿Í SkillManager °¡Á®¿À±â
+	// PlayerStateì—ì„œ ASCì™€ SkillManager ê°€ì ¸ì˜¤ê¸°
 	ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 	if (PS)
 	{
-		// ASC, SkillManager, AttributeSet Ä³½Ã
+		// ASC, SkillManager, AttributeSet ìºì‹œ
 		CachedAbilitySystemComponent = PS->GetAbilitySystemComponent();
 		CachedSkillManager = PS->GetSkillManager();
 		CachedAttributeSet = Cast<UAttributeSet>(PS->GetAttributeSet());
 
 		if (CachedAbilitySystemComponent)
 		{
-			// InitAbilityActorInfo È£Ãâ
-			// OwnerActor: PlayerState (ASC¸¦ ¼ÒÀ¯)
-			// AvatarActor: TestCharacter (½ÇÁ¦·Î °ÔÀÓ¿¡¼­ Çàµ¿ÇÏ´Â ¾×ÅÍ)
+			// InitAbilityActorInfo í˜¸ì¶œ
+			// OwnerActor: PlayerState (ASCë¥¼ ì†Œìœ )
+			// AvatarActor: TestCharacter (ì‹¤ì œë¡œ ê²Œì„ì—ì„œ í–‰ë™í•˜ëŠ” ì•¡í„°)
 			CachedAbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
-			// ³ª¸ÓÁö ÃÊ±âÈ­ ÇÔ¼ö È£Ãâ
+			// ë‚˜ë¨¸ì§€ ì´ˆê¸°í™” í•¨ìˆ˜ í˜¸ì¶œ
 			InitializeAbilitySystem();
 			
 			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Server - AbilitySystem initialized successfully"));
@@ -154,24 +154,24 @@ void ATestCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 
-	// Å¬¶óÀÌ¾ğÆ®¿¡¼­ È£ÃâµÊ
+	// í´ë¼ì´ì–¸íŠ¸ì—ì„œ í˜¸ì¶œë¨
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter::OnRep_PlayerState - Client initialization"));
 
-	// PlayerState¿¡¼­ ASC¿Í SkillManager °¡Á®¿À±â
+	// PlayerStateì—ì„œ ASCì™€ SkillManager ê°€ì ¸ì˜¤ê¸°
 	ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 	if (PS)
 	{
-		// ASC, SkillManager, AttributeSet Ä³½Ã
+		// ASC, SkillManager, AttributeSet ìºì‹œ
 		CachedAbilitySystemComponent = PS->GetAbilitySystemComponent();
 		CachedSkillManager = PS->GetSkillManager();
 		CachedAttributeSet = Cast<UAttributeSet>(PS->GetAttributeSet());
 
 		if (CachedAbilitySystemComponent)
 		{
-			// InitAbilityActorInfo È£Ãâ
+			// InitAbilityActorInfo í˜¸ì¶œ
 			CachedAbilitySystemComponent->InitAbilityActorInfo(PS, this);
 
-			// ³ª¸ÓÁö ÃÊ±âÈ­ ÇÔ¼ö È£Ãâ
+			// ë‚˜ë¨¸ì§€ ì´ˆê¸°í™” í•¨ìˆ˜ í˜¸ì¶œ
 			InitializeAbilitySystem();
 			
 			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Client - AbilitySystem initialized successfully"));
@@ -189,34 +189,34 @@ void ATestCharacter::OnRep_PlayerState()
 
 void ATestCharacter::InitializeAbilitySystem()
 {
-	// ÀÌ¹Ì ÃÊ±âÈ­µÇ¾ú´Ù¸é Áßº¹ ½ÇÇà ¹æÁö
+	// ì´ë¯¸ ì´ˆê¸°í™”ë˜ì—ˆë‹¤ë©´ ì¤‘ë³µ ì‹¤í–‰ ë°©ì§€
 	if (bAbilitySystemInitialized)
 	{
 		return;
 	}
 
-	// ASC°¡ À¯È¿ÇÑÁö È®ÀÎ
+	// ASCê°€ ìœ íš¨í•œì§€ í™•ì¸
 	if (!CachedAbilitySystemComponent)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: InitializeAbilitySystem - AbilitySystemComponent is null"));
 		return;
 	}
 
-	// SkillManager°¡ À¯È¿ÇÑÁö È®ÀÎ
+	// SkillManagerê°€ ìœ íš¨í•œì§€ í™•ì¸
 	if (!CachedSkillManager)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: InitializeAbilitySystem - SkillManager is null"));
 		return;
 	}
 
-	// ¼­¹ö¿¡¼­¸¸ ½ºÅ³ ÃÊ±âÈ­ ¼öÇà (±ÇÇÑÀÌ ÀÖ´Â ÁøÂ¥ Ä³¸¯ÅÍ)
+	// ì„œë²„ì—ì„œë§Œ ìŠ¤í‚¬ ì´ˆê¸°í™” ìˆ˜í–‰ (ê¶Œí•œì´ ìˆëŠ” ì§„ì§œ ìºë¦­í„°)
 	if (HasAuthority())
 	{
 		ATestPlayerState* PS = GetPlayerState<ATestPlayerState>();
 		if (PS)
 		{
-			// PlayerStateÀÇ InitializeSkills È£Ãâ
-			// ÀÌ ÇÔ¼ö°¡ ÃÊ·Ï ·é °¨Áö ¹× GA ±³Ã¼¸¦ Æ÷ÇÔÇÑ ¸ğµç ½ºÅ³ ÃÊ±âÈ­ ¼öÇà
+			// PlayerStateì˜ InitializeSkills í˜¸ì¶œ
+			// ì´ í•¨ìˆ˜ê°€ ì´ˆë¡ ë£¬ ê°ì§€ ë° GA êµì²´ë¥¼ í¬í•¨í•œ ëª¨ë“  ìŠ¤í‚¬ ì´ˆê¸°í™” ìˆ˜í–‰
 			PS->InitializeSkills();
 			UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skills initialized via PlayerState"));
 		}
@@ -228,14 +228,14 @@ void ATestCharacter::InitializeAbilitySystem()
 
 
 	/**
-	* Attribute º¯È­ µ¨¸®°ÔÀÌÆ® ¹ÙÀÎµù
+	* Attribute ë³€í™” ë¸ë¦¬ê²Œì´íŠ¸ ë°”ì¸ë”©
 	*/
-	// MovementSpeed º¯°æ µ¨¸®°ÔÀÌÆ® ¹ÙÀÎµù
+	// MovementSpeed ë³€ê²½ ë¸ë¦¬ê²Œì´íŠ¸ ë°”ì¸ë”©
 	CachedAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
 		UPlayerAttributeSet::GetMovementSpeedAttribute()
 	).AddUObject(this, &ATestCharacter::OnMovementSpeedChanged);
 
-	// ÀÌÁß ÃÊ±âÈ­ ¹æÁö ÇÃ·¡±× ¼³Á¤
+	// ì´ì¤‘ ì´ˆê¸°í™” ë°©ì§€ í”Œë˜ê·¸ ì„¤ì •
 	bAbilitySystemInitialized = true;
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter: AbilitySystem initialization complete"));
 }
@@ -248,10 +248,10 @@ void ATestCharacter::OnAbilityInputPressed(int32 InputID)
 		return;
 	}
 
-	// ASC¿¡°Ô ÀÔ·Â Press ÀÌº¥Æ® Àü´Ş
-	// AbilityLocalInputPressed°¡ ´ÙÀ½ µÎ °¡Áö¸¦ ¸ğµÎ Ã³¸®:
-	// 1. ½ÇÇà ÁßÀÎ AbilityÀÇ Task¿¡°Ô ½ÅÈ£ ÀüÆÄ (¿¹: WaitInputPress)
-	// 2. ºñÈ°¼º »óÅÂ¸é ÀÚµ¿À¸·Î È°¼ºÈ­ ½Ãµµ
+	// ASCì—ê²Œ ì…ë ¥ Press ì´ë²¤íŠ¸ ì „ë‹¬
+	// AbilityLocalInputPressedê°€ ë‹¤ìŒ ë‘ ê°€ì§€ë¥¼ ëª¨ë‘ ì²˜ë¦¬:
+	// 1. ì‹¤í–‰ ì¤‘ì¸ Abilityì˜ Taskì—ê²Œ ì‹ í˜¸ ì „íŒŒ (ì˜ˆ: WaitInputPress)
+	// 2. ë¹„í™œì„± ìƒíƒœë©´ ìë™ìœ¼ë¡œ í™œì„±í™” ì‹œë„
 	CachedAbilitySystemComponent->AbilityLocalInputPressed(InputID);
 }
 
@@ -263,13 +263,13 @@ void ATestCharacter::OnAbilityInputReleased(int32 InputID)
 		return;
 	}
 
-	// ASC¿¡°Ô ÀÔ·Â Release ÀÌº¥Æ® Àü´Ş
+	// ASCì—ê²Œ ì…ë ¥ Release ì´ë²¤íŠ¸ ì „ë‹¬
 	CachedAbilitySystemComponent->AbilityLocalInputReleased(InputID);
 }
 
 void ATestCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
 {
-	// ½ÇÁ¦ ÀÌµ¿ ÄÄÆ÷³ÍÆ®¿¡ °ª Àû¿ë
+	// ì‹¤ì œ ì´ë™ ì»´í¬ë„ŒíŠ¸ì— ê°’ ì ìš©
 	if (UCharacterMovementComponent* CMC = GetCharacterMovement())
 	{
 		CMC->MaxWalkSpeed = Data.NewValue;

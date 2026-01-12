@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -9,10 +9,10 @@
 class ADestructibleBlock;
 
 /**
- * ¹æº® ¼ÒÈ¯ ½ºÅ³ (µ¹Áø ±â´É Ãß°¡)
- * 1. Å¬¸¯ ½Ã 3x2 ¹æº® »ı¼º (»ı¼º ÈÄ ½ºÅ³ À¯Áö)
- * 2. ´Ù½Ã ½ºÅ³ Å° ÀÔ·Â ½Ã ¹æº®ÀÌ Àü¹æÀ¸·Î µ¹Áø
- * 3. °¢ ºí·ÏÀº °³º°ÀûÀ¸·Î Àå¾Ö¹°°ú Ãæµ¹ ½Ã ¼Ò¸ê
+ * ë°©ë²½ ì†Œí™˜ ìŠ¤í‚¬ (ëŒì§„ ê¸°ëŠ¥ ì¶”ê°€)
+ * 1. í´ë¦­ ì‹œ 3x2 ë°©ë²½ ìƒì„± (ìƒì„± í›„ ìŠ¤í‚¬ ìœ ì§€)
+ * 2. ë‹¤ì‹œ ìŠ¤í‚¬ í‚¤ ì…ë ¥ ì‹œ ë°©ë²½ì´ ì „ë°©ìœ¼ë¡œ ëŒì§„
+ * 3. ê° ë¸”ë¡ì€ ê°œë³„ì ìœ¼ë¡œ ì¥ì• ë¬¼ê³¼ ì¶©ëŒ ì‹œ ì†Œë©¸
  */
 UCLASS()
 class SKILL_API UGA_SummonBarrier : public UGA_Construction
@@ -26,70 +26,70 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	// N°³ÀÇ ÇÁ¸®ºä ¾×ÅÍ¸¦ °ü¸®ÇÏ±â À§ÇÑ ¹è¿­
+	// Nê°œì˜ í”„ë¦¬ë·° ì•¡í„°ë¥¼ ê´€ë¦¬í•˜ê¸° ìœ„í•œ ë°°ì—´
 	UPROPERTY()
 	TArray<TObjectPtr<AActor>> BarrierPreviewBlocks;
 
-	// ½ÇÁ¦·Î ¼ÒÈ¯µÈ ºí·ÏµéÀ» °ü¸®ÇÏ±â À§ÇÑ ¹è¿­
+	// ì‹¤ì œë¡œ ì†Œí™˜ëœ ë¸”ë¡ë“¤ì„ ê´€ë¦¬í•˜ê¸° ìœ„í•œ ë°°ì—´
 	UPROPERTY()
 	TArray<TObjectPtr<ADestructibleBlock>> SpawnedBlocks;
 
-	// µ¹Áø ¼Óµµ
+	// ëŒì§„ ì†ë„
 	UPROPERTY(EditDefaultsOnly, Category = "Construction|Charge")
 	float ChargeSpeed = 1500.0f;
 
-	// ÃÖ´ë µ¹Áø °Å¸®
+	// ìµœëŒ€ ëŒì§„ ê±°ë¦¬
 	UPROPERTY(EditDefaultsOnly, Category = "Construction|Charge")
 	float MaxChargeDistance = 2000.0f;
 
-	// ÇöÀç±îÁö ÀÌµ¿ÇÑ °Å¸®
+	// í˜„ì¬ê¹Œì§€ ì´ë™í•œ ê±°ë¦¬
 	float CurrentMovedDistance = 0.0f;
 
-	// µ¹Áø ¹æÇâ
+	// ëŒì§„ ë°©í–¥
 	FVector ChargeDirection;
 
-	// ÇöÀç µ¹Áø ÁßÀÎÁö ¿©ºÎ
+	// í˜„ì¬ ëŒì§„ ì¤‘ì¸ì§€ ì—¬ë¶€
 	bool bIsCharging = false;
 
-	// µ¹Áø Å¸ÀÌ¸Ó ÇÚµé
+	// ëŒì§„ íƒ€ì´ë¨¸ í•¸ë“¤
 	FTimerHandle ChargeTimerHandle;
 
-	// ºí·Ï »çÀÌÁî
+	// ë¸”ë¡ ì‚¬ì´ì¦ˆ
 	float GridSize = 100.0f;
 
-	// --- ¿À¹ö¶óÀÌµå ÇÔ¼öµé ---
+	// --- ì˜¤ë²„ë¼ì´ë“œ í•¨ìˆ˜ë“¤ ---
 
-	// ÇÁ¸®ºä ¾÷µ¥ÀÌÆ® (¼ÒÈ¯ÇÒ ºí·Ï À§Ä¡ °è»ê ¹× Á¡À¯ È®ÀÎ)
+	// í”„ë¦¬ë·° ì—…ë°ì´íŠ¸ (ì†Œí™˜í•  ë¸”ë¡ ìœ„ì¹˜ ê³„ì‚° ë° ì ìœ  í™•ì¸)
 	virtual void UpdatePreview() override;
 
-	// ºí·Ï »ı¼º (ºí·Ï ½ÇÁ¦ »ı¼º ÈÄ ´ë±â ¸ğµå ÁøÀÔ)
+	// ë¸”ë¡ ìƒì„± (ë¸”ë¡ ì‹¤ì œ ìƒì„± í›„ ëŒ€ê¸° ëª¨ë“œ ì§„ì…)
 	virtual void SpawnBlock() override;
 
-	// ÀÔ·Â Ãë¼Ò/ÀçÀÔ·Â Ã³¸®
+	// ì…ë ¥ ì·¨ì†Œ/ì¬ì…ë ¥ ì²˜ë¦¬
 	virtual void OnCancelPressed(float TimeWaited);
 
-	// CancelAbility°¡ È£ÃâµÇ¸é Ãë¼Ò´çÇÏ´Â ÇÔ¼öÀÇ CanBeCanceled·Î °áÁ¤ÇÔ
-	// '¹æº® »ı¼º && ¾ÆÁ÷ ¹ß»ç ¾ÈÇÔ' »óÅÂ¿¡¼­´Â Ãë¼ÒµÇ¸é ¾ÈµÇ¹Ç·Î ÀÌ¸¦ ÀçÁ¤ÀÇ
-	// Ãë¼Ò °¡´É ¿©ºÎ¸¦ ÆÇ´ÜÇÏ´Â ÇÔ¼ö
+	// CancelAbilityê°€ í˜¸ì¶œë˜ë©´ ì·¨ì†Œë‹¹í•˜ëŠ” í•¨ìˆ˜ì˜ CanBeCanceledë¡œ ê²°ì •í•¨
+	// 'ë°©ë²½ ìƒì„± && ì•„ì§ ë°œì‚¬ ì•ˆí•¨' ìƒíƒœì—ì„œëŠ” ì·¨ì†Œë˜ë©´ ì•ˆë˜ë¯€ë¡œ ì´ë¥¼ ì¬ì •ì˜
+	// ì·¨ì†Œ ê°€ëŠ¥ ì—¬ë¶€ë¥¼ íŒë‹¨í•˜ëŠ” í•¨ìˆ˜
 	virtual bool CanBeCanceled() const override;
 
-	// ÁÂÅ¬¸¯ ÀÔ·Â Ã³¸® (ºÎ¸ğÀÇ ´ÜÀÏ ÇÁ¸®ºä È®ÀÎ ·ÎÁ÷À» ´ëÃ¼ÇÏ±â À§ÇÔ)
+	// ì¢Œí´ë¦­ ì…ë ¥ ì²˜ë¦¬ (ë¶€ëª¨ì˜ ë‹¨ì¼ í”„ë¦¬ë·° í™•ì¸ ë¡œì§ì„ ëŒ€ì²´í•˜ê¸° ìœ„í•¨)
 	virtual void OnLeftClickPressed() override;
 
 private:
-	// Áß½É À§Ä¡¿Í ÇÃ·¹ÀÌ¾î À§Ä¡¸¦ ±â¹İÀ¸·Î ¼ÒÈ¯ÇØ¾ß ÇÒ N°³ ºí·ÏÀÇ À§Ä¡ ¹è¿­À» OutTransforms¿¡ ¹İÈ¯
+	// ì¤‘ì‹¬ ìœ„ì¹˜ì™€ í”Œë ˆì´ì–´ ìœ„ì¹˜ë¥¼ ê¸°ë°˜ìœ¼ë¡œ ì†Œí™˜í•´ì•¼ í•  Nê°œ ë¸”ë¡ì˜ ìœ„ì¹˜ ë°°ì—´ì„ OutTransformsì— ë°˜í™˜
 	void CalculateBarrierTransforms(const FVector& CenterLocation, const FVector& PlayerLocation, TArray<FTransform>& OutTransforms);
 
-	// ¼ÒÈ¯ÇØ¾ß ÇÒ N°³ ºí·ÏÀÇ ÇÁ¸®ºä ¾×ÅÍÀÇ »ı¼º °ü¸® ¹× Ç¥½Ã
+	// ì†Œí™˜í•´ì•¼ í•  Nê°œ ë¸”ë¡ì˜ í”„ë¦¬ë·° ì•¡í„°ì˜ ìƒì„± ê´€ë¦¬ ë° í‘œì‹œ
 	void UpdateBarrierPreviewActors(const TArray<FTransform>& Transforms);
 
-	// ÇØ´ç À§Ä¡¿¡ ÀÌ¹Ì ´Ù¸¥ ºí·ÏÀÌ Á¸ÀçÇÏ´ÂÁö È®ÀÎ
+	// í•´ë‹¹ ìœ„ì¹˜ì— ì´ë¯¸ ë‹¤ë¥¸ ë¸”ë¡ì´ ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸
 	bool IsLocationOccupied(const FVector& Location) const;
 
-	// µ¹Áø ½ÃÀÛ (µÎ ¹øÂ° ÀÔ·Â ½Ã È£Ãâ)
+	// ëŒì§„ ì‹œì‘ (ë‘ ë²ˆì§¸ ì…ë ¥ ì‹œ í˜¸ì¶œ)
 	UFUNCTION()
 	void StartBarrierCharge(float TimeWaited);
 
-	// ¸Å ÇÁ·¹ÀÓ ¹æº® ÀÌµ¿ Ã³¸®
+	// ë§¤ í”„ë ˆì„ ë°©ë²½ ì´ë™ ì²˜ë¦¬
 	void TickBarrierCharge();
 };

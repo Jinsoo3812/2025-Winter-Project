@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GA/GA_Destruction.h"
 #include "AbilitySystemComponent.h"
@@ -24,37 +24,37 @@ void UGA_Destruction::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// ÇÁ¸®ºä ¾÷µ¥ÀÌÆ® Å¸ÀÌ¸Ó ½ÃÀÛ (¸Å ÇÁ·¹ÀÓ °»½Å)
+	// í”„ë¦¬ë·° ì—…ë°ì´íŠ¸ íƒ€ì´ë¨¸ ì‹œì‘ (ë§¤ í”„ë ˆì„ ê°±ì‹ )
 	if (UWorld* World = GetWorld())
 	{
-		// 60FPS °£°İÀ¸·Î UpdatePreview ÇÔ¼ö È£Ãâ
+		// 60FPS ê°„ê²©ìœ¼ë¡œ UpdatePreview í•¨ìˆ˜ í˜¸ì¶œ
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Destruction::UpdatePreview, 0.016f, true);
 	}
 
-	// WaitInputPress ¾îºô¸®Æ¼ ÅÂ½ºÅ© »ı¼º
+	// WaitInputPress ì–´ë¹Œë¦¬í‹° íƒœìŠ¤í¬ ìƒì„±
 	WaitInputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
 	if (WaitInputTask)
 	{
-		// OnPress µ¨¸®°ÔÀÌÆ®¿¡ Äİ¹é ÇÔ¼ö(½ºÅ³ Ãë¼Ò) ¹ÙÀÎµù
+		// OnPress ë¸ë¦¬ê²Œì´íŠ¸ì— ì½œë°± í•¨ìˆ˜(ìŠ¤í‚¬ ì·¨ì†Œ) ë°”ì¸ë”©
 		WaitInputTask->OnPress.AddDynamic(this, &UGA_Destruction::OnCancelPressed);
 
-		// ¾îºô¸®Æ¼ ÅÂ½ºÅ© È°¼ºÈ­
+		// ì–´ë¹Œë¦¬í‹° íƒœìŠ¤í¬ í™œì„±í™”
 		WaitInputTask->ReadyForActivation();
 	}
 	else {
 		UE_LOG(LogTemp, Error, TEXT("GA_Destruction: Failed to create WaitInputTask"));
 	}
 
-	// ÁÂÅ¬¸¯ ÀÔ·Â ¹ÙÀÎµù
-	// ÁÂÅ¬¸¯Àº »ç¿ë ¹üÀ§°¡ ³Ğ°í, ¿©·¯ ¾îºô¸®Æ¼¿¡¼­ °øÅëÀ¸·Î »ç¿ëµÉ ¼ö ÀÖÀ¸¹Ç·Î
-	// Ability Task ´ë½Å Á÷Á¢ InputComponent¿¡ ¹ÙÀÎµù
+	// ì¢Œí´ë¦­ ì…ë ¥ ë°”ì¸ë”©
+	// ì¢Œí´ë¦­ì€ ì‚¬ìš© ë²”ìœ„ê°€ ë„“ê³ , ì—¬ëŸ¬ ì–´ë¹Œë¦¬í‹°ì—ì„œ ê³µí†µìœ¼ë¡œ ì‚¬ìš©ë  ìˆ˜ ìˆìœ¼ë¯€ë¡œ
+	// Ability Task ëŒ€ì‹  ì§ì ‘ InputComponentì— ë°”ì¸ë”©
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
 		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 		if (PC && PC->InputComponent)
 		{
-			// ÁÂÅ¬¸¯ Å° ¹ÙÀÎµù Ãß°¡
+			// ì¢Œí´ë¦­ í‚¤ ë°”ì¸ë”© ì¶”ê°€
 			PC->InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &UGA_Destruction::OnLeftClickPressed);
 		}
 		else {
@@ -73,37 +73,37 @@ void UGA_Destruction::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Å¸ÀÌ¸Ó Á¤¸®
+	// íƒ€ì´ë¨¸ ì •ë¦¬
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 
-	// Å¸ÀÌ¸Ó ÇÚµé ¹«È¿È­
+	// íƒ€ì´ë¨¸ í•¸ë“¤ ë¬´íš¨í™”
 	TickTimerHandle.Invalidate();
 
-	// ÇÁ¸®ºä ¾×ÅÍ Á¦°Å
+	// í”„ë¦¬ë·° ì•¡í„° ì œê±°
 	if (RangePreviewActor)
 	{
 		RangePreviewActor->Destroy();
 		RangePreviewActor = nullptr;
 	}
 
-	// ÅÂ½ºÅ© Á¤¸®
+	// íƒœìŠ¤í¬ ì •ë¦¬
 	if (WaitInputTask)
 	{
 		WaitInputTask->EndTask();
 		WaitInputTask = nullptr;
 	}
 
-	// ÀÔ·Â ¹ÙÀÎµù ÇØÁ¦
+	// ì…ë ¥ ë°”ì¸ë”© í•´ì œ
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
 		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 		if (PC && PC->InputComponent)
 		{
-			// ÇöÀç °´Ã¼¿¡ ¹ÙÀÎµùµÈ µ¨¸®°ÔÀÌÆ® Á¦°Å
+			// í˜„ì¬ ê°ì²´ì— ë°”ì¸ë”©ëœ ë¸ë¦¬ê²Œì´íŠ¸ ì œê±°
 			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
 			{
 				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
@@ -131,37 +131,37 @@ void UGA_Destruction::UpdatePreview()
 		return;
 	}
 
-	// ¸¶¿ì½º Ä¿¼­ À§Ä¡ °¡Á®¿À±â
+	// ë§ˆìš°ìŠ¤ ì»¤ì„œ ìœ„ì¹˜ ê°€ì ¸ì˜¤ê¸°
 	FHitResult HitResult;
 	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
 
-	// ¸¶¿ì½º°¡ À¯È¿ÇÑ À§Ä¡¸¦ °¡¸®Å°°í ÀÖ¾î¾ß ÇÔ
+	// ë§ˆìš°ìŠ¤ê°€ ìœ íš¨í•œ ìœ„ì¹˜ë¥¼ ê°€ë¦¬í‚¤ê³  ìˆì–´ì•¼ í•¨
 	if (!HitResult.bBlockingHit) return;
 
-	// ¹æÇâ º¤ÅÍ ¹× È¸Àü °è»ê
+	// ë°©í–¥ ë²¡í„° ë° íšŒì „ ê³„ì‚°
 	FVector StartLocation = OwnerPawn->GetActorLocation();
 	FVector TargetLocation = HitResult.Location;
 
-	// ³ôÀÌ(Z) Â÷ÀÌ´Â ¹«½ÃÇÏ°í ¼öÆò ¹æÇâ¸¸ °í·Á (Å¾´Ù¿î ºäÀÌ¹Ç·Î)
+	// ë†’ì´(Z) ì°¨ì´ëŠ” ë¬´ì‹œí•˜ê³  ìˆ˜í‰ ë°©í–¥ë§Œ ê³ ë ¤ (íƒ‘ë‹¤ìš´ ë·°ì´ë¯€ë¡œ)
 	TargetLocation.Z = StartLocation.Z;
 
-	// ÇÃ·¹ÀÌ¾î À§Ä¡¿¡¼­ ¸¶¿ì½º À§Ä¡·Î ÇâÇÏ´Â ´ÜÀ§ º¤ÅÍ
+	// í”Œë ˆì´ì–´ ìœ„ì¹˜ì—ì„œ ë§ˆìš°ìŠ¤ ìœ„ì¹˜ë¡œ í–¥í•˜ëŠ” ë‹¨ìœ„ ë²¡í„°
 	FVector DirectionVector = (TargetLocation - StartLocation).GetSafeNormal();
 
-	// ÇØ´ç ¹æÇâÀ» ¹Ù¶óº¸´Â È¸Àü°ª »ı¼º (FRotationMatrix::MakeFromX È°¿ë)
+	// í•´ë‹¹ ë°©í–¥ì„ ë°”ë¼ë³´ëŠ” íšŒì „ê°’ ìƒì„± (FRotationMatrix::MakeFromX í™œìš©)
 	FRotator LookAtRotation = FRotationMatrix::MakeFromX(DirectionVector).Rotator();
 
-	// ·é ¹üÀ§ ¹èÀ² °¡Á®¿À±â
+	// ë£¬ ë²”ìœ„ ë°°ìœ¨ ê°€ì ¸ì˜¤ê¸°
 	float RangeMultiplier = GetRuneModifiedRange() / BaseRange;
 
-	// ·é ¹èÀ²À» Àû¿ëÇÑ ¹Ú½º Å©±â °è»ê
+	// ë£¬ ë°°ìœ¨ì„ ì ìš©í•œ ë°•ìŠ¤ í¬ê¸° ê³„ì‚°
 	FVector AdjustedBoxExtent = BoxExtent * RangeMultiplier;
 
-	// ÇÁ¸®ºä ¹Ú½º Áß½É À§Ä¡ °è»ê
-	// ÇÃ·¹ÀÌ¾î À§Ä¡¿¡¼­ ¸¶¿ì½º ¹æÇâÀ¸·Î (BoxDistance + ¹Ú½º X±æÀÌ) ¸¸Å­ ¶³¾îÁø °÷
+	// í”„ë¦¬ë·° ë°•ìŠ¤ ì¤‘ì‹¬ ìœ„ì¹˜ ê³„ì‚°
+	// í”Œë ˆì´ì–´ ìœ„ì¹˜ì—ì„œ ë§ˆìš°ìŠ¤ ë°©í–¥ìœ¼ë¡œ (BoxDistance + ë°•ìŠ¤ Xê¸¸ì´) ë§Œí¼ ë–¨ì–´ì§„ ê³³
 	FVector BoxCenter = StartLocation + DirectionVector * (BoxDistance + AdjustedBoxExtent.X);
 
-	// ÇÁ¸®ºä ¾×ÅÍ »ı¼º (¾øÀ» °æ¿ì)
+	// í”„ë¦¬ë·° ì•¡í„° ìƒì„± (ì—†ì„ ê²½ìš°)
 	if (!RangePreviewActor && RangePreviewActorClass)
 	{
 		FActorSpawnParameters SpawnParams;
@@ -176,21 +176,21 @@ void UGA_Destruction::UpdatePreview()
 
 		if (RangePreviewActor)
 		{
-			RangePreviewActor->SetActorEnableCollision(false); // Ãæµ¹ ºñÈ°¼ºÈ­
+			RangePreviewActor->SetActorEnableCollision(false); // ì¶©ëŒ ë¹„í™œì„±í™”
 		}
 		else {
 			UE_LOG(LogTemp, Error, TEXT("GA_Destruction: Failed to spawn RangePreviewActor"));
 		}
 	}
 
-	// ÇÁ¸®ºä ¾×ÅÍ ¾÷µ¥ÀÌÆ® (À§Ä¡, È¸Àü, ½ºÄÉÀÏ)
+	// í”„ë¦¬ë·° ì•¡í„° ì—…ë°ì´íŠ¸ (ìœ„ì¹˜, íšŒì „, ìŠ¤ì¼€ì¼)
 	if (RangePreviewActor)
 	{
 		RangePreviewActor->SetActorLocation(BoxCenter);
-		RangePreviewActor->SetActorRotation(LookAtRotation); // ¸¶¿ì½º ¹æÇâÀ¸·Î È¸Àü
+		RangePreviewActor->SetActorRotation(LookAtRotation); // ë§ˆìš°ìŠ¤ ë°©í–¥ìœ¼ë¡œ íšŒì „
 
-		// ½ºÄÉÀÏ Á¶Á¤: ±âº» Å¥ºê ¸Ş½¬°¡ 100x100x100ÀÌ¶ó°í °¡Á¤
-		// BoxExtent´Â Half-SizeÀÌ¹Ç·Î 2¹è¸¦ °öÇØ ÀüÃ¼ Å©±â¸¦ ±¸ÇÏ°í 100À¸·Î ³ª´®
+		// ìŠ¤ì¼€ì¼ ì¡°ì •: ê¸°ë³¸ íë¸Œ ë©”ì‰¬ê°€ 100x100x100ì´ë¼ê³  ê°€ì •
+		// BoxExtentëŠ” Half-Sizeì´ë¯€ë¡œ 2ë°°ë¥¼ ê³±í•´ ì „ì²´ í¬ê¸°ë¥¼ êµ¬í•˜ê³  100ìœ¼ë¡œ ë‚˜ëˆ”
 		FVector NewScale = (AdjustedBoxExtent * 2.0f) / 100.0f;
 		RangePreviewActor->SetActorScale3D(NewScale);
 	}
@@ -198,16 +198,16 @@ void UGA_Destruction::UpdatePreview()
 
 void UGA_Destruction::OnLeftClickPressed()
 {
-	// ½ÇÁ¦ ½ºÅ³ ½ÃÀü ½ÃÀÛ ¾Ë¸²
-	// State.Busy ÅÂ±×¸¦ ºÎ¿©
+	// ì‹¤ì œ ìŠ¤í‚¬ ì‹œì „ ì‹œì‘ ì•Œë¦¼
+	// State.Busy íƒœê·¸ë¥¼ ë¶€ì—¬
 	NotifySkillCastStarted();
-	// ÁÂÅ¬¸¯ ½Ã ÆÄ±« ·ÎÁ÷ ¼öÇà
+	// ì¢Œí´ë¦­ ì‹œ íŒŒê´´ ë¡œì§ ìˆ˜í–‰
 	PerformDestruction();
 }
 
 void UGA_Destruction::OnCancelPressed(float TimeWaited)
 {
-	// ½ºÅ³ Å° ÀçÀÔ·Â ½Ã Ãë¼Ò
+	// ìŠ¤í‚¬ í‚¤ ì¬ì…ë ¥ ì‹œ ì·¨ì†Œ
 	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 }
 
@@ -227,9 +227,9 @@ void UGA_Destruction::PerformDestruction()
 		return;
 	}
 
-	// ¸¶¿ì½º ¹æÇâ ¹× È¸Àü °è»ê
-	FVector DirectionVector = AvatarActor->GetActorForwardVector(); // ±âº»°ª (½ÇÆĞ ½Ã)
-	FQuat BoxRotation = AvatarActor->GetActorQuat(); // ±âº»°ª (½ÇÆĞ ½Ã)
+	// ë§ˆìš°ìŠ¤ ë°©í–¥ ë° íšŒì „ ê³„ì‚°
+	FVector DirectionVector = AvatarActor->GetActorForwardVector(); // ê¸°ë³¸ê°’ (ì‹¤íŒ¨ ì‹œ)
+	FQuat BoxRotation = AvatarActor->GetActorQuat(); // ê¸°ë³¸ê°’ (ì‹¤íŒ¨ ì‹œ)
 
 	if (APawn* OwnerPawn = Cast<APawn>(AvatarActor))
 	{
@@ -242,7 +242,7 @@ void UGA_Destruction::PerformDestruction()
 			{
 				FVector StartLocation = OwnerPawn->GetActorLocation();
 				FVector TargetLocation = HitResult.Location;
-				TargetLocation.Z = StartLocation.Z; // ³ôÀÌ´Â ¹«½Ã
+				TargetLocation.Z = StartLocation.Z; // ë†’ì´ëŠ” ë¬´ì‹œ
 
 				DirectionVector = (TargetLocation - StartLocation).GetSafeNormal();
 				BoxRotation = FRotationMatrix::MakeFromX(DirectionVector).ToQuat();
@@ -257,28 +257,28 @@ void UGA_Destruction::PerformDestruction()
 		UE_LOG(LogTemp, Error, TEXT("GA_Destruction: OwnerPawn is null in PerformDestruction"));
 	}
 
-	// ·é ¹üÀ§ ¹èÀ² °¡Á®¿À±â
+	// ë£¬ ë²”ìœ„ ë°°ìœ¨ ê°€ì ¸ì˜¤ê¸°
 	float RangeMultiplier = GetRuneModifiedRange() / BaseRange;
 
-	// ·é ¹èÀ²À» Àû¿ëÇÑ ¹Ú½º Å©±â °è»ê
+	// ë£¬ ë°°ìœ¨ì„ ì ìš©í•œ ë°•ìŠ¤ í¬ê¸° ê³„ì‚°
 	FVector AdjustedBoxExtent = BoxExtent * RangeMultiplier;
 	FVector OwnerLocation = AvatarActor->GetActorLocation();
 
-	// ¸¶¿ì½º ¹æÇâ(DirectionVector)À» »ç¿ëÇÏ¿© Áß½ÉÁ¡ °è»ê
+	// ë§ˆìš°ìŠ¤ ë°©í–¥(DirectionVector)ì„ ì‚¬ìš©í•˜ì—¬ ì¤‘ì‹¬ì  ê³„ì‚°
 	FVector BoxCenter = OwnerLocation + DirectionVector * (BoxDistance + AdjustedBoxExtent.X);
 
-	// Ãæµ¹ °Ë»ç ÆÄ¶ó¹ÌÅÍ
+	// ì¶©ëŒ ê²€ì‚¬ íŒŒë¼ë¯¸í„°
 	FCollisionQueryParams QueryParams;
-	// º»ÀÎ°úÀÇ Ãæµ¹ Á¦¿Ü
+	// ë³¸ì¸ê³¼ì˜ ì¶©ëŒ ì œì™¸
 	QueryParams.AddIgnoredActor(AvatarActor);
 
 	TArray<FOverlapResult> OverlapResults;
 
-	// Ãæµ¹ °Ë»ç ¼öÇà
+	// ì¶©ëŒ ê²€ì‚¬ ìˆ˜í–‰
 	bool bHit = GetWorld()->OverlapMultiByChannel(
 		OverlapResults,
 		BoxCenter,
-		BoxRotation, // ¸¶¿ì½º ¹æÇâ¿¡ ¸ÂÃá È¸Àü°ª Àû¿ë
+		BoxRotation, // ë§ˆìš°ìŠ¤ ë°©í–¥ì— ë§ì¶˜ íšŒì „ê°’ ì ìš©
 		ECC_Pawn,
 		FCollisionShape::MakeBox(AdjustedBoxExtent),
 		QueryParams
@@ -291,8 +291,8 @@ void UGA_Destruction::PerformDestruction()
 			AActor* HitActor = Overlap.GetActor();
 			if (!HitActor) continue;
 
-			// ASC È®ÀÎ
-			// ASC¸¦ °¡Áø ¾×ÅÍ¸¸ GE Àû¿ë °¡´É
+			// ASC í™•ì¸
+			// ASCë¥¼ ê°€ì§„ ì•¡í„°ë§Œ GE ì ìš© ê°€ëŠ¥
 			UAbilitySystemComponent* TargetASC = nullptr;
 			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
 			{
@@ -301,7 +301,7 @@ void UGA_Destruction::PerformDestruction()
 
 			if (TargetASC)
 			{
-				// µ¥¹ÌÁö Effect Àû¿ë
+				// ë°ë¯¸ì§€ Effect ì ìš©
 				FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 				if (DamageSpecHandle.IsValid())
 				{
@@ -314,7 +314,7 @@ void UGA_Destruction::PerformDestruction()
 					UE_LOG(LogTemp, Error, TEXT("GA_Destruction: Failed to create GameplayEffectSpec for %s"), *HitActor->GetName());
 				}
 
-				// ÆÄ±« Effect Àû¿ë
+				// íŒŒê´´ Effect ì ìš©
 				if (DestructionEffect)
 				{
 					FGameplayEffectContextHandle DestructionContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
@@ -345,6 +345,6 @@ void UGA_Destruction::PerformDestruction()
 		}
 	}
 
-	// ·ÎÁ÷ ¼öÇà ¿Ï·á ÈÄ Á¤»ó Á¾·á (bWasCancelled = false)
+	// ë¡œì§ ìˆ˜í–‰ ì™„ë£Œ í›„ ì •ìƒ ì¢…ë£Œ (bWasCancelled = false)
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

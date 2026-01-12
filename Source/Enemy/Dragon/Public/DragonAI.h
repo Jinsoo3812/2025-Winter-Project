@@ -1,22 +1,22 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
-#include "EnemyAI.h" // ºÎ¸ğ Å¬·¡½º Æ÷ÇÔ
+#include "EnemyAI.h" // ë¶€ëª¨ í´ë˜ìŠ¤ í¬í•¨
 #include "DragonAI.generated.h"
 
-// µå·¡°ïÀÇ °ø°İ ÆĞÅÏÀ» Á¤ÀÇÇÏ´Â ¿­°ÅÇü
+// ë“œë˜ê³¤ì˜ ê³µê²© íŒ¨í„´ì„ ì •ì˜í•˜ëŠ” ì—´ê±°í˜•
 UENUM(BlueprintType)
 enum class EDragonAttackType : uint8
 {
-	None = 0 UMETA(DisplayName = "None"),			// °ø°İ ¾ÈÇÔ (Ãß°İ Áß)
-	Melee_Claw UMETA(DisplayName = "Melee Claw"),			// 2¿¬Å¸ ¾Õ¹ß (°¡±î¿ò)
-	Rush_Charge UMETA(DisplayName = "Rush Charge")		// ÀÌ¼Ó µğ¹öÇÁ ÇÔ¼º ÀÌÈÄ µ¹Áø
+	None = 0 UMETA(DisplayName = "None"),			// ê³µê²© ì•ˆí•¨ (ì¶”ê²© ì¤‘)
+	Melee_Claw UMETA(DisplayName = "Melee Claw"),			// 2ì—°íƒ€ ì•ë°œ (ê°€ê¹Œì›€)
+	Rush_Charge UMETA(DisplayName = "Rush Charge")		// ì´ì† ë””ë²„í”„ í•¨ì„± ì´í›„ ëŒì§„
 };
 
 /**
  * [Child Class]
- * µå·¡°ï º¸½º Àü¿ë AIÀÔ´Ï´Ù.
- * Å¸°Ù°úÀÇ °Å¸®¿¡ µû¶ó °ø°İ ÆĞÅÏÀ» °áÁ¤ÇÏ¿© ºí·¢º¸µå¿¡ Àü´ŞÇÕ´Ï´Ù.
+ * ë“œë˜ê³¤ ë³´ìŠ¤ ì „ìš© AIì…ë‹ˆë‹¤.
+ * íƒ€ê²Ÿê³¼ì˜ ê±°ë¦¬ì— ë”°ë¼ ê³µê²© íŒ¨í„´ì„ ê²°ì •í•˜ì—¬ ë¸”ë™ë³´ë“œì— ì „ë‹¬í•©ë‹ˆë‹¤.
  */
 UCLASS()
 class ENEMY_API ADragonAI : public AEnemyAI
@@ -27,21 +27,21 @@ public:
 	ADragonAI();
 
 protected:
-	/** ºÎ¸ğÀÇ ·ÎÁ÷(Å¸°Ù Ã£±â) + µå·¡°ï Àü¿ë ·ÎÁ÷(°ø°İ ÆÇ´Ü) ½ÇÇà */
+	/** ë¶€ëª¨ì˜ ë¡œì§(íƒ€ê²Ÿ ì°¾ê¸°) + ë“œë˜ê³¤ ì „ìš© ë¡œì§(ê³µê²© íŒë‹¨) ì‹¤í–‰ */
 	virtual void UpdateAIState() override;
 
 protected:
-	// --- ¼³Á¤°ª (¿¡µğÅÍ¿¡¼­ ¼öÁ¤ °¡´É) ---
+	// --- ì„¤ì •ê°’ (ì—ë””í„°ì—ì„œ ìˆ˜ì • ê°€ëŠ¥) ---
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")
-	float MeleeRange = 350.0f;  // ¾Õ¹ß °ø°İ »ç°Å¸®
+	float MeleeRange = 350.0f;  // ì•ë°œ ê³µê²© ì‚¬ê±°ë¦¬
 
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")
-	float RushRange = 1200.0f; // ºê·¹½º °ø°İ »ç°Å¸®
+	float RushRange = 1200.0f; // ë¸Œë ˆìŠ¤ ê³µê²© ì‚¬ê±°ë¦¬
 
-	// --- ºí·¢º¸µå Å° ÀÌ¸§ ---
+	// --- ë¸”ë™ë³´ë“œ í‚¤ ì´ë¦„ ---
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")
-	FName BBKey_AttackType = "AttackType"; // °ø°İ Å¸ÀÔ (Enum)
+	FName BBKey_AttackType = "AttackType"; // ê³µê²© íƒ€ì… (Enum)
 
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")
-	FName BBKey_Phase = "Phase"; // ÇöÀç ÆäÀÌÁî (1, 2, 3...)
+	FName BBKey_Phase = "Phase"; // í˜„ì¬ í˜ì´ì¦ˆ (1, 2, 3...)
 };

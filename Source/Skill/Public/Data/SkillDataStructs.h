@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -10,8 +10,8 @@
 class UGameplayAbility;
 
 /**
- * ½ºÅ³ µ¥ÀÌÅÍ Å×ÀÌºí ±¸Á¶Ã¼
- * °¢ ½ºÅ³ÀÇ ±âº» ¼öÄ¡¸¦ Á¤ÀÇ
+ * ìŠ¤í‚¬ ë°ì´í„° í…Œì´ë¸” êµ¬ì¡°ì²´
+ * ê° ìŠ¤í‚¬ì˜ ê¸°ë³¸ ìˆ˜ì¹˜ë¥¼ ì •ì˜
  */
 USTRUCT(BlueprintType)
 struct SKILL_API FSkillDataRow : public FTableRowBase
@@ -19,31 +19,31 @@ struct SKILL_API FSkillDataRow : public FTableRowBase
 	GENERATED_BODY()
 
 public:
-	// ½ºÅ³ ÀÌ¸§
+	// ìŠ¤í‚¬ ì´ë¦„
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	FText SkillName;
 
-	// ½ºÅ³ Å¬·¡½º (GA ºí·çÇÁ¸°Æ® ¶Ç´Â C++ Å¬·¡½º)
+	// ìŠ¤í‚¬ í´ë˜ìŠ¤ (GA ë¸”ë£¨í”„ë¦°íŠ¸ ë˜ëŠ” C++ í´ë˜ìŠ¤)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	TSubclassOf<UGameplayAbility> SkillClass;
 
-	// ±âº» ÇÇÇØ·®
+	// ê¸°ë³¸ í”¼í•´ëŸ‰
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Stats")
 	float BaseDamage = 10.0f;
 
-	// ±âº» ÄğÅ¸ÀÓ (ÃÊ)
+	// ê¸°ë³¸ ì¿¨íƒ€ì„ (ì´ˆ)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Stats")
 	float BaseCooldown = 5.0f;
 
-	// ±âº» ¹üÀ§ °è¼ö
+	// ê¸°ë³¸ ë²”ìœ„ ê³„ìˆ˜
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill Stats")
 	float BaseRange = 1.0f;
 
-	// ½ºÅ³ ¼³¸í (UI¿ë)
+	// ìŠ¤í‚¬ ì„¤ëª… (UIìš©)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	FText Description;
 
-	// ½ºÅ³ ¾ÆÀÌÄÜ (UI¿ë)
+	// ìŠ¤í‚¬ ì•„ì´ì½˜ (UIìš©)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	TObjectPtr<UTexture2D> SkillIcon;
 };

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Player/Test/TestPlayerState.h"
 #include "AbilitySystemComponent.h"
@@ -11,30 +11,30 @@
 
 ATestPlayerState::ATestPlayerState()
 {
-	// ASC »ı¼º ¹× ¼³Á¤
+	// ASC ìƒì„± ë° ì„¤ì •
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	
-	// ASCÀÇ ¼­¹ö-Å¬¶óÀÌ¾ğÆ® °£ÀÇ º¹Á¦È­¸¦ È°¼ºÈ­
+	// ASCì˜ ì„œë²„-í´ë¼ì´ì–¸íŠ¸ ê°„ì˜ ë³µì œí™”ë¥¼ í™œì„±í™”
 	AbilitySystemComponent->SetIsReplicated(true);
 	
-	// Replication Mode ¼³Á¤
-	// Minimal: GameplayEffectÀÇ ºÎ¿©µÈ GameplayTag¿Í Attribute¸¸ º¹Á¦È­
-	// Mixed: ¼ÒÀ¯ÇÑ Å¬¶óÀÌ¾ğÆ®(º»ÀÎ)¿¡°Ô´Â ¸ğµç GameplayEffect¸¦ º¹Á¦È­, ´Ù¸¥ Å¬¶óÀÌ¾ğÆ®(´Ù¸¥ »ç¶÷)¿¡°Ô´Â Minimal
+	// Replication Mode ì„¤ì •
+	// Minimal: GameplayEffectì˜ ë¶€ì—¬ëœ GameplayTagì™€ Attributeë§Œ ë³µì œí™”
+	// Mixed: ì†Œìœ í•œ í´ë¼ì´ì–¸íŠ¸(ë³¸ì¸)ì—ê²ŒëŠ” ëª¨ë“  GameplayEffectë¥¼ ë³µì œí™”, ë‹¤ë¥¸ í´ë¼ì´ì–¸íŠ¸(ë‹¤ë¥¸ ì‚¬ëŒ)ì—ê²ŒëŠ” Minimal
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
-	// ½ºÅ³ ¸Å´ÏÀú ÄÄÆ÷³ÍÆ® »ı¼º
+	// ìŠ¤í‚¬ ë§¤ë‹ˆì € ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	SkillManager = CreateDefaultSubobject<USkillManagerComponent>(TEXT("SkillManagerComponent"));
 
-	// AttributeSet »ı¼º (Ã¼·Â, ÃÖ´ëÃ¼·Â µîÀÇ ¼öÄ¡ °ü¸®)
-	// PlayerState¿¡¼­ ¼ÒÀ¯ÇÏ¹Ç·Î ÇÃ·¹ÀÌ¾î Á×¾ú´Ù ºÎÈ°ÇØµµ À¯ÁöµÊ
+	// AttributeSet ìƒì„± (ì²´ë ¥, ìµœëŒ€ì²´ë ¥ ë“±ì˜ ìˆ˜ì¹˜ ê´€ë¦¬)
+	// PlayerStateì—ì„œ ì†Œìœ í•˜ë¯€ë¡œ í”Œë ˆì´ì–´ ì£½ì—ˆë‹¤ ë¶€í™œí•´ë„ ìœ ì§€ë¨
 	AttributeSet = CreateDefaultSubobject<UPlayerAttributeSet>(TEXT("AttributeSet"));
 
-	// ¼­¹ö°¡ PlayerStateÀÇ »óÅÂ¸¦ Å¬¶óÀÌ¾ğÆ®·Î º¸³»ÁÖ´Â ÁÖ±â(per second)
-	// ±âº»°ªº¸´Ù ³ô°Ô ¼³Á¤ÇØ ASCÀÇ º¯°æ»çÇ×ÀÌ ºü¸£°Ô º¹Á¦È­µÉ ¼ö ÀÖÀ½
+	// ì„œë²„ê°€ PlayerStateì˜ ìƒíƒœë¥¼ í´ë¼ì´ì–¸íŠ¸ë¡œ ë³´ë‚´ì£¼ëŠ” ì£¼ê¸°(per second)
+	// ê¸°ë³¸ê°’ë³´ë‹¤ ë†’ê²Œ ì„¤ì •í•´ ASCì˜ ë³€ê²½ì‚¬í•­ì´ ë¹ ë¥´ê²Œ ë³µì œí™”ë  ìˆ˜ ìˆìŒ
 	SetNetUpdateFrequency(100.0f);
 
-	// PlayerStateÀÇ µ¥ÀÌÅÍ°¡ ¹Ù²îÁö ¾Ê´Â µ¿¾È ÃÖ¼ÒÇÑ ¾ó¸¶ÀÇ ÁÖ±â·Î ¾÷µ¥ÀÌÆ® ºóµµ¸¦ À¯Áö
-	// ¾Æ¹« ÀÏµµ ÀÏ¾î³ªÁö ¾Ê´Â µ¿¾È Min ºóµµ·Î ¾÷µ¥ÀÌÆ® À¯Áö
+	// PlayerStateì˜ ë°ì´í„°ê°€ ë°”ë€Œì§€ ì•ŠëŠ” ë™ì•ˆ ìµœì†Œí•œ ì–¼ë§ˆì˜ ì£¼ê¸°ë¡œ ì—…ë°ì´íŠ¸ ë¹ˆë„ë¥¼ ìœ ì§€
+	// ì•„ë¬´ ì¼ë„ ì¼ì–´ë‚˜ì§€ ì•ŠëŠ” ë™ì•ˆ Min ë¹ˆë„ë¡œ ì—…ë°ì´íŠ¸ ìœ ì§€
 	SetMinNetUpdateFrequency(2.0f);
 }
 
@@ -42,7 +42,7 @@ void ATestPlayerState::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// ÇÃ·¹ÀÌ¾î ÃÊ±â ½ºÅÈ ·Îµå
+	// í”Œë ˆì´ì–´ ì´ˆê¸° ìŠ¤íƒ¯ ë¡œë“œ
 	InitializePlayerStats(PlayerLevel);
 }
 
@@ -59,14 +59,14 @@ void ATestPlayerState::InitializePlayerStats(int32 Level)
 		return;
 	}
 
-	// µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ ·¹º§¿¡ ÇØ´çÇÏ´Â ½ºÅÈ °¡Á®¿À±â
+	// ë°ì´í„° í…Œì´ë¸”ì—ì„œ ë ˆë²¨ì— í•´ë‹¹í•˜ëŠ” ìŠ¤íƒ¯ ê°€ì ¸ì˜¤ê¸°
 	FString ContextString(TEXT("Player Stats Lookup"));
 	FName RowName = FName(*FString::FromInt(Level));
 	FPlayerInitialStatsRow* StatsRow = PlayerStatsDataTable->FindRow<FPlayerInitialStatsRow>(RowName, ContextString);
 
 	if (StatsRow && AttributeSet)
 	{
-		// AttributeSet¿¡ ÃÊ±â ½ºÅÈ Àû¿ë
+		// AttributeSetì— ì´ˆê¸° ìŠ¤íƒ¯ ì ìš©
 		AttributeSet->SetHealth(StatsRow->InitialHealth);
 		AttributeSet->SetMaxHealth(StatsRow->InitialMaxHealth);
 		AttributeSet->SetMana(StatsRow->InitialMana);
@@ -77,8 +77,8 @@ void ATestPlayerState::InitializePlayerStats(int32 Level)
 		UE_LOG(LogTemp, Log, TEXT("ATestPlayerState: Loaded stats for Level %d - HP: %f, Mana: %f, AttackPower: %f, MovementSpeed: %f"),
 			Level, StatsRow->InitialMaxHealth, StatsRow->InitialMaxMana, StatsRow->InitialAttackPower, StatsRow->InitialMovementSpeed);
 
-		// [Ãß°¡] 2. ½ÇÁ¦ Ä³¸¯ÅÍ ÀÌµ¿ ¼Óµµµµ ÃÊ±â°ªÀ¸·Î ¸ÂÃçÁÖ±â
-		// PlayerStateÀÇ Owner´Â ControllerÀÏ ¼öµµ ÀÖ°í PawnÀÏ ¼öµµ ÀÖ¾î¼­ È®ÀÎ ÇÊ¿ä
+		// [ì¶”ê°€] 2. ì‹¤ì œ ìºë¦­í„° ì´ë™ ì†ë„ë„ ì´ˆê¸°ê°’ìœ¼ë¡œ ë§ì¶°ì£¼ê¸°
+		// PlayerStateì˜ OwnerëŠ” Controllerì¼ ìˆ˜ë„ ìˆê³  Pawnì¼ ìˆ˜ë„ ìˆì–´ì„œ í™•ì¸ í•„ìš”
 		APawn* Pawn = GetPawn();
 		if (ACharacter* Character = Cast<ACharacter>(Pawn))
 		{
@@ -102,32 +102,32 @@ void ATestPlayerState::InitializeSkills()
 		return;
 	}
 
-	// SkillManager ÃÊ±âÈ­
+	// SkillManager ì´ˆê¸°í™”
 	SkillManager->SkillManagerInitialize(AbilitySystemComponent);
 
-	// DefaultSkillSets¸¦ ¼øÈ¸ÇÏ¸ç °¢ ½½·Ô Ã³¸®
+	// DefaultSkillSetsë¥¼ ìˆœíšŒí•˜ë©° ê° ìŠ¬ë¡¯ ì²˜ë¦¬
 	for (int32 SlotIndex = 0; SlotIndex < DefaultSkillSets.Num(); ++SlotIndex)
 	{
 		FSkillSlot& SkillSlot = DefaultSkillSets[SlotIndex];
 
-		// ÃÊ·Ï ·é Ä³½Ã ¾÷µ¥ÀÌÆ® (ºí·çÇÁ¸°Æ®¿¡¼­ ¼³Á¤ÇÑ °ª ¹İ¿µ)
+		// ì´ˆë¡ ë£¬ ìºì‹œ ì—…ë°ì´íŠ¸ (ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œ ì„¤ì •í•œ ê°’ ë°˜ì˜)
 		SkillSlot.UpdateGreenRuneCache();
 
-		// ÀåÂøÇÒ GA °áÁ¤ (ÃÊ·Ï ·é ÀÖÀ¸¸é ½ºÅ³ ±³Ã¼)
+		// ì¥ì°©í•  GA ê²°ì • (ì´ˆë¡ ë£¬ ìˆìœ¼ë©´ ìŠ¤í‚¬ êµì²´)
 		TSubclassOf<UGameplayAbility> SkillToEquip = SkillSlot.EquippedSkill;
 
-		// Ä³½ÃµÈ ÃÊ·Ï ·é È®ÀÎ (O(1) Á¢±Ù)
+		// ìºì‹œëœ ì´ˆë¡ ë£¬ í™•ì¸ (O(1) ì ‘ê·¼)
 		if (SkillSlot.EquippedGreenRune)
 		{
 			UDA_Rune* GreenRune = SkillSlot.EquippedGreenRune;
 
-			// ÃÊ·Ï·éÀÇ OriginalSkillClass¿Í ÇöÀç ÀåÂøµÈ ½ºÅ³ÀÌ ÀÏÄ¡ÇÏ´ÂÁö È®ÀÎ
+			// ì´ˆë¡ë£¬ì˜ OriginalSkillClassì™€ í˜„ì¬ ì¥ì°©ëœ ìŠ¤í‚¬ì´ ì¼ì¹˜í•˜ëŠ”ì§€ í™•ì¸
 			if (GreenRune->OriginalSkillClass && SkillToEquip && SkillToEquip->IsChildOf(GreenRune->OriginalSkillClass))
 			{
-				// ReplacementSkillClass°¡ ¼³Á¤µÇ¾î ÀÖ´ÂÁö È®ÀÎ
+				// ReplacementSkillClassê°€ ì„¤ì •ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸
 				if (GreenRune->ReplacementSkillClass)
 				{
-					// ½ºÅ³ ±³Ã¼
+					// ìŠ¤í‚¬ êµì²´
 					SkillToEquip = GreenRune->ReplacementSkillClass;
 					UE_LOG(LogTemp, Log, TEXT("[Slot %d] Green Rune detected: Replacing %s with %s"),
 						SlotIndex,
@@ -141,13 +141,13 @@ void ATestPlayerState::InitializeSkills()
 			}
 		}
 
-		// ½ºÅ³ ÀåÂø
+		// ìŠ¤í‚¬ ì¥ì°©
 		if (SkillToEquip)
 		{
 			SkillManager->EquipSkill(SlotIndex, SkillToEquip);
 		}
 
-		// ·é ÀåÂø
+		// ë£¬ ì¥ì°©
 		for (int32 RuneSlotIndex = 0; RuneSlotIndex < SkillSlot.RuneSlots.Num(); ++RuneSlotIndex)
 		{
 			if (SkillSlot.RuneSlots[RuneSlotIndex].RuneAsset)

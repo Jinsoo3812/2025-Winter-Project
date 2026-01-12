@@ -1,15 +1,15 @@
-#include "EnemyAttributeSet.h"
-#include "Net/UnrealNetwork.h" // DOREPLIFETIME ¸ÅÅ©·Î »ç¿ëÀ» À§ÇØ ÇÊ¼ö
-#include "GameplayEffectExtension.h" // PostGameplayEffectExecute µ¥ÀÌÅÍ Á¢±Ù¿ë
-#include "EnemyBase.h" // »ç¸Á Ã³¸®¿ë
+ï»¿#include "EnemyAttributeSet.h"
+#include "Net/UnrealNetwork.h" // DOREPLIFETIME ë§¤í¬ë¡œ ì‚¬ìš©ì„ ìœ„í•´ í•„ìˆ˜
+#include "GameplayEffectExtension.h" // PostGameplayEffectExecute ë°ì´í„° ì ‘ê·¼ìš©
+#include "EnemyBase.h" // ì‚¬ë§ ì²˜ë¦¬ìš©
 
 UEnemyAttributeSet::UEnemyAttributeSet()
 {
-	// ÇÊ¿ä½Ã ¿©±â¼­ º¯¼öµéÀÇ ÃÊ±â°ªÀ» ¼³Á¤ÇÒ ¼ö ÀÖ½À´Ï´Ù.
-	// º¸ÅëÀº 'GE_EnemyBaseStats' °°Àº ÃÊ±âÈ­¿ë GameplayEffect¸¦ »ç¿ëÇÏ¹Ç·Î ºñ¿öµÎ±âµµ ÇÕ´Ï´Ù.
+	// í•„ìš”ì‹œ ì—¬ê¸°ì„œ ë³€ìˆ˜ë“¤ì˜ ì´ˆê¸°ê°’ì„ ì„¤ì •í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.
+	// ë³´í†µì€ 'GE_EnemyBaseStats' ê°™ì€ ì´ˆê¸°í™”ìš© GameplayEffectë¥¼ ì‚¬ìš©í•˜ë¯€ë¡œ ë¹„ì›Œë‘ê¸°ë„ í•©ë‹ˆë‹¤.
 
-	//±×·¯³ª Áö±İ(01/02) Å×½ºÆ®¸¦ À§ÇØ Àá½Ã °­Á¦ ÃÊ±âÈ­
-	// Å×½ºÆ®¸¦ À§ÇØ »ı¼ºÀÚ¿¡¼­ °­Á¦·Î ÃÊ±âÈ­
+	//ê·¸ëŸ¬ë‚˜ ì§€ê¸ˆ(01/02) í…ŒìŠ¤íŠ¸ë¥¼ ìœ„í•´ ì ì‹œ ê°•ì œ ì´ˆê¸°í™”
+	// í…ŒìŠ¤íŠ¸ë¥¼ ìœ„í•´ ìƒì„±ìì—ì„œ ê°•ì œë¡œ ì´ˆê¸°í™”
 	Health.SetBaseValue(100.0f);
 	Health.SetCurrentValue(100.0f);
 	MaxHealth.SetBaseValue(100.0f);
@@ -17,24 +17,24 @@ UEnemyAttributeSet::UEnemyAttributeSet()
 }
 
 /**
- * [³×Æ®¿öÅ© µ¿±âÈ­ ±ÔÄ¢ ¼³Á¤]
- * º¯¼öµéÀÌ ³×Æ®¿öÅ© »ó¿¡¼­ ¾î¶»°Ô º¹Á¦µÉÁö ¼³Á¤ÇÕ´Ï´Ù.
+ * [ë„¤íŠ¸ì›Œí¬ ë™ê¸°í™” ê·œì¹™ ì„¤ì •]
+ * ë³€ìˆ˜ë“¤ì´ ë„¤íŠ¸ì›Œí¬ ìƒì—ì„œ ì–´ë–»ê²Œ ë³µì œë ì§€ ì„¤ì •í•©ë‹ˆë‹¤.
  */
 void UEnemyAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	// DOREPLIFETIME_CONDITION_NOTIFY:
-	// °ªÀÌ º¯°æµÉ ¶§¸¶´Ù(Always) ¿¬°áµÈ Å¬¶óÀÌ¾ğÆ®µé¿¡°Ô ¾Ë¸³´Ï´Ù(Notify).
-	// REPNOTIFY_Always: °ªÀÌ ¼­¹ö¿Í °°´Ù ÇÏ´õ¶óµµ ¸í½ÃÀûÀ¸·Î ¾Ë¸²À» º¸³À´Ï´Ù (¿¹Ãø ½Ç¼ö ¹æÁö).
+	// ê°’ì´ ë³€ê²½ë  ë•Œë§ˆë‹¤(Always) ì—°ê²°ëœ í´ë¼ì´ì–¸íŠ¸ë“¤ì—ê²Œ ì•Œë¦½ë‹ˆë‹¤(Notify).
+	// REPNOTIFY_Always: ê°’ì´ ì„œë²„ì™€ ê°™ë‹¤ í•˜ë”ë¼ë„ ëª…ì‹œì ìœ¼ë¡œ ì•Œë¦¼ì„ ë³´ëƒ…ë‹ˆë‹¤ (ì˜ˆì¸¡ ì‹¤ìˆ˜ ë°©ì§€).
 	DOREPLIFETIME_CONDITION_NOTIFY(UEnemyAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UEnemyAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 }
 
 /**
- * [Å¬¶óÀÌ¾ğÆ® Ã³¸®: Ã¼·Â º¯°æ]
- * GAS ½Ã½ºÅÛ¿¡°Ô "ÀÌÀü °ª(OldHealth)ÀÌ ÀÌ°Å¿´´Âµ¥, »õ °ªÀ¸·Î °»½ÅÇØÁà"¶ó°í ¾Ë¸³´Ï´Ù.
- * ¿¹Ãø(Prediction) ½Ã½ºÅÛÀÌ Á¤»ó ÀÛµ¿ÇÏµµ·Ï µ½½À´Ï´Ù.
+ * [í´ë¼ì´ì–¸íŠ¸ ì²˜ë¦¬: ì²´ë ¥ ë³€ê²½]
+ * GAS ì‹œìŠ¤í…œì—ê²Œ "ì´ì „ ê°’(OldHealth)ì´ ì´ê±°ì˜€ëŠ”ë°, ìƒˆ ê°’ìœ¼ë¡œ ê°±ì‹ í•´ì¤˜"ë¼ê³  ì•Œë¦½ë‹ˆë‹¤.
+ * ì˜ˆì¸¡(Prediction) ì‹œìŠ¤í…œì´ ì •ìƒ ì‘ë™í•˜ë„ë¡ ë•ìŠµë‹ˆë‹¤.
  */
 void UEnemyAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
@@ -42,7 +42,7 @@ void UEnemyAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 }
 
 /**
- * [Å¬¶óÀÌ¾ğÆ® Ã³¸®: ÃÖ´ë Ã¼·Â º¯°æ]
+ * [í´ë¼ì´ì–¸íŠ¸ ì²˜ë¦¬: ìµœëŒ€ ì²´ë ¥ ë³€ê²½]
  */
 void UEnemyAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHealth)
 {
@@ -50,9 +50,9 @@ void UEnemyAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHea
 }
 
 /**
- * [ÇÙ½É ·ÎÁ÷: ½ºÅ³ Àû¿ë ÈÄ Ã³¸®]
- * ÆÀ¿øÀÌ ¸¸µç ½ºÅ³(GameplayEffect)ÀÌ ÀÌ Àû¿¡°Ô Àû¿ëµÈ "Á÷ÈÄ"¿¡ È£ÃâµË´Ï´Ù.
- * ¿©±â¼­ ÃÖÁ¾ÀûÀÎ Ã¼·Â °è»ê, »ç¸Á Ã³¸®, µ¥¹ÌÁö ÆùÆ® ¶ç¿ì±â µîÀ» ¼öÇàÇÕ´Ï´Ù.
+ * [í•µì‹¬ ë¡œì§: ìŠ¤í‚¬ ì ìš© í›„ ì²˜ë¦¬]
+ * íŒ€ì›ì´ ë§Œë“  ìŠ¤í‚¬(GameplayEffect)ì´ ì´ ì ì—ê²Œ ì ìš©ëœ "ì§í›„"ì— í˜¸ì¶œë©ë‹ˆë‹¤.
+ * ì—¬ê¸°ì„œ ìµœì¢…ì ì¸ ì²´ë ¥ ê³„ì‚°, ì‚¬ë§ ì²˜ë¦¬, ë°ë¯¸ì§€ í°íŠ¸ ë„ìš°ê¸° ë“±ì„ ìˆ˜í–‰í•©ë‹ˆë‹¤.
  */
 void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)
 {
@@ -64,16 +64,16 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 	{
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 
-		// [¼öÁ¤µÈ ºÎºĞ: ½ÇÁ¦ »ç¸Á ·ÎÁ÷ ¿¬°á]
+		// [ìˆ˜ì •ëœ ë¶€ë¶„: ì‹¤ì œ ì‚¬ë§ ë¡œì§ ì—°ê²°]
 		if (GetHealth() <= 0.0f)
 		{
-			// µ¥ÀÌÅÍ·ÎºÎÅÍ Target Actor(ÀÌ AttributeSetÀÇ ÁÖÀÎ)¸¦ Ã£½À´Ï´Ù.
+			// ë°ì´í„°ë¡œë¶€í„° Target Actor(ì´ AttributeSetì˜ ì£¼ì¸)ë¥¼ ì°¾ìŠµë‹ˆë‹¤.
 			AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
 
-			// AEnemyBase·Î Çüº¯È¯ÇÏ¿© Die() ÇÔ¼ö È£Ãâ
+			// AEnemyBaseë¡œ í˜•ë³€í™˜í•˜ì—¬ Die() í•¨ìˆ˜ í˜¸ì¶œ
 			if (AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor))
 			{
-				Enemy->Die(); // <-- ¿©±â¼­ µåµğ¾î Á×½À´Ï´Ù!
+				Enemy->Die(); // <-- ì—¬ê¸°ì„œ ë“œë””ì–´ ì£½ìŠµë‹ˆë‹¤!
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -13,15 +13,15 @@ class UGameplayAbility;
 class UDA_Rune;
 
 /**
- * ·é ½½·Ô ±¸Á¶Ã¼
- * °³º° ·é ½½·ÔÀÇ »óÅÂ¸¦ °ü¸®
+ * ë£¬ ìŠ¬ë¡¯ êµ¬ì¡°ì²´
+ * ê°œë³„ ë£¬ ìŠ¬ë¡¯ì˜ ìƒíƒœë¥¼ ê´€ë¦¬
  */
 USTRUCT(BlueprintType)
 struct FRuneSlot
 {
 	GENERATED_BODY()
 
-	// ÀåÂøµÈ ·é ¿¡¼Â
+	// ì¥ì°©ëœ ë£¬ ì—ì…‹
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
 	TObjectPtr<UDA_Rune> RuneAsset;
 
@@ -29,50 +29,50 @@ struct FRuneSlot
 };
 
 /**
- * ½ºÅ³ ½½·Ô ±¸Á¶Ã¼
- * Ä³¸¯ÅÍ°¡ ÀåÂøÇÑ ½ºÅ³ÀÇ Á¤º¸¸¦ ´ã´Â ±¸Á¶Ã¼
- * SkillÀÇ GA¿Í ±× SpecHandleÀ» º¸°ü
+ * ìŠ¤í‚¬ ìŠ¬ë¡¯ êµ¬ì¡°ì²´
+ * ìºë¦­í„°ê°€ ì¥ì°©í•œ ìŠ¤í‚¬ì˜ ì •ë³´ë¥¼ ë‹´ëŠ” êµ¬ì¡°ì²´
+ * Skillì˜ GAì™€ ê·¸ SpecHandleì„ ë³´ê´€
  */
 USTRUCT(BlueprintType)
 struct SKILL_API FSkillSlot
 {
 	GENERATED_BODY()
 
-	// ½½·Ô¿¡ ÀåÂøµÈ GA Å¬·¡½º
+	// ìŠ¬ë¡¯ì— ì¥ì°©ëœ GA í´ë˜ìŠ¤
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Skill")
 	TSubclassOf<UGameplayAbility> EquippedSkill;
 
-	// ASC¿¡¼­ ¹ŞÀº Ability Handle (GA È°¼ºÈ­/Á¦°Å¿ë)
-	// GAÀÇ SpecHandleÀº GEÀÇ SpecHandle°ú ´Ş¸® int32 ID¸¦ °¡Áü
-	// GA SpecÀº GA°¡ ASC¿¡ ÀåÂøµÉ ¶§, ±× ASC°¡ TArray·Î º¸°üÇÔ
-	// HandleÀ» ÅëÇØ ASC°¡ º¸°ü ÁßÀÎ GA Spec¿¡ Á¢±Ù °¡´É
+	// ASCì—ì„œ ë°›ì€ Ability Handle (GA í™œì„±í™”/ì œê±°ìš©)
+	// GAì˜ SpecHandleì€ GEì˜ SpecHandleê³¼ ë‹¬ë¦¬ int32 IDë¥¼ ê°€ì§
+	// GA Specì€ GAê°€ ASCì— ì¥ì°©ë  ë•Œ, ê·¸ ASCê°€ TArrayë¡œ ë³´ê´€í•¨
+	// Handleì„ í†µí•´ ASCê°€ ë³´ê´€ ì¤‘ì¸ GA Specì— ì ‘ê·¼ ê°€ëŠ¥
 	UPROPERTY(BlueprintReadOnly, Category = "Skill")
 	FGameplayAbilitySpecHandle AbilityHandle;
 
-	// ÀåÂøµÈ ·é ½½·Ôµé
+	// ì¥ì°©ëœ ë£¬ ìŠ¬ë¡¯ë“¤
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
 	TArray<FRuneSlot> RuneSlots;
 
-	// ÀåÂøµÈ ÃÊ·Ï ·é (Ä³½Ì) - nullptrÀÌ¸é ÃÊ·Ï ·é ¾øÀ½
+	// ì¥ì°©ëœ ì´ˆë¡ ë£¬ (ìºì‹±) - nullptrì´ë©´ ì´ˆë¡ ë£¬ ì—†ìŒ
 	UPROPERTY(BlueprintReadOnly, Category = "Rune")
 	TObjectPtr<UDA_Rune> EquippedGreenRune;
 
-	// ±âº» »ı¼ºÀÚ
+	// ê¸°ë³¸ ìƒì„±ì
 	FSkillSlot() : EquippedSkill(nullptr), AbilityHandle(), EquippedGreenRune(nullptr) {
-		RuneSlots.SetNum(3); // ·é ½½·Ô 3Ä­ È®º¸
+		RuneSlots.SetNum(3); // ë£¬ ìŠ¬ë¡¯ 3ì¹¸ í™•ë³´
 	}
 
-	// ÃÊ·Ï ·é Ä³½Ã ¾÷µ¥ÀÌÆ® (·é ÀåÂø/ÇØÁ¦ ½Ã È£Ãâ)
-	// ±¸ÇöÀº SkillManagerComponent.cpp¿¡ À§Ä¡
+	// ì´ˆë¡ ë£¬ ìºì‹œ ì—…ë°ì´íŠ¸ (ë£¬ ì¥ì°©/í•´ì œ ì‹œ í˜¸ì¶œ)
+	// êµ¬í˜„ì€ SkillManagerComponent.cppì— ìœ„ì¹˜
 	void UpdateGreenRuneCache();
 };
 
 /**
- * ½ºÅ³ ¸Å´ÏÀú ÄÄÆ÷³ÍÆ®
- * Ä³¸¯ÅÍÀÇ ½ºÅ³ ÀåÂø/ÇØÁ¦/È°¼ºÈ­¸¦ °ü¸®ÇÏ´Â ÄÄÆ÷³ÍÆ®
+ * ìŠ¤í‚¬ ë§¤ë‹ˆì € ì»´í¬ë„ŒíŠ¸
+ * ìºë¦­í„°ì˜ ìŠ¤í‚¬ ì¥ì°©/í•´ì œ/í™œì„±í™”ë¥¼ ê´€ë¦¬í•˜ëŠ” ì»´í¬ë„ŒíŠ¸
  */
-// ClassGroup: 'Add Compnent' ¸Ş´º¿¡¼­ º¸ÀÌ´Â ±×·ì ÁöÁ¤
-// meta = (BlueprintSpawnableComponent): BP ¿¡µğÅÍ¿¡¼­ ÀÌ ÄÄÆ÷³ÍÆ®¸¦ Ãß°¡ °¡´É
+// ClassGroup: 'Add Compnent' ë©”ë‰´ì—ì„œ ë³´ì´ëŠ” ê·¸ë£¹ ì§€ì •
+// meta = (BlueprintSpawnableComponent): BP ì—ë””í„°ì—ì„œ ì´ ì»´í¬ë„ŒíŠ¸ë¥¼ ì¶”ê°€ ê°€ëŠ¥
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class SKILL_API USkillManagerComponent : public UActorComponent
 {
@@ -87,81 +87,81 @@ protected:
 public:	
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	// ÇÃ·¹ÀÌ¾îÀÇ ASC¸¦ °¡Á®¿À´Â ÇÔ¼ö
-	// Ä³¸¯ÅÍÀÇ BeginPlay¿¡¼­ È£ÃâµÇ¾î¾ß ÇÔ
+	// í”Œë ˆì´ì–´ì˜ ASCë¥¼ ê°€ì ¸ì˜¤ëŠ” í•¨ìˆ˜
+	// ìºë¦­í„°ì˜ BeginPlayì—ì„œ í˜¸ì¶œë˜ì–´ì•¼ í•¨
 	UFUNCTION(BlueprintCallable, Category = "Skill Manager")
 	void SkillManagerInitialize(UAbilitySystemComponent* InAbilitySystemComponent);
 
-	// Æ¯Á¤ ½½·Ô¿¡ ½ºÅ³À» ÀåÂøÇÏ´Â ÇÔ¼ö
-	// @param SlotIndex: ÀåÂøÇÒ ½½·ÔÀÇ ÀÎµ¦½º (0ºÎÅÍ ½ÃÀÛ)
-	// @param SkillClass: ÀåÂøÇÒ ½ºÅ³ GAÀÇ Å¬·¡½º
-	// @return ¼º°ø ¿©ºÎ
+	// íŠ¹ì • ìŠ¬ë¡¯ì— ìŠ¤í‚¬ì„ ì¥ì°©í•˜ëŠ” í•¨ìˆ˜
+	// @param SlotIndex: ì¥ì°©í•  ìŠ¬ë¡¯ì˜ ì¸ë±ìŠ¤ (0ë¶€í„° ì‹œì‘)
+	// @param SkillClass: ì¥ì°©í•  ìŠ¤í‚¬ GAì˜ í´ë˜ìŠ¤
+	// @return ì„±ê³µ ì—¬ë¶€
 	UFUNCTION(BlueprintCallable, Category = "Skill Manager")
 	bool EquipSkill(int32 SlotIndex, TSubclassOf<UGameplayAbility> SkillClass);
 
-	// Æ¯Á¤ ½½·ÔÀÇ ½ºÅ³À» ÇØÁ¦ÇÏ´Â ÇÔ¼ö
-	// @param SlotIndex: ÇØÁ¦ÇÒ ½½·ÔÀÇ ÀÎµ¦½º
-	// @return ¼º°ø ¿©ºÎ
+	// íŠ¹ì • ìŠ¬ë¡¯ì˜ ìŠ¤í‚¬ì„ í•´ì œí•˜ëŠ” í•¨ìˆ˜
+	// @param SlotIndex: í•´ì œí•  ìŠ¬ë¡¯ì˜ ì¸ë±ìŠ¤
+	// @return ì„±ê³µ ì—¬ë¶€
 	UFUNCTION(BlueprintCallable, Category = "Skill Manager")
 	bool UnequipSkill(int32 SlotIndex);
 
-	// Æ¯Á¤ ½½·ÔÀÇ ½ºÅ³À» È°¼ºÈ­ÇÏ´Â ÇÔ¼ö
-	// @param SlotIndex: È°¼ºÈ­ÇÒ ½½·ÔÀÇ ÀÎµ¦½º
-	// @return ¼º°ø ¿©ºÎ
+	// íŠ¹ì • ìŠ¬ë¡¯ì˜ ìŠ¤í‚¬ì„ í™œì„±í™”í•˜ëŠ” í•¨ìˆ˜
+	// @param SlotIndex: í™œì„±í™”í•  ìŠ¬ë¡¯ì˜ ì¸ë±ìŠ¤
+	// @return ì„±ê³µ ì—¬ë¶€
 
-	// ÇöÀç ÀåÂøµÈ ¸ğµç ½ºÅ³ Á¤º¸¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+	// í˜„ì¬ ì¥ì°©ëœ ëª¨ë“  ìŠ¤í‚¬ ì •ë³´ë¥¼ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
 	UFUNCTION(BlueprintCallable, Category = "Skill Manager")
 	TArray<FSkillSlot> GetEquippedSkills() const;
 
-	// ·é ÀåÂø ÇÔ¼ö
-	// @param SlotIndex: ½ºÅ³ ½½·Ô ÀÎµ¦½º
-	// @param RuneSlotIndex: ·é ½½·Ô ÀÎµ¦½º (0~2)
-	// @param RuneData: ÀåÂøÇÒ ·é µ¥ÀÌÅÍ ¿¡¼Â
-	// @return ¼º°ø ¿©ºÎ
+	// ë£¬ ì¥ì°© í•¨ìˆ˜
+	// @param SlotIndex: ìŠ¤í‚¬ ìŠ¬ë¡¯ ì¸ë±ìŠ¤
+	// @param RuneSlotIndex: ë£¬ ìŠ¬ë¡¯ ì¸ë±ìŠ¤ (0~2)
+	// @param RuneData: ì¥ì°©í•  ë£¬ ë°ì´í„° ì—ì…‹
+	// @return ì„±ê³µ ì—¬ë¶€
 	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
 	bool EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* RuneData);
 
-	// ·é ÀåÂø ÇØÁ¦ ÇÔ¼ö
-	// @param SlotIndex: ½ºÅ³ ½½·Ô ÀÎµ¦½º
-	// @param RuneSlotIndex: ÇØÁ¦ÇÒ ·é ½½·Ô ÀÎµ¦½º (0~2)
-	// @return ¼º°ø ¿©ºÎ
+	// ë£¬ ì¥ì°© í•´ì œ í•¨ìˆ˜
+	// @param SlotIndex: ìŠ¤í‚¬ ìŠ¬ë¡¯ ì¸ë±ìŠ¤
+	// @param RuneSlotIndex: í•´ì œí•  ë£¬ ìŠ¬ë¡¯ ì¸ë±ìŠ¤ (0~2)
+	// @return ì„±ê³µ ì—¬ë¶€
 	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
 	bool UnequipRune(int32 SlotIndex, int32 RuneSlotIndex);
 
 
-	// ÇØ´ç ½½·ÔÀÇ 'ÇÇÇØ·®(Red)' ·é ÇÕ°è ¹İÈ¯ (¿¹: 1.5 = 150%)
+	// í•´ë‹¹ ìŠ¬ë¡¯ì˜ 'í”¼í•´ëŸ‰(Red)' ë£¬ í•©ê³„ ë°˜í™˜ (ì˜ˆ: 1.5 = 150%)
 	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
 	float GetTotalDamageMultiplier(int32 SlotIndex) const;
 
-	// ÇØ´ç ½½·ÔÀÇ 'ÄğÅ¸ÀÓ(Yellow)' ·é ÇÕ°è ¹İÈ¯
+	// í•´ë‹¹ ìŠ¬ë¡¯ì˜ 'ì¿¨íƒ€ì„(Yellow)' ë£¬ í•©ê³„ ë°˜í™˜
 	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
 	float GetTotalCooldownReduction(int32 SlotIndex) const;
 
-	// ÇØ´ç ½½·ÔÀÇ '¹üÀ§(Blue)' ·é ÇÕ°è ¹İÈ¯
+	// í•´ë‹¹ ìŠ¬ë¡¯ì˜ 'ë²”ìœ„(Blue)' ë£¬ í•©ê³„ ë°˜í™˜
 	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
 	float GetTotalRangeMultiplier(int32 SlotIndex) const;
 
 
-	// ·é ID(RowName)¸¦ ÅëÇØ µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ ·éÀ» Ã£¾Æ ÀåÂøÇÏ´Â ÇÔ¼ö
-	// @param SlotIndex: ½ºÅ³ ½½·Ô ÀÎµ¦½º
-	// @param RuneSlotIndex: ·é ½½·Ô ÀÎµ¦½º
-	// @param RuneID: µ¥ÀÌÅÍ Å×ÀÌºíÀÇ Çà ÀÌ¸§ (RowName)
+	// ë£¬ ID(RowName)ë¥¼ í†µí•´ ë°ì´í„° í…Œì´ë¸”ì—ì„œ ë£¬ì„ ì°¾ì•„ ì¥ì°©í•˜ëŠ” í•¨ìˆ˜
+	// @param SlotIndex: ìŠ¤í‚¬ ìŠ¬ë¡¯ ì¸ë±ìŠ¤
+	// @param RuneSlotIndex: ë£¬ ìŠ¬ë¡¯ ì¸ë±ìŠ¤
+	// @param RuneID: ë°ì´í„° í…Œì´ë¸”ì˜ í–‰ ì´ë¦„ (RowName)
 	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
 	bool EquipRuneByID(int32 SlotIndex, int32 RuneSlotIndex, FName RuneID);
 
 protected:
-	// ASC ÂüÁ¶ (¼ÒÀ¯ÇÏÁö ¾Ê°í Ä³¸¯ÅÍ·ÎºÎÅÍ ¹Ş¾Æ¼­ »ç¿ë)
+	// ASC ì°¸ì¡° (ì†Œìœ í•˜ì§€ ì•Šê³  ìºë¦­í„°ë¡œë¶€í„° ë°›ì•„ì„œ ì‚¬ìš©)
 	UPROPERTY(BlueprintReadOnly, Category = "Skill Manager")
 	TObjectPtr<UAbilitySystemComponent> CachedAbilitySystemComponent;
 
-	// ½ºÅ³ ½½·Ô ¹è¿­
+	// ìŠ¤í‚¬ ìŠ¬ë¡¯ ë°°ì—´
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Manager")
 	TArray<FSkillSlot> SkillSlots;
 
-	// ·é µ¥ÀÌÅÍº£ÀÌ½º
+	// ë£¬ ë°ì´í„°ë² ì´ìŠ¤
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Manager|Data")
 	TObjectPtr<UDataTable> RuneDataTable;
 
-	// ½½·Ô ÀÎµ¦½º°¡ À¯È¿ÇÑÁö °Ë»çÇÏ´Â ÇïÆÛ ÇÔ¼ö
+	// ìŠ¬ë¡¯ ì¸ë±ìŠ¤ê°€ ìœ íš¨í•œì§€ ê²€ì‚¬í•˜ëŠ” í—¬í¼ í•¨ìˆ˜
 	bool IsValidSlotIndex(int32 SlotIndex) const;
 };

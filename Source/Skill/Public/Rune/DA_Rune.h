@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -22,16 +22,16 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Rune_Green);
 UENUM(BlueprintType)
 enum class ERuneType : uint8
 {
-    // µ¥¹ÌÁö ÁõÆø·é
+    // ë°ë¯¸ì§€ ì¦í­ë£¬
     Red     UMETA(DisplayName = "Damage"),
 
-	// ÄğÅ¸ÀÓ °¨¼Ò·é
+	// ì¿¨íƒ€ì„ ê°ì†Œë£¬
     Yellow  UMETA(DisplayName = "Cooldown"),
 
-    // ¹üÀ§ ÁõÆø·é
+    // ë²”ìœ„ ì¦í­ë£¬
     Blue  UMETA(DisplayName = "Range"),
 
-	// ½ºÅ³ º¯È¯·é
+	// ìŠ¤í‚¬ ë³€í™˜ë£¬
 	Green UMETA(DisplayName = "Skill Transform")
 };
 
@@ -40,23 +40,23 @@ class SKILL_API UDA_Rune : public UDataAsset
 {
 	GENERATED_BODY()
 public:
-	// ·éÀÇ Å¸ÀÔÀ» ³ªÅ¸³»´Â ÅÂ±×
+	// ë£¬ì˜ íƒ€ì…ì„ ë‚˜íƒ€ë‚´ëŠ” íƒœê·¸
     UPROPERTY(EditDefaultsOnly, Category = "Rune")
     FGameplayTag RuneTag;
 
-	// ·é Å¸ÀÔ (UI ¹× ·ÎÁ÷¿ë)
+	// ë£¬ íƒ€ì… (UI ë° ë¡œì§ìš©)
 	UPROPERTY(EditDefaultsOnly, Category = "Rune")
 	ERuneType RuneType = ERuneType::Red;
 
-	// °­È­°ª ¼öÄ¡ (ex. 1.1 = 10% Áõ°¡)
+	// ê°•í™”ê°’ ìˆ˜ì¹˜ (ex. 1.1 = 10% ì¦ê°€)
     UPROPERTY(EditDefaultsOnly, Category = "Rune")
     float RuneValue = 1.0f;
 
-	// [ÃÊ·Ï·é Àü¿ë] º¯È¯ ´ë»óÀÌ µÇ´Â ¿øº» ½ºÅ³ Å¬·¡½º
+	// [ì´ˆë¡ë£¬ ì „ìš©] ë³€í™˜ ëŒ€ìƒì´ ë˜ëŠ” ì›ë³¸ ìŠ¤í‚¬ í´ë˜ìŠ¤
 	UPROPERTY(EditDefaultsOnly, Category = "Rune|Green", meta = (EditCondition = "RuneType == ERuneType::Green", EditConditionHides))
 	TSubclassOf<UGameplayAbility> OriginalSkillClass;
 
-	// [ÃÊ·Ï·é Àü¿ë] º¯È¯ ÈÄ ½ºÅ³ Å¬·¡½º
+	// [ì´ˆë¡ë£¬ ì „ìš©] ë³€í™˜ í›„ ìŠ¤í‚¬ í´ë˜ìŠ¤
 	UPROPERTY(EditDefaultsOnly, Category = "Rune|Green", meta = (EditCondition = "RuneType == ERuneType::Green", EditConditionHides))
 	TSubclassOf<UGameplayAbility> ReplacementSkillClass;
 };
@@ -67,19 +67,19 @@ struct FRuneDataRow : public FTableRowBase
     GENERATED_BODY()
 
 public:
-    // ·éÀÇ Ç¥½Ã ÀÌ¸§ (UI¿ë)
+    // ë£¬ì˜ í‘œì‹œ ì´ë¦„ (UIìš©)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
     FText RuneName;
 
-    // ½ÇÁ¦ ·é µ¥ÀÌÅÍ ¿¡¼Â (±âÁ¸ DA_Rune È°¿ë)
+    // ì‹¤ì œ ë£¬ ë°ì´í„° ì—ì…‹ (ê¸°ì¡´ DA_Rune í™œìš©)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
     TObjectPtr<UDA_Rune> RuneAsset;
 
-    // ·é ¼³¸í (¿É¼Ç)
+    // ë£¬ ì„¤ëª… (ì˜µì…˜)
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
     FText Description;
 
-	// ·é ¾ÆÀÌÄÜ (UI¿ë)
+	// ë£¬ ì•„ì´ì½˜ (UIìš©)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Rune")
 	TObjectPtr<UTexture2D> RuneIcon;
 };

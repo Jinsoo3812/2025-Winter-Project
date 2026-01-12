@@ -1,12 +1,12 @@
-// BossDragon.h
+ï»¿// BossDragon.h
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EnemyBase.h" // ºÎ¸ğ Å¬·¡½º
+#include "EnemyBase.h" // ë¶€ëª¨ í´ë˜ìŠ¤
 #include "MotionWarpingComponent.h"
 #include "BossDragon.generated.h"
 
-class UBoxComponent; // Àü¹æ ¼±¾ğ
+class UBoxComponent; // ì „ë°© ì„ ì–¸
 
 UCLASS()
 class ENEMY_API ABossDragon : public AEnemyBase
@@ -16,35 +16,35 @@ class ENEMY_API ABossDragon : public AEnemyBase
 public:
 	ABossDragon();
 
-	// [¾Ö´Ô ³ëÆ¼ÆÄÀÌ¿¡¼­ È£Ãâ] µ¹Áø ÆÇÁ¤ ¹Ú½º ÄÑ±â/²ô±â
+	// [ì• ë‹˜ ë…¸í‹°íŒŒì´ì—ì„œ í˜¸ì¶œ] ëŒì§„ íŒì • ë°•ìŠ¤ ì¼œê¸°/ë„ê¸°
 	void SetRushCollisionEnabled(bool bEnable);
 
 
 	
 
-	// ¸ğ¼Ç ¿öÇÎ Å¸°Ù ¾÷µ¥ÀÌÆ® ÇÔ¼ö (ºí·çÇÁ¸°Æ®¿¡¼­ È£Ãâ °¡´ÉÇÏ°Ô ¼³Á¤)
+	// ëª¨ì…˜ ì›Œí•‘ íƒ€ê²Ÿ ì—…ë°ì´íŠ¸ í•¨ìˆ˜ (ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œ í˜¸ì¶œ ê°€ëŠ¥í•˜ê²Œ ì„¤ì •)
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void UpdateMotionWarpTarget(AActor* TargetActor);
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void PostInitializeComponents() override; // ÄÄÆ÷³ÍÆ® ¼¼ÆÃ ¿Ï·á ÈÄ È£ÃâµÊ
+	virtual void PostInitializeComponents() override; // ì»´í¬ë„ŒíŠ¸ ì„¸íŒ… ì™„ë£Œ í›„ í˜¸ì¶œë¨
 
-	// [Ãæµ¹ ÀÌº¥Æ®] ¹Ú½º¿¡ ¹º°¡°¡ ´ê¾ÒÀ» ¶§ ½ÇÇà
+	// [ì¶©ëŒ ì´ë²¤íŠ¸] ë°•ìŠ¤ì— ë­”ê°€ê°€ ë‹¿ì•˜ì„ ë•Œ ì‹¤í–‰
 	UFUNCTION()
 	void OnRushOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 protected:
-	// µ¹Áø ÆÇÁ¤¿ë ¹Ú½º ÄÄÆ÷³ÍÆ®
+	// ëŒì§„ íŒì •ìš© ë°•ìŠ¤ ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UBoxComponent> RushHitBox;
 
-	// µ¹Áø µ¥¹ÌÁö¿ë GameplayEffect (¿¡µğÅÍ¿¡¼­ ÇÒ´ç)
+	// ëŒì§„ ë°ë¯¸ì§€ìš© GameplayEffect (ì—ë””í„°ì—ì„œ í• ë‹¹)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Combat")
 	TSubclassOf<UGameplayEffect> RushDamageEffect;
 
 
-	// [Ãß°¡] ¸ğ¼Ç ¿öÇÎ ÄÄÆ÷³ÍÆ®
+	// [ì¶”ê°€] ëª¨ì…˜ ì›Œí•‘ ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MotionWarping")
 	TObjectPtr<UMotionWarpingComponent> MotionWarpingComp;
 };

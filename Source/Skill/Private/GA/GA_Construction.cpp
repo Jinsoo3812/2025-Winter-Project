@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "GA/GA_Construction.h"
@@ -26,41 +26,41 @@ void UGA_Construction::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// LastPlayerLocation ÃÊ±âÈ­ (Ã¹ ½ÇÇà ½Ã ¹«Á¶°Ç ÇÏÀÌ¶óÀÌÆ® °»½ÅµÇµµ·Ï)
+	// LastPlayerLocation ì´ˆê¸°í™” (ì²« ì‹¤í–‰ ì‹œ ë¬´ì¡°ê±´ í•˜ì´ë¼ì´íŠ¸ ê°±ì‹ ë˜ë„ë¡)
 	LastPlayerLocation = FVector(FLT_MAX, FLT_MAX, FLT_MAX);
 
-	// ÇÁ¸®ºä ¾÷µ¥ÀÌÆ®¸¦ À§ÇÑ Å¸ÀÌ¸Ó ½ÃÀÛ (¸Å ÇÁ·¹ÀÓ)
+	// í”„ë¦¬ë·° ì—…ë°ì´íŠ¸ë¥¼ ìœ„í•œ íƒ€ì´ë¨¸ ì‹œì‘ (ë§¤ í”„ë ˆì„)
 	if (UWorld* World = GetWorld())
 	{	
-		// 60FPS °£°İÀ¸·Î UpdatePreview ÇÔ¼ö È£Ãâ
-		// ÀÚ½ÄÀÌ ÀçÁ¤ÀÇÇÑ UpdatePreview ¶ÇÇÑ È£ÃâµÉ ¼ö ÀÖÀ½.
+		// 60FPS ê°„ê²©ìœ¼ë¡œ UpdatePreview í•¨ìˆ˜ í˜¸ì¶œ
+		// ìì‹ì´ ì¬ì •ì˜í•œ UpdatePreview ë˜í•œ í˜¸ì¶œë  ìˆ˜ ìˆìŒ.
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Construction::UpdatePreview, 0.016f, true);
 	}
 
-	// WaitInputPress ¾îºô¸®Æ¼ ÅÂ½ºÅ© »ı¼º
+	// WaitInputPress ì–´ë¹Œë¦¬í‹° íƒœìŠ¤í¬ ìƒì„±
 	WaitInputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
 	if (WaitInputTask)
 	{
-		// OnPress µ¨¸®°ÔÀÌÆ®¿¡ Äİ¹é ÇÔ¼ö(½ºÅ³ Ãë¼Ò) ¹ÙÀÎµù
+		// OnPress ë¸ë¦¬ê²Œì´íŠ¸ì— ì½œë°± í•¨ìˆ˜(ìŠ¤í‚¬ ì·¨ì†Œ) ë°”ì¸ë”©
 		WaitInputTask->OnPress.AddDynamic(this, &UGA_Construction::OnCancelPressed);
 
-		// ¾îºô¸®Æ¼ ÅÂ½ºÅ© È°¼ºÈ­
+		// ì–´ë¹Œë¦¬í‹° íƒœìŠ¤í¬ í™œì„±í™”
 		WaitInputTask->ReadyForActivation();
 	}
 	else {
 		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create WaitInputTask"));
 	}
 
-	// ÁÂÅ¬¸¯ ÀÔ·Â ¹ÙÀÎµù
-	// ÁÂÅ¬¸¯Àº »ç¿ë ¹üÀ§°¡ ³Ğ°í, ¿©·¯ ¾îºô¸®Æ¼¿¡¼­ °øÅëÀ¸·Î »ç¿ëµÉ ¼ö ÀÖÀ¸¹Ç·Î
-	// Ability Task ´ë½Å Á÷Á¢ InputComponent¿¡ ¹ÙÀÎµù
+	// ì¢Œí´ë¦­ ì…ë ¥ ë°”ì¸ë”©
+	// ì¢Œí´ë¦­ì€ ì‚¬ìš© ë²”ìœ„ê°€ ë„“ê³ , ì—¬ëŸ¬ ì–´ë¹Œë¦¬í‹°ì—ì„œ ê³µí†µìœ¼ë¡œ ì‚¬ìš©ë  ìˆ˜ ìˆìœ¼ë¯€ë¡œ
+	// Ability Task ëŒ€ì‹  ì§ì ‘ InputComponentì— ë°”ì¸ë”©
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
 		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 		if (PC && PC->InputComponent)
 		{
-			// ÁÂÅ¬¸¯ Å° ¹ÙÀÎµù Ãß°¡
+			// ì¢Œí´ë¦­ í‚¤ ë°”ì¸ë”© ì¶”ê°€
 			PC->InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &UGA_Construction::OnLeftClickPressed);
 		}
 		else {
@@ -78,43 +78,43 @@ void UGA_Construction::EndAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// Å¸ÀÌ¸Ó Á¤¸®
+	// íƒ€ì´ë¨¸ ì •ë¦¬
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 
-	// Å¸ÀÌ¸Ó ÇÚµé ¹«È¿È­
+	// íƒ€ì´ë¨¸ í•¸ë“¤ ë¬´íš¨í™”
 	TickTimerHandle.Invalidate();
 
-	// LastPlayerLocation ¸®¼Â (´ÙÀ½ È°¼ºÈ­ ½Ã ÇÏÀÌ¶óÀÌÆ® °»½Å º¸Àå)
+	// LastPlayerLocation ë¦¬ì…‹ (ë‹¤ìŒ í™œì„±í™” ì‹œ í•˜ì´ë¼ì´íŠ¸ ê°±ì‹  ë³´ì¥)
 	LastPlayerLocation = FVector::ZeroVector;
 
-	// ÇÏÀÌ¶óÀÌÆ® Á¦°Å
+	// í•˜ì´ë¼ì´íŠ¸ ì œê±°
 	ClearHighlights();
 
-	// ÇÁ¸®ºä ºí·Ï Á¦°Å
+	// í”„ë¦¬ë·° ë¸”ë¡ ì œê±°
 	if (PreviewBlock)
 	{
 		PreviewBlock->Destroy();
 		PreviewBlock = nullptr;
 	}
 
-	// Ability Task Á¤¸®
+	// Ability Task ì •ë¦¬
 	if (WaitInputTask)
 	{
 		WaitInputTask->EndTask();
 		WaitInputTask = nullptr;
 	}
 
-	// ÁÂÅ¬¸¯ ¹ÙÀÎµù ¸í½ÃÀû ÇØÁ¦
+	// ì¢Œí´ë¦­ ë°”ì¸ë”© ëª…ì‹œì  í•´ì œ
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
 		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 		if (PC && PC->InputComponent)
 		{
-			// InputComponent¿¡¼­ ÀÌ °´Ã¼¿¡ ¹ÙÀÎµùµÈ ¸ğµç Å° ¹ÙÀÎµù Á¦°Å (ASC¸¦ »ç¿ëÇÏÁö ¾Ê¾Ò±â¿¡ ¼öµ¿ Á¦°Å)
+			// InputComponentì—ì„œ ì´ ê°ì²´ì— ë°”ì¸ë”©ëœ ëª¨ë“  í‚¤ ë°”ì¸ë”© ì œê±° (ASCë¥¼ ì‚¬ìš©í•˜ì§€ ì•Šì•˜ê¸°ì— ìˆ˜ë™ ì œê±°)
 			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
 			{
 				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
@@ -125,7 +125,7 @@ void UGA_Construction::EndAbility(
 		}
 	}
 
-	// ³¡³»´Â ÇÔ¼ö´Â ÀÚ½ÄÀÌ ¸ÕÀú È£ÃâÇÏ°í, ¸¶Áö¸·¿¡ ºÎ¸ğ ÇÔ¼ö È£Ãâ
+	// ëë‚´ëŠ” í•¨ìˆ˜ëŠ” ìì‹ì´ ë¨¼ì € í˜¸ì¶œí•˜ê³ , ë§ˆì§€ë§‰ì— ë¶€ëª¨ í•¨ìˆ˜ í˜¸ì¶œ
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
@@ -138,7 +138,7 @@ void UGA_Construction::HighlightBlocksInRange()
 		return;
 	}
 
-	// AvatarActor¸¦ OwnerPawnÀ¸·Î Ä³½Ã 
+	// AvatarActorë¥¼ OwnerPawnìœ¼ë¡œ ìºì‹œ 
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (!OwnerPawn)
 	{
@@ -148,28 +148,28 @@ void UGA_Construction::HighlightBlocksInRange()
 
 	FVector PlayerLocation = OwnerPawn->GetActorLocation();
 
-	// ¹Ú½º ÇüÅÂÀÇ ¿À¹ö·¦ ¿µ¿ª »ı¼º (XY: ¹İÁö¸§, Z: À§¾Æ·¡ ¹üÀ§)
-	// ¿ø·¡ ¿øÅëÇü ¹üÀ§¸¦ »ç¿ëÇÏ°í ½ÍÁö¸¸, ¾ğ¸®¾ó ¿£ÁøÀÇ ¿À¹ö·¦ ÇÔ¼ö´Â ¹Ú½º ÇüÅÂ¸¸ Áö¿øÇÏ¹Ç·Î ¹Ú½º·Î ´ëÃ¼
-	// ÀÌÈÄ¿¡ XY °Å¸®·Î ÇÊÅÍ¸µÇÏ¿© ¿øÇü ¹üÀ§·Î º¸Á¤
+	// ë°•ìŠ¤ í˜•íƒœì˜ ì˜¤ë²„ë© ì˜ì—­ ìƒì„± (XY: ë°˜ì§€ë¦„, Z: ìœ„ì•„ë˜ ë²”ìœ„)
+	// ì›ë˜ ì›í†µí˜• ë²”ìœ„ë¥¼ ì‚¬ìš©í•˜ê³  ì‹¶ì§€ë§Œ, ì–¸ë¦¬ì–¼ ì—”ì§„ì˜ ì˜¤ë²„ë© í•¨ìˆ˜ëŠ” ë°•ìŠ¤ í˜•íƒœë§Œ ì§€ì›í•˜ë¯€ë¡œ ë°•ìŠ¤ë¡œ ëŒ€ì²´
+	// ì´í›„ì— XY ê±°ë¦¬ë¡œ í•„í„°ë§í•˜ì—¬ ì›í˜• ë²”ìœ„ë¡œ ë³´ì •
 	FCollisionShape OverlapBox = FCollisionShape::MakeBox(FVector(ConstructionRangeXY, ConstructionRangeXY, ConstructionRangeZ));
 
-	// ¿À¹ö·¦ °á°ú¸¦ ÀúÀåÇÒ ¹è¿­
+	// ì˜¤ë²„ë© ê²°ê³¼ë¥¼ ì €ì¥í•  ë°°ì—´
 	TArray<FOverlapResult> OverlapResults;
 
-	// ¾î¶² ¿ÀºêÁ§Æ® Å¸ÀÔÀ» ´ë»óÀ¸·Î Ãæµ¹ Äõ¸®¸¦ ¼öÇàÇÒÁö ¼³Á¤ (¹«¾ùÀ» Ã£À» Áö)
+	// ì–´ë–¤ ì˜¤ë¸Œì íŠ¸ íƒ€ì…ì„ ëŒ€ìƒìœ¼ë¡œ ì¶©ëŒ ì¿¼ë¦¬ë¥¼ ìˆ˜í–‰í• ì§€ ì„¤ì • (ë¬´ì—‡ì„ ì°¾ì„ ì§€)
 	FCollisionObjectQueryParams ObjectQueryParams;
 
-	// ´ëºÎºĞÀÇ °æ¿ì ºí·ÏÀº ¿òÁ÷ÀÌÁö ¾ÊÀ¸¹Ç·Î WorldStatic
+	// ëŒ€ë¶€ë¶„ì˜ ê²½ìš° ë¸”ë¡ì€ ì›€ì§ì´ì§€ ì•Šìœ¼ë¯€ë¡œ WorldStatic
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
 
-	// ÃßÈÄ ½ºÅ³ »ç¿ëÀ¸·Î ºí·ÏÀÌ ¿òÁ÷ÀÌ¸é, ±× À§ÀÇ ºí·Ïµµ ¿òÁ÷ÀÌ´Â µîÀÇ »óÈ²À» °í·ÁÇÏ¿© WorldDynamicµµ Æ÷ÇÔ
+	// ì¶”í›„ ìŠ¤í‚¬ ì‚¬ìš©ìœ¼ë¡œ ë¸”ë¡ì´ ì›€ì§ì´ë©´, ê·¸ ìœ„ì˜ ë¸”ë¡ë„ ì›€ì§ì´ëŠ” ë“±ì˜ ìƒí™©ì„ ê³ ë ¤í•˜ì—¬ WorldDynamicë„ í¬í•¨
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 
-	// Ãæµ¹ Äõ¸®ÀÇ ¿É¼Ç ¹× ¿¹¿Ü ¼³Á¤ (¾î¶»°Ô Ã£À» Áö)
+	// ì¶©ëŒ ì¿¼ë¦¬ì˜ ì˜µì…˜ ë° ì˜ˆì™¸ ì„¤ì • (ì–´ë–»ê²Œ ì°¾ì„ ì§€)
 	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(OwnerPawn); // ÇÃ·¹ÀÌ¾î ÀÚ½ÅÀº Á¦¿Ü
+	QueryParams.AddIgnoredActor(OwnerPawn); // í”Œë ˆì´ì–´ ìì‹ ì€ ì œì™¸
 
-	// ¹üÀ§ ³» ºí·Ï¸¸ °Ë»ö (¾ğ¸®¾ó ¹°¸® ¿£ÁøÀÇ °ø°£ ºĞÇÒ ±¸Á¶ È°¿ë)
+	// ë²”ìœ„ ë‚´ ë¸”ë¡ë§Œ ê²€ìƒ‰ (ì–¸ë¦¬ì–¼ ë¬¼ë¦¬ ì—”ì§„ì˜ ê³µê°„ ë¶„í•  êµ¬ì¡° í™œìš©)
 	World->OverlapMultiByObjectType(
 		OverlapResults,
 		PlayerLocation,
@@ -179,9 +179,9 @@ void UGA_Construction::HighlightBlocksInRange()
 		QueryParams
 	);
 
-	// °Ë»öµÈ ºí·Ïµé Ã³¸®
-	// FOverlapResult´Â °¡º­¿ì¹Ç·Î &·Î °¡Á®¿É´Ï´Ù.
-	// Pointer´Â À¯È¿¼º °Ë»ç ¹× ¸Ş¸ğ¸® Á¢±Ù ºñ¿ëÀÌ Ãß°¡·Î ¹ß»ıÇÕ´Ï´Ù.
+	// ê²€ìƒ‰ëœ ë¸”ë¡ë“¤ ì²˜ë¦¬
+	// FOverlapResultëŠ” ê°€ë²¼ìš°ë¯€ë¡œ &ë¡œ ê°€ì ¸ì˜µë‹ˆë‹¤.
+	// PointerëŠ” ìœ íš¨ì„± ê²€ì‚¬ ë° ë©”ëª¨ë¦¬ ì ‘ê·¼ ë¹„ìš©ì´ ì¶”ê°€ë¡œ ë°œìƒí•©ë‹ˆë‹¤.
 	for (const FOverlapResult& Result : OverlapResults)
 	{
 		ABlockBase* Block = Cast<ABlockBase>(Result.GetActor());
@@ -189,14 +189,14 @@ void UGA_Construction::HighlightBlocksInRange()
 
 		FVector BlockLocation = Block->GetActorLocation();
 
-		// XY Æò¸é °Å¸® ÀçÈ®ÀÎ (¹Ú½º°¡ »ç°¢ÇüÀÌ¹Ç·Î ¿øÇü ¹üÀ§·Î ÇÑ¹ø ´õ ÇÊÅÍ¸µ)
+		// XY í‰ë©´ ê±°ë¦¬ ì¬í™•ì¸ (ë°•ìŠ¤ê°€ ì‚¬ê°í˜•ì´ë¯€ë¡œ ì›í˜• ë²”ìœ„ë¡œ í•œë²ˆ ë” í•„í„°ë§)
 		float DistanceXY = FVector::Dist2D(PlayerLocation, BlockLocation);
 		if (DistanceXY > ConstructionRangeXY) continue;
 
-		// ÇÏÀÌ¶óÀÌÆ® ¸ñ·Ï(±× À§¿¡ ºí·ÏÀ» »ı¼ºÇÒ ¼ö ÀÖ´Â ºí·Ïµé)¿¡ Ãß°¡
+		// í•˜ì´ë¼ì´íŠ¸ ëª©ë¡(ê·¸ ìœ„ì— ë¸”ë¡ì„ ìƒì„±í•  ìˆ˜ ìˆëŠ” ë¸”ë¡ë“¤)ì— ì¶”ê°€
 		HighlightedBlocks.Add(Block);
 
-		// GetBlockMesh() ÇÔ¼ö·Î Á÷Á¢ ¸Ş½Ã ÄÄÆ÷³ÍÆ® °¡Á®¿À±â
+		// GetBlockMesh() í•¨ìˆ˜ë¡œ ì§ì ‘ ë©”ì‹œ ì»´í¬ë„ŒíŠ¸ ê°€ì ¸ì˜¤ê¸°
 		UStaticMeshComponent* MeshComp = Block->GetBlockMesh();
 		if (!MeshComp)
 		{
@@ -204,10 +204,10 @@ void UGA_Construction::HighlightBlocksInRange()
 			continue;
 		}
 
-		// ¿øº» ¸ÓÆ¼¸®¾ó·ÎºÎÅÍ µ¿Àû ¸ÓÆ¼¸®¾ó ÀÎ½ºÅÏ½º »ı¼º (Áßº¹ »ı¼º ¹æÁö)
+		// ì›ë³¸ ë¨¸í‹°ë¦¬ì–¼ë¡œë¶€í„° ë™ì  ë¨¸í‹°ë¦¬ì–¼ ì¸ìŠ¤í„´ìŠ¤ ìƒì„± (ì¤‘ë³µ ìƒì„± ë°©ì§€)
 		if (!DynamicMaterials.Contains(Block))
 		{
-			// ¿øº» ¸ÓÆ¼¸®¾ó °¡Á®¿À±â
+			// ì›ë³¸ ë¨¸í‹°ë¦¬ì–¼ ê°€ì ¸ì˜¤ê¸°
 			UMaterialInterface* OriginalMaterial = MeshComp->GetMaterial(0);
 			if (!OriginalMaterial)
 			{
@@ -215,13 +215,13 @@ void UGA_Construction::HighlightBlocksInRange()
 				continue;
 			}
 
-			// ¿øº» ¸ÓÆ¼¸®¾ó ÀúÀå
+			// ì›ë³¸ ë¨¸í‹°ë¦¬ì–¼ ì €ì¥
 			OriginalMaterials.Add(Block, OriginalMaterial);
 
-			// µ¿Àû ¸ÓÆ¼¸®¾ó ÀÎ½ºÅÏ½º »ı¼º
-			// UMaterialInstanceDynamic::Create ÇÔ¼ö´Â ¸ÓÆ¼¸®¾ó ÀÎ½ºÅÏ½º¸¦ »ı¼ºÇÏ´Â ÇÔ¼ö
-			// @param OriginalMaterial: ¿øº» ¸ÓÆ¼¸®¾ó
-			// @param this: ¼ÒÀ¯ÀÚ °´Ã¼ (¿©±â¼­´Â GA_Construction)
+			// ë™ì  ë¨¸í‹°ë¦¬ì–¼ ì¸ìŠ¤í„´ìŠ¤ ìƒì„±
+			// UMaterialInstanceDynamic::Create í•¨ìˆ˜ëŠ” ë¨¸í‹°ë¦¬ì–¼ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ìƒì„±í•˜ëŠ” í•¨ìˆ˜
+			// @param OriginalMaterial: ì›ë³¸ ë¨¸í‹°ë¦¬ì–¼
+			// @param this: ì†Œìœ ì ê°ì²´ (ì—¬ê¸°ì„œëŠ” GA_Construction)
 			UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(OriginalMaterial, this);
 			if (!DynMat)
 			{
@@ -229,17 +229,17 @@ void UGA_Construction::HighlightBlocksInRange()
 				continue;
 			}
 
-			// ¿øº» EmissivePower °ª ÀúÀå (½ºÄ®¶ó ÆÄ¶ó¹ÌÅÍ°¡ ¾øÀ» °æ¿ì 0À¸·Î Ã³¸®)
+			// ì›ë³¸ EmissivePower ê°’ ì €ì¥ (ìŠ¤ì¹¼ë¼ íŒŒë¼ë¯¸í„°ê°€ ì—†ì„ ê²½ìš° 0ìœ¼ë¡œ ì²˜ë¦¬)
 			float OriginalEmissive = 0.0f;
 			DynMat->GetScalarParameterValue(FName("EmissivePower"), OriginalEmissive);
 			OriginalEmissivePowers.Add(Block, OriginalEmissive);
 
-			// µ¿Àû ¸ÓÆ¼¸®¾ó ÀúÀå ¹× ¸Ş½Ã¿¡ Àû¿ë
+			// ë™ì  ë¨¸í‹°ë¦¬ì–¼ ì €ì¥ ë° ë©”ì‹œì— ì ìš©
 			DynamicMaterials.Add(Block, DynMat);
 			MeshComp->SetMaterial(0, DynMat);
 		}
 
-		// ÀÌ¹Ì µ¿Àû ¸ÓÆ¼¸®¾óÀÌ »ı¼ºµÈ ºí·ÏÀÌ¶ó¸é EmissivePower °ª¸¸ ¾÷µ¥ÀÌÆ®
+		// ì´ë¯¸ ë™ì  ë¨¸í‹°ë¦¬ì–¼ì´ ìƒì„±ëœ ë¸”ë¡ì´ë¼ë©´ EmissivePower ê°’ë§Œ ì—…ë°ì´íŠ¸
 		UMaterialInstanceDynamic* DynMat = DynamicMaterials[Block];
 		if (DynMat)
 		{
@@ -250,7 +250,7 @@ void UGA_Construction::HighlightBlocksInRange()
 
 void UGA_Construction::ClearHighlights()
 {
-	// ¸ğµç ÇÏÀÌ¶óÀÌÆ®µÈ ºí·ÏÀÇ ¸ÓÆ¼¸®¾ó º¹±¸
+	// ëª¨ë“  í•˜ì´ë¼ì´íŠ¸ëœ ë¸”ë¡ì˜ ë¨¸í‹°ë¦¬ì–¼ ë³µêµ¬
 	for (const TObjectPtr<ABlockBase>& Block : HighlightedBlocks)
 	{
 		if (!Block || !IsValid(Block.Get()))
@@ -266,7 +266,7 @@ void UGA_Construction::ClearHighlights()
 			continue;
 		}
 
-		// ¿øº» ¸ÓÆ¼¸®¾ó·Î º¹±¸
+		// ì›ë³¸ ë¨¸í‹°ë¦¬ì–¼ë¡œ ë³µêµ¬
 		TObjectPtr<UMaterialInterface>* OriginalMat = OriginalMaterials.Find(Block.Get());
 		if (OriginalMat)
 		{
@@ -296,28 +296,28 @@ void UGA_Construction::UpdatePreview()
 		return;
 	}
 
-	// ¸Å ÇÁ·¹ÀÓ ÇÃ·¹ÀÌ¾î À§Ä¡ ±âÁØÀ¸·Î ÇÏÀÌ¶óÀÌÆ® ¾÷µ¥ÀÌÆ®
+	// ë§¤ í”„ë ˆì„ í”Œë ˆì´ì–´ ìœ„ì¹˜ ê¸°ì¤€ìœ¼ë¡œ í•˜ì´ë¼ì´íŠ¸ ì—…ë°ì´íŠ¸
 	FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
-	if (!LastPlayerLocation.Equals(CurrentPlayerLocation, 10.0f)) // 10 ÀÌ»ó ¿òÁ÷¿´À» ¶§¸¸
+	if (!LastPlayerLocation.Equals(CurrentPlayerLocation, 10.0f)) // 10 ì´ìƒ ì›€ì§ì˜€ì„ ë•Œë§Œ
 	{
-		ClearHighlights(); // ±âÁ¸ ÇÏÀÌ¶óÀÌÆ® Á¦°Å
-		HighlightBlocksInRange(); // »õ À§Ä¡ ±âÁØÀ¸·Î Àç°è»ê
+		ClearHighlights(); // ê¸°ì¡´ í•˜ì´ë¼ì´íŠ¸ ì œê±°
+		HighlightBlocksInRange(); // ìƒˆ ìœ„ì¹˜ ê¸°ì¤€ìœ¼ë¡œ ì¬ê³„ì‚°
 		LastPlayerLocation = CurrentPlayerLocation;
 	}
 
-	// ¸¶¿ì½º Ä¿¼­ ¾Æ·¡ ºí·Ï Ã£±â
+	// ë§ˆìš°ìŠ¤ ì»¤ì„œ ì•„ë˜ ë¸”ë¡ ì°¾ê¸°
 	FHitResult HitResult;
 	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
 
-	// bBlockingHitÀº Block ÀÀ´äÀ» °¡Áø Ãæµ¹ÀÌ ¹ß»ıÇß´ÂÁö ¿©ºÎ
+	// bBlockingHitì€ Block ì‘ë‹µì„ ê°€ì§„ ì¶©ëŒì´ ë°œìƒí–ˆëŠ”ì§€ ì—¬ë¶€
 	if (HitResult.bBlockingHit)
 	{
 		ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
 		
-		// ÇÏÀÌ¶óÀÌÆ®µÈ ºí·Ï Áß ÇÏ³ªÀÎÁö È®ÀÎ
+		// í•˜ì´ë¼ì´íŠ¸ëœ ë¸”ë¡ ì¤‘ í•˜ë‚˜ì¸ì§€ í™•ì¸
 		if (HitBlock && HighlightedBlocks.Contains(HitBlock))
 		{
-			// ÇÁ¸®ºä ºí·ÏÀÌ ¾øÀ¸¸é »ı¼º (BP¿¡¼­ ¹Ì¸® µğÀÚÀÎµÈ ÇÁ¸®ºä ºí·Ï »ç¿ë)
+			// í”„ë¦¬ë·° ë¸”ë¡ì´ ì—†ìœ¼ë©´ ìƒì„± (BPì—ì„œ ë¯¸ë¦¬ ë””ìì¸ëœ í”„ë¦¬ë·° ë¸”ë¡ ì‚¬ìš©)
 			if (!PreviewBlock && PreviewBlockClass)
 			{
 				FActorSpawnParameters SpawnParams;
@@ -332,7 +332,7 @@ void UGA_Construction::UpdatePreview()
 				
 				if (PreviewBlock)
 				{
-					// Ãæµ¹ ºñÈ°¼ºÈ­
+					// ì¶©ëŒ ë¹„í™œì„±í™”
 					PreviewBlock->SetActorEnableCollision(false);
 				}
 				else
@@ -341,20 +341,20 @@ void UGA_Construction::UpdatePreview()
 				}
 			}
 
-			// ÇÁ¸®ºä ºí·ÏÀ» Å¸°Ù ºí·Ï À§¿¡ ¹èÄ¡
+			// í”„ë¦¬ë·° ë¸”ë¡ì„ íƒ€ê²Ÿ ë¸”ë¡ ìœ„ì— ë°°ì¹˜
 			if (PreviewBlock)
 			{
 				FVector BlockLocation = HitBlock->GetActorLocation();
 				FRotator BlockRotation = HitBlock->GetActorRotation();
 				
-				// ºí·Ï Å©±â¸¸Å­ À§·Î ¿Ã¸² (ºí·ÏÀÌ 100x100x100ÀÌ¶ó °¡Á¤)
+				// ë¸”ë¡ í¬ê¸°ë§Œí¼ ìœ„ë¡œ ì˜¬ë¦¼ (ë¸”ë¡ì´ 100x100x100ì´ë¼ ê°€ì •)
 				FVector PreviewLocation = BlockLocation + FVector(0, 0, 100.0f);
 				
 				FCollisionQueryParams CheckParams;
 				CheckParams.AddIgnoredActor(PreviewBlock);
-				CheckParams.AddIgnoredActor(OwnerPawn); // ÇÃ·¹ÀÌ¾î Ãæµ¹ Á¦¿Ü
+				CheckParams.AddIgnoredActor(OwnerPawn); // í”Œë ˆì´ì–´ ì¶©ëŒ ì œì™¸
 
-				// ºí·Ï Å©±â(50)º¸´Ù ¾à°£ ÀÛ°Ô(45) ¼³Á¤ÇÏ¿© ÀÎÁ¢ ºí·Ï°úÀÇ ¹Ì¼¼ÇÑ °£¼· ¹æÁö
+				// ë¸”ë¡ í¬ê¸°(50)ë³´ë‹¤ ì•½ê°„ ì‘ê²Œ(45) ì„¤ì •í•˜ì—¬ ì¸ì ‘ ë¸”ë¡ê³¼ì˜ ë¯¸ì„¸í•œ ê°„ì„­ ë°©ì§€
 				bool bIsOccupied = GetWorld()->OverlapBlockingTestByChannel(
 					PreviewLocation,
 					FQuat::Identity,
@@ -365,21 +365,21 @@ void UGA_Construction::UpdatePreview()
 
 				if (!bIsOccupied)
 				{
-					// ºñ¾îÀÖ´Â °ø°£ÀÌ¸é ÇÁ¸®ºä Ç¥½Ã
+					// ë¹„ì–´ìˆëŠ” ê³µê°„ì´ë©´ í”„ë¦¬ë·° í‘œì‹œ
 					PreviewBlock->SetActorLocation(PreviewLocation);
 					PreviewBlock->SetActorRotation(BlockRotation);
 					PreviewBlock->SetActorHiddenInGame(false);
 				}
 				else
 				{
-					// ÀÌ¹Ì ÀÚ¸®¿¡ ºí·ÏÀÌ ÀÖÀ¸¸é ¼û±è Ã³¸®
+					// ì´ë¯¸ ìë¦¬ì— ë¸”ë¡ì´ ìˆìœ¼ë©´ ìˆ¨ê¹€ ì²˜ë¦¬
 					PreviewBlock->SetActorHiddenInGame(true);
 				}
 			}
 		}
 		else
 		{
-			// ¸¶¿ì½º Æ÷ÀÎÅÍ°¡ °¡¸®Å°´Â ºí·ÏÀÌ ÇÏÀÌ¶óÀÌÆ®µÈ ºí·ÏÀÌ ¾Æ´Ï¸é ÇÁ¸®ºä ¼û±è
+			// ë§ˆìš°ìŠ¤ í¬ì¸í„°ê°€ ê°€ë¦¬í‚¤ëŠ” ë¸”ë¡ì´ í•˜ì´ë¼ì´íŠ¸ëœ ë¸”ë¡ì´ ì•„ë‹ˆë©´ í”„ë¦¬ë·° ìˆ¨ê¹€
 			if (PreviewBlock)
 			{
 				PreviewBlock->SetActorHiddenInGame(true);
@@ -388,7 +388,7 @@ void UGA_Construction::UpdatePreview()
 	}
 	else
 	{
-		// ¸¶¿ì½º Æ÷ÀÎÅÍ°¡ °¡¸®Å°´Â °÷¿¡¼­ Block ÀÀ´äÀ» °¡Áø Ãæµ¹ÀÌ ¾øÀ¸¸é ÇÁ¸®ºä ¼û±è
+		// ë§ˆìš°ìŠ¤ í¬ì¸í„°ê°€ ê°€ë¦¬í‚¤ëŠ” ê³³ì—ì„œ Block ì‘ë‹µì„ ê°€ì§„ ì¶©ëŒì´ ì—†ìœ¼ë©´ í”„ë¦¬ë·° ìˆ¨ê¹€
 		if (PreviewBlock)
 		{
 			PreviewBlock->SetActorHiddenInGame(true);
@@ -398,7 +398,7 @@ void UGA_Construction::UpdatePreview()
 
 void UGA_Construction::SpawnBlock()
 {
-	// Ability È°¼ºÈ­ Ä¿¹Ô (Cost, Cooldown µî Ã¼Å© ¹× Àû¿ë)
+	// Ability í™œì„±í™” ì»¤ë°‹ (Cost, Cooldown ë“± ì²´í¬ ë° ì ìš©)
 
 	if (!CommitAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
 	{
@@ -418,7 +418,7 @@ void UGA_Construction::SpawnBlock()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// ÇÁ¸®ºä ºí·Ï À§Ä¡¿¡ ½ÇÁ¦ ºí·Ï »ı¼º
+	// í”„ë¦¬ë·° ë¸”ë¡ ìœ„ì¹˜ì— ì‹¤ì œ ë¸”ë¡ ìƒì„±
 	FVector SpawnLocation = PreviewBlock->GetActorLocation();
 	FRotator SpawnRotation = PreviewBlock->GetActorRotation();
 
@@ -429,12 +429,12 @@ void UGA_Construction::SpawnBlock()
 
 	if (NewBlock)
 	{
-		// ºí·Ï ÃÊ±âÈ­ (ÇÊ¿äÇÑ °æ¿ì)
+		// ë¸”ë¡ ì´ˆê¸°í™” (í•„ìš”í•œ ê²½ìš°)
 		NewBlock->SpawnBlock(SpawnLocation, EBlockType::Destructible);
 		
 		UE_LOG(LogTemp, Log, TEXT("GA_Construction: Spawned new block %s at location %s"), *NewBlock->GetName(), *SpawnLocation.ToString());
 		
-		// ½ºÅ³ Á¾·á
+		// ìŠ¤í‚¬ ì¢…ë£Œ
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 	}
 	else
@@ -445,20 +445,20 @@ void UGA_Construction::SpawnBlock()
 
 void UGA_Construction::OnLeftClickPressed()
 {
-	// ÇÁ¸®ºä ºí·ÏÀÌ Á¸ÀçÇÏ°í, ¼û°ÜÁ® ÀÖÁö ¾ÊÀ» ¶§¸¸ ºí·Ï »ı¼º ½Ãµµ
+	// í”„ë¦¬ë·° ë¸”ë¡ì´ ì¡´ì¬í•˜ê³ , ìˆ¨ê²¨ì ¸ ìˆì§€ ì•Šì„ ë•Œë§Œ ë¸”ë¡ ìƒì„± ì‹œë„
 	if (PreviewBlock && !PreviewBlock->IsHidden())
 	{
-		// ½ÇÁ¦ ½ºÅ³ ½ÃÀü ½ÃÀÛ ¾Ë¸²
-		// State.Busy ÅÂ±×¸¦ ºÎ¿©
+		// ì‹¤ì œ ìŠ¤í‚¬ ì‹œì „ ì‹œì‘ ì•Œë¦¼
+		// State.Busy íƒœê·¸ë¥¼ ë¶€ì—¬
 		NotifySkillCastStarted();
-		// ÁÂÅ¬¸¯ ½Ã ºí·Ï »ı¼º ½Ãµµ
+		// ì¢Œí´ë¦­ ì‹œ ë¸”ë¡ ìƒì„± ì‹œë„
 		SpawnBlock();
 	}
 }
 
 void UGA_Construction::OnCancelPressed(float TimeWaited)
 {
-	// WÅ° ÀçÀÔ·Â ½Ã ½ºÅ³ Ãë¼Ò
+	// Wí‚¤ ì¬ì…ë ¥ ì‹œ ìŠ¤í‚¬ ì·¨ì†Œ
 	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 }
 

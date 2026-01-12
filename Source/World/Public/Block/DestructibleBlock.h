@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,16 +15,16 @@
 UCLASS()
 class WORLD_API ADestructibleBlock : public ABlockBase, public IAbilitySystemInterface
 {
-	// ASC¸¦ °®´Â Å¬·¡½º´Â IAbilitySystemInterface¸¦ »ó¼Ó
+	// ASCë¥¼ ê°–ëŠ” í´ë˜ìŠ¤ëŠ” IAbilitySystemInterfaceë¥¼ ìƒì†
 	GENERATED_BODY()
 public:
 	ADestructibleBlock();
 
-	// ASC¸¦ ¹İÈ¯. ASC´Â Game Ability, Game Effect µîÀ» °ü¸®
-	// ¼ø¼ö °¡»ó ÇÔ¼öÀÌ¹Ç·Î ¹İµå½Ã ±¸Çö
+	// ASCë¥¼ ë°˜í™˜. ASCëŠ” Game Ability, Game Effect ë“±ì„ ê´€ë¦¬
+	// ìˆœìˆ˜ ê°€ìƒ í•¨ìˆ˜ì´ë¯€ë¡œ ë°˜ë“œì‹œ êµ¬í˜„
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	// ÀÚ½ÅÀ» ÆÄ±«ÇÏ´Â ÇÔ¼ö
+	// ìì‹ ì„ íŒŒê´´í•˜ëŠ” í•¨ìˆ˜
 	void SelfDestroy();
 protected:
 	virtual void BeginPlay() override;
@@ -33,14 +33,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
-	// ÆÄ±« Æ®¸®°Å ÅÂ±× (ÀÌ ÅÂ±×¸¦ °¡Áø GE¸¦ ¹ŞÀ¸¸é ÆÄ±«µÊ)
+	// íŒŒê´´ íŠ¸ë¦¬ê±° íƒœê·¸ (ì´ íƒœê·¸ë¥¼ ê°€ì§„ GEë¥¼ ë°›ìœ¼ë©´ íŒŒê´´ë¨)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
 	FGameplayTag DestructionTag;
 
-	// GE¸¦ Àû¿ë¹Ş¾ÒÀ» ¶§ È£ÃâÇÒ Äİ¹é ÇÔ¼ö. ÀÌ °÷¿¡¼­ ÅÂ±×¸¦ °Ë»çÇÑ´Ù.
-	// Target: GE°¡ Àû¿ëµÈ ´ë»óÀÇ ASC (º¸Åë º»ÀÎ)
-	// SpecApplied: Àû¿ëµÈ GEÀÇ ½ºÆå (Attributes, Tags µî Æ÷ÇÔ)
-	// ActiveHandle: Àû¿ëµÈ GEÀÇ ÇÚµé (GEÀÇ ½Äº°ÀÚÀÌ¸ç GE°¡ È°¼ºÈ­µÈ µ¿¾È À¯È¿)
+	// GEë¥¼ ì ìš©ë°›ì•˜ì„ ë•Œ í˜¸ì¶œí•  ì½œë°± í•¨ìˆ˜. ì´ ê³³ì—ì„œ íƒœê·¸ë¥¼ ê²€ì‚¬í•œë‹¤.
+	// Target: GEê°€ ì ìš©ëœ ëŒ€ìƒì˜ ASC (ë³´í†µ ë³¸ì¸)
+	// SpecApplied: ì ìš©ëœ GEì˜ ìŠ¤í™ (Attributes, Tags ë“± í¬í•¨)
+	// ActiveHandle: ì ìš©ëœ GEì˜ í•¸ë“¤ (GEì˜ ì‹ë³„ìì´ë©° GEê°€ í™œì„±í™”ëœ ë™ì•ˆ ìœ íš¨)
 	UFUNCTION()
 	void OnGameplayEffectApplied(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle);
 };

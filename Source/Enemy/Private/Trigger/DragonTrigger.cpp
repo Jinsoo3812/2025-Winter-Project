@@ -1,18 +1,18 @@
-#include "Trigger/DragonTrigger.h"
+ï»¿#include "Trigger/DragonTrigger.h"
 #include "Components/BoxComponent.h"
-#include "BossDragon.h"                 // BossDragonÀº Public Æú´õ ¹Ù·Î ¾Æ·¡¿¡ ÀÖÀ¸¹Ç·Î ±×´ë·Î ¾¸
-#include "AbilitySystemBlueprintLibrary.h" // GAS ÀÌº¥Æ® Àü¼Û ¶óÀÌºê·¯¸®
+#include "BossDragon.h"                 // BossDragonì€ Public í´ë” ë°”ë¡œ ì•„ë˜ì— ìˆìœ¼ë¯€ë¡œ ê·¸ëŒ€ë¡œ ì”€
+#include "AbilitySystemBlueprintLibrary.h" // GAS ì´ë²¤íŠ¸ ì „ì†¡ ë¼ì´ë¸ŒëŸ¬ë¦¬
 
 ADragonTrigger::ADragonTrigger()
 {
-	// 1. ¹Ú½º ÄÄÆ÷³ÍÆ® »ı¼º
+	// 1. ë°•ìŠ¤ ì»´í¬ë„ŒíŠ¸ ìƒì„±
 	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
 	RootComponent = TriggerBox;
 
-	// 2. Äİ¸®Àü ÇÁ·ÎÇÊ ¼³Á¤ (Trigger ÇÁ¸®¼Â »ç¿ë)
+	// 2. ì½œë¦¬ì „ í”„ë¡œí•„ ì„¤ì • (Trigger í”„ë¦¬ì…‹ ì‚¬ìš©)
 	TriggerBox->SetCollisionProfileName(TEXT("Trigger"));
 
-	// 3. °ãÄ§ ÀÌº¥Æ® ¿¬°á
+	// 3. ê²¹ì¹¨ ì´ë²¤íŠ¸ ì—°ê²°
 	TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &ADragonTrigger::OnOverlapBegin);
 }
 
@@ -23,30 +23,30 @@ void ADragonTrigger::BeginPlay()
 
 void ADragonTrigger::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// [¼­¹ö ±ÇÇÑ È®ÀÎ] ÀÌ ·ÎÁ÷Àº ¼­¹ö(Authority)¿¡¼­¸¸ ½ÇÇà
+	// [ì„œë²„ ê¶Œí•œ í™•ì¸] ì´ ë¡œì§ì€ ì„œë²„(Authority)ì—ì„œë§Œ ì‹¤í–‰
 	if (!HasAuthority()) return;
 
-	// [´ë»ó È®ÀÎ] µé¾î¿Â ³à¼®ÀÌ ÇÃ·¹ÀÌ¾îÀÎ°¡?
+	// [ëŒ€ìƒ í™•ì¸] ë“¤ì–´ì˜¨ ë…€ì„ì´ í”Œë ˆì´ì–´ì¸ê°€?
 	if (OtherActor && OtherActor->ActorHasTag(TEXT("Player")))
 	{
-		// º¸½º°¡ ¿¬°áµÇ¾î ÀÖ°í ÅÂ±×°¡ ¿Ã¹Ù¸¥Áö È®ÀÎ
+		// ë³´ìŠ¤ê°€ ì—°ê²°ë˜ì–´ ìˆê³  íƒœê·¸ê°€ ì˜¬ë°”ë¥¸ì§€ í™•ì¸
 		if (TargetBoss && WakeUpTag.IsValid())
 		{
-			// [GAS ÀÌº¥Æ® µ¥ÀÌÅÍ »ı¼º]
+			// [GAS ì´ë²¤íŠ¸ ë°ì´í„° ìƒì„±]
 			FGameplayEventData Payload;
-			Payload.Instigator = OtherActor; // ´©°¡ ±ú¿ü´ÂÁö
-			Payload.EventTag = WakeUpTag;    // ¹«½¼ ½ÅÈ£ÀÎÁö
+			Payload.Instigator = OtherActor; // ëˆ„ê°€ ê¹¨ì› ëŠ”ì§€
+			Payload.EventTag = WakeUpTag;    // ë¬´ìŠ¨ ì‹ í˜¸ì¸ì§€
 
-			// [ÀÌº¥Æ® ¹ß¼Û]
+			// [ì´ë²¤íŠ¸ ë°œì†¡]
 			UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(TargetBoss, WakeUpTag, Payload);
 
-			// ·Î±× (ÇÊ¿ä½Ã ÁÖ¼® ÇØÁ¦)
+			// ë¡œê·¸ (í•„ìš”ì‹œ ì£¼ì„ í•´ì œ)
 			// UE_LOG(LogTemp, Log, TEXT("[DragonTrigger] Sent Event to %s"), *TargetBoss->GetName());
 
-			// [ÀÏÈ¸¿ë Ã³¸®]
+			// [ì¼íšŒìš© ì²˜ë¦¬]
 			if (bTriggerOnce)
 			{
-				// ´Ù½Ã´Â ÀÌº¥Æ®°¡ ¹ß»ıÇÏÁö ¾Êµµ·Ï Äİ¸®ÀüÀ» ²¨¹ö¸²
+				// ë‹¤ì‹œëŠ” ì´ë²¤íŠ¸ê°€ ë°œìƒí•˜ì§€ ì•Šë„ë¡ ì½œë¦¬ì „ì„ êº¼ë²„ë¦¼
 				SetActorEnableCollision(false);
 			}
 		}

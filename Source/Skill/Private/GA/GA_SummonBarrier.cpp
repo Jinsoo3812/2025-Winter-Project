@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "GA/GA_SummonBarrier.h"
@@ -14,7 +14,7 @@
 
 UGA_SummonBarrier::UGA_SummonBarrier()
 {
-	// ±âº»°ª ÃÊ±âÈ­
+	// ê¸°ë³¸ê°’ ì´ˆê¸°í™”
 	CurrentMovedDistance = 0.0f;
 	bIsCharging = false;
 	ChargeDirection = FVector::ForwardVector;
@@ -24,7 +24,7 @@ void UGA_SummonBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// º¯¼ö ÃÊ±âÈ­
+	// ë³€ìˆ˜ ì´ˆê¸°í™”
 	BarrierPreviewBlocks.Empty();
 	SpawnedBlocks.Empty();
 	CurrentMovedDistance = 0.0f;
@@ -34,14 +34,14 @@ void UGA_SummonBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// Å¸ÀÌ¸Ó Á¤¸®
+	// íƒ€ì´ë¨¸ ì •ë¦¬
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(ChargeTimerHandle);
 	}
 	ChargeTimerHandle.Invalidate();
 
-	// ÇÁ¸®ºä ¾×ÅÍ Á¤¸®
+	// í”„ë¦¬ë·° ì•¡í„° ì •ë¦¬
 	for (TObjectPtr<AActor>& PreviewActor : BarrierPreviewBlocks)
 	{
 		if (PreviewActor && IsValid(PreviewActor))
@@ -51,7 +51,7 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 	BarrierPreviewBlocks.Empty();
 
-	// ½ºÅ³ÀÌ Ãë¼Ò/Á¾·áµÇ¸é ³²Àº ºí·Ïµéµµ ¸ğµÎ Á¦°Å
+	// ìŠ¤í‚¬ì´ ì·¨ì†Œ/ì¢…ë£Œë˜ë©´ ë‚¨ì€ ë¸”ë¡ë“¤ë„ ëª¨ë‘ ì œê±°
 	for (TObjectPtr<ADestructibleBlock>& Block : SpawnedBlocks)
 	{
 		if (Block && IsValid(Block))
@@ -62,14 +62,14 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 	SpawnedBlocks.Empty();
 
-	// ³²Àº ¹ÙÀÎµù Á¦°Å
+	// ë‚¨ì€ ë°”ì¸ë”© ì œê±°
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
 		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 		if (PC && PC->InputComponent)
 		{
-			// InputComponent¿¡¼­ ÀÌ °´Ã¼¿¡ ¹ÙÀÎµùµÈ ¸ğµç Å° ¹ÙÀÎµù Á¦°Å
+			// InputComponentì—ì„œ ì´ ê°ì²´ì— ë°”ì¸ë”©ëœ ëª¨ë“  í‚¤ ë°”ì¸ë”© ì œê±°
 			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
 			{
 				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
@@ -85,7 +85,7 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 void UGA_SummonBarrier::UpdatePreview()
 {
-	// °Ç¼³ÀÌ ÀÌ¹Ì ¿Ï·áµÇ¾î ´ë±â/µ¹Áø ÁßÀÌ¶ó¸é ÇÁ¸®ºä¸¦ ¾÷µ¥ÀÌÆ®ÇÏÁö ¾ÊÀ½
+	// ê±´ì„¤ì´ ì´ë¯¸ ì™„ë£Œë˜ì–´ ëŒ€ê¸°/ëŒì§„ ì¤‘ì´ë¼ë©´ í”„ë¦¬ë·°ë¥¼ ì—…ë°ì´íŠ¸í•˜ì§€ ì•ŠìŒ
 	if (SpawnedBlocks.Num() > 0) return;
 
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
@@ -102,7 +102,7 @@ void UGA_SummonBarrier::UpdatePreview()
 		return;
 	}
 
-	// ÀÌÀü À§Ä¡¿¡¼­ ¿òÁ÷¿´À» ¶§¸¸ ÇÏÀÌ¶óÀÌÆ® °»½Å 
+	// ì´ì „ ìœ„ì¹˜ì—ì„œ ì›€ì§ì˜€ì„ ë•Œë§Œ í•˜ì´ë¼ì´íŠ¸ ê°±ì‹  
 	FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
 	if (!LastPlayerLocation.Equals(CurrentPlayerLocation, 10.0f))
 	{
@@ -111,7 +111,7 @@ void UGA_SummonBarrier::UpdatePreview()
 		LastPlayerLocation = CurrentPlayerLocation;
 	}
 
-	// ¸¶¿ì½º Ä¿¼­ Å¸°ÙÆÃ
+	// ë§ˆìš°ìŠ¤ ì»¤ì„œ íƒ€ê²ŸíŒ…
 	FHitResult HitResult;
 	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
 
@@ -124,8 +124,8 @@ void UGA_SummonBarrier::UpdatePreview()
 		if (HitBlock && HighlightedBlocks.Contains(HitBlock))
 		{
 			bValidTargetFound = true;
-			// ¹æº®ÀÇ Áß½É ºí·ÏÀÇ »ı¼º À§Ä¡ °è»ê
-			// Áß½É ºí·ÏÀº ¸¶¿ì½º¸¦ °¡Á®°£ ºí·ÏÀÇ ¹Ù·Î À­ ºí·Ï
+			// ë°©ë²½ì˜ ì¤‘ì‹¬ ë¸”ë¡ì˜ ìƒì„± ìœ„ì¹˜ ê³„ì‚°
+			// ì¤‘ì‹¬ ë¸”ë¡ì€ ë§ˆìš°ìŠ¤ë¥¼ ê°€ì ¸ê°„ ë¸”ë¡ì˜ ë°”ë¡œ ìœ— ë¸”ë¡
 			FVector CenterBaseLocation = HitBlock->GetActorLocation() + FVector(0, 0, GridSize);
 			CalculateBarrierTransforms(CenterBaseLocation, CurrentPlayerLocation, TargetTransforms);
 		}
@@ -146,51 +146,51 @@ void UGA_SummonBarrier::UpdatePreview()
 
 void UGA_SummonBarrier::CalculateBarrierTransforms(const FVector& CenterLocation, const FVector& PlayerLocation, TArray<FTransform>& OutTransforms)
 {
-	// Player¿¡¼­ Center·Î ÇâÇÏ´Â ¹æÇâ º¤ÅÍ °è»ê
+	// Playerì—ì„œ Centerë¡œ í–¥í•˜ëŠ” ë°©í–¥ ë²¡í„° ê³„ì‚°
 	FVector Direction = CenterLocation - PlayerLocation;
 	FRotator WallRotation;
 	FVector RightVector;
 
-	// ¹æÇâ °áÁ¤ ·ÎÁ÷
-	// »ı¼º ÁöÁ¡ÀÌ ÇÃ·¹ÀÌ¾î µ¿¼­¹æÇâÀÎ °æ¿ì
+	// ë°©í–¥ ê²°ì • ë¡œì§
+	// ìƒì„± ì§€ì ì´ í”Œë ˆì´ì–´ ë™ì„œë°©í–¥ì¸ ê²½ìš°
 	if (FMath::Abs(Direction.X) > FMath::Abs(Direction.Y))
 	{
 		WallRotation = FRotator(0, 90.0f, 0);
-		RightVector = FVector(0, 1.0f, 0); // YÃà ¹æÇâÀ¸·Î »¸´Â ¹æº®
+		RightVector = FVector(0, 1.0f, 0); // Yì¶• ë°©í–¥ìœ¼ë¡œ ë»—ëŠ” ë°©ë²½
 	}
-	// »ı¼º ÁöÁ¡ÀÌ ÇÃ·¹ÀÌ¾î ³²ºÏ¹æÇâÀÎ °æ¿ì
+	// ìƒì„± ì§€ì ì´ í”Œë ˆì´ì–´ ë‚¨ë¶ë°©í–¥ì¸ ê²½ìš°
 	else
 	{
 		WallRotation = FRotator::ZeroRotator;
-		RightVector = FVector(1.0f, 0, 0); // XÃà ¹æÇâÀ¸·Î »¸´Â ¹æº®
+		RightVector = FVector(1.0f, 0, 0); // Xì¶• ë°©í–¥ìœ¼ë¡œ ë»—ëŠ” ë°©ë²½
 	}
 
 	OutTransforms.Empty();
 	/**
-	* [º® »ı¼º ±¸Á¶ ¹× ¿ÀÇÁ¼Â ¼³¸í]
-	* ±âÁØÁ¡(CenterLocation)À» Áß½ÉÀ¸·Î ÁÂ¿ì ´ëÄªÀÎ 3Ä­ ³Êºñ, 2Ãş ³ôÀÌÀÇ º®À» »ı¼ºÇÕ´Ï´Ù.
-	* Offsets ¹è¿­ { 0, -1, 1 }À» »ç¿ëÇÏ¿© ±âÁØÁ¡À¸·ÎºÎÅÍÀÇ °¡·Î À§Ä¡¸¦ °áÁ¤ÇÕ´Ï´Ù.
+	* [ë²½ ìƒì„± êµ¬ì¡° ë° ì˜¤í”„ì…‹ ì„¤ëª…]
+	* ê¸°ì¤€ì (CenterLocation)ì„ ì¤‘ì‹¬ìœ¼ë¡œ ì¢Œìš° ëŒ€ì¹­ì¸ 3ì¹¸ ë„ˆë¹„, 2ì¸µ ë†’ì´ì˜ ë²½ì„ ìƒì„±í•©ë‹ˆë‹¤.
+	* Offsets ë°°ì—´ { 0, -1, 1 }ì„ ì‚¬ìš©í•˜ì—¬ ê¸°ì¤€ì ìœ¼ë¡œë¶€í„°ì˜ ê°€ë¡œ ìœ„ì¹˜ë¥¼ ê²°ì •í•©ë‹ˆë‹¤.
 	* 
-	*    [ -1 ] [ 0 ] [ 1 ]   <-- 2Ãş (UpperPos: BasePos + ZÃà ³ôÀÌ)
-	*    [ -1 ] [ 0 ] [ 1 ]   <-- 1Ãş (BasePos: ±âÁØ ¹Ù´Ú À§Ä¡)
-	*      ¡è      ¡è      ¡è
+	*    [ -1 ] [ 0 ] [ 1 ]   <-- 2ì¸µ (UpperPos: BasePos + Zì¶• ë†’ì´)
+	*    [ -1 ] [ 0 ] [ 1 ]   <-- 1ì¸µ (BasePos: ê¸°ì¤€ ë°”ë‹¥ ìœ„ì¹˜)
+	*      â†‘      â†‘      â†‘
 	*     Left  Center Right
 	* 
-	* - 0.0f : Áß¾Ó (Center, ¸¶¿ì½º°¡ °¡¸®Å°´Â ±âÁØÁ¡)
-	* - -1.0f: ¿ŞÂÊ (Left, RightVector ¹İ´ë ¹æÇâÀ¸·Î 1Ä­)
-	* - 1.0f : ¿À¸¥ÂÊ (Right, RightVector ¹æÇâÀ¸·Î 1Ä­)
+	* - 0.0f : ì¤‘ì•™ (Center, ë§ˆìš°ìŠ¤ê°€ ê°€ë¦¬í‚¤ëŠ” ê¸°ì¤€ì )
+	* - -1.0f: ì™¼ìª½ (Left, RightVector ë°˜ëŒ€ ë°©í–¥ìœ¼ë¡œ 1ì¹¸)
+	* - 1.0f : ì˜¤ë¥¸ìª½ (Right, RightVector ë°©í–¥ìœ¼ë¡œ 1ì¹¸)
 	*/
 	float Offsets[] = { 0.0f, -1.0f, 1.0f };
 
-	// Ã¹ ¼øÈ¸¿¡¼­ °¡¿îµ¥ ºí·Ï, µÎ ¹øÂ° ¼øÈ¸¿¡¼­ ¿ŞÂÊ ºí·Ï, ¼¼ ¹øÂ° ¼øÈ¸¿¡¼­ ¿À¸¥ÂÊ ºí·Ï »ı¼º
+	// ì²« ìˆœíšŒì—ì„œ ê°€ìš´ë° ë¸”ë¡, ë‘ ë²ˆì§¸ ìˆœíšŒì—ì„œ ì™¼ìª½ ë¸”ë¡, ì„¸ ë²ˆì§¸ ìˆœíšŒì—ì„œ ì˜¤ë¥¸ìª½ ë¸”ë¡ ìƒì„±
 	for (float OffsetMultiplier : Offsets)
 	{
 		FVector BasePos = CenterLocation + (RightVector * (GridSize * OffsetMultiplier));
 
-		// 1Ãş Ãß°¡
+		// 1ì¸µ ì¶”ê°€
 		OutTransforms.Add(FTransform(WallRotation, BasePos));
 
-		// 2Ãş Ãß°¡
+		// 2ì¸µ ì¶”ê°€
 		FVector UpperPos = BasePos + FVector(0, 0, GridSize);
 		OutTransforms.Add(FTransform(WallRotation, UpperPos));
 	}
@@ -210,7 +210,7 @@ void UGA_SummonBarrier::UpdateBarrierPreviewActors(const TArray<FTransform>& Tra
 		return;
 	}
 
-	// ÇÁ¸®ºä ºí·ÏÀº ÇÑ ¹ø¸¸ ¸¸µé¾î³õ°í Àç»ç¿ë
+	// í”„ë¦¬ë·° ë¸”ë¡ì€ í•œ ë²ˆë§Œ ë§Œë“¤ì–´ë†“ê³  ì¬ì‚¬ìš©
 	while (BarrierPreviewBlocks.Num() < Transforms.Num())
 	{
 		FActorSpawnParameters SpawnParams;
@@ -223,20 +223,20 @@ void UGA_SummonBarrier::UpdateBarrierPreviewActors(const TArray<FTransform>& Tra
 		}
 	}
 
-	// À§Ä¡ Àû¿ë ¹× Á¡À¯ È®ÀÎ
+	// ìœ„ì¹˜ ì ìš© ë° ì ìœ  í™•ì¸
 	for (int32 i = 0; i < BarrierPreviewBlocks.Num(); ++i)
 	{
 		AActor* Preview = BarrierPreviewBlocks[i];
 		if (!Preview) continue;
 
-		// ¸¸µé¾î ³õÀº ÇÁ¸®ºä ºí·Ï(BarrierPreviewBlocks)ÀÌ
-		// ¼ÒÈ¯ ÇÒ ºí·Ï °³¼ö(Transforms.Num())º¸´Ù ¸¹´Ù¸é ¼û±è Ã³¸®
+		// ë§Œë“¤ì–´ ë†“ì€ í”„ë¦¬ë·° ë¸”ë¡(BarrierPreviewBlocks)ì´
+		// ì†Œí™˜ í•  ë¸”ë¡ ê°œìˆ˜(Transforms.Num())ë³´ë‹¤ ë§ë‹¤ë©´ ìˆ¨ê¹€ ì²˜ë¦¬
 		if (i < Transforms.Num())
 		{
 			const FTransform& TargetTransform = Transforms[i];
 			if (IsLocationOccupied(TargetTransform.GetLocation()))
 			{
-				// ¼ÒÈ¯ ÇÒ ¼ö ¾ø´Â °÷Àº ÇÁ¸®ºäÇÏÁö ¾ÊÀ½
+				// ì†Œí™˜ í•  ìˆ˜ ì—†ëŠ” ê³³ì€ í”„ë¦¬ë·°í•˜ì§€ ì•ŠìŒ
 				Preview->SetActorHiddenInGame(true);
 			}
 			else
@@ -261,8 +261,8 @@ bool UGA_SummonBarrier::IsLocationOccupied(const FVector& Location) const
 		return true;
 	}
 
-	// MakeBox´Â ÀÎÀÚ¸¦ ¹İÁö¸§À¸·Î »ç¿ëÇÔ
-	// 0.5¸¦ ³ÖÀ¸¸é 100 * 100 * 100 Å©±âÀÇ ¹Ú½º°¡ µÇ¾î ²Ë Â÷¹Ç·Î 0.4 »ç¿ë
+	// MakeBoxëŠ” ì¸ìë¥¼ ë°˜ì§€ë¦„ìœ¼ë¡œ ì‚¬ìš©í•¨
+	// 0.5ë¥¼ ë„£ìœ¼ë©´ 100 * 100 * 100 í¬ê¸°ì˜ ë°•ìŠ¤ê°€ ë˜ì–´ ê½‰ ì°¨ë¯€ë¡œ 0.4 ì‚¬ìš©
 	FVector BoxExtent = FVector(GridSize * 0.4f, GridSize * 0.4f, GridSize * 0.4f);
 	FCollisionShape CheckShape = FCollisionShape::MakeBox(BoxExtent);
 
@@ -273,7 +273,7 @@ bool UGA_SummonBarrier::IsLocationOccupied(const FVector& Location) const
 	FCollisionQueryParams QueryParams;
 	for (const auto& Preview : BarrierPreviewBlocks)
 	{
-		// ÇÁ¸®ºä ºí·Ï³¢¸®´Â Ãæµ¹ ¹«½Ã
+		// í”„ë¦¬ë·° ë¸”ë¡ë¼ë¦¬ëŠ” ì¶©ëŒ ë¬´ì‹œ
 		if (Preview) QueryParams.AddIgnoredActor(Preview);
 	}
 
@@ -283,7 +283,7 @@ bool UGA_SummonBarrier::IsLocationOccupied(const FVector& Location) const
 
 void UGA_SummonBarrier::SpawnBlock()
 {
-	// ºñ¿ë ¹× ÄğÅ¸ÀÓ Ä¿¹Ô
+	// ë¹„ìš© ë° ì¿¨íƒ€ì„ ì»¤ë°‹
 	if (!CommitAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
 	{
 		UE_LOG(LogTemp, Error, TEXT("GA_SummonBarrier: Failed to commit ability"));
@@ -300,14 +300,14 @@ void UGA_SummonBarrier::SpawnBlock()
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// ÁÂÅ¬¸¯ ¹ÙÀÎµù'¸¸' ÇØÁ¦
+	// ì¢Œí´ë¦­ ë°”ì¸ë”©'ë§Œ' í•´ì œ
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
 		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 		if (PC && PC->InputComponent)
 		{
-			// ÁÂÅ¬¸¯ ¹ÙÀÎµù Á¦°Å
+			// ì¢Œí´ë¦­ ë°”ì¸ë”© ì œê±°
 			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
 			{
 				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this &&
@@ -323,7 +323,7 @@ void UGA_SummonBarrier::SpawnBlock()
 		}
 	}
 
-	// 1. ºí·Ï »ı¼º
+	// 1. ë¸”ë¡ ìƒì„±
 	SpawnedBlocks.Empty();
 	FVector AverageLocation = FVector::ZeroVector;
 	int32 Count = 0;
@@ -343,14 +343,14 @@ void UGA_SummonBarrier::SpawnBlock()
 		{
 			NewBlock->SpawnBlock(SpawnLoc, EBlockType::Destructible);
 
-			// »ı¼º Á÷ÈÄ Áß·Â/½º³À ·ÎÁ÷ ²ô±â
+			// ìƒì„± ì§í›„ ì¤‘ë ¥/ìŠ¤ëƒ… ë¡œì§ ë„ê¸°
 			NewBlock->SetActorTickEnabled(false);
 
-			// ¹æº®À» ±¸¼ºÇÏ´Â ÆÄ±«°¡´Éºí·ÏÀº Ãß¶ô ¿É¼Ç ºñÈ°¼ºÈ­
+			// ë°©ë²½ì„ êµ¬ì„±í•˜ëŠ” íŒŒê´´ê°€ëŠ¥ë¸”ë¡ì€ ì¶”ë½ ì˜µì…˜ ë¹„í™œì„±í™”
 			NewBlock->SetCanFall(false);
 
-			// StaticMeshComponent´Â ±âº»ÀûÀ¸·Î ·±Å¸ÀÓ¿¡ ¿òÁ÷ÀÏ ¼ö ¾øÀ½
-			// µû¶ó¼­ Mobility¸¦ Movable·Î ¼³Á¤
+			// StaticMeshComponentëŠ” ê¸°ë³¸ì ìœ¼ë¡œ ëŸ°íƒ€ì„ì— ì›€ì§ì¼ ìˆ˜ ì—†ìŒ
+			// ë”°ë¼ì„œ Mobilityë¥¼ Movableë¡œ ì„¤ì •
 			if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(NewBlock->GetRootComponent()))
 			{
 				RootPrim->SetMobility(EComponentMobility::Movable);
@@ -366,7 +366,7 @@ void UGA_SummonBarrier::SpawnBlock()
 		}
 	}
 
-	// ÇÁ¸®ºä Á¤¸®
+	// í”„ë¦¬ë·° ì •ë¦¬
 	for (auto& Preview : BarrierPreviewBlocks)
 	{
 		if (Preview) Preview->Destroy();
@@ -374,30 +374,30 @@ void UGA_SummonBarrier::SpawnBlock()
 	BarrierPreviewBlocks.Empty();
 	ClearHighlights();
 
-	// ¼ÒÈ¯µÈ ºí·ÏÀÌ ¾øÀ¸¸é Á¾·á
+	// ì†Œí™˜ëœ ë¸”ë¡ì´ ì—†ìœ¼ë©´ ì¢…ë£Œ
 	if (Count == 0)
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
 
-	// ¹æº® °Ç¼³ÀÌ ¿Ï·áµÇ¾úÀ¸¹Ç·Î, ´Ù¸¥ ½ºÅ³À» ¾µ ¼ö ÀÖµµ·Ï State.Busy ÅÂ±× Áï½Ã Á¦°Å
+	// ë°©ë²½ ê±´ì„¤ì´ ì™„ë£Œë˜ì—ˆìœ¼ë¯€ë¡œ, ë‹¤ë¥¸ ìŠ¤í‚¬ì„ ì“¸ ìˆ˜ ìˆë„ë¡ State.Busy íƒœê·¸ ì¦‰ì‹œ ì œê±°
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	if (ASC)
 	{
-		// GA_SkillBase¿¡ ¼±¾ğµÈ TAG_Skill_Casting (State.Busy) »ç¿ë
+		// GA_SkillBaseì— ì„ ì–¸ëœ TAG_Skill_Casting (State.Busy) ì‚¬ìš©
 		ASC->RemoveLooseGameplayTag(TAG_Skill_Casting);
 	}
 
-	// 2. µ¹Áø ¹æÇâ ¼³Á¤
+	// 2. ëŒì§„ ë°©í–¥ ì„¤ì •
 	if (SpawnedBlocks.Num() > 0 && SpawnedBlocks[0])
 	{
 		FVector PlayerLoc = OwnerPawn->GetActorLocation();
 		AverageLocation /= Count;
-		// °Ç¼³ ´ç½Ã ÇÃ·¹ÀÌ¾î À§Ä¡¸¦ ±âÁØÀ¸·Î ¹ß»ç ¹æÇâ	°áÁ¤
+		// ê±´ì„¤ ë‹¹ì‹œ í”Œë ˆì´ì–´ ìœ„ì¹˜ë¥¼ ê¸°ì¤€ìœ¼ë¡œ ë°œì‚¬ ë°©í–¥	ê²°ì •
 		FVector DirectionToWall = (AverageLocation - PlayerLoc).GetSafeNormal2D();
 
-		// ¹æÇâÀÌ 0(ÇÃ·¹ÀÌ¾î¿Í °ãÄ§)ÀÌ¸é ½Ã¼± ¹æÇâ
+		// ë°©í–¥ì´ 0(í”Œë ˆì´ì–´ì™€ ê²¹ì¹¨)ì´ë©´ ì‹œì„  ë°©í–¥
 		if (DirectionToWall.IsZero())
 		{
 			DirectionToWall = OwnerPawn->GetActorForwardVector().GetSafeNormal2D();
@@ -415,8 +415,8 @@ void UGA_SummonBarrier::SpawnBlock()
 
 	UE_LOG(LogTemp, Log, TEXT("GA_SummonBarrier: Wall spawned. Waiting for charge input."));
 
-	// ±âÁ¸ ÅÂ½ºÅ©¸¦ Á¾·á½ÃÅ°Áö ¾Ê°í »õ·Î¿î ÅÂ½ºÅ©¸¦ ¸¸µé¸é
-	// ÀÌÀü ÅÂ½ºÅ©°¡ ³²¾ÆÀÖ°Ô µÇ¾î ´ÙÁß ¹ÙÀÎµù ¹®Á¦°¡ ¹ß»ıÇÒ ¼ö ÀÖÀ½
+	// ê¸°ì¡´ íƒœìŠ¤í¬ë¥¼ ì¢…ë£Œì‹œí‚¤ì§€ ì•Šê³  ìƒˆë¡œìš´ íƒœìŠ¤í¬ë¥¼ ë§Œë“¤ë©´
+	// ì´ì „ íƒœìŠ¤í¬ê°€ ë‚¨ì•„ìˆê²Œ ë˜ì–´ ë‹¤ì¤‘ ë°”ì¸ë”© ë¬¸ì œê°€ ë°œìƒí•  ìˆ˜ ìˆìŒ
 	if (WaitInputTask)
 	{
 		WaitInputTask->EndTask();
@@ -448,36 +448,36 @@ void UGA_SummonBarrier::StartBarrierCharge(float TimeWaited)
 		ADestructibleBlock* MyBlock = SpawnedBlocks[i];
 		if (!MyBlock || !IsValid(MyBlock)) continue;
 
-		// 1. Tick ºñÈ°¼ºÈ­ (Grid Snap ¹æÁö)
+		// 1. Tick ë¹„í™œì„±í™” (Grid Snap ë°©ì§€)
 		MyBlock->SetActorTickEnabled(false);
 
-		// 2. ¾à°£ ¶ç¿ì±â (¹Ù´Ú ¸¶Âû ¹æÁö)
+		// 2. ì•½ê°„ ë„ìš°ê¸° (ë°”ë‹¥ ë§ˆì°° ë°©ì§€)
 		MyBlock->AddActorWorldOffset(FVector(0, 0, 5.0f), false);
 
-		// ÇüÁ¦ ºí·Ï ¹«½Ã ¼³Á¤
-		// AActor°¡ ¾Æ´Ñ RootComponent(UPrimitiveComponent) ¼öÁØ¿¡¼­ ¼³Á¤ÇØ¾ß ÇÔ
+		// í˜•ì œ ë¸”ë¡ ë¬´ì‹œ ì„¤ì •
+		// AActorê°€ ì•„ë‹Œ RootComponent(UPrimitiveComponent) ìˆ˜ì¤€ì—ì„œ ì„¤ì •í•´ì•¼ í•¨
 		if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(MyBlock->GetRootComponent()))
 		{
 			for (int32 j = 0; j < SpawnedBlocks.Num(); ++j)
 			{
-				if (i == j) continue; // ÀÚ±â ÀÚ½Å Á¦¿Ü
+				if (i == j) continue; // ìê¸° ìì‹  ì œì™¸
 				if (SpawnedBlocks[j] && IsValid(SpawnedBlocks[j]))
 				{
-					// ÀÌ ÄÄÆ÷³ÍÆ®°¡ ÀÌµ¿ÇÒ ¶§ ÇØ´ç ¾×ÅÍ¸¦ ¹«½ÃÇÏµµ·Ï ¼³Á¤
+					// ì´ ì»´í¬ë„ŒíŠ¸ê°€ ì´ë™í•  ë•Œ í•´ë‹¹ ì•¡í„°ë¥¼ ë¬´ì‹œí•˜ë„ë¡ ì„¤ì •
 					RootPrim->IgnoreActorWhenMoving(SpawnedBlocks[j], true);
 				}
 			}
 		}
 	}
 
-	// ÀÔ·Â ÅÂ½ºÅ© Á¾·á
+	// ì…ë ¥ íƒœìŠ¤í¬ ì¢…ë£Œ
 	if (WaitInputTask)
 	{
 		WaitInputTask->EndTask();
 		WaitInputTask = nullptr;
 	}
 
-	// Å¸ÀÌ¸Ó ½ÃÀÛ
+	// íƒ€ì´ë¨¸ ì‹œì‘
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(ChargeTimerHandle, this, &UGA_SummonBarrier::TickBarrierCharge, 0.016f, true);
@@ -498,7 +498,7 @@ void UGA_SummonBarrier::TickBarrierCharge()
 
 	CurrentMovedDistance += MoveDist;
 
-	// ÃÖ´ë °Å¸® µµ´Ş ½Ã Á¾·á(¹æº® »ç¶óÁü)
+	// ìµœëŒ€ ê±°ë¦¬ ë„ë‹¬ ì‹œ ì¢…ë£Œ(ë°©ë²½ ì‚¬ë¼ì§)
 	if (CurrentMovedDistance >= MaxChargeDistance)
 	{
 		UE_LOG(LogTemp, Log, TEXT("GA_SummonBarrier: Max distance reached. Destroying wall."));
@@ -506,7 +506,7 @@ void UGA_SummonBarrier::TickBarrierCharge()
 		return;
 	}
 
-	// ¿ª¼ø ¼øÈ¸ (»èÁ¦ ´ëÀÀ)
+	// ì—­ìˆœ ìˆœíšŒ (ì‚­ì œ ëŒ€ì‘)
 	for (int32 i = SpawnedBlocks.Num() - 1; i >= 0; --i)
 	{
 		ADestructibleBlock* Block = SpawnedBlocks[i];
@@ -518,27 +518,27 @@ void UGA_SummonBarrier::TickBarrierCharge()
 		}
 
 		FHitResult HitResult;
-		// Sweep ÀÌµ¿. StartBarrierCharge¿¡¼­ ¼­·Î Ignore ¼³Á¤À» ÇßÀ¸¹Ç·Î
-		// ÀÌÁ¦ ¿· ºí·Ï¿¡ ¸·È÷Áö ¾Ê°í ÀüÁøÇÔ
+		// Sweep ì´ë™. StartBarrierChargeì—ì„œ ì„œë¡œ Ignore ì„¤ì •ì„ í–ˆìœ¼ë¯€ë¡œ
+		// ì´ì œ ì˜† ë¸”ë¡ì— ë§‰íˆì§€ ì•Šê³  ì „ì§„í•¨
 		Block->AddActorWorldOffset(DeltaMove, true, &HitResult);
 
 		if (HitResult.bBlockingHit)
 		{
 			AActor* HitActor = HitResult.GetActor();
 
-			// ºÎµúÈù ¾×ÅÍ°¡ ÀÚ±â ÀÚ½ÅÀÌ°Å³ª µ¿·á ¹æº® ºí·ÏÀÌ¸é ¹«½Ã
+			// ë¶€ë”ªíŒ ì•¡í„°ê°€ ìê¸° ìì‹ ì´ê±°ë‚˜ ë™ë£Œ ë°©ë²½ ë¸”ë¡ì´ë©´ ë¬´ì‹œ
 			if (SpawnedBlocks.Contains(HitActor)) continue;
 			if (HitActor == GetAvatarActorFromActorInfo()) continue;
 
 			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
 			if (TargetASC)
 			{
-				// SkillBaseÀÇ ÇïÆÛ ÇÔ¼ö¸¦ »ç¿ëÇÏ¿© ·é µ¥¹ÌÁö°¡ Àû¿ëµÈ Spec »ı¼º
+				// SkillBaseì˜ í—¬í¼ í•¨ìˆ˜ë¥¼ ì‚¬ìš©í•˜ì—¬ ë£¬ ë°ë¯¸ì§€ê°€ ì ìš©ëœ Spec ìƒì„±
 				FGameplayEffectSpecHandle SpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
 				if (SpecHandle.IsValid())
 				{
-					// ½ÃÀüÀÚÀÇ ASC¸¦ ÅëÇØ Å¸°Ù ASC¿¡°Ô È¿°ú Àû¿ë
+					// ì‹œì „ìì˜ ASCë¥¼ í†µí•´ íƒ€ê²Ÿ ASCì—ê²Œ íš¨ê³¼ ì ìš©
 					GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(
 						*SpecHandle.Data.Get(),
 						TargetASC
@@ -563,12 +563,12 @@ void UGA_SummonBarrier::OnCancelPressed(float TimeWaited)
 {
 	if (SpawnedBlocks.Num() == 0)
 	{
-		// ¹æº®ÀÌ ¾ÆÁ÷ »ı¼ºµÇÁö ¾ÊÀº »óÅÂÀÌ¹Ç·Î ½ºÅ³ Ãë¼Ò
+		// ë°©ë²½ì´ ì•„ì§ ìƒì„±ë˜ì§€ ì•Šì€ ìƒíƒœì´ë¯€ë¡œ ìŠ¤í‚¬ ì·¨ì†Œ
 		Super::OnCancelPressed(TimeWaited);
 	}
 	else
 	{	
-		// ¹æº®ÀÌ ÀÌ¹Ì »ı¼ºµÈ »óÅÂÀÌ¹Ç·Î µ¹Áø ½ÃÀÛ
+		// ë°©ë²½ì´ ì´ë¯¸ ìƒì„±ëœ ìƒíƒœì´ë¯€ë¡œ ëŒì§„ ì‹œì‘
 		if (!bIsCharging)
 		{
 			StartBarrierCharge(TimeWaited);
@@ -578,26 +578,26 @@ void UGA_SummonBarrier::OnCancelPressed(float TimeWaited)
 
 bool UGA_SummonBarrier::CanBeCanceled() const
 {
-	// ¹æº®ÀÌ ÀÌ¹Ì »ı¼ºµÇ¾î °ü¸® ¸ñ·Ï(SpawnedBlocks)¿¡ ÀÖ´Ù¸é?
-	// ´ë±â ÁßÀÌ°Å³ª µ¹Áø ÁßÀÎ »óÅÂÀÌ¹Ç·Î Ãë¼ÒµÇ¸é ¾È µÊ.
+	// ë°©ë²½ì´ ì´ë¯¸ ìƒì„±ë˜ì–´ ê´€ë¦¬ ëª©ë¡(SpawnedBlocks)ì— ìˆë‹¤ë©´?
+	// ëŒ€ê¸° ì¤‘ì´ê±°ë‚˜ ëŒì§„ ì¤‘ì¸ ìƒíƒœì´ë¯€ë¡œ ì·¨ì†Œë˜ë©´ ì•ˆ ë¨.
 	if (SpawnedBlocks.Num() > 0)
 	{
 		return false;
 	}
 
-	// ¹æº®ÀÌ ¾ø´Ù¸é?
-	// ¾ÆÁ÷ °Ç¼³ Àü(ÇÁ¸®ºä) »óÅÂÀÌ¹Ç·Î, ´Ù¸¥ ½ºÅ³ ÀÔ·Â ½Ã Ãë¼Ò(±³Ã¼)µÇ¾î¾ß ÇÔ.
+	// ë°©ë²½ì´ ì—†ë‹¤ë©´?
+	// ì•„ì§ ê±´ì„¤ ì „(í”„ë¦¬ë·°) ìƒíƒœì´ë¯€ë¡œ, ë‹¤ë¥¸ ìŠ¤í‚¬ ì…ë ¥ ì‹œ ì·¨ì†Œ(êµì²´)ë˜ì–´ì•¼ í•¨.
 	return Super::CanBeCanceled();
 }
 
 void UGA_SummonBarrier::OnLeftClickPressed()
 {
-	// BarrierPreviewBlocks ¹è¿­ Áß ÇÏ³ª¶óµµ À¯È¿ÇÏ°í(º¸ÀÌ°í) ÀÖ´Ù¸é ¼³Ä¡ °¡´ÉÇÑ »óÅÂ·Î °£ÁÖ
+	// BarrierPreviewBlocks ë°°ì—´ ì¤‘ í•˜ë‚˜ë¼ë„ ìœ íš¨í•˜ê³ (ë³´ì´ê³ ) ìˆë‹¤ë©´ ì„¤ì¹˜ ê°€ëŠ¥í•œ ìƒíƒœë¡œ ê°„ì£¼
 	bool bCanSpawn = false;
 
 	for (const auto& Preview : BarrierPreviewBlocks)
 	{
-		// IsHidden()ÀÌ false¿©¾ß È­¸é¿¡ º¸ÀÌ°í ÀÖ´Ù´Â ¶æ 
+		// IsHidden()ì´ falseì—¬ì•¼ í™”ë©´ì— ë³´ì´ê³  ìˆë‹¤ëŠ” ëœ» 
 		if (Preview && !Preview->IsHidden())
 		{
 			bCanSpawn = true;
@@ -607,9 +607,9 @@ void UGA_SummonBarrier::OnLeftClickPressed()
 
 	if (bCanSpawn)
 	{
-		// ½ÇÁ¦ ½ºÅ³ ½ÃÀü ½ÃÀÛ ¾Ë¸² (State.Busy ÅÂ±× ºÎ¿©)
+		// ì‹¤ì œ ìŠ¤í‚¬ ì‹œì „ ì‹œì‘ ì•Œë¦¼ (State.Busy íƒœê·¸ ë¶€ì—¬)
 		NotifySkillCastStarted();
-		// ºí·Ï »ı¼º ½Ãµµ
+		// ë¸”ë¡ ìƒì„± ì‹œë„
 		SpawnBlock();
 	}
 }

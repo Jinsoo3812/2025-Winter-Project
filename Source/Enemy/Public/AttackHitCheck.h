@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimNotifies/AnimNotifyState.h"
@@ -6,8 +6,8 @@
 
 /**
  * [UAnimNotifyState_AttackHitCheck]
- * ¾Ö´Ï¸ŞÀÌ¼ÇÀÇ Æ¯Á¤ ±¸°£ µ¿¾È °ø°İ ÆÇÁ¤(Trace)À» ¼öÇàÇÏ´Â ³ëÆ¼ÆÄÀÌ ½ºÅ×ÀÌÆ®ÀÔ´Ï´Ù.
- * - ÀåÁ¡: ´Ü¼øÈ÷ ¼ø°£ÀûÀÎ ÆÇÁ¤ÀÌ ¾Æ´Ï¶ó, Ä®À» ÈÖµÎ¸£´Â ±ËÀûÀ» µû¶ó ¿¬¼ÓÀûÀ¸·Î °Ë»çÇÏ¹Ç·Î Á¤È®µµ°¡ ³ô½À´Ï´Ù.
+ * ì• ë‹ˆë©”ì´ì…˜ì˜ íŠ¹ì • êµ¬ê°„ ë™ì•ˆ ê³µê²© íŒì •(Trace)ì„ ìˆ˜í–‰í•˜ëŠ” ë…¸í‹°íŒŒì´ ìŠ¤í…Œì´íŠ¸ì…ë‹ˆë‹¤.
+ * - ì¥ì : ë‹¨ìˆœíˆ ìˆœê°„ì ì¸ íŒì •ì´ ì•„ë‹ˆë¼, ì¹¼ì„ íœ˜ë‘ë¥´ëŠ” ê¶¤ì ì„ ë”°ë¼ ì—°ì†ì ìœ¼ë¡œ ê²€ì‚¬í•˜ë¯€ë¡œ ì •í™•ë„ê°€ ë†’ìŠµë‹ˆë‹¤.
  */
 UCLASS()
 class ENEMY_API UAnimNotifyState_AttackHitCheck : public UAnimNotifyState
@@ -17,35 +17,35 @@ class ENEMY_API UAnimNotifyState_AttackHitCheck : public UAnimNotifyState
 public:
 	UAnimNotifyState_AttackHitCheck();
 
-	// [¾Ö´Ï¸ŞÀÌ¼Ç ½ÃÀÛ ½Ã È£Ãâ]
-	// ÆÇÁ¤¿¡ ÇÊ¿äÇÑ ÃÊ±â ¼³Á¤(¹«½ÃÇÒ ¾×ÅÍ ¸ñ·Ï ÃÊ±âÈ­ µî)À» ¼öÇàÇÕ´Ï´Ù.
+	// [ì• ë‹ˆë©”ì´ì…˜ ì‹œì‘ ì‹œ í˜¸ì¶œ]
+	// íŒì •ì— í•„ìš”í•œ ì´ˆê¸° ì„¤ì •(ë¬´ì‹œí•  ì•¡í„° ëª©ë¡ ì´ˆê¸°í™” ë“±)ì„ ìˆ˜í–‰í•©ë‹ˆë‹¤.
 	virtual void NotifyBegin(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float TotalDuration, const FAnimNotifyEventReference& EventReference) override;
 
-	// [¾Ö´Ï¸ŞÀÌ¼Ç Àç»ı Áß ¸Å ÇÁ·¹ÀÓ È£Ãâ]
-	// ÀÌÀü ÇÁ·¹ÀÓÀÇ ¼ÒÄÏ À§Ä¡¿Í ÇöÀç À§Ä¡ »çÀÌ¸¦ ¿¬°áÇÏ´Â 'Sweep Trace'¸¦ ¼öÇàÇÕ´Ï´Ù.
+	// [ì• ë‹ˆë©”ì´ì…˜ ì¬ìƒ ì¤‘ ë§¤ í”„ë ˆì„ í˜¸ì¶œ]
+	// ì´ì „ í”„ë ˆì„ì˜ ì†Œì¼“ ìœ„ì¹˜ì™€ í˜„ì¬ ìœ„ì¹˜ ì‚¬ì´ë¥¼ ì—°ê²°í•˜ëŠ” 'Sweep Trace'ë¥¼ ìˆ˜í–‰í•©ë‹ˆë‹¤.
 	virtual void NotifyTick(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, float FrameDeltaTime, const FAnimNotifyEventReference& EventReference) override;
 
-	// [¾Ö´Ï¸ŞÀÌ¼Ç Á¾·á ½Ã È£Ãâ]
+	// [ì• ë‹ˆë©”ì´ì…˜ ì¢…ë£Œ ì‹œ í˜¸ì¶œ]
 	virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation, const FAnimNotifyEventReference& EventReference) override;
 
 protected:
 	// -------------------------------------------------------------------------
-	// ¼³Á¤ º¯¼ö (¿¡µğÅÍ¿¡¼­ ±âÈ¹ÀÚ°¡ ¼öÁ¤ °¡´É)
+	// ì„¤ì • ë³€ìˆ˜ (ì—ë””í„°ì—ì„œ ê¸°íšìê°€ ìˆ˜ì • ê°€ëŠ¥)
 	// -------------------------------------------------------------------------
 
-	/** °ø°İ ÆÇÁ¤ÀÇ ±âÁØÀÌ µÉ ¼ÒÄÏ ÀÌ¸§ (¿¹: "RightHandSocket", "MouthSocket") */
+	/** ê³µê²© íŒì •ì˜ ê¸°ì¤€ì´ ë  ì†Œì¼“ ì´ë¦„ (ì˜ˆ: "RightHandSocket", "MouthSocket") */
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	FName SocketName;
 
-	/** ÆÇÁ¤ ±¸Ã¼(Sphere)ÀÇ ¹İÁö¸§ */
+	/** íŒì • êµ¬ì²´(Sphere)ì˜ ë°˜ì§€ë¦„ */
 	UPROPERTY(EditAnywhere, Category = "Attack")
 	float AttackRadius;
 
-	/** µğ¹ö±× µå·ÎÀ×À» ÄÓÁö ¿©ºÎ */
+	/** ë””ë²„ê·¸ ë“œë¡œì‰ì„ ì¼¤ì§€ ì—¬ë¶€ */
 	UPROPERTY(EditAnywhere, Category = "Debug")
 	bool bDrawDebug;
 
 private:
-	// ÀÌ¹ø °ø°İ µ¿ÀÛ Áß¿¡ ÀÌ¹Ì Å¸°İÇÑ ¾×ÅÍµéÀ» ÀúÀåÇÕ´Ï´Ù. (ÇÑ ¹ø ÈÖµÎ¸¦ ¶§ °°Àº ´ë»óÀ» µÎ ¹ø ¶§¸®Áö ¾Ê±â À§ÇØ)
+	// ì´ë²ˆ ê³µê²© ë™ì‘ ì¤‘ì— ì´ë¯¸ íƒ€ê²©í•œ ì•¡í„°ë“¤ì„ ì €ì¥í•©ë‹ˆë‹¤. (í•œ ë²ˆ íœ˜ë‘ë¥¼ ë•Œ ê°™ì€ ëŒ€ìƒì„ ë‘ ë²ˆ ë•Œë¦¬ì§€ ì•Šê¸° ìœ„í•´)
 	TArray<AActor*> HitActors;
 };

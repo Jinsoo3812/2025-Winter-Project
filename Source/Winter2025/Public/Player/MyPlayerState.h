@@ -1,10 +1,10 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
-#include "PlayerAttributeSet.h" // °æ·Î°¡ ¾È ¸ÂÀ¸¸é "Player/PlayerAttributeSet.h" È®ÀÎ
+#include "PlayerAttributeSet.h" // ê²½ë¡œê°€ ì•ˆ ë§ìœ¼ë©´ "Player/PlayerAttributeSet.h" í™•ì¸
 #include "MyPlayerState.generated.h"
 
 UCLASS()
@@ -15,15 +15,15 @@ class WINTER2025_API AMyPlayerState : public APlayerState, public IAbilitySystem
 public:
 	AMyPlayerState();
 
-	// [ÀÎÅÍÆäÀÌ½º ±¸Çö]
-	// ¿ÜºÎ ½Ã½ºÅÛ(´Ù¸¥ Ä³¸¯ÅÍ, °ÔÀÓÇÃ·¹ÀÌ Å¥ µî)ÀÌ "ÀÌ »ç¶÷ ASC °¡Áö°í ÀÖ³ª¿ä?" ¹°¾îº¼ ¶§ ´äÇÏ´Â ÇÔ¼öÀÔ´Ï´Ù.
+	// [ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„]
+	// ì™¸ë¶€ ì‹œìŠ¤í…œ(ë‹¤ë¥¸ ìºë¦­í„°, ê²Œì„í”Œë ˆì´ í ë“±)ì´ "ì´ ì‚¬ëŒ ASC ê°€ì§€ê³  ìˆë‚˜ìš”?" ë¬¼ì–´ë³¼ ë•Œ ë‹µí•˜ëŠ” í•¨ìˆ˜ì…ë‹ˆë‹¤.
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	// AttributeSet(Ã¼·Â/¸¶³ª µî)¿¡ Á¢±ÙÇÏ±â À§ÇÑ ÇïÆÛ ÇÔ¼ö
+	// AttributeSet(ì²´ë ¥/ë§ˆë‚˜ ë“±)ì— ì ‘ê·¼í•˜ê¸° ìœ„í•œ í—¬í¼ í•¨ìˆ˜
 	UPlayerAttributeSet* GetAttributeSet() const { return AttributeSet; }
 
 protected:
-	// ÀÌÁ¦ ASC¿Í AttributeSetÀº Ä³¸¯ÅÍ°¡ ¾Æ´Ï¶ó PlayerState°¡ °ü¸®ÇÕ´Ï´Ù.
+	// ì´ì œ ASCì™€ AttributeSetì€ ìºë¦­í„°ê°€ ì•„ë‹ˆë¼ PlayerStateê°€ ê´€ë¦¬í•©ë‹ˆë‹¤.
 	UPROPERTY(VisibleAnywhere, Category = "GAS")
 	UAbilitySystemComponent* AbilitySystemComponent;
 

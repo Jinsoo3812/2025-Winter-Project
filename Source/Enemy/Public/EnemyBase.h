@@ -1,12 +1,12 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h" 
-#include "GameplayTagContainer.h" // ÅÂ±× »ç¿ëÀ» À§ÇØ Ãß°¡
+#include "GameplayTagContainer.h" // íƒœê·¸ ì‚¬ìš©ì„ ìœ„í•´ ì¶”ê°€
 #include "EnemyBase.generated.h"
 
-// Àü¹æ ¼±¾ğ (Çì´õ ÀÇÁ¸¼º ÃÖ¼ÒÈ­)
+// ì „ë°© ì„ ì–¸ (í—¤ë” ì˜ì¡´ì„± ìµœì†Œí™”)
 class UAbilitySystemComponent;
 class UEnemyAttributeSet;
 class UGameplayAbility;
@@ -14,8 +14,8 @@ class UGameplayEffect;
 
 /**
  * [AEnemyBase]
- * ¸ğµç Àû Ä³¸¯ÅÍ(º¸½º, ÂÌ¸÷)ÀÇ ÃÖ»óÀ§ ºÎ¸ğ Å¬·¡½º.
- * GAS ½Ã½ºÅÛ ÃÊ±âÈ­, ±âº» ½ºÅÈ ¼³Á¤, ½ÃÀÛ ½ºÅ³ ºÎ¿© ±â´ÉÀ» ´ã´çÇÕ´Ï´Ù.
+ * ëª¨ë“  ì  ìºë¦­í„°(ë³´ìŠ¤, ì«„ëª¹)ì˜ ìµœìƒìœ„ ë¶€ëª¨ í´ë˜ìŠ¤.
+ * GAS ì‹œìŠ¤í…œ ì´ˆê¸°í™”, ê¸°ë³¸ ìŠ¤íƒ¯ ì„¤ì •, ì‹œì‘ ìŠ¤í‚¬ ë¶€ì—¬ ê¸°ëŠ¥ì„ ë‹´ë‹¹í•©ë‹ˆë‹¤.
  */
 UCLASS()
 class ENEMY_API AEnemyBase : public ACharacter, public IAbilitySystemInterface
@@ -25,23 +25,23 @@ class ENEMY_API AEnemyBase : public ACharacter, public IAbilitySystemInterface
 public:
 	AEnemyBase();
 
-	// [IAbilitySystemInterface] ÀÌ ÇÔ¼ö¸¦ ÅëÇØ ¿ÜºÎ¿¡¼­ ÀÌ ÀûÀÇ ASC¿¡ Á¢±ÙÇÕ´Ï´Ù.
+	// [IAbilitySystemInterface] ì´ í•¨ìˆ˜ë¥¼ í†µí•´ ì™¸ë¶€ì—ì„œ ì´ ì ì˜ ASCì— ì ‘ê·¼í•©ë‹ˆë‹¤.
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	// ¿ÜºÎ¿¡¼­ ÀûÀÇ AttributeSet(Ã¼·Â µî)À» °¡Á®¿Ã ¼ö ÀÖ°Ô Getter Á¦°ø
+	// ì™¸ë¶€ì—ì„œ ì ì˜ AttributeSet(ì²´ë ¥ ë“±)ì„ ê°€ì ¸ì˜¬ ìˆ˜ ìˆê²Œ Getter ì œê³µ
 	UEnemyAttributeSet* GetAttributeSet() const { return Attributes; }
 
 
-	// [°ø°İ ÀûÁß Ã³¸®]
-	// AnimNotifyState¿¡¼­ È£ÃâÇÏ¸ç, ½ÇÁ¦ µ¥¹ÌÁö(GameplayEffect)¸¦ Å¸°Ù¿¡°Ô Àû¿ëÇÕ´Ï´Ù.
+	// [ê³µê²© ì ì¤‘ ì²˜ë¦¬]
+	// AnimNotifyStateì—ì„œ í˜¸ì¶œí•˜ë©°, ì‹¤ì œ ë°ë¯¸ì§€(GameplayEffect)ë¥¼ íƒ€ê²Ÿì—ê²Œ ì ìš©í•©ë‹ˆë‹¤.
 	virtual void OnAttackHit(AActor* TargetActor);
 
-	// [»ç¸Á Ã³¸®]
-	// AttributeSet¿¡¼­ Ã¼·ÂÀÌ 0ÀÌ µÇ¾úÀ» ¶§ È£ÃâÇÕ´Ï´Ù.
+	// [ì‚¬ë§ ì²˜ë¦¬]
+	// AttributeSetì—ì„œ ì²´ë ¥ì´ 0ì´ ë˜ì—ˆì„ ë•Œ í˜¸ì¶œí•©ë‹ˆë‹¤.
 	virtual void Die();
 
-	// [ÇÇ°İ ¹İÀÀ ÀÎÅÍÆäÀÌ½º (ÀÏ¹İ µ¥¹ÌÁö ÇÔ¼ö ¿À¹ö¶óÀÌµå)]
-	// È¤½Ã GAS ¿ÜÀÇ ¹æ½Ä(ApplyDamage µî)À¸·Î ¸Â¾ÒÀ» ¶§¸¦ ´ëºñÇÕ´Ï´Ù.
+	// [í”¼ê²© ë°˜ì‘ ì¸í„°í˜ì´ìŠ¤ (ì¼ë°˜ ë°ë¯¸ì§€ í•¨ìˆ˜ ì˜¤ë²„ë¼ì´ë“œ)]
+	// í˜¹ì‹œ GAS ì™¸ì˜ ë°©ì‹(ApplyDamage ë“±)ìœ¼ë¡œ ë§ì•˜ì„ ë•Œë¥¼ ëŒ€ë¹„í•©ë‹ˆë‹¤.
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 
@@ -51,19 +51,19 @@ protected:
 
 	/**
 	 * [GiveDefaultAbilities]
-	 * Ä³¸¯ÅÍ »ı¼º ½Ã ¿¡µğÅÍ¿¡ ¼³Á¤µÈ 'StartupAbilities' ½ºÅ³µéÀ» ÀÚµ¿À¸·Î ºÎ¿©ÇÕ´Ï´Ù.
+	 * ìºë¦­í„° ìƒì„± ì‹œ ì—ë””í„°ì— ì„¤ì •ëœ 'StartupAbilities' ìŠ¤í‚¬ë“¤ì„ ìë™ìœ¼ë¡œ ë¶€ì—¬í•©ë‹ˆë‹¤.
 	 */
 	virtual void GiveDefaultAbilities();
 
 	/**
 	 * [InitializeAttributes]
-	 * Ä³¸¯ÅÍ »ı¼º ½Ã 'DefaultAttributeEffect'¸¦ Àû¿ëÇØ Ã¼·Â/¸¶³ª µîÀÇ ÃÊ±â°ªÀ» ¼³Á¤ÇÕ´Ï´Ù.
+	 * ìºë¦­í„° ìƒì„± ì‹œ 'DefaultAttributeEffect'ë¥¼ ì ìš©í•´ ì²´ë ¥/ë§ˆë‚˜ ë“±ì˜ ì´ˆê¸°ê°’ì„ ì„¤ì •í•©ë‹ˆë‹¤.
 	 */
 	virtual void InitializeAttributes();
 
 protected:
 	// ------------------------------------------------------------------------------------------
-	// GAS ÄÄÆ÷³ÍÆ®
+	// GAS ì»´í¬ë„ŒíŠ¸
 	// ------------------------------------------------------------------------------------------
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
@@ -72,26 +72,26 @@ protected:
 	TObjectPtr<UEnemyAttributeSet> Attributes;
 
 	// ------------------------------------------------------------------------------------------
-	// ¼³Á¤ µ¥ÀÌÅÍ (¿¡µğÅÍ¿¡¼­ ±âÈ¹ÀÚ°¡ ¼¼ÆÃ)
+	// ì„¤ì • ë°ì´í„° (ì—ë””í„°ì—ì„œ ê¸°íšìê°€ ì„¸íŒ…)
 	// ------------------------------------------------------------------------------------------
 
-	/** °ÔÀÓ ½ÃÀÛ ½Ã ÀÚµ¿À¸·Î ºÎ¿©ÇÒ ½ºÅ³ ¸ñ·Ï (¿¹: ÆòÅ¸, ÆĞ½Ãºê) */
+	/** ê²Œì„ ì‹œì‘ ì‹œ ìë™ìœ¼ë¡œ ë¶€ì—¬í•  ìŠ¤í‚¬ ëª©ë¡ (ì˜ˆ: í‰íƒ€, íŒ¨ì‹œë¸Œ) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Abilities")
 	TArray<TSubclassOf<UGameplayAbility>> StartupAbilities;
 
-	/** °ÔÀÓ ½ÃÀÛ ½Ã ½ºÅÈÀ» ÃÊ±âÈ­ÇÒ GE (GameplayEffect) (¿¹: Ã¼·Â 1000 ¼¼ÆÃ) */
+	/** ê²Œì„ ì‹œì‘ ì‹œ ìŠ¤íƒ¯ì„ ì´ˆê¸°í™”í•  GE (GameplayEffect) (ì˜ˆ: ì²´ë ¥ 1000 ì„¸íŒ…) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Attributes")
 	TSubclassOf<UGameplayEffect> DefaultAttributeEffect;
 
-	/** Ä³¸¯ÅÍ°¡ ±âº»ÀûÀ¸·Î °¡Áú ÅÂ±× (¿¹: Enemy.Type.Boss) */
+	/** ìºë¦­í„°ê°€ ê¸°ë³¸ì ìœ¼ë¡œ ê°€ì§ˆ íƒœê·¸ (ì˜ˆ: Enemy.Type.Boss) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Tags")
 	FGameplayTagContainer InitialGameplayTags;
 
-	/** ÀûÀÌ °ø°İÇßÀ» ¶§ Àû¿ëÇÒ µ¥¹ÌÁö ÀÌÆåÆ® (BP¿¡¼­ GE_Damage_Enemy µî¿¡¼­ ÇÒ´ç) */
+	/** ì ì´ ê³µê²©í–ˆì„ ë•Œ ì ìš©í•  ë°ë¯¸ì§€ ì´í™íŠ¸ (BPì—ì„œ GE_Damage_Enemy ë“±ì—ì„œ í• ë‹¹) */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Combat")
 	TSubclassOf<UGameplayEffect> AttackDamageEffect;
 
-	// »ç¸Á ¾Ö´Ï¸ŞÀÌ¼Ç ¸ùÅ¸ÁÖ
+	// ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ëª½íƒ€ì£¼
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> DeadMontage;
 };

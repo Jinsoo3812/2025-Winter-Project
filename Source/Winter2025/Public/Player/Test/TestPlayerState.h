@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,8 +15,8 @@ class UPlayerAttributeSet;
 class UDataTable;
 
 /**
- * ¸ÖÆ¼ÇÃ·¹ÀÌ È¯°æ¿¡¼­ ÇÃ·¹ÀÌ¾îÀÇ GAS ¹× °¢Á¾ »óÅÂ Á¤º¸¸¦ °ü¸®ÇÏ´Â PlayerState
- * ÇÃ·¹ÀÌ¾î°¡ Á×¾ú´Ù ºÎÈ°ÇØµµ À¯ÁöµÇ¾î¾ß ÇÏ´Â Á¤º¸µéÀ» ´ã°í ÀÖ´Ù.
+ * ë©€í‹°í”Œë ˆì´ í™˜ê²½ì—ì„œ í”Œë ˆì´ì–´ì˜ GAS ë° ê°ì¢… ìƒíƒœ ì •ë³´ë¥¼ ê´€ë¦¬í•˜ëŠ” PlayerState
+ * í”Œë ˆì´ì–´ê°€ ì£½ì—ˆë‹¤ ë¶€í™œí•´ë„ ìœ ì§€ë˜ì–´ì•¼ í•˜ëŠ” ì •ë³´ë“¤ì„ ë‹´ê³  ìˆë‹¤.
  */
 UCLASS()
 class WINTER2025_API ATestPlayerState : public APlayerState, public IAbilitySystemInterface
@@ -28,50 +28,50 @@ public:
 
 	virtual void BeginPlay() override;
 
-	// IAbilitySystemInterface ±¸Çö ¹× GAS Á¢±ÙÀÚ
+	// IAbilitySystemInterface êµ¬í˜„ ë° GAS ì ‘ê·¼ì
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
-	// SkillManager Á¢±ÙÀÚ
+	// SkillManager ì ‘ê·¼ì
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	USkillManagerComponent* GetSkillManager() const { return SkillManager; }
 
-	// AttributeSet Á¢±ÙÀÚ (Ã¼·Â/¸¶³ª µîÀÇ ¼öÄ¡ µ¥ÀÌÅÍ)
+	// AttributeSet ì ‘ê·¼ì (ì²´ë ¥/ë§ˆë‚˜ ë“±ì˜ ìˆ˜ì¹˜ ë°ì´í„°)
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	UPlayerAttributeSet* GetAttributeSet() const { return AttributeSet; }
 
-	// DefaultRunes Á¢±ÙÀÚ
+	// DefaultRunes ì ‘ê·¼ì
 	const TArray<FSkillSlot>& GetDefaultSkillSets() const { return DefaultSkillSets; }
 
-	// ½ºÅ³ ½½·Ô ÃÊ±âÈ­ ÇÔ¼ö (ÃÊ·Ï ·é °¨Áö ¹× GA ±³Ã¼ Æ÷ÇÔ)
+	// ìŠ¤í‚¬ ìŠ¬ë¡¯ ì´ˆê¸°í™” í•¨ìˆ˜ (ì´ˆë¡ ë£¬ ê°ì§€ ë° GA êµì²´ í¬í•¨)
 	UFUNCTION(BlueprintCallable, Category = "Skill System")
 	void InitializeSkills();
 
-	// µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ ÇÃ·¹ÀÌ¾î ÃÊ±â ½ºÅÈ ·Îµå
+	// ë°ì´í„° í…Œì´ë¸”ì—ì„œ í”Œë ˆì´ì–´ ì´ˆê¸° ìŠ¤íƒ¯ ë¡œë“œ
 	UFUNCTION(BlueprintCallable, Category = "GAS")
 	void InitializePlayerStats(int32 PlayerLevel = 1);
 
 protected:
-	// PlayerState°¡ ¼ÒÀ¯ÇÏ´Â AbilitySystemComponent
+	// PlayerStateê°€ ì†Œìœ í•˜ëŠ” AbilitySystemComponent
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
-	// ½ºÅ³ ¸Å´ÏÀú ÄÄÆ÷³ÍÆ®
+	// ìŠ¤í‚¬ ë§¤ë‹ˆì € ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Skill System")
 	TObjectPtr<USkillManagerComponent> SkillManager;
 
-	// ÇÃ·¹ÀÌ¾îÀÇ Ã¼·Â, ÃÖ´ëÃ¼·Â µîÀÇ ¼öÄ¡¸¦ °ü¸®ÇÏ´Â AttributeSet
+	// í”Œë ˆì´ì–´ì˜ ì²´ë ¥, ìµœëŒ€ì²´ë ¥ ë“±ì˜ ìˆ˜ì¹˜ë¥¼ ê´€ë¦¬í•˜ëŠ” AttributeSet
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UPlayerAttributeSet> AttributeSet;
 
-	// FSkillSlot ±¸Á¶Ã¼¸¦ »ç¿ëÇÏ¿© ½ºÅ³°ú ÇØ´ç ½ºÅ³ÀÇ ·éÀ» ÇÑ ¹ø¿¡ ¼³Á¤
+	// FSkillSlot êµ¬ì¡°ì²´ë¥¼ ì‚¬ìš©í•˜ì—¬ ìŠ¤í‚¬ê³¼ í•´ë‹¹ ìŠ¤í‚¬ì˜ ë£¬ì„ í•œ ë²ˆì— ì„¤ì •
 	UPROPERTY(EditDefaultsOnly, Category = "Skill System")
 	TArray<FSkillSlot> DefaultSkillSets;
 
-	// ÇÃ·¹ÀÌ¾î ÃÊ±â ½ºÅÈ µ¥ÀÌÅÍ Å×ÀÌºí
+	// í”Œë ˆì´ì–´ ì´ˆê¸° ìŠ¤íƒ¯ ë°ì´í„° í…Œì´ë¸”
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Data|Player Stats")
 	TObjectPtr<UDataTable> PlayerStatsDataTable;
 
-	// ÇÃ·¹ÀÌ¾î ·¹º§ (µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ ½ºÅÈÀ» °¡Á®¿Ã ¶§ »ç¿ë)
+	// í”Œë ˆì´ì–´ ë ˆë²¨ (ë°ì´í„° í…Œì´ë¸”ì—ì„œ ìŠ¤íƒ¯ì„ ê°€ì ¸ì˜¬ ë•Œ ì‚¬ìš©)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Player")
 	int32 PlayerLevel = 1;
 };

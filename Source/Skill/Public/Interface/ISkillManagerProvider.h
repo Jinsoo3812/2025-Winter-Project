@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,7 +8,7 @@
 
 class USkillManagerComponent;
 
-// ¾ğ¸®¾ó ¸®ÇÃ·º¼Ç ½Ã½ºÅÛ¿ë ´õ¹Ì Å¬·¡½º
+// ì–¸ë¦¬ì–¼ ë¦¬í”Œë ‰ì…˜ ì‹œìŠ¤í…œìš© ë”ë¯¸ í´ë˜ìŠ¤
 UINTERFACE(MinimalAPI, Blueprintable)
 class USkillManagerProvider : public UInterface
 {
@@ -16,15 +16,15 @@ class USkillManagerProvider : public UInterface
 };
 
 /**
- * SkillManagerComponent¿¡ ´ëÇÑ Á¢±ÙÀ» Á¦°øÇÏ´Â ÀÎÅÍÆäÀÌ½º
- * TestCharacter µî SkillManager¸¦ Ä³½ÌÇÏ°í ÀÖ´Â Å¬·¡½º°¡ ±¸Çö
- * Skill ¸ğµâÀÌ Winter2025 ¸ğµâ¿¡ ÀÇÁ¸ÇÏÁö ¾Ê°íµµ SkillManager¿¡ Á¢±Ù °¡´É
+ * SkillManagerComponentì— ëŒ€í•œ ì ‘ê·¼ì„ ì œê³µí•˜ëŠ” ì¸í„°í˜ì´ìŠ¤
+ * TestCharacter ë“± SkillManagerë¥¼ ìºì‹±í•˜ê³  ìˆëŠ” í´ë˜ìŠ¤ê°€ êµ¬í˜„
+ * Skill ëª¨ë“ˆì´ Winter2025 ëª¨ë“ˆì— ì˜ì¡´í•˜ì§€ ì•Šê³ ë„ SkillManagerì— ì ‘ê·¼ ê°€ëŠ¥
  */
 class SKILL_API ISkillManagerProvider
 {
 	GENERATED_BODY()
 
 public:
-	// SkillManagerComponent¸¦ ¹İÈ¯ÇÏ´Â ¼ø¼ö °¡»ó ÇÔ¼ö
+	// SkillManagerComponentë¥¼ ë°˜í™˜í•˜ëŠ” ìˆœìˆ˜ ê°€ìƒ í•¨ìˆ˜
 	virtual USkillManagerComponent* GetSkillManager() const = 0;
 };
