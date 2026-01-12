@@ -59,6 +59,11 @@ protected:
 	// PlayerState로부터 ASC와 SkillManager를 가져와 캐싱 및 초기화
 	virtual void OnRep_PlayerState() override;
 
+	/*
+	* Attribute 변경 콜백 함수들
+	*/
+	virtual void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+
 	// 서버와 클라이언트 양쪽에서 호출되는 공통 초기화 함수
 	// PlayerState로 부터 가져온 ASC와 SkillManager를 초기화
 	void InitializeAbilitySystem();

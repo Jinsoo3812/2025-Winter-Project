@@ -91,23 +91,6 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 {
 	Super::PostGameplayEffectExecute(Data);
 
-
-	// 1. 변경된 어트리뷰트가 'MovementSpeed'인지 확인
-	if (Data.EvaluatedData.Attribute == GetMovementSpeedAttribute())
-	{
-		// 2. 이 어트리뷰트의 주인이 누구냐 (AvatarActor = 캐릭터)
-		AActor* AvatarActor = Data.Target.GetAvatarActor();
-
-		if (ACharacter* Character = Cast<ACharacter>(AvatarActor))
-		{
-			if (UCharacterMovementComponent* CMC = Character->GetCharacterMovement())
-			{
-				// 3. 실제 엔진의 이동 속도(MaxWalkSpeed)를 GAS 값으로 덮어쓰기
-				CMC->MaxWalkSpeed = GetMovementSpeed();
-			}
-		}
-	}
-
 	// (참고: 체력이 0이 되었을 때 사망 처리 등도 여기서 if (Health)로 처리합니다)
 
 
@@ -143,32 +126,8 @@ void UPlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCall
 
 
 /*
-플레이어가 버프/디버프를 받을 때 적용 되는 함수입니다.
-현재는 이동속도 변경에만 사용되고 있습니다.
 */
 void UPlayerAttributeSet::PostAttributeChange(const FGameplayAttribute& Attribute, float OldValue, float NewValue)
 {
 	Super::PostAttributeChange(Attribute, OldValue, NewValue);
-
-	if (Attribute == GetMovementSpeedAttribute())
-	{
-		// 1. ASC를 먼저 찾습니다.
-		UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
-
-		// 2. ASC가 빙의해 있는 'Avatar(캐릭터)'를 가져옵니다. (여기가 핵심!)
-		if (ASC && ASC->GetAvatarActor())
-		{
-			// 이제 PlayerState가 아니라 TestCharacter가 잡힙니다.
-			ACharacter* Character = Cast<ACharacter>(ASC->GetAvatarActor());
-
-			if (Character)
-			{
-				if (UCharacterMovementComponent* CMC = Character->GetCharacterMovement())
-				{
-					CMC->MaxWalkSpeed = NewValue;
-					UE_LOG(LogTemp, Warning, TEXT("드디어 성공! 속도가 변경되었습니다: %f"), NewValue);
-				}
-			}
-		}
-	}
 }

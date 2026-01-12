@@ -1,13 +1,14 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "TestCharacter.h"
-#include "GameplayAbilitySpec.h"
-#include "Abilities/GameplayAbility.h"
-#include "SkillManagerComponent.h"
+// #include "GameplayAbilitySpec.h"
+// #include "Abilities/GameplayAbility.h"
+// #include "SkillManagerComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Player/Test/TestPlayerState.h"
 #include "Player/PlayerAttributeSet.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ATestCharacter::ATestCharacter()
 {
@@ -225,6 +226,15 @@ void ATestCharacter::InitializeAbilitySystem()
 		}
 	}
 
+
+	/**
+	* Attribute 변화 델리게이트 바인딩
+	*/
+	// MovementSpeed 변경 델리게이트 바인딩
+	CachedAbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(
+		UPlayerAttributeSet::GetMovementSpeedAttribute()
+	).AddUObject(this, &ATestCharacter::OnMovementSpeedChanged);
+
 	// 이중 초기화 방지 플래그 설정
 	bAbilitySystemInitialized = true;
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter: AbilitySystem initialization complete"));
@@ -255,5 +265,15 @@ void ATestCharacter::OnAbilityInputReleased(int32 InputID)
 
 	// ASC에게 입력 Release 이벤트 전달
 	CachedAbilitySystemComponent->AbilityLocalInputReleased(InputID);
+}
+
+void ATestCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
+{
+	// 실제 이동 컴포넌트에 값 적용
+	if (UCharacterMovementComponent* CMC = GetCharacterMovement())
+	{
+		CMC->MaxWalkSpeed = Data.NewValue;
+		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: MovementSpeed changed to %f"), Data.NewValue);
+	}
 }
 
