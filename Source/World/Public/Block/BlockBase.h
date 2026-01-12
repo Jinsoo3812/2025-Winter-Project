@@ -82,9 +82,36 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// 블록의 위치와 타입 변수를 설정하고 소환합니다.
-	UFUNCTION()
+	// [레거시] 블록의 위치와 타입 변수를 설정하고 소환합니다.
 	virtual void SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType);
+
+	// 지정된 위치에 블록을 소환합니다. 
+	// 점유 확인 및 중력 설정을 포함한 개선된 스폰 로직
+	// @param World: 블록을 생성할 월드
+	// @param BlockClass: 생성할 블록의 클래스 (BP_DestructibleBlock 등)
+	// @param SpawnLocation: 블록을 생성할 위치
+	// @param bEnableGravity: 생성 후 중력을 활성화할지 여부
+	// @return 생성된 블록 (생성 실패 시 nullptr)
+	UFUNCTION(BlueprintCallable, Category = "Block")
+	static ABlockBase* SpawnBlock(
+		UWorld* World,
+		TSubclassOf<ABlockBase> BlockClass,
+		const FVector& SpawnLocation,
+		bool bEnableGravity
+	);
+
+	// 지정된 위치가 점유되어 있는지 확인하는 헬퍼 함수
+	// @param World: 체크할 월드
+	// @param CheckLocation: 체크할 위치
+	// @param CheckGridSize: 블록의 그리드 크기
+	// @return 점유되어 있으면 true, 비어있으면 false
+	// @note 프리뷰 블록(ECC_GameTraceChannel1)은 점유 판정에서 제외됨
+	UFUNCTION(BlueprintCallable, Category = "Block")
+	static bool IsLocationOccupied(
+		UWorld* World,
+		const FVector& CheckLocation,
+		float CheckGridSize
+	);
 
 	EBlockType GetBlockType() const { return BlockType; }
 	FVector GetBlockLocation() const { return Location; }

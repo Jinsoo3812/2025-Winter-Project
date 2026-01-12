@@ -2,6 +2,8 @@
 
 
 #include "Block/BlockBase.h"
+#include "Engine/World.h"
+#include "Engine/OverlapResult.h"
 
 // Sets default values
 ABlockBase::ABlockBase()
@@ -65,6 +67,96 @@ void ABlockBase::SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType)
 
     // 블록이 소환되자마자 떨어져야 하는지 검사하기 위해 Tick 켬
 	SetActorTickEnabled(true);
+}
+
+ABlockBase* ABlockBase::SpawnBlock(
+	UWorld* World,
+	TSubclassOf<ABlockBase> BlockClass,
+	const FVector& SpawnLocation,
+	bool bEnableGravity)
+{
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - World is null"));
+		return nullptr;
+	}
+
+	if (!BlockClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - BlockClass is null"));
+		return nullptr;
+	}
+
+	// 기본 GridSize 가져오기 (CDO 사용)
+	ABlockBase* CDO = BlockClass->GetDefaultObject<ABlockBase>();
+	float GridSize = CDO ? CDO->GetGridSize() : 100.0f;
+
+	// 점유 확인
+	if (IsLocationOccupied(World, SpawnLocation, GridSize))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase::SpawnBlockAdvanced - Location %s is occupied"), *SpawnLocation.ToString());
+		return nullptr;
+	}
+
+	// 블록 생성
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ABlockBase* NewBlock = World->SpawnActor<ABlockBase>(BlockClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
+
+	if (!NewBlock)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - Failed to spawn block at %s"), *SpawnLocation.ToString());
+		return nullptr;
+	}
+
+	// 블록 위치 설정
+	NewBlock->Location = SpawnLocation;
+	NewBlock->SetActorLocation(SpawnLocation);
+
+	// 중력 설정
+	if (bEnableGravity)
+	{
+		NewBlock->bCanFall = true;
+		NewBlock->SetActorTickEnabled(true);
+	}
+	else
+	{
+		NewBlock->bCanFall = false;
+		NewBlock->SetActorTickEnabled(false);
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("BlockBase::SpawnBlockAdvanced - Successfully spawned block at %s (Gravity: %s)"), 
+		*SpawnLocation.ToString(), bEnableGravity ? TEXT("ON") : TEXT("OFF"));
+
+	return NewBlock;
+}
+
+bool ABlockBase::IsLocationOccupied(
+	UWorld* World,
+	const FVector& CheckLocation,
+	float CheckGridSize)
+{
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase::IsLocationOccupied - World is null"));
+		return true;
+	}
+
+	// MakeBox는 인자를 반지름으로 사용함
+	// 0.5를 넣으면 100 * 100 * 100 크기의 박스가 되어 꽉 차므로 0.4 사용
+	FVector BoxExtent = FVector(CheckGridSize * 0.4f, CheckGridSize * 0.4f, CheckGridSize * 0.4f);
+	FCollisionShape CheckShape = FCollisionShape::MakeBox(BoxExtent);
+
+	// ObjectType 기반 쿼리 (WorldStatic, WorldDynamic만 체크)
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	FCollisionQueryParams QueryParams;
+
+	// 충돌한 블록들을 반환할 것이 아니므로 OverlapMulti 대신 OverlapAny 사용
+	return World->OverlapAnyTestByObjectType(CheckLocation, FQuat::Identity, ObjectQueryParams, CheckShape, QueryParams);
 }
 
 void ABlockBase::UpdateGravity(float DeltaTime)
