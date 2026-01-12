@@ -6,9 +6,12 @@
 #include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
+#include "Block/BlockBase.h"
+#include "Engine/OverlapResult.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Busy");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Preview, "State.Preview");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
 
@@ -27,8 +30,8 @@ UGA_SkillBase::UGA_SkillBase()
 	SetAssetTags(NewAbilityTags);
 
 	// CancelAbilitiesWithTag는 "다른 GA의 ASC에 붙은 Tag"를 검사
-	// 자신이 Skill 임을 표시
-	CancelAbilitiesWithTag.AddTag(TAG_Skill);
+	// Preview 상태의 스킬이 발동 중일 때는 다른 스킬로 취소할 수 있도록
+	CancelAbilitiesWithTag.AddTag(TAG_Skill_Preview);
 
 	// ActivationBlockedTags는 "시전자의 ASC에 붙은 Tag"를 검사
 	// 시전자가 다른 GA를 시전 중일 때는 시전되지 않도록 설정
@@ -229,6 +232,33 @@ void UGA_SkillBase::NotifySkillCastStarted()
 	}
 }
 
+void UGA_SkillBase::NotifySkillCastFinished()
+{
+	// 투사체 발사 후, 스킬 로직(기폭 대기 등)은 남아있지만 캐릭터의 행동 제약은 풀고 싶을 때 호출
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		if (ASC)
+		{
+			// 이미 태그가 있다면 제거 (중복 제거 방지를 위해 확인)
+			if (ASC->HasMatchingGameplayTag(TAG_Skill_Casting))
+			{
+				ASC->RemoveLooseGameplayTag(TAG_Skill_Casting);
+			}
+			// 태그가 없다면 굳이 로그를 찍지 않고 넘어감 (정상적인 흐름일 수 있음)
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::NotifySkillCastFinished: ASC is null"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::NotifySkillCastFinished: Avatar is null"));
+	}
+}
+
 void UGA_SkillBase::EndAbility(
 	const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
@@ -251,4 +281,117 @@ void UGA_SkillBase::EndAbility(
 	}
 	// 부모 클래스의 EndAbility 호출
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
+void UGA_SkillBase::FindBlocksInRange(TArray<ABlockBase*>& OutBlocks)
+{
+	// 결과 배열 초기화 (매 프레임 호출될 수 있으므로 비워줌)
+	OutBlocks.Empty();
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: World is null"));
+		return;
+	}
+
+	// AvatarActor를 OwnerPawn으로 캐시 
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: OwnerPawn is null"));
+		return;
+	}
+
+	FVector PlayerLocation = OwnerPawn->GetActorLocation();
+
+	// 박스 형태의 오버랩 영역 생성 (XY: 반지름, Z: 위아래 범위)
+	// 원래 원통형 범위를 사용하고 싶지만, 언리얼 엔진의 오버랩 함수는 박스 형태만 지원하므로 박스로 대체
+	// 이후에 XY 거리로 필터링하여 원형 범위로 보정
+	FCollisionShape OverlapBox = FCollisionShape::MakeBox(FVector(RangeXY, RangeXY, RangeZ));
+
+	// 오버랩 결과를 저장할 배열
+	TArray<FOverlapResult> OverlapResults;
+
+	// 어떤 오브젝트 타입을 대상으로 충돌 쿼리를 수행할지 설정 (무엇을 찾을 지)
+	FCollisionObjectQueryParams ObjectQueryParams;
+
+	// 대부분의 경우 블록은 움직이지 않으므로 WorldStatic
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
+
+	// 추후 스킬 사용으로 블록이 움직이면, 그 위의 블록도 움직이는 등의 상황을 고려하여 WorldDynamic도 포함
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+	// 충돌 쿼리의 옵션 및 예외 설정 (어떻게 찾을 지)
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(OwnerPawn); // 플레이어 자신은 제외
+
+	// 범위 내 블록만 검색 (언리얼 물리 엔진의 공간 분할 구조 활용)
+	bool bOverlap = World->OverlapMultiByObjectType(
+		OverlapResults,
+		PlayerLocation,
+		FQuat::Identity,
+		ObjectQueryParams,
+		OverlapBox,
+		QueryParams
+	);
+
+	// 오버랩 된 것이 없으면 로그를 찍을 필요는 없지만 함수는 종료
+	if (!bOverlap)
+	{
+		return;
+	}
+
+	// 검색된 블록들 처리
+	// FOverlapResult는 가벼우므로 &로 가져옵니다.
+	for (const FOverlapResult& Result : OverlapResults)
+	{
+		ABlockBase* Block = Cast<ABlockBase>(Result.GetActor());
+		if (!Block)
+		{
+			continue;
+		}
+
+		FVector BlockLocation = Block->GetActorLocation();
+
+		// XY 평면 거리 재확인 (박스가 사각형이므로 원형 범위로 한번 더 필터링)
+		float DistanceXY = FVector::Dist2D(PlayerLocation, BlockLocation);
+
+		// 거리가 범위 밖이라면 포함하지 않음
+		if (DistanceXY > RangeXY)
+		{
+			continue;
+		}
+
+		// 결과 배열에 유효한 블록 추가
+		OutBlocks.Add(Block);
+	}
+}
+
+void UGA_SkillBase::NotifySkillPreviewStarted()
+{
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		if (ASC)
+		{
+			// Preview 태그 추가: 이제 캐릭터는 "조준 중" 상태가 됨
+			ASC->AddLooseGameplayTag(TAG_Skill_Preview);
+		}
+	}
+}
+
+void UGA_SkillBase::NotifySkillPreviewFinished()
+{
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (Avatar)
+	{
+		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+		// 태그가 있다면 제거
+		if (ASC && ASC->HasMatchingGameplayTag(TAG_Skill_Preview))
+		{
+			ASC->RemoveLooseGameplayTag(TAG_Skill_Preview);
+		}
+	}
 }
