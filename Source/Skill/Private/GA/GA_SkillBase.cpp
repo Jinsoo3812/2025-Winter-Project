@@ -10,7 +10,6 @@
 #include "Engine/OverlapResult.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Preview, "State.Preview");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
@@ -31,7 +30,7 @@ UGA_SkillBase::UGA_SkillBase()
 
 	// CancelAbilitiesWithTag는 "다른 GA의 ASC에 붙은 Tag"를 검사
 	// Preview 상태의 스킬이 발동 중일 때는 다른 스킬로 취소할 수 있도록
-	CancelAbilitiesWithTag.AddTag(TAG_Skill_Preview);
+	CancelAbilitiesWithTag.AddTag(TAG_Skill);
 
 	// ActivationBlockedTags는 "시전자의 ASC에 붙은 Tag"를 검사
 	// 시전자가 다른 GA를 시전 중일 때는 시전되지 않도록 설정
@@ -365,33 +364,5 @@ void UGA_SkillBase::FindBlocksInRange(TArray<ABlockBase*>& OutBlocks)
 
 		// 결과 배열에 유효한 블록 추가
 		OutBlocks.Add(Block);
-	}
-}
-
-void UGA_SkillBase::NotifySkillPreviewStarted()
-{
-	AActor* Avatar = GetAvatarActorFromActorInfo();
-	if (Avatar)
-	{
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-		if (ASC)
-		{
-			// Preview 태그 추가: 이제 캐릭터는 "조준 중" 상태가 됨
-			ASC->AddLooseGameplayTag(TAG_Skill_Preview);
-		}
-	}
-}
-
-void UGA_SkillBase::NotifySkillPreviewFinished()
-{
-	AActor* Avatar = GetAvatarActorFromActorInfo();
-	if (Avatar)
-	{
-		UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-		// 태그가 있다면 제거
-		if (ASC && ASC->HasMatchingGameplayTag(TAG_Skill_Preview))
-		{
-			ASC->RemoveLooseGameplayTag(TAG_Skill_Preview);
-		}
 	}
 }

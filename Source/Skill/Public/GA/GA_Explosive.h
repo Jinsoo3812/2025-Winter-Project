@@ -77,6 +77,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 	float AutoDetonateDelay = 3.0f;
 
+	// 폭발 반지름 (구 형태)
+	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
+	float ExplosionRadius = 300.0f;
+
+	// 폭발 시 적용할 파괴 Effect
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Explosive")
+	TSubclassOf<UGameplayEffect> DestructionEffect;
+
 	// 생성된 폭발물 인스턴스 (InstancedPerActor 정책이므로 멤버 변수 유지 가능)
 	UPROPERTY()
 	TObjectPtr<AExplosive> CurrentExplosive;

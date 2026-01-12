@@ -9,7 +9,6 @@
 
 class ABlockBase;
 class ADestructibleBlock;
-class UMaterialInstanceDynamic;
 class UAbilityTask_WaitInputPress;
 
 /**
@@ -30,14 +29,6 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	// 건설 가능 범위 (XY 평면 반지름)
-	UPROPERTY(EditDefaultsOnly, Category = "Range")
-	float ConstructionRangeXY = 500.0f;
-
-	// 건설 가능 범위 (Z축 위아래)
-	UPROPERTY(EditDefaultsOnly, Category = "Range")
-	float ConstructionRangeZ = 200.0f;
-
 	// 생성할 블록 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "Construction")
 	TSubclassOf<ADestructibleBlock> BlockToSpawn;
@@ -50,37 +41,15 @@ protected:
 	UPROPERTY()
 	TObjectPtr<AActor> PreviewBlock;
 
-	// 하이라이트된 블록들 (그 위에 블록을 생성할 수 있는 블록들의 목록)
-	// TSet 자료구조 Contains 메서드 O(1) 해시 탐색을 최적화함
-	UPROPERTY()
-	TSet<TObjectPtr<ABlockBase>> HighlightedBlocks;
-
-	// 각 블록별로 동적으로 머티리얼 인스턴스를 저장
-	// 이미 하이라이트된 블록들을 재사용하여 중복 생성 방지
-	UPROPERTY()
-	TMap<TObjectPtr<ABlockBase>, TObjectPtr<UMaterialInstanceDynamic>> DynamicMaterials;
-
-	// 각 블록별로 원본 머티리얼 저장
-	UPROPERTY()
-	TMap<TObjectPtr<ABlockBase>, TObjectPtr<UMaterialInterface>> OriginalMaterials;
-
-	// 각 블록별로 원본 EmissivePower 값 저장
-	UPROPERTY()
-	TMap<TObjectPtr<ABlockBase>, float> OriginalEmissivePowers;
-
-	// 하이라이트 시 적용할 EmissivePower 값
-	UPROPERTY(EditDefaultsOnly, Category = "Construction")
-	float HighlightEmissivePower = 0.1f;
-
 	// 타이머 핸들
 	FTimerHandle TickTimerHandle;
-
-	// 이전의 플레이어 위치 (하이라이트 업데이트 최적화용)
-	FVector LastPlayerLocation;
 
 	// W키 재입력 감지를 위한 Ability Task
 	UPROPERTY()
 	TObjectPtr<UAbilityTask_WaitInputPress> WaitInputTask;
+
+	// 프리뷰 중이거나 하이라이트 효과가 적용된 블록들을 관리하는 배열
+	TArray<TWeakObjectPtr<ABlockBase>> PreviewedBlocks;
 
 	// 범위 내 블록들을 찾아서 하이라이트
 	void HighlightBlocksInRange();

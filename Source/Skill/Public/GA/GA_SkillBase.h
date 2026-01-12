@@ -11,7 +11,6 @@ class USkillManagerComponent;
 class ABlockBase;
 
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill); // 스킬임을 표시하는 태그
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Preview); // 스킬 프리뷰 상태임을 시전자에게 부여하는 태그
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // 스킬 시전 중임을 시전자에게 부여하는 태그
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // 데미지 태그용
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Cooldown); // 쿨타임 태그용
@@ -98,12 +97,6 @@ protected:
 
 	// 실제 스킬이 종료될 때 호출되는 함수
 	void NotifySkillCastFinished();
-
-	// 프리뷰(조준) 상태 진입 시 호출
-	void NotifySkillPreviewStarted();
-
-	// 프리뷰(조준) 상태 종료 시 호출
-	void NotifySkillPreviewFinished();
 
 	void FindBlocksInRange(TArray<ABlockBase*>& OutBlocks);
 

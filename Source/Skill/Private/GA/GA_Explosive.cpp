@@ -10,6 +10,10 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Components/StaticMeshComponent.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Engine/OverlapResult.h"
+#include "DrawDebugHelpers.h"
 
 UGA_Explosive::UGA_Explosive()
 {
@@ -29,9 +33,6 @@ void UGA_Explosive::ActivateAbility(
 	{
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Explosive::UpdatePreview, 0.016f, true);
 	}
-
-	// 프리뷰 태그 부착
-	NotifySkillPreviewStarted();
 
 	// 취소 입력 대기 (스킬 재입력시 조준 취소)
 	InputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
@@ -113,7 +114,6 @@ void UGA_Explosive::EndAbility(
 
 	SavedTargetBlock.Reset();
 
-	NotifySkillPreviewFinished();
 	NotifySkillCastFinished();
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -181,9 +181,6 @@ void UGA_Explosive::OnLeftClickPressed()
 	// 하이라이트된 블록이 유효할 때만 시전
 	if (HighlightedBlock.IsValid())
 	{
-		// 프리뷰 종료
-		NotifySkillPreviewFinished();
-
 		// 스킬 시전 시작 (Busy 태그 등 적용)
 		NotifySkillCastStarted();
 
@@ -332,6 +329,93 @@ void UGA_Explosive::PerformDetonateAndEnd()
 {
 	if (CurrentExplosive)
 	{
+		// 폭발 중심 위치: 폭발물이 부착된 블록의 윗면 중앙
+		FVector ExplosionCenter = CurrentExplosive->GetActorLocation();
+
+		// 폭발 범위 내 객체 탐색
+		TArray<FOverlapResult> OverlapResults;
+		FCollisionQueryParams QueryParams;
+		QueryParams.AddIgnoredActor(CurrentExplosive);
+		QueryParams.AddIgnoredActor(GetAvatarActorFromActorInfo());
+
+		bool bHit = GetWorld()->OverlapMultiByChannel(
+			OverlapResults,
+			ExplosionCenter,
+			FQuat::Identity,
+			ECC_Pawn,
+			FCollisionShape::MakeSphere(ExplosionRadius),
+			QueryParams
+		);
+
+		if (bHit)
+		{
+			for (const FOverlapResult& Overlap : OverlapResults)
+			{
+				AActor* HitActor = Overlap.GetActor();
+				if (!HitActor) continue;
+
+				// ASC를 가진 액터만 GE 적용 가능
+				UAbilitySystemComponent* TargetASC = nullptr;
+				if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
+				{
+					TargetASC = ASI->GetAbilitySystemComponent();
+				}
+
+				if (TargetASC)
+				{
+					// 데미지 Effect 적용
+					FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
+					if (DamageSpecHandle.IsValid())
+					{
+						GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(
+							*DamageSpecHandle.Data.Get(),
+							TargetASC
+						);
+
+						UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Applied damage to %s"), *HitActor->GetName());
+					}
+
+					// 파괴 Effect 적용
+					if (DestructionEffect)
+					{
+						FGameplayEffectContextHandle DestructionContext = GetAbilitySystemComponentFromActorInfo()->MakeEffectContext();
+						DestructionContext.AddSourceObject(GetAvatarActorFromActorInfo());
+
+						FGameplayEffectSpecHandle DestructionSpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(
+							DestructionEffect,
+							GetAbilityLevel(),
+							DestructionContext
+						);
+
+						if (DestructionSpecHandle.IsValid())
+						{
+							GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(
+								*DestructionSpecHandle.Data.Get(),
+								TargetASC
+							);
+
+							UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Applied destruction to %s"), *HitActor->GetName());
+						}
+					}
+				}
+			}
+		}
+
+		// 디버그 구 그리기 (폭발 범위 시각화)
+		DrawDebugSphere(
+			GetWorld(),
+			ExplosionCenter,
+			ExplosionRadius,
+			16,
+			FColor::Red,
+			false,
+			2.0f,
+			0,
+			2.0f
+		);
+
+		UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Explosion at %s with radius %f"), *ExplosionCenter.ToString(), ExplosionRadius);
+
 		CurrentExplosive->Detonate();
 		CurrentExplosive = nullptr;
 	}
