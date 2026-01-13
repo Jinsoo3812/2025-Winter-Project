@@ -127,7 +127,8 @@ void AExplosive::OnLanded()
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::OnLanded: TargetBlock is invalid"));
+		// 도착하고 보니 타겟 블록이 없어진 경우 즉시 기폭
+		Detonate();
 	}
 
 	// 자동 폭파 타이머 시작
@@ -295,7 +296,4 @@ void AExplosive::OnBlockDestroyed(AActor* DestroyedActor)
 {
 	// 블록은 이미 파괴 과정에 있으므로, 타겟 포인터를 null로 비워 폭발 로직에서 접근하지 못하게 함
 	TargetBlock = nullptr;
-
-	// 즉시 기폭
-	Detonate();
 }
