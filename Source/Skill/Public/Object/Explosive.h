@@ -39,6 +39,8 @@ public:
 	// @param FlightDuration: 목표까지 도달하는 데 걸리는 시간 (초)
 	// @param InAutoDetonateDelay: 자동 기폭 대기 시간 (초)
 	// @param InExplosionRadius: 폭발 반경
+	// @param InMaxBombCount: 최대 투척 폭탄 개수
+	// @
 	// @param InSourceASC: 데미지 적용에 사용할 소스 ASC
 	// @param InDamageSpecHandle: 데미지 적용에 사용할 GE Spec Handle
 	// @param InDestructionEffectClass: 파괴 효과로 적용할 GE 클래스
@@ -48,6 +50,7 @@ public:
 		float FlightDuration,
 		float InAutoDetonateDelay,
 		float InExplosionRadius,
+		int32 InMaxBombCount,
 		UAbilitySystemComponent* InSourceASC,
 		FGameplayEffectSpecHandle InDamageSpecHandle,
 		TSubclassOf<UGameplayEffect> InDestructionEffectClass
@@ -124,4 +127,6 @@ protected:
 
 	// 자동 폭파 타이머 핸들
 	FTimerHandle DetonateTimerHandle;
+
+	int32 MaxBombCount = 3;
 };

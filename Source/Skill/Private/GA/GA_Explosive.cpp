@@ -24,31 +24,21 @@ void UGA_Explosive::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	// 조준 모드(프리뷰) 진입
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// 이미 던져놓은 폭발물이 아직 유효하다면 기폭 및 종료
-	if (CurrentExplosive.IsValid())
-	{
-		// 착륙(Attached) 상태일 때만 기폭 가능
-		if (CurrentExplosive->IsAttached())
-		{
-			PerformDetonateAndEnd();
-			return;
-		}
-		else
-		{
-			// 아직 날아가는 중이면 기폭하지 않고, 조준 모드 진입도 막기 위해 종료
-			UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Bomb is flying. Cannot detonate yet."));
-			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-			return;
-		}
-	}
+	// GA_StickyBomb과 달리 기존 폭탄을 확인하거나 기폭하는 로직이 없음.
+	// 즉시 투척을 위한 조준(Preview) 모드로 진입.
 
 	// 프리뷰 타이머 시작
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Explosive::UpdatePreview, 0.016f, true);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: World is null, cannot start Preview Timer"));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
 	}
 
 	// 취소 입력 대기 (스킬 재입력시 조준 취소)
@@ -58,7 +48,8 @@ void UGA_Explosive::ActivateAbility(
 		InputTask->OnPress.AddDynamic(this, &UGA_Explosive::OnCancelPressed);
 		InputTask->ReadyForActivation();
 	}
-	else {
+	else
+	{
 		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to create WaitInputTask for targeting"));
 	}
 
@@ -71,9 +62,14 @@ void UGA_Explosive::ActivateAbility(
 		{
 			PC->InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &UGA_Explosive::OnLeftClickPressed);
 		}
-		else {
+		else
+		{
 			UE_LOG(LogTemp, Error, TEXT("GA_Explosive: PlayerController or InputComponent is null"));
 		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: OwnerPawn is null"));
 	}
 }
 
@@ -116,9 +112,17 @@ void UGA_Explosive::EndAbility(
 				}
 			}
 		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: PC or InputComponent null during EndAbility cleanup"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: OwnerPawn null during EndAbility cleanup"));
 	}
 
-	// 폭발물에게 정보를 넘겨줄 것이므로 리셋해도 됨
+	// 저장된 타겟 초기화
 	SavedTargetBlock.Reset();
 
 	NotifySkillCastFinished();
@@ -128,57 +132,39 @@ void UGA_Explosive::EndAbility(
 
 void UGA_Explosive::UpdatePreview()
 {
+	// GA_StickyBomb과 동일한 로직 사용
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (!OwnerPawn) return;
 
 	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 	if (!PC) return;
 
-	// 이전 프레임의 하이라이트 초기화
+	// 1. 이전 프레임의 하이라이트 초기화
 	ClearHighlights();
 
-	// 사거리 내의 모든 블록 탐색 (SkillBase의 함수 활용, RangeXY/RangeZ 사용)
+	// 2. 사거리 내 블록 탐색
 	TArray<ABlockBase*> BlocksInRange;
 	FindBlocksInRange(BlocksInRange);
 
-	// 탐색된 블록들에 파란색 하이라이트 적용 (CustomPrimitiveData)
-	for (ABlockBase* Block : BlocksInRange)
-	{
-		if (Block)
-		{
-			UStaticMeshComponent* Mesh = Block->GetBlockMesh();
-			if (Mesh)
-			{
-				// CustomPrimitiveData Index 0: 1.0f = Preview (Blue)
-				Mesh->SetCustomPrimitiveDataFloat(0, 1.0f);
-			}
-			// 나중에 끄기 위해 목록에 추가
-			PreviewedBlocks.Add(Block);
-		}
-	}
+	// 3. 탐색된 블록들에 일괄적으로 'Preview(파랑)' 상태 적용
+	BatchHighlightBlocks(BlocksInRange, EBlockHighlightState::Preview);
 
-	// 현재 마우스가 가리키는 블록이 '사거리 내(파란 영역)'에 있는지 확인하여 타겟팅
+	// 4. 나중에 끄기 위해 목록 백업
+	PreviewedBlocks = BlocksInRange;
+
+	// 5. 마우스 커서 위치의 블록 타겟팅 처리
 	FHitResult HitResult;
 	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
 	ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
 
-	// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있다면 유효한 타겟(초록색)으로 설정
+	// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있다면 'Targeted(초록)'으로 덮어쓰기
 	if (HitBlock && PreviewedBlocks.Contains(HitBlock))
 	{
-		// 이 블록만 초록색(3.0)으로 변경
-		UStaticMeshComponent* HitMesh = HitBlock->GetBlockMesh();
-		if (HitMesh)
-		{
-			HitMesh->SetCustomPrimitiveDataFloat(0, 3.0f);
-		}
-
-		// 투척 대상으로 설정
+		HitBlock->SetHighlightState(EBlockHighlightState::Targeted);
 		HighlightedBlock = HitBlock;
 	}
 	else
 	{
-		// 사거리 밖이거나 허공을 가리키면 타겟 없음
-		// 이 경우 마우스 오버 효과(초록)는 없고,  파란색만 남음
 		HighlightedBlock.Reset();
 	}
 }
@@ -191,8 +177,12 @@ void UGA_Explosive::OnLeftClickPressed()
 		// 스킬 시전 시작 (Busy 태그 등 적용)
 		NotifySkillCastStarted();
 
-		// 폭발물 투척 및 스킬 종료
+		// 폭발물 투척 및 스킬 종료 (단발성이므로 즉시 종료됨)
 		SpawnExplosive();
+	}
+	else
+	{
+		// 타겟이 유효하지 않을 때는 아무 동작 하지 않음 (로그 생략 가능)
 	}
 }
 
@@ -204,10 +194,10 @@ void UGA_Explosive::OnCancelPressed(float TimeWaited)
 
 void UGA_Explosive::SpawnExplosive()
 {
-	// 투척 시점에는 쿨타임이 적용되지 않음
+	// 코스트 지불 확인
 	if (!CommitAbilityCost(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit ability"));
+		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit ability cost"));
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
 		return;
 	}
@@ -219,135 +209,80 @@ void UGA_Explosive::SpawnExplosive()
 		return;
 	}
 
-	// 이제 목표 블록이 바뀌지 않으므로 SavedTargetBlock에 고정 백업
+	// 목표 블록 백업
 	SavedTargetBlock = HighlightedBlock.Get();
 
-	// 프리뷰 종료: 폭발물이 날아가는 동안엔 빨간색이 꺼져야 함
-	// 타이머를 끄고 하이라이트를 제거
+	// 프리뷰 종료 및 입력 해제 로직 (EndAbility에서 처리하지만 명시적 정리를 위해)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
-	ClearHighlights(); // 이때 HighlightedBlock은 null이 되지만, 위에서 SavedTargetBlock에 백업해둠
+	ClearHighlights();
 
-	// 좌클릭 바인딩 해제 (더 이상 투척 불가)
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
-	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			// 키 바인딩 루프를 돌며 현재 객체에 연결된 바인딩(좌클릭) 제거
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this &&
-					PC->InputComponent->KeyBindings[i].Chord.Key == EKeys::LeftMouseButton)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
-	}
-
-	// 3. 조준 취소용 입력 태스크 종료
+	// 입력 태스크 종료
 	if (InputTask)
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
 	}
 
-	// 4. 폭발물 생성
-	FVector SpawnLoc = OwnerPawn->GetActorLocation();
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	AExplosive* NewExplosive = GetWorld()->SpawnActor<AExplosive>(ExplosiveClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-
-	if (NewExplosive && SavedTargetBlock.IsValid())
+	// 폭발물 생성
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (OwnerPawn)
 	{
-		CurrentExplosive = NewExplosive;
+		FVector SpawnLoc = OwnerPawn->GetActorLocation();
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-		NewExplosive->OnDetonatedDelegate.AddDynamic(this, &UGA_Explosive::OnExplosiveDetonated);
+		AExplosive* NewExplosive = GetWorld()->SpawnActor<AExplosive>(ExplosiveClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 
-		// GA가 종료된 후에도 액터가 데미지를 줄 수 있도록 SpecHandle을 생성하여 전달
-		FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
+		if (NewExplosive && SavedTargetBlock.IsValid())
+		{
+			// 데미지 스펙 핸들 생성
+			FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
-		// 폭발물 초기화
-		NewExplosive->Initialize(
-			SpawnLoc,
-			SavedTargetBlock.Get(),
-			1.5f,
-			AutoDetonateDelay,
-			ExplosionRadius,
-			GetAbilitySystemComponentFromActorInfo(),
-			DamageSpecHandle,
-			DestructionEffect
-		);
+			// 폭발물 초기화
+			// 중요: AutoDetonateDelay를 0.0f로 설정하여 착탄(OnLanded) 후 즉시 폭발하도록 함
+			NewExplosive->Initialize(
+				SpawnLoc,
+				SavedTargetBlock.Get(),
+				1.5f,			// FlightDuration
+				0.01f,			// AutoDetonateDelay (즉시 폭발)
+				ExplosionRadius * GetRuneModifiedRange(),
+				1,				// MaxBombCount (이 스킬에선 의미 없지만 1로 전달)
+				GetAbilitySystemComponentFromActorInfo(),
+				DamageSpecHandle,
+				DestructionEffect
+			);
 
-		// 성공적으로 던졌으므로 bWasCancelled = false.
-		// 폭발 대기는 이제 액터가 스스로 하거나, 플레이어가 다시 스킬을 눌러 처리
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+			// 점착 폭탄과 달리 리스트에 추가하거나 델리게이트를 기다리지 않음.
+			// 던지는 행위로 스킬 사용은 끝남.
+
+			// 투척 즉시 쿨타임 적용
+			CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+
+			// 스킬 정상 종료
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to spawn bomb or invalid target"));
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		}
 	}
-	else {
-		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to spawn bomb or invalid target"));
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: OwnerPawn is null during spawn"));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 	}
 }
 
-void UGA_Explosive::PerformDetonateAndEnd()
-{
-	if (CurrentExplosive.IsValid())
-	{
-		// 폭발물 폭파. 피해 및 파괴 처리 로직은 폭발물 액터 내부에서 처리됨
-		// Detonate() 호출 시 OnDetonatedDelegate가 브로드캐스트되어 OnExplosiveDetonated()가 실행됨
-		CurrentExplosive->Detonate();
-
-		CurrentExplosive.Reset();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Detonate requested but bomb is gone (Already auto-detonated?)."));
-	}
-
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-}
-
-// 하이라이트 제거 로직
 void UGA_Explosive::ClearHighlights()
 {
-	for (TWeakObjectPtr<ABlockBase>& WeakBlock : PreviewedBlocks)
-	{
-		if (WeakBlock.IsValid())
-		{
-			UStaticMeshComponent* MeshComp = WeakBlock->GetBlockMesh();
-			if (MeshComp)
-			{
-				// Index 0 값을 0.0(기본)으로 복구
-				MeshComp->SetCustomPrimitiveDataFloat(0, 0.0f);
-			}
-		}
-	}
+	// 저장된 프리뷰 블록들의 상태를 'None'으로 복구
+	BatchHighlightBlocks(PreviewedBlocks, EBlockHighlightState::None);
 
 	// 목록 초기화
 	PreviewedBlocks.Empty();
 	HighlightedBlock.Reset();
-}
-
-void UGA_Explosive::OnExplosiveDetonated()
-{
-	// 수동 OR 자동 폭파 모두 이 함수가 호출되므로 여기서 쿨타임 적용
-	if (!CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit cooldown in Delegate."));
-	}
-
-	// 폭발물이 터졌으므로 포인터 안전하게 초기화
-	if (CurrentExplosive.IsValid())
-	{
-		CurrentExplosive.Reset();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Received detonation signal, but CurrentExplosive was already invalid."));
-	}
 }

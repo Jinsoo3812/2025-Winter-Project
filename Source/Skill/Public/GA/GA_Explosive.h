@@ -7,17 +7,17 @@
 #include "GA_Explosive.generated.h"
 
 class AExplosive;
-class ABlockBase;
 class UAbilityTask_WaitInputPress;
+class ABlockBase;
 
 /**
- * 원거리 블록에 폭발물을 던지고, 재시전하여 폭발시키는 어빌리티
+ * 단발성 폭발물 투척 스킬.
  */
 UCLASS()
 class SKILL_API UGA_Explosive : public UGA_SkillBase
 {
 	GENERATED_BODY()
-
+	
 public:
 	UGA_Explosive();
 
@@ -35,69 +35,61 @@ public:
 		bool bWasCancelled) override;
 
 protected:
-	// 매 프레임 프리뷰 업데이트
+	// --- 기능 함수 ---
+
+	// 매 틱마다 호출되어 조준선(프리뷰) 업데이트
+	UFUNCTION()
 	void UpdatePreview();
 
-	// 좌클릭 시 호출 (폭발물 투척)
+	// 좌클릭 시 호출 (투척 확정)
 	UFUNCTION()
 	void OnLeftClickPressed();
 
-	// 취소 키(스킬 키) 입력 시 호출
+	// 취소 키 입력 시 호출
 	UFUNCTION()
 	void OnCancelPressed(float TimeWaited);
 
-	// 폭발물 투척 로직
+	// 실제 폭발물 생성 및 투척 처리 로직
 	void SpawnExplosive();
 
-	// 최종 폭발 처리 및 종료
-	void PerformDetonateAndEnd();
-
-	UFUNCTION()
-	// 폭발물의 폭발 알림 수신
-	void OnExplosiveDetonated();
-
-	// 프리뷰 및 하이라이트 정리
+	// 하이라이트(프리뷰) 초기화
 	void ClearHighlights();
 
-protected:
-	// 폭발물 액터 클래스 (BP 주입)
-	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
-	TSubclassOf<AExplosive> ExplosiveClass;
 
-	// 자동 폭파 시간 (초)
-	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
-	float AutoDetonateDelay = 3.0f;
+	// --- 변수 및 설정 ---
 
-	// 폭발 반지름 (구 형태)
-	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
-	float ExplosionRadius = 300.0f;
-
-	// 폭발 시 적용할 파괴 Effect
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Explosive")
-	TSubclassOf<UGameplayEffect> DestructionEffect;
-
-	// 생성된 폭발물 인스턴스 (InstancedPerActor 정책이므로 멤버 변수 유지 가능)
+	// 조준 업데이트를 위한 타이머
 	UPROPERTY()
-	TWeakObjectPtr<AExplosive> CurrentExplosive;
-
-	// 프리뷰 타이머 핸들
 	FTimerHandle TickTimerHandle;
 
-	// 태스크 참조 보관
+	// 입력 대기 태스크
 	UPROPERTY()
 	UAbilityTask_WaitInputPress* InputTask;
 
-	// 현재 투척 목표로 하이라이트된 블록 (매 프레임 변할 수 있음)
+	// 생성할 폭발물 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
+	TSubclassOf<AExplosive> ExplosiveClass;
+
+	// 폭발 반경
+	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
+	float ExplosionRadius = 300.0f;
+
+	// 파괴 시 적용할 이펙트 (구조물 파괴용)
+	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
+	TSubclassOf<UGameplayEffect> DestructionEffect;
+
+
+	// --- 상태 저장용 ---
+
+	// 현재 프리뷰 중인(파란색) 블록 목록
+	UPROPERTY()
+	TArray<ABlockBase*> PreviewedBlocks;
+
+	// 현재 마우스 오버된(초록색/타겟) 블록
 	UPROPERTY()
 	TWeakObjectPtr<ABlockBase> HighlightedBlock;
 
-	// 머티리얼 복구를 위해 저장
+	// 투척 확정 시 저장된 타겟 블록
 	UPROPERTY()
-	TWeakObjectPtr<UMaterialInterface> OriginalMaterial;
-
-	// 프리뷰 중이거나 하이라이트 효과가 적용된 블록들을 관리하는 배열
-	TArray<TWeakObjectPtr<ABlockBase>> PreviewedBlocks;
-
-	// 투척 확정 시 타겟팅된 블록을 저장 (착탄 후 빨간색 표시를 위해 필요)
 	TWeakObjectPtr<ABlockBase> SavedTargetBlock;
 };

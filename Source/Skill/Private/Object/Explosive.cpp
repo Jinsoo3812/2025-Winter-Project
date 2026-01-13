@@ -39,6 +39,7 @@ void AExplosive::Initialize(
 	float FlightDuration,
 	float InAutoDetonateDelay,
 	float InExplosionRadius,
+	int32 InMaxBombCount,
 	UAbilitySystemComponent* InSourceASC,
 	FGameplayEffectSpecHandle InDamageSpecHandle,
 	TSubclassOf<UGameplayEffect> InDestructionEffectClass)
@@ -50,6 +51,7 @@ void AExplosive::Initialize(
 
 	AutoDetonateDelay = InAutoDetonateDelay;
 	ExplosionRadius = InExplosionRadius;
+	MaxBombCount = InMaxBombCount;
 	SourceASC = InSourceASC;
 	DamageSpecHandle = InDamageSpecHandle;
 	DestructionEffectClass = InDestructionEffectClass;
@@ -121,11 +123,12 @@ void AExplosive::OnLanded()
 		FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
 		AttachToActor(TargetBlock, AttachmentRules);
 
-		SetBlockColorRed(true);
+		TargetBlock->UpdateBombCount(1, MaxBombCount);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::OnLanded: TargetBlock is invalid"));
+		// 도착하고 보니 타겟 블록이 없어진 경우 즉시 기폭
+		Detonate();
 	}
 
 	// 자동 폭파 타이머 시작
@@ -244,14 +247,12 @@ void AExplosive::Detonate()
 	// 디버그 구 그리기
 	DrawDebugSphere(GetWorld(), ExplosionCenter, ExplosionRadius, 16, FColor::Red, false, 2.0f, 0, 2.0f);
 
-
 	// 블록 색상 복구
 	if (TargetBlock)
 	{
-		SetBlockColorRed(false);
+		TargetBlock->UpdateBombCount(-1, MaxBombCount);
 	}
-	else
-	{
+	else {
 		UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: TargetBlock is invalid during detonation"));
 	}
 
@@ -268,53 +269,26 @@ void AExplosive::OnAutoDetonate()
 
 void AExplosive::SetBlockColorRed(bool bEnable)
 {
-	if (!TargetBlock) {
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: TargetBlock is null"));
-		return;
-	}
-
-	UStaticMeshComponent* BlockMesh = TargetBlock->GetBlockMesh();
-	if (!BlockMesh)
+	if (TargetBlock)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: BlockMesh is null"));
-		return;
-	}
-
-	// 0번 슬롯 머티리얼 제어
-	UMaterialInterface* CurrentMat = BlockMesh->GetMaterial(0);
-	if (!CurrentMat) {
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: CurrentMat is null"));
-		return;
-	}
-
-	if (bEnable)
-	{
-		// 이미 Dynamic Material인지 확인하고 아니면 생성
-		UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(CurrentMat);
-		if (!DynMat)
+		UStaticMeshComponent* BlockMesh = TargetBlock->GetBlockMesh();
+		if (BlockMesh)
 		{
-			DynMat = UMaterialInstanceDynamic::Create(CurrentMat, this);
-			BlockMesh->SetMaterial(0, DynMat);
+			// 빨간색(2.0f) 또는 원래대로(0.0f) 설정
+			// CPD Index 0 사용 (1=Preview, 2=Red/Attached, 3=Green/Targeted)
+			float ColorValue = bEnable ? 2.0f : 0.0f;
+			BlockMesh->SetCustomPrimitiveDataFloat(0, ColorValue);
 		}
-
-		if (DynMat)
+		else
 		{
-			// 빨간색 하이라이트 (EmissiveColor 벡터 파라미터가 있다고 가정)
-			// 만약 머티리얼에 해당 파라미터가 없다면 에디터에서 추가 필요
-			DynMat->SetVectorParameterValue(FName("EmissiveColor"), FLinearColor::Red);
-			DynMat->SetScalarParameterValue(FName("EmissivePower"), 10.0f);
+			// 유효성 검사 실패 시 로그 출력
+			UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: BlockMesh is null"));
 		}
 	}
 	else
 	{
-		// 복구 로직: EmissivePower를 0으로 낮추거나, 파라미터를 초기화
-		UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(CurrentMat);
-		if (DynMat)
-		{
-			// 색상 및 파워 초기화 (가정된 기본값)
-			DynMat->SetVectorParameterValue(FName("EmissiveColor"), FLinearColor::Black);
-			DynMat->SetScalarParameterValue(FName("EmissivePower"), 0.0f);
-		}
+		// 유효성 검사 실패 시 로그 출력
+		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: TargetBlock is null"));
 	}
 }
 
@@ -323,6 +297,15 @@ void AExplosive::OnBlockDestroyed(AActor* DestroyedActor)
 	// 블록은 이미 파괴 과정에 있으므로, 타겟 포인터를 null로 비워 폭발 로직에서 접근하지 못하게 함
 	TargetBlock = nullptr;
 
-	// 즉시 기폭
-	Detonate();
+	// 타겟 블록이 파괴되었다면?
+	if (bAttached)
+	{
+		// 이미 부착된 상태라면: 블록과 함께 즉시 폭발해야 함
+		Detonate();
+	}
+	else
+	{
+		// 날아가는 중이라면: 여기서 터뜨리지 않음
+		// Tick은 계속 돌 것이고, OnLanded()에 도착했을 때 TargetBlock이 null이므로 그때 터짐
+	}
 }

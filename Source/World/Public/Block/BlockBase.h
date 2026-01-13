@@ -9,6 +9,7 @@
 #include "Components/BoxComponent.h"
 #include "BlockBase.generated.h"
 
+// 블록 종류 관리
 UENUM()
 enum class EBlockType : uint8 {
 	IMMUTABLE UMETA(DisplayName = "Immutable"),
@@ -16,6 +17,19 @@ enum class EBlockType : uint8 {
 	Destructible UMETA(DisplayName = "Destructible"),
 	Recordable UMETA(DisplayName = "Recordable")
 };
+
+// 블록 하이라이트 상태 관리
+UENUM(BlueprintType)
+enum class EBlockHighlightState : uint8
+{
+	None = 0,
+	Preview = 1,    // 파란색
+	Targeted = 2    // 초록색 (기존 코드에서 3.0을 쓰셨다면 2나 3으로 매핑)
+};
+
+// CPD 인덱스를 상수로 관리
+constexpr int32 CPD_INDEX_HIGHLIGHT = 0;
+constexpr int32 CPD_INDEX_BOMBCOUNT = 1;
 
 
 UCLASS()
@@ -68,6 +82,9 @@ protected:
 
 	// 중력 가속도
 	const float GravityAcceleration = -980.0f;
+
+	// 현재 부착된 폭탄 개수 추적용
+	int32 CurrentBombCount = 0;
 
 	// 낙하 로직을 처리하는 함수
 	void UpdateGravity(float DeltaTime);
@@ -126,4 +143,10 @@ public:
 
 	void SetCanFall(bool bNewCanFall) { bCanFall = bNewCanFall; }
 
+	// 블록의 하이라이트 상태를 설정하는 함수 (CPD 0)
+	// 0 : 없음, 1: 프리뷰(파란색), 2: 타겟팅(초록색)
+	void SetHighlightState(EBlockHighlightState NewState);
+
+	// 폭탄 개수 변경 및 색상 갱신 (빨강) - CPD 1
+	void UpdateBombCount(int32 Delta, int32 MaxBombCount);
 };
