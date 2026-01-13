@@ -8,7 +8,6 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Engine/OverlapResult.h"
-// #include "Components/StaticMeshComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 
@@ -102,14 +101,11 @@ void UGA_SummonBarrier::UpdatePreview()
 		return;
 	}
 
-	// 이전 위치에서 움직였을 때만 하이라이트 갱신 
-	FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
-	if (!LastPlayerLocation.Equals(CurrentPlayerLocation, 10.0f))
-	{
-		ClearHighlights();
-		HighlightBlocksInRange();
-		LastPlayerLocation = CurrentPlayerLocation;
-	}
+	// 이전 프레임의 하이라이트 초기화
+	ClearHighlights();
+
+	// 범위 내 블록들을 찾아서 파란색 하이라이트
+	HighlightBlocksInRange();
 
 	// 마우스 커서 타겟팅
 	FHitResult HitResult;
@@ -121,12 +117,13 @@ void UGA_SummonBarrier::UpdatePreview()
 	if (HitResult.bBlockingHit)
 	{
 		ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
-		if (HitBlock && HighlightedBlocks.Contains(HitBlock))
+		if (HitBlock && PreviewedBlocks.Contains(HitBlock))
 		{
 			bValidTargetFound = true;
 			// 방벽의 중심 블록의 생성 위치 계산
 			// 중심 블록은 마우스를 가져간 블록의 바로 윗 블록
 			FVector CenterBaseLocation = HitBlock->GetActorLocation() + FVector(0, 0, GridSize);
+			FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
 			CalculateBarrierTransforms(CenterBaseLocation, CurrentPlayerLocation, TargetTransforms);
 		}
 	}
@@ -386,7 +383,7 @@ void UGA_SummonBarrier::SpawnBlock()
 	if (ASC)
 	{
 		// GA_SkillBase에 선언된 TAG_Skill_Casting (State.Busy) 사용
-		ASC->RemoveLooseGameplayTag(TAG_Skill_Casting);
+		NotifySkillCastFinished();
 	}
 
 	// 2. 돌진 방향 설정

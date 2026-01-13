@@ -41,7 +41,6 @@ UAbilitySystemComponent* ADestructibleBlock::GetAbilitySystemComponent() const
 
 void ADestructibleBlock::OnGameplayEffectApplied(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
 {
-	UE_LOG(LogTemp, Warning, TEXT("DestructibleBlock: %s received a Gameplay Effect."), *GetName());
 	// DestructionTag이 유효하지 않으면 리턴
 	if (!DestructionTag.IsValid())
 	{
@@ -74,8 +73,6 @@ void ADestructibleBlock::OnGameplayEffectApplied(UAbilitySystemComponent* Target
 
 void ADestructibleBlock::SelfDestroy()
 {
-	UE_LOG(LogTemp, Warning, TEXT("Destructible Block %s is destroyed."), *GetName());
-
 	// 위 블록에게 낙하하라고 알림
 	NotifyUpperBlock();
 	Destroy();
