@@ -24,26 +24,41 @@ void UGA_Explosive::ActivateAbility(
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	const FGameplayEventData* TriggerEventData)
 {
-	// 조준 모드(프리뷰) 진입
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// 이미 던져놓은 폭발물이 아직 유효하다면 기폭 및 종료
-	if (CurrentExplosive.IsValid())
+	// 유효하지 않은(이미 터지거나 파괴된) 폭탄만 찾아 배열에서 정리
+	// RemoveAll: 괄호 안의 조건을 만족하는 모든 요소를 TArray에서 제거
+	// 조건: TWeakObjectPtr가 가리키는 객체가 유효하지 않은 경우
+	ExplosivesList.RemoveAll([](const TWeakObjectPtr<AExplosive>& Ptr) { return !Ptr.IsValid(); });
+
+	// 폭탄이 3개 모였거나, 이미 3개를 다 던졌던 상태라면 기폭 시도
+	if (ExplosivesList.Num() >= MaxBombCount || bIsDetonationReady)
 	{
-		// 착륙(Attached) 상태일 때만 기폭 가능
-		if (CurrentExplosive->IsAttached())
+		// 모든 폭탄이 착지했는지 검사
+		bool bAllLanded = true;
+		for (const TWeakObjectPtr<AExplosive>& WeakExplosive : ExplosivesList)
+		{
+			if (WeakExplosive.IsValid() && !WeakExplosive->IsAttached())
+			{
+				bAllLanded = false;
+				break;
+			}
+		}
+
+		if (bAllLanded)
 		{
 			PerformDetonateAndEnd();
-			return;
 		}
 		else
 		{
-			// 아직 날아가는 중이면 기폭하지 않고, 조준 모드 진입도 막기 위해 종료
-			UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Bomb is flying. Cannot detonate yet."));
+			UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Cannot detonate yet. Some bombs are still flying."));
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
-			return;
 		}
+
+		return;
 	}
+
+	// 아직 3개가 안 되었다면 '투척' 모드(조준 프리뷰) 진입
 
 	// 프리뷰 타이머 시작
 	if (UWorld* World = GetWorld())
@@ -265,7 +280,15 @@ void UGA_Explosive::SpawnExplosive()
 
 	if (NewExplosive && SavedTargetBlock.IsValid())
 	{
-		CurrentExplosive = NewExplosive;
+		// 폭발물 리스트에 추가
+		ExplosivesList.Add(NewExplosive);
+
+		// 폭탄이 3개가 되었다면 '기폭 준비 완료' 상태로 전환
+		// 이후 폭탄 하나가 터져서 2개가 되어도 이 플래그는 true이므로 기폭 가능
+		if (ExplosivesList.Num() >= 3)
+		{
+			bIsDetonationReady = true;
+		}
 
 		NewExplosive->OnDetonatedDelegate.AddDynamic(this, &UGA_Explosive::OnExplosiveDetonated);
 
@@ -296,18 +319,39 @@ void UGA_Explosive::SpawnExplosive()
 
 void UGA_Explosive::PerformDetonateAndEnd()
 {
-	if (CurrentExplosive.IsValid())
-	{
-		// 폭발물 폭파. 피해 및 파괴 처리 로직은 폭발물 액터 내부에서 처리됨
-		// Detonate() 호출 시 OnDetonatedDelegate가 브로드캐스트되어 OnExplosiveDetonated()가 실행됨
-		CurrentExplosive->Detonate();
+	// 폭발물 리스트의 안전한 순회를 위한 복사
+	TArray<TWeakObjectPtr<AExplosive>> TempList = ExplosivesList;
 
-		CurrentExplosive.Reset();
-	}
-	else
+	// 원본 리스트는 즉시 비움 (중복 처리 방지 및 깔끔한 상태 유지)
+	ExplosivesList.Empty();
+
+	// 리스트에 있는 모든 유효한 폭발물 기폭
+	bool bAnyDetonated = false;
+
+	for (TWeakObjectPtr<AExplosive>& Explosive : TempList)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Detonate requested but bomb is gone (Already auto-detonated?)."));
+		if (Explosive.IsValid())
+		{
+			// 폭발 실행 (각 폭발물의 내부 로직 실행)
+			Explosive->Detonate();
+			bAnyDetonated = true;
+		}
 	}
+
+	// 폭발물 목록 초기화
+	ExplosivesList.Empty();
+
+	if (!bAnyDetonated)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Detonate requested but no valid bombs found."));
+	}
+
+	// 기폭을 수행했으므로 준비 상태 해제
+	bIsDetonationReady = false;
+
+	// 기폭 시점에 쿨타임 적용 
+	// 3개를 다 던지고 터뜨렸으므로 이제 쿨타임이 돌아야 함
+	CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
@@ -335,19 +379,25 @@ void UGA_Explosive::ClearHighlights()
 
 void UGA_Explosive::OnExplosiveDetonated()
 {
-	// 수동 OR 자동 폭파 모두 이 함수가 호출되므로 여기서 쿨타임 적용
-	if (!CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true))
+	// 폭발물이 터지면 RemoveAll에 의해 삭제됨
+	// 예외 상황으로 인해 OnExplosiveDetonated가 호출되지 않은 경우도
+	// 다음 OnExplosiveDetonated 호출 시점에 정리됨
+	ExplosivesList.RemoveAll([](const TWeakObjectPtr<AExplosive>& Ptr) {
+		return !Ptr.IsValid();
+		});
+	
+	// ExplosivesList가 비어있다면 모든 폭발물이 터진 것이므로 쿨타임 시작
+	// (기폭 입력을 넣기도 전에 모든 폭발물이 사라진 경우 대비)
+	if (ExplosivesList.Num() == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit cooldown in Delegate."));
-	}
+		// 모든 폭탄이 소진되었으므로 준비 상태 해제
+		bIsDetonationReady = false;
 
-	// 폭발물이 터졌으므로 포인터 안전하게 초기화
-	if (CurrentExplosive.IsValid())
-	{
-		CurrentExplosive.Reset();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Received detonation signal, but CurrentExplosive was already invalid."));
+		// 스킬이 EndAbility로 종료된 상태여도
+		// InstancedPerActor 정책이라면 객체는 살아있으므로
+		// 쿨타임 Effect를 적용할 수 있음.
+		CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+
+		UE_LOG(LogTemp, Log, TEXT("GA_Explosive: All bombs detonated/destroyed. Cooldown started."));
 	}
 }

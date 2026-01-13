@@ -78,7 +78,13 @@ protected:
 
 	// 생성된 폭발물 인스턴스 (InstancedPerActor 정책이므로 멤버 변수 유지 가능)
 	UPROPERTY()
-	TWeakObjectPtr<AExplosive> CurrentExplosive;
+	TArray<TWeakObjectPtr<AExplosive>> ExplosivesList;
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Explosive")
+	int32 MaxBombCount = 3;
+
+	// 3개를 모두 던져서 기폭 대기 상태인지 확인하는 플래그
+	bool bIsDetonationReady = false;
 
 	// 프리뷰 타이머 핸들
 	FTimerHandle TickTimerHandle;
