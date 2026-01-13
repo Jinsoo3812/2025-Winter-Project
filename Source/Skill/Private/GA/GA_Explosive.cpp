@@ -278,7 +278,7 @@ void UGA_Explosive::SpawnExplosive()
 			SavedTargetBlock.Get(),
 			1.5f,
 			AutoDetonateDelay,
-			ExplosionRadius,
+			ExplosionRadius * GetRuneModifiedRange(),
 			GetAbilitySystemComponentFromActorInfo(),
 			DamageSpecHandle,
 			DestructionEffect

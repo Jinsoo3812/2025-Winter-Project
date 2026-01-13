@@ -268,53 +268,26 @@ void AExplosive::OnAutoDetonate()
 
 void AExplosive::SetBlockColorRed(bool bEnable)
 {
-	if (!TargetBlock) {
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: TargetBlock is null"));
-		return;
-	}
-
-	UStaticMeshComponent* BlockMesh = TargetBlock->GetBlockMesh();
-	if (!BlockMesh)
+	if (TargetBlock)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: BlockMesh is null"));
-		return;
-	}
-
-	// 0번 슬롯 머티리얼 제어
-	UMaterialInterface* CurrentMat = BlockMesh->GetMaterial(0);
-	if (!CurrentMat) {
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: CurrentMat is null"));
-		return;
-	}
-
-	if (bEnable)
-	{
-		// 이미 Dynamic Material인지 확인하고 아니면 생성
-		UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(CurrentMat);
-		if (!DynMat)
+		UStaticMeshComponent* BlockMesh = TargetBlock->GetBlockMesh();
+		if (BlockMesh)
 		{
-			DynMat = UMaterialInstanceDynamic::Create(CurrentMat, this);
-			BlockMesh->SetMaterial(0, DynMat);
+			// 빨간색(2.0f) 또는 원래대로(0.0f) 설정
+			// CPD Index 0 사용 (1=Preview, 2=Red/Attached, 3=Green/Targeted)
+			float ColorValue = bEnable ? 2.0f : 0.0f;
+			BlockMesh->SetCustomPrimitiveDataFloat(0, ColorValue);
 		}
-
-		if (DynMat)
+		else
 		{
-			// 빨간색 하이라이트 (EmissiveColor 벡터 파라미터가 있다고 가정)
-			// 만약 머티리얼에 해당 파라미터가 없다면 에디터에서 추가 필요
-			DynMat->SetVectorParameterValue(FName("EmissiveColor"), FLinearColor::Red);
-			DynMat->SetScalarParameterValue(FName("EmissivePower"), 10.0f);
+			// 유효성 검사 실패 시 로그 출력
+			UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: BlockMesh is null"));
 		}
 	}
 	else
 	{
-		// 복구 로직: EmissivePower를 0으로 낮추거나, 파라미터를 초기화
-		UMaterialInstanceDynamic* DynMat = Cast<UMaterialInstanceDynamic>(CurrentMat);
-		if (DynMat)
-		{
-			// 색상 및 파워 초기화 (가정된 기본값)
-			DynMat->SetVectorParameterValue(FName("EmissiveColor"), FLinearColor::Black);
-			DynMat->SetScalarParameterValue(FName("EmissivePower"), 0.0f);
-		}
+		// 유효성 검사 실패 시 로그 출력
+		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: TargetBlock is null"));
 	}
 }
 
