@@ -9,9 +9,6 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Components/StaticMeshComponent.h"
-#include "Materials/MaterialInterface.h"
-#include "Materials/MaterialInstanceDynamic.h"
-#include "Engine/OverlapResult.h"
 #include "InputCoreTypes.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Components/InputComponent.h"
@@ -25,9 +22,6 @@ void UGA_Construction::ActivateAbility(
 	const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
-
-	// LastPlayerLocation 초기화 (첫 실행 시 무조건 하이라이트 갱신되도록)
-	LastPlayerLocation = FVector(FLT_MAX, FLT_MAX, FLT_MAX);
 
 	// 프리뷰 업데이트를 위한 타이머 시작 (매 프레임)
 	if (UWorld* World = GetWorld())
@@ -87,9 +81,6 @@ void UGA_Construction::EndAbility(
 	// 타이머 핸들 무효화
 	TickTimerHandle.Invalidate();
 
-	// LastPlayerLocation 리셋 (다음 활성화 시 하이라이트 갱신 보장)
-	LastPlayerLocation = FVector::ZeroVector;
-
 	// 하이라이트 제거
 	ClearHighlights();
 
@@ -131,153 +122,44 @@ void UGA_Construction::EndAbility(
 
 void UGA_Construction::HighlightBlocksInRange()
 {
-	UWorld* World = GetWorld();
-	if (!World)
+	// SkillBase의 FindBlocksInRange를 활용하여 범위 내 블록 탐색
+	TArray<ABlockBase*> BlocksInRange;
+	FindBlocksInRange(BlocksInRange);
+
+	// 탐색된 블록들에 파란색 하이라이트 적용 (CustomPrimitiveData)
+	for (ABlockBase* Block : BlocksInRange)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: World is null"));
-		return;
-	}
-
-	// AvatarActor를 OwnerPawn으로 캐시 
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (!OwnerPawn)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: OwnerPawn is null"));
-		return;
-	}
-
-	FVector PlayerLocation = OwnerPawn->GetActorLocation();
-
-	// 박스 형태의 오버랩 영역 생성 (XY: 반지름, Z: 위아래 범위)
-	// 원래 원통형 범위를 사용하고 싶지만, 언리얼 엔진의 오버랩 함수는 박스 형태만 지원하므로 박스로 대체
-	// 이후에 XY 거리로 필터링하여 원형 범위로 보정
-	FCollisionShape OverlapBox = FCollisionShape::MakeBox(FVector(ConstructionRangeXY, ConstructionRangeXY, ConstructionRangeZ));
-
-	// 오버랩 결과를 저장할 배열
-	TArray<FOverlapResult> OverlapResults;
-
-	// 어떤 오브젝트 타입을 대상으로 충돌 쿼리를 수행할지 설정 (무엇을 찾을 지)
-	FCollisionObjectQueryParams ObjectQueryParams;
-
-	// 대부분의 경우 블록은 움직이지 않으므로 WorldStatic
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-
-	// 추후 스킬 사용으로 블록이 움직이면, 그 위의 블록도 움직이는 등의 상황을 고려하여 WorldDynamic도 포함
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-
-	// 충돌 쿼리의 옵션 및 예외 설정 (어떻게 찾을 지)
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(OwnerPawn); // 플레이어 자신은 제외
-
-	// 범위 내 블록만 검색 (언리얼 물리 엔진의 공간 분할 구조 활용)
-	World->OverlapMultiByObjectType(
-		OverlapResults,
-		PlayerLocation,
-		FQuat::Identity,
-		ObjectQueryParams,
-		OverlapBox,
-		QueryParams
-	);
-
-	// 검색된 블록들 처리
-	// FOverlapResult는 가벼우므로 &로 가져옵니다.
-	// Pointer는 유효성 검사 및 메모리 접근 비용이 추가로 발생합니다.
-	for (const FOverlapResult& Result : OverlapResults)
-	{
-		ABlockBase* Block = Cast<ABlockBase>(Result.GetActor());
-		if (!Block) continue;
-
-		FVector BlockLocation = Block->GetActorLocation();
-
-		// XY 평면 거리 재확인 (박스가 사각형이므로 원형 범위로 한번 더 필터링)
-		float DistanceXY = FVector::Dist2D(PlayerLocation, BlockLocation);
-		if (DistanceXY > ConstructionRangeXY) continue;
-
-		// 하이라이트 목록(그 위에 블록을 생성할 수 있는 블록들)에 추가
-		HighlightedBlocks.Add(Block);
-
-		// GetBlockMesh() 함수로 직접 메시 컴포넌트 가져오기
-		UStaticMeshComponent* MeshComp = Block->GetBlockMesh();
-		if (!MeshComp)
+		if (Block)
 		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Construction: Block %s has no MeshComponent"), *Block->GetName());
-			continue;
-		}
-
-		// 원본 머티리얼로부터 동적 머티리얼 인스턴스 생성 (중복 생성 방지)
-		if (!DynamicMaterials.Contains(Block))
-		{
-			// 원본 머티리얼 가져오기
-			UMaterialInterface* OriginalMaterial = MeshComp->GetMaterial(0);
-			if (!OriginalMaterial)
+			UStaticMeshComponent* Mesh = Block->GetBlockMesh();
+			if (Mesh)
 			{
-				UE_LOG(LogTemp, Error, TEXT("GA_Construction: Block %s has no material"), *Block->GetName());
-				continue;
+				// CustomPrimitiveData Index 0: 1.0f = Preview (Blue)
+				Mesh->SetCustomPrimitiveDataFloat(0, 1.0f);
 			}
-
-			// 원본 머티리얼 저장
-			OriginalMaterials.Add(Block, OriginalMaterial);
-
-			// 동적 머티리얼 인스턴스 생성
-			// UMaterialInstanceDynamic::Create 함수는 머티리얼 인스턴스를 생성하는 함수
-			// @param OriginalMaterial: 원본 머티리얼
-			// @param this: 소유자 객체 (여기서는 GA_Construction)
-			UMaterialInstanceDynamic* DynMat = UMaterialInstanceDynamic::Create(OriginalMaterial, this);
-			if (!DynMat)
-			{
-				UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create dynamic material for Block %s"), *Block->GetName());
-				continue;
-			}
-
-			// 원본 EmissivePower 값 저장 (스칼라 파라미터가 없을 경우 0으로 처리)
-			float OriginalEmissive = 0.0f;
-			DynMat->GetScalarParameterValue(FName("EmissivePower"), OriginalEmissive);
-			OriginalEmissivePowers.Add(Block, OriginalEmissive);
-
-			// 동적 머티리얼 저장 및 메시에 적용
-			DynamicMaterials.Add(Block, DynMat);
-			MeshComp->SetMaterial(0, DynMat);
-		}
-
-		// 이미 동적 머티리얼이 생성된 블록이라면 EmissivePower 값만 업데이트
-		UMaterialInstanceDynamic* DynMat = DynamicMaterials[Block];
-		if (DynMat)
-		{
-			DynMat->SetScalarParameterValue(FName("EmissivePower"), HighlightEmissivePower);
+			// 나중에 끄기 위해 목록에 추가
+			PreviewedBlocks.Add(Block);
 		}
 	}
 }
 
 void UGA_Construction::ClearHighlights()
 {
-	// 모든 하이라이트된 블록의 머티리얼 복구
-	for (const TObjectPtr<ABlockBase>& Block : HighlightedBlocks)
+	for (TWeakObjectPtr<ABlockBase>& WeakBlock : PreviewedBlocks)
 	{
-		if (!Block || !IsValid(Block.Get()))
+		if (WeakBlock.IsValid())
 		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Construction: Block is null or invalid during ClearHighlights"));
-			continue;
-		}
-
-		UStaticMeshComponent* MeshComp = Block->GetBlockMesh();
-		if (!MeshComp)
-		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Construction: Block %s has no MeshComponent during ClearHighlights"), *Block->GetName());
-			continue;
-		}
-
-		// 원본 머티리얼로 복구
-		TObjectPtr<UMaterialInterface>* OriginalMat = OriginalMaterials.Find(Block.Get());
-		if (OriginalMat)
-		{
-			MeshComp->SetMaterial(0, OriginalMat->Get());
+			UStaticMeshComponent* MeshComp = WeakBlock->GetBlockMesh();
+			if (MeshComp)
+			{
+				// Index 0 값을 0.0(기본)으로 복구
+				MeshComp->SetCustomPrimitiveDataFloat(0, 0.0f);
+			}
 		}
 	}
 
-	HighlightedBlocks.Empty();
-	DynamicMaterials.Empty();
-	OriginalMaterials.Empty();
-	OriginalEmissivePowers.Empty();
+	// 목록 초기화
+	PreviewedBlocks.Empty();
 }
 
 void UGA_Construction::UpdatePreview()
@@ -296,14 +178,11 @@ void UGA_Construction::UpdatePreview()
 		return;
 	}
 
-	// 매 프레임 플레이어 위치 기준으로 하이라이트 업데이트
-	FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
-	if (!LastPlayerLocation.Equals(CurrentPlayerLocation, 10.0f)) // 10 이상 움직였을 때만
-	{
-		ClearHighlights(); // 기존 하이라이트 제거
-		HighlightBlocksInRange(); // 새 위치 기준으로 재계산
-		LastPlayerLocation = CurrentPlayerLocation;
-	}
+	// 이전 프레임의 하이라이트 초기화
+	ClearHighlights();
+
+	// 범위 내 블록들을 찾아서 파란색 하이라이트
+	HighlightBlocksInRange();
 
 	// 마우스 커서 아래 블록 찾기
 	FHitResult HitResult;
@@ -314,8 +193,8 @@ void UGA_Construction::UpdatePreview()
 	{
 		ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
 		
-		// 하이라이트된 블록 중 하나인지 확인
-		if (HitBlock && HighlightedBlocks.Contains(HitBlock))
+		// 사거리 내(파란 영역)의 블록인지 확인
+		if (HitBlock && PreviewedBlocks.Contains(HitBlock))
 		{
 			// 프리뷰 블록이 없으면 생성 (BP에서 미리 디자인된 프리뷰 블록 사용)
 			if (!PreviewBlock && PreviewBlockClass)
@@ -379,7 +258,7 @@ void UGA_Construction::UpdatePreview()
 		}
 		else
 		{
-			// 마우스 포인터가 가리키는 블록이 하이라이트된 블록이 아니면 프리뷰 숨김
+			// 마우스 포인터가 가리키는 블록이 범위 밖이면 프리뷰 숨김
 			if (PreviewBlock)
 			{
 				PreviewBlock->SetActorHiddenInGame(true);

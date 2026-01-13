@@ -8,6 +8,7 @@
 #include "GA_SkillBase.generated.h"
 
 class USkillManagerComponent;
+class ABlockBase;
 
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill); // 스킬임을 표시하는 태그
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // 스킬 시전 중임을 시전자에게 부여하는 태그
@@ -37,6 +38,13 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Stats")
 	float BaseRange = 1.0f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Stats")
+	float RangeXY = 500.0f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Stats")
+	float RangeZ = 200.0f;
+
+	// 데미지 적용을 위한 GE 클래스
 	// 데미지 적용을 위한 GE 클래스
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Effects")
 	TSubclassOf<UGameplayEffect> DamageEffect;
@@ -85,8 +93,12 @@ protected:
 	}
 
 	// 실제 스킬이 발동될 때 호출되는 함수
-	// 프리뷰 단계가 아닌 실제 시작단계에서 이 함수를 호출한다.
 	void NotifySkillCastStarted();
+
+	// 실제 스킬이 종료될 때 호출되는 함수
+	void NotifySkillCastFinished();
+
+	void FindBlocksInRange(TArray<ABlockBase*>& OutBlocks);
 
 private:
 	// 캐싱된 SkillManager (성능 최적화용)
