@@ -8,6 +8,7 @@
 #include "Interface/ISkillManagerProvider.h"
 #include "Interface/IAttributeSetProvider.h"
 #include "AbilitySystemComponent.h"
+#include "InputActionValue.h"
 #include "TestCharacter.generated.h"
 
 class UGameplayAbility;
@@ -44,6 +45,13 @@ public:
 	// 입력 컴포넌트 설정
 	// 로컬 플레이어의 입력을 바인딩함
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	// 이동 함수
+	void Move(const FInputActionValue& Value);
+
+	// 점프 입력 액션 포인터 (에디터에서 할당 필요)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
+	UInputAction* JumpAction;
 
 protected:
 	virtual void BeginPlay() override;
@@ -89,10 +97,19 @@ protected:
 	bool bAbilitySystemInitialized = false;
 
 	// Input Mapping Context 할당 변수
+	// [기본] 이동/점프 전용 (WASD, Space) - Priority 0
 	UPROPERTY(EditAnywhere, Category = "Input")
-	TObjectPtr<UInputMappingContext> InputMappingContext;
+	TObjectPtr<UInputMappingContext> BasicMappingContext;
+
+	// [스킬] 스킬 전용 (Q, E, R, 1, 2, 3 등) - Priority 1
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputMappingContext> SkillMappingContext;
 
 	// 스킬 슬롯별 Input Action
 	UPROPERTY(EditAnywhere, Category = "Input|Skills")
 	TArray<TObjectPtr<UInputAction>> SkillSlotActions;
+
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> MoveAction;
+
 };

@@ -46,17 +46,18 @@ void AWinter2025PlayerController::SetupInputComponent()
 		// Set up action bindings
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(InputComponent))
 		{
-			// Setup mouse input events
-			EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Started, this, &AWinter2025PlayerController::OnInputStarted);
-			EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Triggered, this, &AWinter2025PlayerController::OnSetDestinationTriggered);
-			EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &AWinter2025PlayerController::OnSetDestinationReleased);
-			EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &AWinter2025PlayerController::OnSetDestinationReleased);
+			//클릭 및 터치 입력 바인딩 설정 해제(주석처리)
+			//// Setup mouse input events
+			//EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Started, this, &AWinter2025PlayerController::OnInputStarted);
+			//EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Triggered, this, &AWinter2025PlayerController::OnSetDestinationTriggered);
+			//EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &AWinter2025PlayerController::OnSetDestinationReleased);
+			//EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &AWinter2025PlayerController::OnSetDestinationReleased);
 
-			// Setup touch input events
-			EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Started, this, &AWinter2025PlayerController::OnInputStarted);
-			EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Triggered, this, &AWinter2025PlayerController::OnTouchTriggered);
-			EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Completed, this, &AWinter2025PlayerController::OnTouchReleased);
-			EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Canceled, this, &AWinter2025PlayerController::OnTouchReleased);
+			//// Setup touch input events
+			//EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Started, this, &AWinter2025PlayerController::OnInputStarted);
+			//EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Triggered, this, &AWinter2025PlayerController::OnTouchTriggered);
+			//EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Completed, this, &AWinter2025PlayerController::OnTouchReleased);
+			//EnhancedInputComponent->BindAction(SetDestinationTouchAction, ETriggerEvent::Canceled, this, &AWinter2025PlayerController::OnTouchReleased);
 		}
 		else
 		{

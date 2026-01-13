@@ -9,6 +9,9 @@
 #include "Player/Test/TestPlayerState.h"
 #include "Player/PlayerAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "InputActionValue.h"
+#include "InputAction.h"
+
 
 ATestCharacter::ATestCharacter()
 {
@@ -29,79 +32,66 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	// 이 TestCharacter가 이 클라이언트가 조종해야 하는 로컬 캐릭터인지 확인
-	if (!IsLocallyControlled())
-	{
-		return;
-	}
-
-	// Enhanced Input Component로 캐스팅
-	// Actor 수준에서 작동하며, IA와 C++/BP 함수를 바인딩하기 위해 사용
-	UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-	if (!EnhancedInputComponent)
+	// 1. Enhanced Input Component로 한 번만 캐스팅해서 변수에 저장
+	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
+	if (!EnhancedInput)
 	{
 		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: PlayerInputComponent is not UEnhancedInputComponent"));
 		return;
 	}
 
-	// PlayerController 가져오기
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC)
+	// 2. 로컬 플레이어인 경우에만 Input Mapping Context(IMC) 추가
+	// (AI나 서버 측 캐릭터는 입력 매핑이 필요 없으므로 체크)
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: PlayerController is null"));
-		return;
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
+		{
+			// (1) 기본 이동/점프용 IMC (우선순위 0)
+			if (BasicMappingContext)
+			{
+				Subsystem->AddMappingContext(BasicMappingContext, 0);
+				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Basic Mapping Context added"));
+			}
+
+			// (2) 스킬용 IMC (우선순위 1)
+			// 스킬 입력이 들어오면 우선 처리되도록 Priority를 1로 설정합니다.
+			if (SkillMappingContext)
+			{
+				Subsystem->AddMappingContext(SkillMappingContext, 1);
+				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Mapping Context added"));
+			}
+		}
 	}
 
-	// Enhanced Input Subsystem 가져오기
-	// LocalPlayer 단위로 동작하는 서브시스템
-	// IMC의 추가, 제거 및 물리 키(WASD 등)와 IA의 매핑 관리
-	UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer());
-	if (!Subsystem)
+	// 3. 이동 (Move) 바인딩
+	if (MoveAction)
 	{
-		UE_LOG(LogTemp, Error, TEXT("ATestCharacter: Enhanced Input Subsystem is null"));
-		return;
+		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ATestCharacter::Move);
 	}
 
-	// Input Mapping Context 추가
-	if (InputMappingContext)
+	// 4. 점프 (Jump) 바인딩
+	if (JumpAction)
 	{
-		Subsystem->AddMappingContext(InputMappingContext, 0);
-		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Input Mapping Context added"));
+		// ACharacter::Jump는 존재하지만, StopJump는 없습니다. StopJumping을 써야 합니다.
+		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	}
 
-	// 스킬 슬롯별 입력 바인딩 (배열 기반)
+	// 5. 스킬 슬롯 입력 바인딩
 	for (int32 i = 0; i < SkillSlotActions.Num(); ++i)
 	{
 		if (SkillSlotActions[i])
 		{
-			// Pressed 이벤트
-			// @param SkillSlotActions[i]: 바인딩할 Input Action
-			// @param ETriggerEvent::Started: 액션이 시작될 때 트리거
-			// @param this: 바인딩할 대상 객체(호출할 함수가 있는 객체)
-			// @param OnAbilityInputPressed: 호출할 멤버 함수 포인터
-			// @param i: 추가 전달할 정수 매개변수 (InputID)
-			EnhancedInputComponent->BindAction(
-				SkillSlotActions[i], 
-				ETriggerEvent::Started, 
-				this, 
-				&ATestCharacter::OnAbilityInputPressed, 
-				i
-			);
-			
-			// Released 이벤트 
-			EnhancedInputComponent->BindAction(
-				SkillSlotActions[i], 
-				ETriggerEvent::Completed, 
-				this, 
-				&ATestCharacter::OnAbilityInputReleased, 
-				i
-			);
+			// Pressed
+			EnhancedInput->BindAction(SkillSlotActions[i], ETriggerEvent::Started, this, &ATestCharacter::OnAbilityInputPressed, i);
+
+			// Released
+			EnhancedInput->BindAction(SkillSlotActions[i], ETriggerEvent::Completed, this, &ATestCharacter::OnAbilityInputReleased, i);
 		}
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Input bindings set up successfully"));
 }
-
 void ATestCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -109,7 +99,32 @@ void ATestCharacter::BeginPlay()
 	// BeginPlay에서는 초기화하지 않음
 	// PlayerState는 서버에서 PossessedBy, 클라이언트에서 OnRep_PlayerState가 호출될 때까지 보장되지 않음
 	// PossessedBy(서버) 또는 OnRep_PlayerState(클라이언트)에서 초기화됨
+
 }
+
+
+void ATestCharacter::Move(const FInputActionValue& Value)
+{
+	// 1. 입력값 가져오기 (X, Y)
+	FVector2D MovementVector = Value.Get<FVector2D>();
+
+	if (Controller != nullptr)
+	{
+		// 2. 컨트롤러(카메라)가 바라보는 방향 알아내기
+		const FRotator Rotation = Controller->GetControlRotation();
+		const FRotator YawRotation(0, Rotation.Yaw, 0); // Pitch, Roll 무시하고 Yaw(수평 회전)만 사용
+
+		// 3. 전방(Forward) 및 우측(Right) 방향 벡터 계산
+		// (카메라가 보는 방향 기준으로 앞/오른쪽을 구함)
+		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+		// 4. 이동 입력 적용
+		AddMovementInput(ForwardDirection, MovementVector.Y); // W/S (앞뒤)
+		AddMovementInput(RightDirection, MovementVector.X);   // A/D (좌우)
+	}
+}
+
 
 void ATestCharacter::PossessedBy(AController* NewController)
 {
