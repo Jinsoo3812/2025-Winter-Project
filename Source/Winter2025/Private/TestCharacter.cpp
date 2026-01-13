@@ -46,10 +46,19 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
 		{
-			if (InputMappingContext)
+			// (1) 기본 이동/점프용 IMC (우선순위 0)
+			if (BasicMappingContext)
 			{
-				Subsystem->AddMappingContext(InputMappingContext, 0);
-				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Input Mapping Context added"));
+				Subsystem->AddMappingContext(BasicMappingContext, 0);
+				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Basic Mapping Context added"));
+			}
+
+			// (2) 스킬용 IMC (우선순위 1)
+			// 스킬 입력이 들어오면 우선 처리되도록 Priority를 1로 설정합니다.
+			if (SkillMappingContext)
+			{
+				Subsystem->AddMappingContext(SkillMappingContext, 1);
+				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Mapping Context added"));
 			}
 		}
 	}
@@ -91,19 +100,6 @@ void ATestCharacter::BeginPlay()
 	// PlayerState는 서버에서 PossessedBy, 클라이언트에서 OnRep_PlayerState가 호출될 때까지 보장되지 않음
 	// PossessedBy(서버) 또는 OnRep_PlayerState(클라이언트)에서 초기화됨
 
-
-	// 로컬 플레이어인 경우 Input Mapping Context 추가
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			// 우선순위 0으로 매핑 컨텍스트 추가
-			if (InputMappingContext)
-			{
-				Subsystem->AddMappingContext(InputMappingContext, 0);
-			}
-		}
-	}
 }
 
 

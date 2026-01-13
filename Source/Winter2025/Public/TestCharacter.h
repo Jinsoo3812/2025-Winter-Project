@@ -97,8 +97,13 @@ protected:
 	bool bAbilitySystemInitialized = false;
 
 	// Input Mapping Context 할당 변수
+	// [기본] 이동/점프 전용 (WASD, Space) - Priority 0
 	UPROPERTY(EditAnywhere, Category = "Input")
-	TObjectPtr<UInputMappingContext> InputMappingContext;
+	TObjectPtr<UInputMappingContext> BasicMappingContext;
+
+	// [스킬] 스킬 전용 (Q, E, R, 1, 2, 3 등) - Priority 1
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputMappingContext> SkillMappingContext;
 
 	// 스킬 슬롯별 Input Action
 	UPROPERTY(EditAnywhere, Category = "Input|Skills")
