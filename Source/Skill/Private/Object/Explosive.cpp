@@ -296,4 +296,16 @@ void AExplosive::OnBlockDestroyed(AActor* DestroyedActor)
 {
 	// 블록은 이미 파괴 과정에 있으므로, 타겟 포인터를 null로 비워 폭발 로직에서 접근하지 못하게 함
 	TargetBlock = nullptr;
+
+	// 타겟 블록이 파괴되었다면?
+	if (bAttached)
+	{
+		// 이미 부착된 상태라면: 블록과 함께 즉시 폭발해야 함
+		Detonate();
+	}
+	else
+	{
+		// 날아가는 중이라면: 여기서 터뜨리지 않음
+		// Tick은 계속 돌 것이고, OnLanded()에 도착했을 때 TargetBlock이 null이므로 그때 터짐
+	}
 }
