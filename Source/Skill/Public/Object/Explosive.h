@@ -48,6 +48,7 @@ public:
 		float FlightDuration,
 		float InAutoDetonateDelay,
 		float InExplosionRadius,
+		int32 InMaxBombCount,
 		UAbilitySystemComponent* InSourceASC,
 		FGameplayEffectSpecHandle InDamageSpecHandle,
 		TSubclassOf<UGameplayEffect> InDestructionEffectClass
@@ -124,4 +125,6 @@ protected:
 
 	// 자동 폭파 타이머 핸들
 	FTimerHandle DetonateTimerHandle;
+
+	int32 MaxBombCount = 3;
 };

@@ -102,7 +102,7 @@ protected:
 	TWeakObjectPtr<UMaterialInterface> OriginalMaterial;
 
 	// 프리뷰 중이거나 하이라이트 효과가 적용된 블록들을 관리하는 배열
-	TArray<TWeakObjectPtr<ABlockBase>> PreviewedBlocks;
+	TArray<ABlockBase*> PreviewedBlocks;
 
 	// 투척 확정 시 타겟팅된 블록을 저장 (착탄 후 빨간색 표시를 위해 필요)
 	TWeakObjectPtr<ABlockBase> SavedTargetBlock;

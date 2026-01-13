@@ -6,7 +6,6 @@
 #include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
-#include "Block/BlockBase.h"
 #include "Engine/OverlapResult.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
@@ -364,5 +363,16 @@ void UGA_SkillBase::FindBlocksInRange(TArray<ABlockBase*>& OutBlocks)
 
 		// 결과 배열에 유효한 블록 추가
 		OutBlocks.Add(Block);
+	}
+}
+
+void UGA_SkillBase::BatchHighlightBlocks(const TArray<ABlockBase*>& Blocks, EBlockHighlightState State)
+{
+	for (ABlockBase* Block : Blocks)
+	{
+		if (Block)
+		{
+			Block->SetHighlightState(State);
+		}
 	}
 }

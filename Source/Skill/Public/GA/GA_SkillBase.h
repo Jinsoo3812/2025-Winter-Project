@@ -5,10 +5,10 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "NativeGameplayTags.h"
+#include "Block/BlockBase.h"
 #include "GA_SkillBase.generated.h"
 
 class USkillManagerComponent;
-class ABlockBase;
 
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill); // 스킬임을 표시하는 태그
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // 스킬 시전 중임을 시전자에게 부여하는 태그
@@ -98,7 +98,11 @@ protected:
 	// 실제 스킬이 종료될 때 호출되는 함수
 	void NotifySkillCastFinished();
 
+	// 스킬 사용 범위 표시에 들어오는 블록들을 찾아내는 헬퍼 함수
 	void FindBlocksInRange(TArray<ABlockBase*>& OutBlocks);
+
+	// 범위 내 블록들의 하이라이트 상태를 일괄 변경하는 헬퍼 함수
+	void BatchHighlightBlocks(const TArray<ABlockBase*>& Blocks, EBlockHighlightState State);
 
 private:
 	// 캐싱된 SkillManager (성능 최적화용)

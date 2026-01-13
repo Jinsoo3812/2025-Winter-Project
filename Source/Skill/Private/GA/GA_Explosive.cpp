@@ -149,51 +149,34 @@ void UGA_Explosive::UpdatePreview()
 	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 	if (!PC) return;
 
-	// 이전 프레임의 하이라이트 초기화
+	// 1. 이전 프레임의 하이라이트(파란색/초록색) 초기화
+	//    -> 폭탄 색(빨강)은 건드리지 않음 (SetHighlightState는 CPD 0만 수정하므로 안전)
 	ClearHighlights();
 
-	// 사거리 내의 모든 블록 탐색 (SkillBase의 함수 활용, RangeXY/RangeZ 사용)
+	// 2. 사거리 내 블록 탐색
 	TArray<ABlockBase*> BlocksInRange;
 	FindBlocksInRange(BlocksInRange);
 
-	// 탐색된 블록들에 파란색 하이라이트 적용 (CustomPrimitiveData)
-	for (ABlockBase* Block : BlocksInRange)
-	{
-		if (Block)
-		{
-			UStaticMeshComponent* Mesh = Block->GetBlockMesh();
-			if (Mesh)
-			{
-				// CustomPrimitiveData Index 0: 1.0f = Preview (Blue)
-				Mesh->SetCustomPrimitiveDataFloat(0, 1.0f);
-			}
-			// 나중에 끄기 위해 목록에 추가
-			PreviewedBlocks.Add(Block);
-		}
-	}
+	// 3. 탐색된 블록들에 일괄적으로 'Preview(파랑)' 상태 적용
+	BatchHighlightBlocks(BlocksInRange, EBlockHighlightState::Preview);
 
-	// 현재 마우스가 가리키는 블록이 '사거리 내(파란 영역)'에 있는지 확인하여 타겟팅
+	// 4. 나중에 끄기 위해 목록 백업
+	PreviewedBlocks = BlocksInRange;
+
+
+	// 5. 마우스 커서 위치의 블록 타겟팅 처리
 	FHitResult HitResult;
 	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
 	ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
 
-	// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있다면 유효한 타겟(초록색)으로 설정
+	// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있다면 'Targeted(초록)'으로 덮어쓰기
 	if (HitBlock && PreviewedBlocks.Contains(HitBlock))
 	{
-		// 이 블록만 초록색(3.0)으로 변경
-		UStaticMeshComponent* HitMesh = HitBlock->GetBlockMesh();
-		if (HitMesh)
-		{
-			HitMesh->SetCustomPrimitiveDataFloat(0, 3.0f);
-		}
-
-		// 투척 대상으로 설정
+		HitBlock->SetHighlightState(EBlockHighlightState::Targeted);
 		HighlightedBlock = HitBlock;
 	}
 	else
 	{
-		// 사거리 밖이거나 허공을 가리키면 타겟 없음
-		// 이 경우 마우스 오버 효과(초록)는 없고,  파란색만 남음
 		HighlightedBlock.Reset();
 	}
 }
@@ -302,6 +285,7 @@ void UGA_Explosive::SpawnExplosive()
 			1.5f,
 			AutoDetonateDelay,
 			ExplosionRadius * GetRuneModifiedRange(),
+			MaxBombCount,
 			GetAbilitySystemComponentFromActorInfo(),
 			DamageSpecHandle,
 			DestructionEffect
@@ -359,18 +343,8 @@ void UGA_Explosive::PerformDetonateAndEnd()
 // 하이라이트 제거 로직
 void UGA_Explosive::ClearHighlights()
 {
-	for (TWeakObjectPtr<ABlockBase>& WeakBlock : PreviewedBlocks)
-	{
-		if (WeakBlock.IsValid())
-		{
-			UStaticMeshComponent* MeshComp = WeakBlock->GetBlockMesh();
-			if (MeshComp)
-			{
-				// Index 0 값을 0.0(기본)으로 복구
-				MeshComp->SetCustomPrimitiveDataFloat(0, 0.0f);
-			}
-		}
-	}
+	// 저장된 프리뷰 블록들의 상태를 'None'으로 복구
+	BatchHighlightBlocks(PreviewedBlocks, EBlockHighlightState::None);
 
 	// 목록 초기화
 	PreviewedBlocks.Empty();

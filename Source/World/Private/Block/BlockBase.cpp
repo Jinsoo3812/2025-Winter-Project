@@ -286,3 +286,26 @@ void ABlockBase::NotifyUpperBlock()
     }
 }
 
+// (참고) SetHighlightState는 Index 0만 건드리므로 폭탄 색(Index 1)에 영향 없음
+void ABlockBase::SetHighlightState(EBlockHighlightState NewState)
+{
+    if (UStaticMeshComponent* Mesh = GetBlockMesh())
+    {
+        // Enum을 float로 변환하여 전달
+        float StateValue = static_cast<float>(NewState);
+        Mesh->SetCustomPrimitiveDataFloat(CPD_INDEX_HIGHLIGHT, StateValue);
+    }
+}
+
+void ABlockBase::UpdateBombCount(int32 Delta, int32 MaxBombCount)
+{
+    CurrentBombCount = FMath::Clamp(CurrentBombCount + Delta, 0, MaxBombCount);
+
+    if (UStaticMeshComponent* Mesh = GetBlockMesh())
+    {
+        // 0 ~ 1 사이 실수로 변환하여 전달 (예: 1개=0.33, 2개=0.66, 3개=1.0)
+        float ColorRatio = (float)CurrentBombCount / (float)MaxBombCount;
+        Mesh->SetCustomPrimitiveDataFloat(CPD_INDEX_BOMBCOUNT, ColorRatio); // Index 1 사용
+    }
+}
+

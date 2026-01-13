@@ -39,6 +39,7 @@ void AExplosive::Initialize(
 	float FlightDuration,
 	float InAutoDetonateDelay,
 	float InExplosionRadius,
+	int32 InMaxBombCount,
 	UAbilitySystemComponent* InSourceASC,
 	FGameplayEffectSpecHandle InDamageSpecHandle,
 	TSubclassOf<UGameplayEffect> InDestructionEffectClass)
@@ -50,6 +51,7 @@ void AExplosive::Initialize(
 
 	AutoDetonateDelay = InAutoDetonateDelay;
 	ExplosionRadius = InExplosionRadius;
+	MaxBombCount = InMaxBombCount;
 	SourceASC = InSourceASC;
 	DamageSpecHandle = InDamageSpecHandle;
 	DestructionEffectClass = InDestructionEffectClass;
@@ -121,7 +123,7 @@ void AExplosive::OnLanded()
 		FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
 		AttachToActor(TargetBlock, AttachmentRules);
 
-		SetBlockColorRed(true);
+		TargetBlock->UpdateBombCount(1, MaxBombCount);
 	}
 	else
 	{
@@ -244,14 +246,12 @@ void AExplosive::Detonate()
 	// 디버그 구 그리기
 	DrawDebugSphere(GetWorld(), ExplosionCenter, ExplosionRadius, 16, FColor::Red, false, 2.0f, 0, 2.0f);
 
-
 	// 블록 색상 복구
 	if (TargetBlock)
 	{
-		SetBlockColorRed(false);
+		TargetBlock->UpdateBombCount(-1, MaxBombCount);
 	}
-	else
-	{
+	else {
 		UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: TargetBlock is invalid during detonation"));
 	}
 
