@@ -63,6 +63,9 @@ void AExplosive::Initialize(
 
 		SetActorLocation(StartLocation);
 		SetActorTickEnabled(true);
+
+		// 블록이 파괴되는지 감시 (블록이 파괴될 때 같이 터지기 위해)
+		TargetBlock->OnDestroyed.AddDynamic(this, &AExplosive::OnBlockDestroyed);
 	}
 	else
 	{
@@ -111,6 +114,13 @@ void AExplosive::OnLanded()
 	// 바닥 블록 빨간색으로 변경
 	if (TargetBlock)
 	{
+		// 목표 위치로 이동
+		SetActorLocation(TargetLocation);
+
+		// 블록에 부착 (위치 고정)
+		FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
+		AttachToActor(TargetBlock, AttachmentRules);
+
 		SetBlockColorRed(true);
 	}
 	else
@@ -122,29 +132,39 @@ void AExplosive::OnLanded()
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(DetonateTimerHandle, this, &AExplosive::OnAutoDetonate, AutoDetonateDelay, false);
-		UE_LOG(LogTemp, Log, TEXT("AExplosive::OnLanded: Timer started for %f seconds"), AutoDetonateDelay);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("AExplosive::OnLanded: World is null, cannot start timer"));
 	}
-
-	// GA에게 착륙 사실 알림
-	if (OnLandedDelegate.IsBound())
-	{
-		OnLandedDelegate.Broadcast();
-	}
 }
 
 void AExplosive::Detonate()
 {
+	// 블록 파괴에 걸어둔 델리게이트 해제
+	if (TargetBlock)
+	{
+		TargetBlock->OnDestroyed.RemoveDynamic(this, &AExplosive::OnBlockDestroyed);
+	}
+
 	// 타이머가 돌고 있다면 중지 (수동 기폭 시 중복 실행 방지)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(DetonateTimerHandle);
 	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: World is null, cannot clear timer"));
+	}
 
-	UE_LOG(LogTemp, Log, TEXT("AExplosive::Detonate: BOOM!"));
+	// GA에게 폭발 사실 알림
+	if (OnDetonatedDelegate.IsBound())
+	{
+		OnDetonatedDelegate.Broadcast();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("AExplosive::Detonate: No one is listening to OnDetonatedDelegate"));
+	}
 
 	// 폭발 범위 데미지 처리 
 	FVector ExplosionCenter = GetActorLocation();
@@ -296,4 +316,13 @@ void AExplosive::SetBlockColorRed(bool bEnable)
 			DynMat->SetScalarParameterValue(FName("EmissivePower"), 0.0f);
 		}
 	}
+}
+
+void AExplosive::OnBlockDestroyed(AActor* DestroyedActor)
+{
+	// 블록은 이미 파괴 과정에 있으므로, 타겟 포인터를 null로 비워 폭발 로직에서 접근하지 못하게 함
+	TargetBlock = nullptr;
+
+	// 즉시 기폭
+	Detonate();
 }

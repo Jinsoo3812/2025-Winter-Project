@@ -30,8 +30,19 @@ void UGA_Explosive::ActivateAbility(
 	// 이미 던져놓은 폭발물이 아직 유효하다면 기폭 및 종료
 	if (CurrentExplosive.IsValid())
 	{
-		PerformDetonateAndEnd();
-		return;
+		// 착륙(Attached) 상태일 때만 기폭 가능
+		if (CurrentExplosive->IsAttached())
+		{
+			PerformDetonateAndEnd();
+			return;
+		}
+		else
+		{
+			// 아직 날아가는 중이면 기폭하지 않고, 조준 모드 진입도 막기 위해 종료
+			UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Bomb is flying. Cannot detonate yet."));
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
+			return;
+		}
 	}
 
 	// 프리뷰 타이머 시작
@@ -208,6 +219,7 @@ void UGA_Explosive::SpawnExplosive()
 		return;
 	}
 
+	// 이제 목표 블록이 바뀌지 않으므로 SavedTargetBlock에 고정 백업
 	SavedTargetBlock = HighlightedBlock.Get();
 
 	// 프리뷰 종료: 폭발물이 날아가는 동안엔 빨간색이 꺼져야 함
@@ -218,7 +230,7 @@ void UGA_Explosive::SpawnExplosive()
 	}
 	ClearHighlights(); // 이때 HighlightedBlock은 null이 되지만, 위에서 SavedTargetBlock에 백업해둠
 
-	// 2. 좌클릭 바인딩 해제 (더 이상 투척 불가)
+	// 좌클릭 바인딩 해제 (더 이상 투척 불가)
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
@@ -255,6 +267,8 @@ void UGA_Explosive::SpawnExplosive()
 	{
 		CurrentExplosive = NewExplosive;
 
+		NewExplosive->OnDetonatedDelegate.AddDynamic(this, &UGA_Explosive::OnExplosiveDetonated);
+
 		// GA가 종료된 후에도 액터가 데미지를 줄 수 있도록 SpecHandle을 생성하여 전달
 		FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
@@ -270,8 +284,6 @@ void UGA_Explosive::SpawnExplosive()
 			DestructionEffect
 		);
 
-		UE_LOG(LogTemp, Log, TEXT("GA_Explosive: Bomb thrown. GA Phase 1 Finished."));
-
 		// 성공적으로 던졌으므로 bWasCancelled = false.
 		// 폭발 대기는 이제 액터가 스스로 하거나, 플레이어가 다시 스킬을 눌러 처리
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
@@ -284,15 +296,10 @@ void UGA_Explosive::SpawnExplosive()
 
 void UGA_Explosive::PerformDetonateAndEnd()
 {
-	// 기폭 시점에 쿨타임 적용
-	if (!CommitAbilityCooldown(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), false))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit cooldown"));
-	}
-
 	if (CurrentExplosive.IsValid())
 	{
 		// 폭발물 폭파. 피해 및 파괴 처리 로직은 폭발물 액터 내부에서 처리됨
+		// Detonate() 호출 시 OnDetonatedDelegate가 브로드캐스트되어 OnExplosiveDetonated()가 실행됨
 		CurrentExplosive->Detonate();
 
 		CurrentExplosive.Reset();
@@ -324,4 +331,23 @@ void UGA_Explosive::ClearHighlights()
 	// 목록 초기화
 	PreviewedBlocks.Empty();
 	HighlightedBlock.Reset();
+}
+
+void UGA_Explosive::OnExplosiveDetonated()
+{
+	// 수동 OR 자동 폭파 모두 이 함수가 호출되므로 여기서 쿨타임 적용
+	if (!CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit cooldown in Delegate."));
+	}
+
+	// 폭발물이 터졌으므로 포인터 안전하게 초기화
+	if (CurrentExplosive.IsValid())
+	{
+		CurrentExplosive.Reset();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Received detonation signal, but CurrentExplosive was already invalid."));
+	}
 }

@@ -52,6 +52,10 @@ protected:
 	// 최종 폭발 처리 및 종료
 	void PerformDetonateAndEnd();
 
+	UFUNCTION()
+	// 폭발물의 폭발 알림 수신
+	void OnExplosiveDetonated();
+
 	// 프리뷰 및 하이라이트 정리
 	void ClearHighlights();
 

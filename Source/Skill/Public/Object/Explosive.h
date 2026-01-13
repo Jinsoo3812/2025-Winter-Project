@@ -13,8 +13,8 @@ class ABlockBase;
 class UAbilitySystemComponent;
 class UGameplayEffect;
 
-// 착륙 시점을 GA_Explosive에 알리기 위한 델리게이트
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExplosiveLanded);
+// 폭발 시점을 GA_Explosive에 알리기 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExplosiveDetonated);
 
 UCLASS()
 class SKILL_API AExplosive : public AActor
@@ -59,9 +59,9 @@ public:
 	// 현재 부착되어 있는지 확인
 	bool IsAttached() const { return bAttached; }
 
-	// 착륙 알림 델리게이트
+	// 폭발 알림 델리게이트
 	UPROPERTY(BlueprintAssignable, Category = "Event")
-	FOnExplosiveLanded OnLandedDelegate;
+	FOnExplosiveDetonated OnDetonatedDelegate;
 
 protected:
 	// 목표 지점에 도착했을 때 처리
@@ -70,6 +70,10 @@ protected:
 	// 자동 폭파 타이머에 의해 호출됨
 	UFUNCTION()
 	void OnAutoDetonate();
+
+	// 블록이 파괴되었을 때 동시에 파괴되기 위한 콜백 함수
+	UFUNCTION()
+	void OnBlockDestroyed(AActor* DestroyedActor);
 
 	// 블록의 색상을 변경하는 헬퍼 함수
 	void SetBlockColorRed(bool bEnable);
