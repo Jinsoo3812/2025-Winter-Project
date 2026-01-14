@@ -49,6 +49,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Skill|Barrier")
 	float AutoTransitionTime = 3.0f;
 
+	UPROPERTY()
+	FVector InstallCenterLocation;
+
+	UPROPERTY()
+	TWeakObjectPtr<UAbilitySystemComponent> CachedASC;
+
+	// 페이즈 진행 중 비용 검사 무시를 위해 오버라이드
+	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		FGameplayTagContainer* OptionalRelevantTags) const override;
+
 private:
 	// 1단계에서 찾은 바닥 블록들 (InstancedPerActor 정책으로 인해 데이터 유지됨)
 	UPROPERTY()

@@ -44,6 +44,23 @@ void ATestPlayerState::BeginPlay()
 
 	// 플레이어 초기 스탯 로드
 	InitializePlayerStats(PlayerLevel);
+
+	// [추가] 게임 시작 시 Player 태그 부여 (서버 권한 확인 후 수행)
+	if (HasAuthority())
+	{
+		if (AbilitySystemComponent)
+		{
+			// "Player"라는 이름의 태그를 요청하여 추가
+			// (만약 별도로 정의해둔 매크로 TAG_Player가 있다면 그것으로 대체 가능)
+			AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("Player")));
+
+			UE_LOG(LogTemp, Log, TEXT("ATestPlayerState: 'Player' tag added successfully."));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("ATestPlayerState::BeginPlay: AbilitySystemComponent is null. Cannot add 'Player' tag."));
+		}
+	}
 }
 
 UAbilitySystemComponent* ATestPlayerState::GetAbilitySystemComponent() const

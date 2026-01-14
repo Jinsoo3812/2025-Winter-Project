@@ -34,6 +34,11 @@ void UGA_BuffBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
 	}
+	else {
+		CachedASC = ASC;
+	}
+
+
 
 	// 현재 ASC에 붙어있는 태그를 기반으로 페이즈 결정
 	if (ASC->HasMatchingGameplayTag(TAG_BuffBarrier_Phase2))
@@ -80,6 +85,8 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 		SpawnedWalls.Empty();
 	}
 
+	InstallCenterLocation = GetAvatarActorFromActorInfo()->GetActorLocation();
+
 	// 3. 범위 계산 및 블록 수집
 	// Rune modifier 적용된 범위를 계산하여 RangeXY 업데이트 (RangeZ는 건드리지 않음)
 	float OriginalRange = RangeXY;
@@ -119,7 +126,27 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 	// 6. 자동 전환 타이머 설정
 	if (UWorld* World = GetWorld())
 	{
-		World->GetTimerManager().SetTimer(AutoTransitionTimerHandle, this, &UGA_BuffBarrier::OnAutoTransition, AutoTransitionTime, false);
+		// 기존 타이머가 있다면 정리
+		World->GetTimerManager().ClearTimer(AutoTransitionTimerHandle);
+
+		// 타이머 시간 유효성 체크 (0초면 즉시 실행되어 꼬일 수 있음)
+		float WaitTime = (AutoTransitionTime > 0.0f) ? AutoTransitionTime : 0.1f;
+
+		// WeakObjectPtr를 사용하여 Ability 종료 후에도 타이머가 안전하게 호출되도록 함
+		TWeakObjectPtr<UGA_BuffBarrier> WeakThis(this);
+		World->GetTimerManager().SetTimer(AutoTransitionTimerHandle, [WeakThis]()
+		{
+			if (WeakThis.IsValid())
+			{
+				WeakThis->OnAutoTransition();
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::AutoTransition - Ability object is no longer valid"));
+			}
+		}, WaitTime, false);
+		
+		UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::ExecutePhase1 - Timer Set for %.2f seconds"), WaitTime);
 	}
 	else
 	{
@@ -189,7 +216,18 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 	// 5. 자동 전환 타이머 재설정 (3단계로 넘어가기 위함)
 	if (World)
 	{
-		World->GetTimerManager().SetTimer(AutoTransitionTimerHandle, this, &UGA_BuffBarrier::OnAutoTransition, AutoTransitionTime, false);
+		TWeakObjectPtr<UGA_BuffBarrier> WeakThis(this);
+		World->GetTimerManager().SetTimer(AutoTransitionTimerHandle, [WeakThis]()
+		{
+			if (WeakThis.IsValid())
+			{
+				WeakThis->OnAutoTransition();
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::AutoTransition - Ability object is no longer valid"));
+			}
+		}, AutoTransitionTime, false);
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Phase 2 Deployed %d walls"), SpawnedWalls.Num());
@@ -241,18 +279,26 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 
 void UGA_BuffBarrier::OnAutoTransition()
 {
-	// 타이머가 만료되면 스킬을 다시 시전 시도 -> ActivateAbility에서 태그를 확인하고 다음 페이즈 실행
-	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
+	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::OnAutoTransition - Timer Fired"));
+
+	// CachedASC 유효성 검사
+	if (CachedASC.IsValid())
 	{
-		bool bSuccess = ASC->TryActivateAbility(CurrentSpecHandle);
+		// 다시 활성화 시도
+		bool bSuccess = CachedASC->TryActivateAbility(CurrentSpecHandle);
+
 		if (!bSuccess)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::OnAutoTransition - Failed to auto-activate ability."));
 		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::OnAutoTransition - Successfully reactivated for next phase"));
+		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::OnAutoTransition - ASC is null"));
+		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::OnAutoTransition - Cached ASC is invalid or expired"));
 	}
 }
 
@@ -339,10 +385,10 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 		return;
 	}
 
-	FVector CenterLoc = OwnerPawn->GetActorLocation();
+	FVector CenterLoc = InstallCenterLocation;
 
 	// 범위 재계산 (Phase 1에서 썼던 값과 동일해야 함)
-	float Radius = GetRuneModifiedRange();
+	float Radius = GetRuneModifiedRange() * RangeXY;
 
 	// 구체 형태의 오버랩 검사
 	TArray<FOverlapResult> OverlapResults;
@@ -364,10 +410,21 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 
 	if (bOverlap)
 	{
+		// [추가] 2. 이미 처리된 액터를 걸러내기 위한 집합(Set)
+		// OverlapMulti는 컴포넌트 단위로 검출되므로(캡슐, 메쉬 등), 한 액터가 여러 번 잡히는 것을 방지
+		TSet<AActor*> ProcessedActors;
+
 		for (const FOverlapResult& Result : OverlapResults)
 		{
 			AActor* TargetActor = Result.GetActor();
 			if (!TargetActor) continue;
+
+			// [추가] 3. 중복 처리 방지
+			if (ProcessedActors.Contains(TargetActor))
+			{
+				continue;
+			}
+			ProcessedActors.Add(TargetActor);
 
 			// 1. 유효성 검사: IAttributeSetProvider 인터페이스 구현 여부 확인
 			// 이것을 통해 일반 액터나 배경 등을 거를 수 있음
@@ -389,6 +446,9 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 
 					if (SpecHandle.IsValid())
 					{
+
+						FGameplayTag MagnitudeTag = FGameplayTag::RequestGameplayTag(FName("Data.Skill.Damage"));
+						SpecHandle.Data.Get()->SetSetByCallerMagnitude(MagnitudeTag, GetRuneModifiedDamage());
 						GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
 						// 버프 적용 확인용 로그
@@ -417,4 +477,23 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 	{
 		UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: No targets found for buff within radius %f"), Radius);
 	}
+}
+
+bool UGA_BuffBarrier::CheckCost(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	FGameplayTagContainer* OptionalRelevantTags) const
+{
+	// ActorInfo나 ASC가 유효하다면 태그 확인
+	if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
+	{
+		// 1페이즈나 2페이즈 태그가 붙어있다면(이미 스킬 진행 중), 비용 검사를 패스(true)
+		if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(TAG_BuffBarrier_Phase1) ||
+			ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(TAG_BuffBarrier_Phase2))
+		{
+			return true;
+		}
+	}
+
+	// 그 외(첫 시전)에는 기본 비용 검사 수행
+	return Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags);
 }
