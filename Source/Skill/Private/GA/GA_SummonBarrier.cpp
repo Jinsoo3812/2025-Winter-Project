@@ -50,6 +50,9 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 	BarrierPreviewBlocks.Empty();
 
+	// 바닥 타일 하이라이트 정리
+	ClearHighlights();
+
 	// 스킬이 취소/종료되면 남은 블록들도 모두 제거
 	for (TObjectPtr<ADestructibleBlock>& Block : SpawnedBlocks)
 	{
@@ -101,32 +104,42 @@ void UGA_SummonBarrier::UpdatePreview()
 		return;
 	}
 
-	// 이전 프레임의 하이라이트 초기화
-	ClearHighlights();
+	// 1. 이전 프레임의 하이라이트 초기화
+    ClearHighlights();
 
-	// 범위 내 블록들을 찾아서 파란색 하이라이트
-	HighlightBlocksInRange();
+    // 2. 사거리 내 블록 탐색 (부모 클래스 함수 활용)
+    TArray<ABlockBase*> BlocksInRange;
+    FindBlocksInRange(BlocksInRange);
 
-	// 마우스 커서 타겟팅
-	FHitResult HitResult;
-	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
+    // 3. 탐색된 블록들에 일괄적으로 'Preview(파랑)' 상태 적용
+    BatchHighlightBlocks(BlocksInRange, EBlockHighlightState::Preview);
 
-	bool bValidTargetFound = false;
-	TArray<FTransform> TargetTransforms;
+    // 4. 나중에 끄기 위해 목록 백업
+    PreviewedBlocks = BlocksInRange;
 
-	if (HitResult.bBlockingHit)
-	{
-		ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
-		if (HitBlock && PreviewedBlocks.Contains(HitBlock))
-		{
-			bValidTargetFound = true;
-			// 방벽의 중심 블록의 생성 위치 계산
-			// 중심 블록은 마우스를 가져간 블록의 바로 윗 블록
-			FVector CenterBaseLocation = HitBlock->GetActorLocation() + FVector(0, 0, GridSize);
-			FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
-			CalculateBarrierTransforms(CenterBaseLocation, CurrentPlayerLocation, TargetTransforms);
-		}
-	}
+    // 5. 마우스 커서 타겟팅 및 방벽 프리뷰 계산
+    FHitResult HitResult;
+    PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
+
+    bool bValidTargetFound = false;
+    TArray<FTransform> TargetTransforms;
+
+    if (HitResult.bBlockingHit)
+    {
+        ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
+
+        // 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있을 때만 설치 가능
+        if (HitBlock && PreviewedBlocks.Contains(HitBlock))
+        {
+            bValidTargetFound = true;
+
+            // 방벽의 중심 블록의 생성 위치 계산
+            // 중심 블록은 마우스를 가져간 블록의 바로 윗 블록
+            FVector CenterBaseLocation = HitBlock->GetActorLocation() + FVector(0, 0, GridSize);
+            FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
+            CalculateBarrierTransforms(CenterBaseLocation, CurrentPlayerLocation, TargetTransforms);
+        }
+    }
 
 	if (bValidTargetFound)
 	{
@@ -609,4 +622,14 @@ void UGA_SummonBarrier::OnLeftClickPressed()
 		// 블록 생성 시도
 		SpawnBlock();
 	}
+}
+
+void UGA_SummonBarrier::ClearHighlights()
+{
+	// 1. 현재 저장된 블록들의 상태를 'None'으로 복구
+	// 배열을 비우기 전에 반드시 실행해야 색상이 돌아옵니다.
+	BatchHighlightBlocks(PreviewedBlocks, EBlockHighlightState::None);
+
+	// 2. 목록 초기화
+	PreviewedBlocks.Empty();
 }

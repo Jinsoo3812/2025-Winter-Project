@@ -92,4 +92,6 @@ private:
 
 	// 매 프레임 방벽 이동 처리
 	void TickBarrierCharge();
+
+	void ClearHighlights() override;
 };

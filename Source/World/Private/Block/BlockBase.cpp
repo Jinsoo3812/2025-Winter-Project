@@ -126,9 +126,6 @@ ABlockBase* ABlockBase::SpawnBlock(
 		NewBlock->SetActorTickEnabled(false);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("BlockBase::SpawnBlockAdvanced - Successfully spawned block at %s (Gravity: %s)"), 
-		*SpawnLocation.ToString(), bEnableGravity ? TEXT("ON") : TEXT("OFF"));
-
 	return NewBlock;
 }
 

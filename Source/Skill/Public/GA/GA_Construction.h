@@ -49,13 +49,13 @@ protected:
 	TObjectPtr<UAbilityTask_WaitInputPress> WaitInputTask;
 
 	// 프리뷰 중이거나 하이라이트 효과가 적용된 블록들을 관리하는 배열
-	TArray<TWeakObjectPtr<ABlockBase>> PreviewedBlocks;
+	TArray<ABlockBase*> PreviewedBlocks;
 
 	// 범위 내 블록들을 찾아서 하이라이트
 	void HighlightBlocksInRange();
 
 	// 하이라이트 제거
-	void ClearHighlights();
+	virtual void ClearHighlights();
 
 	// 마우스 커서 아래 블록 찾기 및 프리뷰 업데이트
 	virtual void UpdatePreview();

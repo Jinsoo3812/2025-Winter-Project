@@ -8,6 +8,8 @@
 #include "AttributeSet.h"
 #include "Engine/OverlapResult.h"
 
+UE_DEFINE_GAMEPLAY_TAG(TAG_Player, "Player");
+
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");

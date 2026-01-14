@@ -10,6 +10,8 @@
 
 class USkillManagerComponent;
 
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Player);
+
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill); // 스킬임을 표시하는 태그
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // 스킬 시전 중임을 시전자에게 부여하는 태그
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // 데미지 태그용

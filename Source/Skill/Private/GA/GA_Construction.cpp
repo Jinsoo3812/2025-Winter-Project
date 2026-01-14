@@ -145,11 +145,11 @@ void UGA_Construction::HighlightBlocksInRange()
 
 void UGA_Construction::ClearHighlights()
 {
-	for (TWeakObjectPtr<ABlockBase>& WeakBlock : PreviewedBlocks)
+	for (ABlockBase* Block : PreviewedBlocks)
 	{
-		if (WeakBlock.IsValid())
+		if (!Block)
 		{
-			UStaticMeshComponent* MeshComp = WeakBlock->GetBlockMesh();
+			UStaticMeshComponent* MeshComp = Block->GetBlockMesh();
 			if (MeshComp)
 			{
 				// Index 0 값을 0.0(기본)으로 복구
