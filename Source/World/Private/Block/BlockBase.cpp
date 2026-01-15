@@ -4,6 +4,7 @@
 #include "Block/BlockBase.h"
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"
+#include "CollisionChannels.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Terrain, "Block.Type.Terrain");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Destructible, "Block.Type.Destructible");
@@ -25,7 +26,10 @@ ABlockBase::ABlockBase()
     // 시각적(Mesh)으로는 100으로 꽉 차 보이지만, 물리적으로는 1.0의 틈이 생겨 마찰/끼임 방지
     CollisionComponent->SetBoxExtent(FVector(49.5f, 49.5f, 49.5f));
 
-    // 충돌 프로필 설정 (기존 Mesh가 하던 역할)
+	// 블록들의 충돌 채널인 ECC_Block
+    CollisionComponent->SetCollisionObjectType(ECC_Block);
+
+    // 충돌 프로필 설정
     CollisionComponent->SetCollisionProfileName(TEXT("BlockAll"));
 }
 
@@ -60,7 +64,7 @@ void ABlockBase::PostInitializeComponents()
     // 유효성 검사 (찾았는지 확인)
     if (!MeshComponent)
     {
-        UE_LOG(LogTemp, Error, TEXT("ABlockBase: 이름이 'Cube'인 StaticMeshComponent를 찾을 수 없습니다."));
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent not found in %s"), *GetName());
     }
 }
 
@@ -161,10 +165,10 @@ bool ABlockBase::IsLocationOccupied(
 	FVector BoxExtent = FVector(CheckGridSize * 0.4f, CheckGridSize * 0.4f, CheckGridSize * 0.4f);
 	FCollisionShape CheckShape = FCollisionShape::MakeBox(BoxExtent);
 
-	// ObjectType 기반 쿼리 (WorldStatic, WorldDynamic만 체크)
+	// ObjectType 기반 쿼리
+	// 다른 블록이 있는 곳에는 스폰 불가
 	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Block);
 
 	FCollisionQueryParams QueryParams;
 

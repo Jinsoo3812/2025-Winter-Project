@@ -13,7 +13,8 @@ public class World: ModuleRules
             "GameplayTasks",
             "GameplayTags",
             "NavigationSystem",
-            "Interface"
+            "Interface",
+            "Collision"
         });
     }
 }
