@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "AbilitySystemInterface.h"
+#include "SkillSystemInterface.h"
 #include "SkillManagerComponent.h"
 #include "TestPlayerState.generated.h"
 
@@ -19,7 +20,7 @@ class UDataTable;
  * 플레이어가 죽었다 부활해도 유지되어야 하는 정보들을 담고 있다.
  */
 UCLASS()
-class WINTER2025_API ATestPlayerState : public APlayerState, public IAbilitySystemInterface
+class WINTER2025_API ATestPlayerState : public APlayerState, public IAbilitySystemInterface, public ISkillSystemInterface
 {
 	GENERATED_BODY()
 
@@ -33,7 +34,7 @@ public:
 
 	// SkillManager 접근자
 	UFUNCTION(BlueprintCallable, Category = "GAS")
-	USkillManagerComponent* GetSkillManager() const { return SkillManager; }
+	USkillManagerComponent* GetSkillManager() const override;
 
 	// AttributeSet 접근자 (체력/마나 등의 수치 데이터)
 	UFUNCTION(BlueprintCallable, Category = "GAS")
@@ -42,9 +43,9 @@ public:
 	// DefaultRunes 접근자
 	const TArray<FSkillSlot>& GetDefaultSkillSets() const { return DefaultSkillSets; }
 
-	// 스킬 슬롯 초기화 함수 (초록 룬 감지 및 GA 교체 포함)
+	// 스킬 매니저 초기화 함수
 	UFUNCTION(BlueprintCallable, Category = "Skill System")
-	void InitializeSkills();
+	virtual void InitializeSkills();
 
 	// 데이터 테이블에서 플레이어 초기 스탯 로드
 	UFUNCTION(BlueprintCallable, Category = "GAS")

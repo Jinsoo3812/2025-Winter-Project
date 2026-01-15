@@ -68,6 +68,11 @@ UAbilitySystemComponent* ATestPlayerState::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+USkillManagerComponent* ATestPlayerState::GetSkillManager() const
+{
+	return SkillManager;
+}
+
 void ATestPlayerState::InitializePlayerStats(int32 Level)
 {
 	if (!PlayerStatsDataTable)

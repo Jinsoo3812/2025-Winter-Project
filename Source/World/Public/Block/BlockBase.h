@@ -4,11 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-// #include "GameplayTagContainer.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameplayEventInterface.h"
+#include "NativeGameplayTags.h"
 #include "BlockBase.generated.h"
+
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Type_Terrain);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Type_Destructible);
 
 // 블록 종류 관리
 UENUM()
@@ -25,12 +28,12 @@ enum class EBlockHighlightState : uint8
 {
 	None = 0,
 	Preview = 1,    // 파란색
-	Targeted = 2    // 초록색 (기존 코드에서 3.0을 쓰셨다면 2나 3으로 매핑)
+	Targeted = 2    // 초록색 
 };
 
 // CPD 인덱스를 상수로 관리
-constexpr int32 CPD_INDEX_HIGHLIGHT = 0;
-constexpr int32 CPD_INDEX_BOMBCOUNT = 1;
+constexpr int32 CPD_INDEX_HIGHLIGHT = 0; // 하이라이트 상태
+constexpr int32 CPD_INDEX_BOMBCOUNT = 1; // 폭탄 개수별 상태 (빨강)
 
 
 UCLASS()
@@ -45,15 +48,18 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, Category = "Block")
+	virtual void PostInitializeComponents() override;
+
 	// 블록의 타입을 담는 변수
+	UPROPERTY(VisibleAnywhere, Category = "Block")
 	EBlockType BlockType = EBlockType::IMMUTABLE;
 
+	// 블록(정육면체)의 한 변의 길이
 	UPROPERTY(EditDefaultsOnly, Category = "Grid")
 	float GridSize = 100.0f;
-	
-	UPROPERTY(VisibleAnywhere, Category = "Block")
+
 	// 블록의 위치를 담는 변수 (AActor에 BlockLocation이름이 이미 존재하여 Location으로 변경)
+	UPROPERTY(VisibleAnywhere, Category = "Block")
 	FVector Location;
 
 	// 블록이 파괴 가능한지 여부를 담는 변수
@@ -67,10 +73,6 @@ protected:
 	// 외형과 별개인 충돌 컴포넌트
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UBoxComponent> CollisionComponent;
-
-	// BP에서 설정 가능한 기본 메시 (기본값: Cube)
-	UPROPERTY(EditDefaultsOnly, Category = "Block")
-	TObjectPtr<UStaticMesh> DefaultBlockMesh;
 
 	// 낙하해도 되는 블록인지
 	bool bCanFall = false;

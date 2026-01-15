@@ -5,47 +5,63 @@
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"
 
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Terrain, "Block.Type.Terrain");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Destructible, "Block.Type.Destructible");
+
 // Sets default values
 ABlockBase::ABlockBase()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Tick을 사용할 수는 있지만,
 	PrimaryActorTick.bCanEverTick = true;
-	// Tick은 사용하지만, 처음에는 비활성화 상태로 시작
+
+	// 처음에는 비활성화 상태로 시작
     PrimaryActorTick.bStartWithTickEnabled = false;
 
-    // [수정] 1. 물리 충돌을 담당할 BoxComponent 생성 (Root)
+    // 물리 충돌을 담당할 BoxComponent 생성 (Root)
     CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
     RootComponent = CollisionComponent;
 
-    // 박스 크기 설정: 100의 절반인 50에서 아주 살짝 줄인 49.5로 설정 (전체 크기 99)
+    // 박스 크기 설정: 100의 절반인 50에서 아주 살짝 줄인 49.5로 설정
     // 시각적(Mesh)으로는 100으로 꽉 차 보이지만, 물리적으로는 1.0의 틈이 생겨 마찰/끼임 방지
     CollisionComponent->SetBoxExtent(FVector(49.5f, 49.5f, 49.5f));
 
     // 충돌 프로필 설정 (기존 Mesh가 하던 역할)
     CollisionComponent->SetCollisionProfileName(TEXT("BlockAll"));
-    // 물리 시뮬레이션 관련 설정이 필요하다면 여기서 추가 (예: SetSimulatePhysics)
-
-
-    // [수정] 2. 외형을 담당할 StaticMeshComponent 생성 (Child)
-    MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
-    MeshComponent->SetupAttachment(RootComponent); // 루트인 박스에 부착
-
-    // 메시는 충돌을 끔 (충돌은 부모인 Box가 담당하므로)
-    MeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
-
-	// 기본 Cube 메시 로드
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
-	if (CubeMesh.Succeeded())
-	{
-		DefaultBlockMesh = CubeMesh.Object;
-		MeshComponent->SetStaticMesh(DefaultBlockMesh);
-	}
 }
 
 // Called when the game starts or when spawned
 void ABlockBase::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void ABlockBase::PostInitializeComponents()
+{
+    Super::PostInitializeComponents();
+    if (!MeshComponent)
+    {
+        // 모든 StaticMeshComponent를 다 가져온다.
+        TArray<UStaticMeshComponent*> Components;
+        GetComponents<UStaticMeshComponent>(Components);
+
+        // 이름이 "Cube"인 것을 찾는다.
+        for (UStaticMeshComponent* Comp : Components)
+        {
+            // 블루프린트에서 만든 컴포넌트 이름이 "Cube"인지 확인
+            // (주의: 에디터에서 보이는 이름과 실제 변수명이 다를 수 있으나, 보통 일치함)
+            if (Comp && Comp->GetName().Contains(TEXT("Cube")))
+            {
+                MeshComponent = Comp;
+                break;
+            }
+        }
+    }
+
+    // 유효성 검사 (찾았는지 확인)
+    if (!MeshComponent)
+    {
+        UE_LOG(LogTemp, Error, TEXT("ABlockBase: 이름이 'Cube'인 StaticMeshComponent를 찾을 수 없습니다."));
+    }
 }
 
 // Called every frame

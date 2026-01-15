@@ -1,9 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "TestCharacter.h"
-// #include "GameplayAbilitySpec.h"
-// #include "Abilities/GameplayAbility.h"
-// #include "SkillManagerComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Player/Test/TestPlayerState.h"
