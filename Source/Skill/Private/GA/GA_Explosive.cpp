@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "GA/GA_Explosive.h"
@@ -26,10 +26,10 @@ void UGA_Explosive::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// GA_StickyBomb°ú ´Ş¸® ±âÁ¸ ÆøÅºÀ» È®ÀÎÇÏ°Å³ª ±âÆøÇÏ´Â ·ÎÁ÷ÀÌ ¾øÀ½.
-	// Áï½Ã ÅõÃ´À» À§ÇÑ Á¶ÁØ(Preview) ¸ğµå·Î ÁøÀÔ.
+	// GA_StickyBombê³¼ ë‹¬ë¦¬ ê¸°ì¡´ í­íƒ„ì„ í™•ì¸í•˜ê±°ë‚˜ ê¸°í­í•˜ëŠ” ë¡œì§ì´ ì—†ìŒ.
+	// ì¦‰ì‹œ íˆ¬ì²™ì„ ìœ„í•œ ì¡°ì¤€(Preview) ëª¨ë“œë¡œ ì§„ì….
 
-	// ÇÁ¸®ºä Å¸ÀÌ¸Ó ½ÃÀÛ
+	// í”„ë¦¬ë·° íƒ€ì´ë¨¸ ì‹œì‘
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Explosive::UpdatePreview, 0.016f, true);
@@ -41,7 +41,7 @@ void UGA_Explosive::ActivateAbility(
 		return;
 	}
 
-	// Ãë¼Ò ÀÔ·Â ´ë±â (½ºÅ³ ÀçÀÔ·Â½Ã Á¶ÁØ Ãë¼Ò)
+	// ì·¨ì†Œ ì…ë ¥ ëŒ€ê¸° (ìŠ¤í‚¬ ì¬ì…ë ¥ì‹œ ì¡°ì¤€ ì·¨ì†Œ)
 	InputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
 	if (InputTask)
 	{
@@ -53,7 +53,7 @@ void UGA_Explosive::ActivateAbility(
 		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to create WaitInputTask for targeting"));
 	}
 
-	// ÁÂÅ¬¸¯ ¹ÙÀÎµù (ÅõÃ´ È®Á¤)
+	// ì¢Œí´ë¦­ ë°”ì¸ë”© (íˆ¬ì²™ í™•ì •)
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
@@ -80,24 +80,24 @@ void UGA_Explosive::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Å¸ÀÌ¸Ó Á¤¸®
+	// íƒ€ì´ë¨¸ ì •ë¦¬
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 	TickTimerHandle.Invalidate();
 
-	// ÇÏÀÌ¶óÀÌÆ® Á¤¸®
+	// í•˜ì´ë¼ì´íŠ¸ ì •ë¦¬
 	ClearHighlights();
 
-	// ÅÂ½ºÅ© Á¤¸®
+	// íƒœìŠ¤í¬ ì •ë¦¬
 	if (InputTask)
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
 	}
 
-	// ÀÔ·Â ¹ÙÀÎµù ÇØÁ¦
+	// ì…ë ¥ ë°”ì¸ë”© í•´ì œ
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
@@ -122,7 +122,7 @@ void UGA_Explosive::EndAbility(
 		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: OwnerPawn null during EndAbility cleanup"));
 	}
 
-	// ÀúÀåµÈ Å¸°Ù ÃÊ±âÈ­
+	// ì €ì¥ëœ íƒ€ê²Ÿ ì´ˆê¸°í™”
 	SavedTargetBlock.Reset();
 
 	NotifySkillCastFinished();
@@ -132,22 +132,22 @@ void UGA_Explosive::EndAbility(
 
 void UGA_Explosive::UpdatePreview()
 {
-	// GA_StickyBomb°ú µ¿ÀÏÇÑ ·ÎÁ÷ »ç¿ë
+	// GA_StickyBombê³¼ ë™ì¼í•œ ë¡œì§ ì‚¬ìš©
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (!OwnerPawn) return;
 
 	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 	if (!PC) return;
 
-	// 1. ÀÌÀü ÇÁ·¹ÀÓÀÇ ÇÏÀÌ¶óÀÌÆ® ÃÊ±âÈ­
+	// 1. ì´ì „ í”„ë ˆì„ì˜ í•˜ì´ë¼ì´íŠ¸ ì´ˆê¸°í™”
 	ClearHighlights();
 
-	// 2. »ç°Å¸® ³» ºí·Ï Å½»ö
+	// 2. ì‚¬ê±°ë¦¬ ë‚´ ë¸”ë¡ íƒìƒ‰
 	TArray<ABlockBase*> BlocksInRange;
 	TArray<AActor*> ActorsInRange;
 	FindBlocksInRange(ActorsInRange);
 	
-	// AActor*¸¦ ABlockBase*·Î º¯È¯
+	// AActor*ë¥¼ ABlockBase*ë¡œ ë³€í™˜
 	for (AActor* Actor : ActorsInRange)
 	{
 		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
@@ -156,18 +156,18 @@ void UGA_Explosive::UpdatePreview()
 		}
 	}
 
-	// 3. Å½»öµÈ ºí·Ïµé¿¡ ÀÏ°ıÀûÀ¸·Î 'Preview(ÆÄ¶û)' »óÅÂ Àû¿ë
+	// 3. íƒìƒ‰ëœ ë¸”ë¡ë“¤ì— ì¼ê´„ì ìœ¼ë¡œ 'Preview(íŒŒë‘)' ìƒíƒœ ì ìš©
 	BatchHighlightBlocks(ActorsInRange, 1.0f);
 
-	// 4. ³ªÁß¿¡ ²ô±â À§ÇØ ¸ñ·Ï ¹é¾÷
+	// 4. ë‚˜ì¤‘ì— ë„ê¸° ìœ„í•´ ëª©ë¡ ë°±ì—…
 	PreviewedBlocks = BlocksInRange;
 
-	// 5. ¸¶¿ì½º Ä¿¼­ À§Ä¡ÀÇ ºí·Ï Å¸°ÙÆÃ Ã³¸®
+	// 5. ë§ˆìš°ìŠ¤ ì»¤ì„œ ìœ„ì¹˜ì˜ ë¸”ë¡ íƒ€ê²ŸíŒ… ì²˜ë¦¬
 	FHitResult HitResult;
 	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
 	ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
 
-	// ¸¶¿ì½º ¹ØÀÇ ºí·ÏÀÌ »ç°Å¸®(ÆÄ¶õ ¿µ¿ª) ¾È¿¡ Æ÷ÇÔµÇ¾î ÀÖ´Ù¸é 'Targeted(ÃÊ·Ï)'À¸·Î µ¤¾î¾²±â
+	// ë§ˆìš°ìŠ¤ ë°‘ì˜ ë¸”ë¡ì´ ì‚¬ê±°ë¦¬(íŒŒë€ ì˜ì—­) ì•ˆì— í¬í•¨ë˜ì–´ ìˆë‹¤ë©´ 'Targeted(ì´ˆë¡)'ìœ¼ë¡œ ë®ì–´ì“°ê¸°
 	if (HitBlock && PreviewedBlocks.Contains(HitBlock))
 	{
 		// Targeted = 2.0f
@@ -184,30 +184,30 @@ void UGA_Explosive::UpdatePreview()
 
 void UGA_Explosive::OnLeftClickPressed()
 {
-	// ÇÏÀÌ¶óÀÌÆ®µÈ ºí·ÏÀÌ À¯È¿ÇÒ ¶§¸¸ ½ÃÀü
+	// í•˜ì´ë¼ì´íŠ¸ëœ ë¸”ë¡ì´ ìœ íš¨í•  ë•Œë§Œ ì‹œì „
 	if (HighlightedBlock.IsValid())
 	{
-		// ½ºÅ³ ½ÃÀü ½ÃÀÛ (Busy ÅÂ±× µî Àû¿ë)
+		// ìŠ¤í‚¬ ì‹œì „ ì‹œì‘ (Busy íƒœê·¸ ë“± ì ìš©)
 		NotifySkillCastStarted();
 
-		// Æø¹ß¹° ÅõÃ´ ¹× ½ºÅ³ Á¾·á (´Ü¹ß¼ºÀÌ¹Ç·Î Áï½Ã Á¾·áµÊ)
+		// í­ë°œë¬¼ íˆ¬ì²™ ë° ìŠ¤í‚¬ ì¢…ë£Œ (ë‹¨ë°œì„±ì´ë¯€ë¡œ ì¦‰ì‹œ ì¢…ë£Œë¨)
 		SpawnExplosive();
 	}
 	else
 	{
-		// Å¸°ÙÀÌ À¯È¿ÇÏÁö ¾ÊÀ» ¶§´Â ¾Æ¹« µ¿ÀÛ ÇÏÁö ¾ÊÀ½ (·Î±× »ı·« °¡´É)
+		// íƒ€ê²Ÿì´ ìœ íš¨í•˜ì§€ ì•Šì„ ë•ŒëŠ” ì•„ë¬´ ë™ì‘ í•˜ì§€ ì•ŠìŒ (ë¡œê·¸ ìƒëµ ê°€ëŠ¥)
 	}
 }
 
 void UGA_Explosive::OnCancelPressed(float TimeWaited)
 {
-	// Á¶ÁØ Ãë¼Ò ¹× Á¾·á
+	// ì¡°ì¤€ ì·¨ì†Œ ë° ì¢…ë£Œ
 	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 }
 
 void UGA_Explosive::SpawnExplosive()
 {
-	// ÄÚ½ºÆ® ÁöºÒ È®ÀÎ
+	// ì½”ìŠ¤íŠ¸ ì§€ë¶ˆ í™•ì¸
 	if (!CommitAbilityCost(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit ability cost"));
@@ -222,24 +222,24 @@ void UGA_Explosive::SpawnExplosive()
 		return;
 	}
 
-	// ¸ñÇ¥ ºí·Ï ¹é¾÷
+	// ëª©í‘œ ë¸”ë¡ ë°±ì—…
 	SavedTargetBlock = HighlightedBlock.Get();
 
-	// ÇÁ¸®ºä Á¾·á ¹× ÀÔ·Â ÇØÁ¦ ·ÎÁ÷ (EndAbility¿¡¼­ Ã³¸®ÇÏÁö¸¸ ¸í½ÃÀû Á¤¸®¸¦ À§ÇØ)
+	// í”„ë¦¬ë·° ì¢…ë£Œ ë° ì…ë ¥ í•´ì œ ë¡œì§ (EndAbilityì—ì„œ ì²˜ë¦¬í•˜ì§€ë§Œ ëª…ì‹œì  ì •ë¦¬ë¥¼ ìœ„í•´)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 	ClearHighlights();
 
-	// ÀÔ·Â ÅÂ½ºÅ© Á¾·á
+	// ì…ë ¥ íƒœìŠ¤í¬ ì¢…ë£Œ
 	if (InputTask)
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
 	}
 
-	// Æø¹ß¹° »ı¼º
+	// í­ë°œë¬¼ ìƒì„±
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (OwnerPawn)
 	{
@@ -251,30 +251,30 @@ void UGA_Explosive::SpawnExplosive()
 
 		if (NewExplosive && SavedTargetBlock.IsValid())
 		{
-			// µ¥¹ÌÁö ½ºÆå ÇÚµé »ı¼º
+			// ë°ë¯¸ì§€ ìŠ¤í™ í•¸ë“¤ ìƒì„±
 			FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
-			// Æø¹ß¹° ÃÊ±âÈ­
-			// Áß¿ä: AutoDetonateDelay¸¦ 0.0f·Î ¼³Á¤ÇÏ¿© ÂøÅº(OnLanded) ÈÄ Áï½Ã Æø¹ßÇÏµµ·Ï ÇÔ
+			// í­ë°œë¬¼ ì´ˆê¸°í™”
+			// ì¤‘ìš”: AutoDetonateDelayë¥¼ 0.0fë¡œ ì„¤ì •í•˜ì—¬ ì°©íƒ„(OnLanded) í›„ ì¦‰ì‹œ í­ë°œí•˜ë„ë¡ í•¨
 			NewExplosive->Initialize(
 				SpawnLoc,
 				SavedTargetBlock.Get(),
 				1.5f,			// FlightDuration
-				0.01f,			// AutoDetonateDelay (Áï½Ã Æø¹ß)
+				0.01f,			// AutoDetonateDelay (ì¦‰ì‹œ í­ë°œ)
 				ExplosionRadius * GetRuneModifiedRange(),
-				1,				// MaxBombCount (ÀÌ ½ºÅ³¿¡¼± ÀÇ¹Ì ¾øÁö¸¸ 1·Î Àü´Ş)
+				1,				// MaxBombCount (ì´ ìŠ¤í‚¬ì—ì„  ì˜ë¯¸ ì—†ì§€ë§Œ 1ë¡œ ì „ë‹¬)
 				GetAbilitySystemComponentFromActorInfo(),
 				DamageSpecHandle,
 				DestructionEffect
 			);
 
-			// Á¡Âø ÆøÅº°ú ´Ş¸® ¸®½ºÆ®¿¡ Ãß°¡ÇÏ°Å³ª µ¨¸®°ÔÀÌÆ®¸¦ ±â´Ù¸®Áö ¾ÊÀ½.
-			// ´øÁö´Â ÇàÀ§·Î ½ºÅ³ »ç¿ëÀº ³¡³².
+			// ì ì°© í­íƒ„ê³¼ ë‹¬ë¦¬ ë¦¬ìŠ¤íŠ¸ì— ì¶”ê°€í•˜ê±°ë‚˜ ë¸ë¦¬ê²Œì´íŠ¸ë¥¼ ê¸°ë‹¤ë¦¬ì§€ ì•ŠìŒ.
+			// ë˜ì§€ëŠ” í–‰ìœ„ë¡œ ìŠ¤í‚¬ ì‚¬ìš©ì€ ëë‚¨.
 
-			// ÅõÃ´ Áï½Ã ÄğÅ¸ÀÓ Àû¿ë
+			// íˆ¬ì²™ ì¦‰ì‹œ ì¿¨íƒ€ì„ ì ìš©
 			CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 
-			// ½ºÅ³ Á¤»ó Á¾·á
+			// ìŠ¤í‚¬ ì •ìƒ ì¢…ë£Œ
 			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 		}
 		else
@@ -292,7 +292,7 @@ void UGA_Explosive::SpawnExplosive()
 
 void UGA_Explosive::ClearHighlights()
 {
-	// ÀúÀåµÈ ÇÁ¸®ºä ºí·ÏµéÀÇ »óÅÂ¸¦ 'None'À¸·Î º¹±¸
+	// ì €ì¥ëœ í”„ë¦¬ë·° ë¸”ë¡ë“¤ì˜ ìƒíƒœë¥¼ 'None'ìœ¼ë¡œ ë³µêµ¬
 	TArray<AActor*> ActorsToReset;
 	for (ABlockBase* Block : PreviewedBlocks)
 	{
@@ -303,7 +303,7 @@ void UGA_Explosive::ClearHighlights()
 	}
 	BatchHighlightBlocks(ActorsToReset, 0.0f);
 
-	// ¸ñ·Ï ÃÊ±âÈ­
+	// ëª©ë¡ ì´ˆê¸°í™”
 	PreviewedBlocks.Empty();
 	HighlightedBlock.Reset();
 }

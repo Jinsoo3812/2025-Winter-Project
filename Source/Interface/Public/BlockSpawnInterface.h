@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,8 +15,8 @@ class UBlockSpawnInterface : public UInterface
 };
 
 /**
- * ºí·Ï »ı¼ºÀ» À§ÇÑ ÀÎÅÍÆäÀÌ½º
- * WorldSubsystemÀÌ ±¸ÇöÇÏ¿© ºí·Ï »ı¼ºÀ» ´ã´çÇÔ
+ * ë¸”ë¡ ìƒì„±ì„ ìœ„í•œ ì¸í„°í˜ì´ìŠ¤
+ * WorldSubsystemì´ êµ¬í˜„í•˜ì—¬ ë¸”ë¡ ìƒì„±ì„ ë‹´ë‹¹í•¨
  */
 class INTERFACE_API IBlockSpawnInterface
 {

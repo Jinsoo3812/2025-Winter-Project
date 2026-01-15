@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -17,29 +17,29 @@ class WORLD_API UBlockManagerSubsystem : public UWorldSubsystem, public IBlockSp
 	GENERATED_BODY()
 	
 public:
-	// ¼­ºê½Ã½ºÅÛ ÃÊ±âÈ­ ÇÔ¼ö (¿£Áø¿¡ ÀÇÇØ È£Ãâ)
+	// ì„œë¸Œì‹œìŠ¤í…œ ì´ˆê¸°í™” í•¨ìˆ˜ (ì—”ì§„ì— ì˜í•´ í˜¸ì¶œ)
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	/*
-	* IBlockSpawnInterface ±¸Çö: ÅÂ±×¿¡ ¸Â´Â ºí·ÏÀ» ¼ÒÈ¯ÇÏ´Â ÇÔ¼ö
-	* @param BlockTypeTag: ¼ÒÈ¯ÇÒ ºí·ÏÀÇ Å¸ÀÔÀ» ³ªÅ¸³»´Â °ÔÀÓÇÃ·¹ÀÌ ÅÂ±×
-	* @param Location: ºí·ÏÀ» ¼ÒÈ¯ÇÒ À§Ä¡
-	* @param bEnableGravity: ¼ÒÈ¯µÈ ºí·Ï¿¡ Áß·Â Àû¿ë ¿©ºÎ
-	* @return ¼ÒÈ¯µÈ ºí·Ï ¾×ÅÍÀÇ Æ÷ÀÎÅÍ, ½ÇÆĞ ½Ã nullptr ¹İÈ¯
+	* IBlockSpawnInterface êµ¬í˜„: íƒœê·¸ì— ë§ëŠ” ë¸”ë¡ì„ ì†Œí™˜í•˜ëŠ” í•¨ìˆ˜
+	* @param BlockTypeTag: ì†Œí™˜í•  ë¸”ë¡ì˜ íƒ€ì…ì„ ë‚˜íƒ€ë‚´ëŠ” ê²Œì„í”Œë ˆì´ íƒœê·¸
+	* @param Location: ë¸”ë¡ì„ ì†Œí™˜í•  ìœ„ì¹˜
+	* @param bEnableGravity: ì†Œí™˜ëœ ë¸”ë¡ì— ì¤‘ë ¥ ì ìš© ì—¬ë¶€
+	* @return ì†Œí™˜ëœ ë¸”ë¡ ì•¡í„°ì˜ í¬ì¸í„°, ì‹¤íŒ¨ ì‹œ nullptr ë°˜í™˜
 	*/
 	AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, bool bEnableGravity) override;
 
 protected:
-	// Gameplay Tag¿Í ºí·Ï Å¬·¡½ºÀÇ ¸ÅÇÎ
+	// Gameplay Tagì™€ ë¸”ë¡ í´ë˜ìŠ¤ì˜ ë§¤í•‘
 	UPROPERTY(EditDefaultsOnly)
 	TMap<FGameplayTag, TSubclassOf<ABlockBase>> BlockClassMap;
 
-	// ÁöÁ¤µÈ À§Ä¡°¡ Á¡À¯µÇ¾î ÀÖ´ÂÁö È®ÀÎÇÏ´Â ÇïÆÛ ÇÔ¼ö
-	// @param World: Ã¼Å©ÇÒ ¿ùµå
-	// @param CheckLocation: Ã¼Å©ÇÒ À§Ä¡
-	// @param CheckGridSize: ºí·ÏÀÇ ±×¸®µå Å©±â
-	// @return Á¡À¯µÇ¾î ÀÖÀ¸¸é true, ºñ¾îÀÖÀ¸¸é false
-	// @note ÇÁ¸®ºä ºí·Ï(ECC_GameTraceChannel1)Àº Á¡À¯ ÆÇÁ¤¿¡¼­ Á¦¿ÜµÊ
+	// ì§€ì •ëœ ìœ„ì¹˜ê°€ ì ìœ ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸í•˜ëŠ” í—¬í¼ í•¨ìˆ˜
+	// @param World: ì²´í¬í•  ì›”ë“œ
+	// @param CheckLocation: ì²´í¬í•  ìœ„ì¹˜
+	// @param CheckGridSize: ë¸”ë¡ì˜ ê·¸ë¦¬ë“œ í¬ê¸°
+	// @return ì ìœ ë˜ì–´ ìˆìœ¼ë©´ true, ë¹„ì–´ìˆìœ¼ë©´ false
+	// @note í”„ë¦¬ë·° ë¸”ë¡(ECC_GameTraceChannel1)ì€ ì ìœ  íŒì •ì—ì„œ ì œì™¸ë¨
 	UFUNCTION(BlueprintCallable, Category = "Block")
 	bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize);
 };

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -17,7 +17,7 @@ class WORLD_API UDA_BlockConfig : public UDataAsset
 	GENERATED_BODY()
 	
 public:
-	// Gameplay Tag¿Í ºí·Ï Å¬·¡½ºÀÇ ¸ÅÇÎ Á¤º¸
+	// Gameplay Tagì™€ ë¸”ë¡ í´ë˜ìŠ¤ì˜ ë§¤í•‘ ì •ë³´
 	UPROPERTY(EditDefaultsOnly, Category = "Block")
 	TMap<FGameplayTag, TSubclassOf<ABlockBase>> BlockClassMap;
 };

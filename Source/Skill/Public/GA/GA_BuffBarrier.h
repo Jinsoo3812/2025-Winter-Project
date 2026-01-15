@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -6,15 +6,15 @@
 #include "GA/GA_SkillBase.h"
 #include "GA_BuffBarrier.generated.h"
 
-// ÆäÀÌÁî °ü¸®¸¦ À§ÇÑ ÅÂ±× ¼±¾ğ
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_BuffBarrier_Phase1); // ¹Ù´Ú¿¡ ¹üÀ§¸¦ Ç¥½ÃÇÑ »óÅÂ
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_BuffBarrier_Phase2); // ºí·ÏÀ» ¼ÒÈ¯ÇÑ »óÅÂ
+// í˜ì´ì¦ˆ ê´€ë¦¬ë¥¼ ìœ„í•œ íƒœê·¸ ì„ ì–¸
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_BuffBarrier_Phase1); // ë°”ë‹¥ì— ë²”ìœ„ë¥¼ í‘œì‹œí•œ ìƒíƒœ
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_BuffBarrier_Phase2); // ë¸”ë¡ì„ ì†Œí™˜í•œ ìƒíƒœ
 
 /**
- * 3´Ü°è·Î ³ª´µ¾î ¹ßµ¿µÇ´Â ¹öÇÁ/Àåº® ½ºÅ³
- * 1. ½ºÅ³ »ç¿ë ½Ã ¹Ù´Ú¿¡ ¹üÀ§ Ç¥½Ã
- * 2. °¡ÀåÀÚ¸® º® »ı¼º ¹× ¹öÇÁ Àû¿ë
- * 3. º® Á¦°Å ¹× ÄğÅ¸ÀÓ Àû¿ë
+ * 3ë‹¨ê³„ë¡œ ë‚˜ë‰˜ì–´ ë°œë™ë˜ëŠ” ë²„í”„/ì¥ë²½ ìŠ¤í‚¬
+ * 1. ìŠ¤í‚¬ ì‚¬ìš© ì‹œ ë°”ë‹¥ì— ë²”ìœ„ í‘œì‹œ
+ * 2. ê°€ì¥ìë¦¬ ë²½ ìƒì„± ë° ë²„í”„ ì ìš©
+ * 3. ë²½ ì œê±° ë° ì¿¨íƒ€ì„ ì ìš©
  */
 UCLASS()
 class SKILL_API UGA_BuffBarrier : public UGA_SkillBase
@@ -37,15 +37,15 @@ public:
 		bool bWasCancelled) override;
 
 protected:
-	// »ı¼ºÇÒ º® ºí·Ï Å¬·¡½º
+	// ìƒì„±í•  ë²½ ë¸”ë¡ í´ë˜ìŠ¤
 	UPROPERTY(EditDefaultsOnly, Category = "Skill|Barrier")
 	TSubclassOf<class ABlockBase> WallBlockClass;
 
-	// Àû¿ëÇÒ ¹öÇÁ GE
+	// ì ìš©í•  ë²„í”„ GE
 	UPROPERTY(EditDefaultsOnly, Category = "Skill|Barrier")
 	TSubclassOf<class UGameplayEffect> BuffEffectClass;
 
-	// ÀÚµ¿ ÀüÈ¯ ½Ã°£ (±âº» 3ÃÊ)
+	// ìë™ ì „í™˜ ì‹œê°„ (ê¸°ë³¸ 3ì´ˆ)
 	UPROPERTY(EditDefaultsOnly, Category = "Skill|Barrier")
 	float AutoTransitionTime = 3.0f;
 
@@ -55,41 +55,41 @@ protected:
 	UPROPERTY()
 	TWeakObjectPtr<UAbilitySystemComponent> CachedASC;
 
-	// ÆäÀÌÁî ÁøÇà Áß ºñ¿ë °Ë»ç ¹«½Ã¸¦ À§ÇØ ¿À¹ö¶óÀÌµå
+	// í˜ì´ì¦ˆ ì§„í–‰ ì¤‘ ë¹„ìš© ê²€ì‚¬ ë¬´ì‹œë¥¼ ìœ„í•´ ì˜¤ë²„ë¼ì´ë“œ
 	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
 		FGameplayTagContainer* OptionalRelevantTags) const override;
 
 private:
-	// 1´Ü°è¿¡¼­ Ã£Àº ¹Ù´Ú ºí·Ïµé (InstancedPerActor Á¤Ã¥À¸·Î ÀÎÇØ µ¥ÀÌÅÍ À¯ÁöµÊ)
+	// 1ë‹¨ê³„ì—ì„œ ì°¾ì€ ë°”ë‹¥ ë¸”ë¡ë“¤ (InstancedPerActor ì •ì±…ìœ¼ë¡œ ì¸í•´ ë°ì´í„° ìœ ì§€ë¨)
 	UPROPERTY()
 	TArray<class ABlockBase*> HighlightedBlocks;
 
-	// 2´Ü°è¿¡¼­ »ı¼ºÇÑ º® ºí·Ïµé
+	// 2ë‹¨ê³„ì—ì„œ ìƒì„±í•œ ë²½ ë¸”ë¡ë“¤
 	UPROPERTY()
 	TArray<class ABlockBase*> SpawnedWalls;
 
-	// ÀÚµ¿ ÀüÈ¯À» À§ÇÑ Å¸ÀÌ¸Ó ÇÚµé
+	// ìë™ ì „í™˜ì„ ìœ„í•œ íƒ€ì´ë¨¸ í•¸ë“¤
 	FTimerHandle AutoTransitionTimerHandle;
 
-	// --- ³»ºÎ ·ÎÁ÷ ÇÔ¼öµé ---
+	// --- ë‚´ë¶€ ë¡œì§ í•¨ìˆ˜ë“¤ ---
 
-	// 1´Ü°è: ¹üÀ§ Ç¥½Ã ·ÎÁ÷
+	// 1ë‹¨ê³„: ë²”ìœ„ í‘œì‹œ ë¡œì§
 	void ExecutePhase1_Highlight();
 
-	// 2´Ü°è: º® »ı¼º ¹× ¹öÇÁ ·ÎÁ÷
+	// 2ë‹¨ê³„: ë²½ ìƒì„± ë° ë²„í”„ ë¡œì§
 	void ExecutePhase2_Deploy();
 
-	// 3´Ü°è: ÇØÁ¦ ¹× ÄğÅ¸ÀÓ ·ÎÁ÷
+	// 3ë‹¨ê³„: í•´ì œ ë° ì¿¨íƒ€ì„ ë¡œì§
 	void ExecutePhase3_Cleanup();
 
-	// Å¸ÀÌ¸Ó¿¡ ÀÇÇØ È£ÃâµÇ¾î ´ÙÀ½ ´Ü°è¸¦ ÀÚµ¿ ½ÇÇàÇÏ´Â ÇÔ¼ö
+	// íƒ€ì´ë¨¸ì— ì˜í•´ í˜¸ì¶œë˜ì–´ ë‹¤ìŒ ë‹¨ê³„ë¥¼ ìë™ ì‹¤í–‰í•˜ëŠ” í•¨ìˆ˜
 	UFUNCTION()
 	void OnAutoTransition();
 
-	// °¡ÀåÀÚ¸® ºí·Ï ÆÇº° ·ÎÁ÷
+	// ê°€ì¥ìë¦¬ ë¸”ë¡ íŒë³„ ë¡œì§
 	void FindEdgeBlocks(const TArray<class ABlockBase*>& InBlocks, TArray<class ABlockBase*>& OutEdges);
 
-	// ¹üÀ§ ³» ¾Æ±º¿¡°Ô ¹öÇÁ Àû¿ë
+	// ë²”ìœ„ ë‚´ ì•„êµ°ì—ê²Œ ë²„í”„ ì ìš©
 	void ApplyBuffToTargets();
 };

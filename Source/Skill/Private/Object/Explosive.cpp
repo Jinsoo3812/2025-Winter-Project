@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Object/Explosive.h"
@@ -16,14 +16,14 @@ AExplosive::AExplosive()
 {
 	// Set this actor to call Tick() every frame.
 	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = false; // Initialize È£Ãâ Àü±îÁö Tick ºñÈ°¼ºÈ­
+	PrimaryActorTick.bStartWithTickEnabled = false; // Initialize í˜¸ì¶œ ì „ê¹Œì§€ Tick ë¹„í™œì„±í™”
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	RootComponent = MeshComponent;
 
 	/*
-	* Æø¹ß¹°Àº ºí·ÏÀ§¿¡ ºÙÀº Ç¥½ÃÀÏ »Ó ´Ù¸¥ °´Ã¼¿Í »óÈ£ÀÛ¿ëÇÏÁö ¾ÊÀ½
-	* ¹°¸®¿£Áø Ãæµ¹ ²û
+	* í­ë°œë¬¼ì€ ë¸”ë¡ìœ„ì— ë¶™ì€ í‘œì‹œì¼ ë¿ ë‹¤ë¥¸ ê°ì²´ì™€ ìƒí˜¸ì‘ìš©í•˜ì§€ ì•ŠìŒ
+	* ë¬¼ë¦¬ì—”ì§„ ì¶©ëŒ ë”
 	*/
 	MeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
 }
@@ -58,7 +58,7 @@ void AExplosive::Initialize(
 
 	if (TargetBlock)
 	{
-		// ¸ñÇ¥ ÁöÁ¡: ºí·Ï Áß½É + Z 50 (À­¸é Áß¾Ó)
+		// ëª©í‘œ ì§€ì : ë¸”ë¡ ì¤‘ì‹¬ + Z 50 (ìœ—ë©´ ì¤‘ì•™)
 		float HarfGridSize = TargetBlock->GetGridSize() / 2.0f;
 		FVector BlockLoc = TargetBlock->GetActorLocation();
 		TargetLocation = BlockLoc + FVector(0.0f, 0.0f, HarfGridSize);
@@ -66,7 +66,7 @@ void AExplosive::Initialize(
 		SetActorLocation(StartLocation);
 		SetActorTickEnabled(true);
 
-		// ºí·ÏÀÌ ÆÄ±«µÇ´ÂÁö °¨½Ã (ºí·ÏÀÌ ÆÄ±«µÉ ¶§ °°ÀÌ ÅÍÁö±â À§ÇØ)
+		// ë¸”ë¡ì´ íŒŒê´´ë˜ëŠ”ì§€ ê°ì‹œ (ë¸”ë¡ì´ íŒŒê´´ë  ë•Œ ê°™ì´ í„°ì§€ê¸° ìœ„í•´)
 		TargetBlock->OnDestroyed.AddDynamic(this, &AExplosive::OnBlockDestroyed);
 	}
 	else
@@ -84,13 +84,13 @@ void AExplosive::Tick(float DeltaTime)
 
 	CurrentFlightTime += DeltaTime;
 
-	// ÁøÇà·ü (0.0 ~ 1.0)
+	// ì§„í–‰ë¥  (0.0 ~ 1.0)
 	float Alpha = FMath::Clamp(CurrentFlightTime / TotalFlightTime, 0.0f, 1.0f);
 
-	// ¼±Çü º¸°£ (¼öÆò ÀÌµ¿)
+	// ì„ í˜• ë³´ê°„ (ìˆ˜í‰ ì´ë™)
 	FVector LerpLocation = FMath::Lerp(StartLocation, TargetLocation, Alpha);
 
-	// Æ÷¹°¼± ³ôÀÌ Ãß°¡ (4 * Height * x * (1-x))
+	// í¬ë¬¼ì„  ë†’ì´ ì¶”ê°€ (4 * Height * x * (1-x))
 	float HeightOffset = ArcHeight * 4.0f * Alpha * (1.0f - Alpha);
 
 	FVector NewLocation = LerpLocation;
@@ -98,7 +98,7 @@ void AExplosive::Tick(float DeltaTime)
 
 	SetActorLocation(NewLocation);
 
-	// µµÂø È®ÀÎ
+	// ë„ì°© í™•ì¸
 	if (Alpha >= 1.0f)
 	{
 		OnLanded();
@@ -110,16 +110,16 @@ void AExplosive::OnLanded()
 	bAttached = true;
 	SetActorTickEnabled(false);
 
-	// À§Ä¡ º¸Á¤
+	// ìœ„ì¹˜ ë³´ì •
 	SetActorLocation(TargetLocation);
 
-	// ¹Ù´Ú ºí·Ï »¡°£»öÀ¸·Î º¯°æ
+	// ë°”ë‹¥ ë¸”ë¡ ë¹¨ê°„ìƒ‰ìœ¼ë¡œ ë³€ê²½
 	if (TargetBlock)
 	{
-		// ¸ñÇ¥ À§Ä¡·Î ÀÌµ¿
+		// ëª©í‘œ ìœ„ì¹˜ë¡œ ì´ë™
 		SetActorLocation(TargetLocation);
 
-		// ºí·Ï¿¡ ºÎÂø (À§Ä¡ °íÁ¤)
+		// ë¸”ë¡ì— ë¶€ì°© (ìœ„ì¹˜ ê³ ì •)
 		FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
 		AttachToActor(TargetBlock, AttachmentRules);
 
@@ -127,11 +127,11 @@ void AExplosive::OnLanded()
 	}
 	else
 	{
-		// µµÂøÇÏ°í º¸´Ï Å¸°Ù ºí·ÏÀÌ ¾ø¾îÁø °æ¿ì Áï½Ã ±âÆø
+		// ë„ì°©í•˜ê³  ë³´ë‹ˆ íƒ€ê²Ÿ ë¸”ë¡ì´ ì—†ì–´ì§„ ê²½ìš° ì¦‰ì‹œ ê¸°í­
 		Detonate();
 	}
 
-	// ÀÚµ¿ ÆøÆÄ Å¸ÀÌ¸Ó ½ÃÀÛ
+	// ìë™ í­íŒŒ íƒ€ì´ë¨¸ ì‹œì‘
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(DetonateTimerHandle, this, &AExplosive::OnAutoDetonate, AutoDetonateDelay, false);
@@ -144,13 +144,13 @@ void AExplosive::OnLanded()
 
 void AExplosive::Detonate()
 {
-	// ºí·Ï ÆÄ±«¿¡ °É¾îµĞ µ¨¸®°ÔÀÌÆ® ÇØÁ¦
+	// ë¸”ë¡ íŒŒê´´ì— ê±¸ì–´ë‘” ë¸ë¦¬ê²Œì´íŠ¸ í•´ì œ
 	if (TargetBlock)
 	{
 		TargetBlock->OnDestroyed.RemoveDynamic(this, &AExplosive::OnBlockDestroyed);
 	}
 
-	// Å¸ÀÌ¸Ó°¡ µ¹°í ÀÖ´Ù¸é ÁßÁö (¼öµ¿ ±âÆø ½Ã Áßº¹ ½ÇÇà ¹æÁö)
+	// íƒ€ì´ë¨¸ê°€ ëŒê³  ìˆë‹¤ë©´ ì¤‘ì§€ (ìˆ˜ë™ ê¸°í­ ì‹œ ì¤‘ë³µ ì‹¤í–‰ ë°©ì§€)
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(DetonateTimerHandle);
@@ -159,7 +159,7 @@ void AExplosive::Detonate()
 		UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: World is null, cannot clear timer"));
 	}
 
-	// GA¿¡°Ô Æø¹ß »ç½Ç ¾Ë¸²
+	// GAì—ê²Œ í­ë°œ ì‚¬ì‹¤ ì•Œë¦¼
 	if (OnDetonatedDelegate.IsBound())
 	{
 		OnDetonatedDelegate.Broadcast();
@@ -169,14 +169,14 @@ void AExplosive::Detonate()
 		UE_LOG(LogTemp, Log, TEXT("AExplosive::Detonate: No one is listening to OnDetonatedDelegate"));
 	}
 
-	// Æø¹ß ¹üÀ§ µ¥¹ÌÁö Ã³¸® 
+	// í­ë°œ ë²”ìœ„ ë°ë¯¸ì§€ ì²˜ë¦¬ 
 	FVector ExplosionCenter = GetActorLocation();
 
 	TArray<FOverlapResult> OverlapResults;
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	// ½ÃÀüÀÚ(ÇÃ·¹ÀÌ¾î)´Â ÇÇÇØ¸¦ ÀÔÁö ¾Êµµ·Ï Á¦¿Ü
+	// ì‹œì „ì(í”Œë ˆì´ì–´)ëŠ” í”¼í•´ë¥¼ ì…ì§€ ì•Šë„ë¡ ì œì™¸
 	if (SourceASC.IsValid() && SourceASC->GetAvatarActor()) QueryParams.AddIgnoredActor(SourceASC->GetAvatarActor());
 
 	bool bHit = GetWorld()->OverlapMultiByChannel(
@@ -195,7 +195,7 @@ void AExplosive::Detonate()
 			AActor* HitActor = Overlap.GetActor();
 			if (!HitActor) continue;
 
-			// ASC È®ÀÎ
+			// ASC í™•ì¸
 			UAbilitySystemComponent* TargetASC = nullptr;
 			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
 			{
@@ -204,7 +204,7 @@ void AExplosive::Detonate()
 
 			if (TargetASC && SourceASC.IsValid())
 			{
-				// 1. µ¥¹ÌÁö Effect Àû¿ë
+				// 1. ë°ë¯¸ì§€ Effect ì ìš©
 				if (DamageSpecHandle.IsValid())
 				{
 					SourceASC->ApplyGameplayEffectSpecToTarget(
@@ -218,14 +218,14 @@ void AExplosive::Detonate()
 					UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: DamageSpecHandle is invalid"));
 				}
 
-				// 2. ÆÄ±« Effect Àû¿ë
+				// 2. íŒŒê´´ Effect ì ìš©
 				if (DestructionEffectClass)
 				{
-					// Context »ı¼º
+					// Context ìƒì„±
 					FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
 					Context.AddSourceObject(this);
 
-					// Spec »ı¼º
+					// Spec ìƒì„±
 					FGameplayEffectSpecHandle DestSpecHandle = SourceASC->MakeOutgoingSpec(
 						DestructionEffectClass,
 						1.0f, // Level
@@ -244,10 +244,10 @@ void AExplosive::Detonate()
 		}
 	}
 
-	// µğ¹ö±× ±¸ ±×¸®±â
+	// ë””ë²„ê·¸ êµ¬ ê·¸ë¦¬ê¸°
 	DrawDebugSphere(GetWorld(), ExplosionCenter, ExplosionRadius, 16, FColor::Red, false, 2.0f, 0, 2.0f);
 
-	// ºí·Ï »ö»ó º¹±¸
+	// ë¸”ë¡ ìƒ‰ìƒ ë³µêµ¬
 	if (TargetBlock)
 	{
 		TargetBlock->UpdateBombCount(-1, MaxBombCount);
@@ -256,11 +256,11 @@ void AExplosive::Detonate()
 		UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: TargetBlock is invalid during detonation"));
 	}
 
-	// Æø¹ß Ã³¸®
+	// í­ë°œ ì²˜ë¦¬
 	Destroy();
 }
 
-// Å¸ÀÌ¸Ó Äİ¹é
+// íƒ€ì´ë¨¸ ì½œë°±
 void AExplosive::OnAutoDetonate()
 {
 	UE_LOG(LogTemp, Log, TEXT("AExplosive::OnAutoDetonate: Time is up!"));
@@ -274,38 +274,38 @@ void AExplosive::SetBlockColorRed(bool bEnable)
 		UStaticMeshComponent* BlockMesh = TargetBlock->GetBlockMesh();
 		if (BlockMesh)
 		{
-			// »¡°£»ö(2.0f) ¶Ç´Â ¿ø·¡´ë·Î(0.0f) ¼³Á¤
-			// CPD Index 0 »ç¿ë (1=Preview, 2=Red/Attached, 3=Green/Targeted)
+			// ë¹¨ê°„ìƒ‰(2.0f) ë˜ëŠ” ì›ë˜ëŒ€ë¡œ(0.0f) ì„¤ì •
+			// CPD Index 0 ì‚¬ìš© (1=Preview, 2=Red/Attached, 3=Green/Targeted)
 			float ColorValue = bEnable ? 2.0f : 0.0f;
 			BlockMesh->SetCustomPrimitiveDataFloat(0, ColorValue);
 		}
 		else
 		{
-			// À¯È¿¼º °Ë»ç ½ÇÆĞ ½Ã ·Î±× Ãâ·Â
+			// ìœ íš¨ì„± ê²€ì‚¬ ì‹¤íŒ¨ ì‹œ ë¡œê·¸ ì¶œë ¥
 			UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: BlockMesh is null"));
 		}
 	}
 	else
 	{
-		// À¯È¿¼º °Ë»ç ½ÇÆĞ ½Ã ·Î±× Ãâ·Â
+		// ìœ íš¨ì„± ê²€ì‚¬ ì‹¤íŒ¨ ì‹œ ë¡œê·¸ ì¶œë ¥
 		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: TargetBlock is null"));
 	}
 }
 
 void AExplosive::OnBlockDestroyed(AActor* DestroyedActor)
 {
-	// ºí·ÏÀº ÀÌ¹Ì ÆÄ±« °úÁ¤¿¡ ÀÖÀ¸¹Ç·Î, Å¸°Ù Æ÷ÀÎÅÍ¸¦ null·Î ºñ¿ö Æø¹ß ·ÎÁ÷¿¡¼­ Á¢±ÙÇÏÁö ¸øÇÏ°Ô ÇÔ
+	// ë¸”ë¡ì€ ì´ë¯¸ íŒŒê´´ ê³¼ì •ì— ìˆìœ¼ë¯€ë¡œ, íƒ€ê²Ÿ í¬ì¸í„°ë¥¼ nullë¡œ ë¹„ì›Œ í­ë°œ ë¡œì§ì—ì„œ ì ‘ê·¼í•˜ì§€ ëª»í•˜ê²Œ í•¨
 	TargetBlock = nullptr;
 
-	// Å¸°Ù ºí·ÏÀÌ ÆÄ±«µÇ¾ú´Ù¸é?
+	// íƒ€ê²Ÿ ë¸”ë¡ì´ íŒŒê´´ë˜ì—ˆë‹¤ë©´?
 	if (bAttached)
 	{
-		// ÀÌ¹Ì ºÎÂøµÈ »óÅÂ¶ó¸é: ºí·Ï°ú ÇÔ²² Áï½Ã Æø¹ßÇØ¾ß ÇÔ
+		// ì´ë¯¸ ë¶€ì°©ëœ ìƒíƒœë¼ë©´: ë¸”ë¡ê³¼ í•¨ê»˜ ì¦‰ì‹œ í­ë°œí•´ì•¼ í•¨
 		Detonate();
 	}
 	else
 	{
-		// ³¯¾Æ°¡´Â ÁßÀÌ¶ó¸é: ¿©±â¼­ ÅÍ¶ß¸®Áö ¾ÊÀ½
-		// TickÀº °è¼Ó µ¹ °ÍÀÌ°í, OnLanded()¿¡ µµÂøÇßÀ» ¶§ TargetBlockÀÌ nullÀÌ¹Ç·Î ±×¶§ ÅÍÁü
+		// ë‚ ì•„ê°€ëŠ” ì¤‘ì´ë¼ë©´: ì—¬ê¸°ì„œ í„°ëœ¨ë¦¬ì§€ ì•ŠìŒ
+		// Tickì€ ê³„ì† ëŒ ê²ƒì´ê³ , OnLanded()ì— ë„ì°©í–ˆì„ ë•Œ TargetBlockì´ nullì´ë¯€ë¡œ ê·¸ë•Œ í„°ì§
 	}
 }

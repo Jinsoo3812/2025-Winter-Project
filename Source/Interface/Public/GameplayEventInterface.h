@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -15,8 +15,8 @@ class UGameplayEventInterface : public UInterface
 };
 
 /**
- * ActorµéÀÌ GameplayEvent¸¦ ¼ö½ÅÇÒ ¼ö ÀÖµµ·Ï ÇÏ´Â ÀÎÅÍÆäÀÌ½º
- * ASC°¡ ¾ø´õ¶óµµ ³»ºÎ ±¸ÇöÀ» ÅëÇØ GameplayEvent¸¦ ¼ö½ÅÇÒ ¼ö ÀÖ´Ù.
+ * Actorë“¤ì´ GameplayEventë¥¼ ìˆ˜ì‹ í•  ìˆ˜ ìˆë„ë¡ í•˜ëŠ” ì¸í„°í˜ì´ìŠ¤
+ * ASCê°€ ì—†ë”ë¼ë„ ë‚´ë¶€ êµ¬í˜„ì„ í†µí•´ GameplayEventë¥¼ ìˆ˜ì‹ í•  ìˆ˜ ìˆë‹¤.
  */
 class INTERFACE_API IGameplayEventInterface
 {
@@ -25,9 +25,9 @@ class INTERFACE_API IGameplayEventInterface
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
 	/** 
-	 * GameplayEvent¸¦ ¼ö½ÅÇÏ´Â ÇÔ¼ö
-	 * @param EventTag ¹ß»ıÇÑ GameplayEventÀÇ ÅÂ±×
-	 * @param Payload ÀÌº¥Æ®¿¡ ´ëÇÑ Ãß°¡ µ¥ÀÌÅÍ
+	 * GameplayEventë¥¼ ìˆ˜ì‹ í•˜ëŠ” í•¨ìˆ˜
+	 * @param EventTag ë°œìƒí•œ GameplayEventì˜ íƒœê·¸
+	 * @param Payload ì´ë²¤íŠ¸ì— ëŒ€í•œ ì¶”ê°€ ë°ì´í„°
 	 */
 	virtual void HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload) = 0;
 };

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -24,9 +24,9 @@ class INTERFACE_API ISkillSystemInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	// ½ºÅ³ ¸Å´ÏÀú ÄÄÆ÷³ÍÆ® ¹İÈ¯ ÇÔ¼ö
+	// ìŠ¤í‚¬ ë§¤ë‹ˆì € ì»´í¬ë„ŒíŠ¸ ë°˜í™˜ í•¨ìˆ˜
 	virtual USkillManagerComponent* GetSkillManager() const = 0;
 
-	// ½ºÅ³ ¸Å´ÏÀú ÃÊ±âÈ­ ÇÔ¼ö
+	// ìŠ¤í‚¬ ë§¤ë‹ˆì € ì´ˆê¸°í™” í•¨ìˆ˜
 	virtual void InitializeSkills() = 0;
 };

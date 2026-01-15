@@ -1,11 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Block/BlockSettings.h"
 
 UBlockSettings::UBlockSettings()
 {
-	// ÇÁ·ÎÁ§Æ® ¼¼ÆÃ¿¡¼­ÀÇ Ä«Å×°í¸® ÀÌ¸§ ¼³Á¤
+	// í”„ë¡œì íŠ¸ ì„¸íŒ…ì—ì„œì˜ ì¹´í…Œê³ ë¦¬ ì´ë¦„ ì„¤ì •
 	CategoryName = TEXT("Game");
 	SectionName = TEXT("Block System");
 }

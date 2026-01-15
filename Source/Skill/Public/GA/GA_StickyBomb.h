@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -11,7 +11,7 @@ class ABlockBase;
 class UAbilityTask_WaitInputPress;
 
 /**
- * ¿ø°Å¸® ºí·Ï¿¡ Æø¹ß¹°À» ´øÁö°í, Àç½ÃÀüÇÏ¿© Æø¹ß½ÃÅ°´Â ¾îºô¸®Æ¼
+ * ì›ê±°ë¦¬ ë¸”ë¡ì— í­ë°œë¬¼ì„ ë˜ì§€ê³ , ì¬ì‹œì „í•˜ì—¬ í­ë°œì‹œí‚¤ëŠ” ì–´ë¹Œë¦¬í‹°
  */
 UCLASS()
 class SKILL_API UGA_StickyBomb : public UGA_SkillBase
@@ -35,75 +35,75 @@ public:
 		bool bWasCancelled) override;
 
 protected:
-	// ¸Å ÇÁ·¹ÀÓ ÇÁ¸®ºä ¾÷µ¥ÀÌÆ®
+	// ë§¤ í”„ë ˆì„ í”„ë¦¬ë·° ì—…ë°ì´íŠ¸
 	void UpdatePreview();
 
-	// ÁÂÅ¬¸¯ ½Ã È£Ãâ (Æø¹ß¹° ÅõÃ´)
+	// ì¢Œí´ë¦­ ì‹œ í˜¸ì¶œ (í­ë°œë¬¼ íˆ¬ì²™)
 	UFUNCTION()
 	void OnLeftClickPressed();
 
-	// Ãë¼Ò Å°(½ºÅ³ Å°) ÀÔ·Â ½Ã È£Ãâ
+	// ì·¨ì†Œ í‚¤(ìŠ¤í‚¬ í‚¤) ì…ë ¥ ì‹œ í˜¸ì¶œ
 	UFUNCTION()
 	void OnCancelPressed(float TimeWaited);
 
-	// Æø¹ß¹° ÅõÃ´ ·ÎÁ÷
+	// í­ë°œë¬¼ íˆ¬ì²™ ë¡œì§
 	void SpawnExplosive();
 
-	// ÃÖÁ¾ Æø¹ß Ã³¸® ¹× Á¾·á
+	// ìµœì¢… í­ë°œ ì²˜ë¦¬ ë° ì¢…ë£Œ
 	void PerformDetonateAndEnd();
 
 	UFUNCTION()
-	// Æø¹ß¹°ÀÇ Æø¹ß ¾Ë¸² ¼ö½Å
+	// í­ë°œë¬¼ì˜ í­ë°œ ì•Œë¦¼ ìˆ˜ì‹ 
 	void OnExplosiveDetonated();
 
-	// ÇÁ¸®ºä ¹× ÇÏÀÌ¶óÀÌÆ® Á¤¸®
+	// í”„ë¦¬ë·° ë° í•˜ì´ë¼ì´íŠ¸ ì •ë¦¬
 	void ClearHighlights();
 
 protected:
-	// Æø¹ß¹° ¾×ÅÍ Å¬·¡½º (BP ÁÖÀÔ)
+	// í­ë°œë¬¼ ì•¡í„° í´ë˜ìŠ¤ (BP ì£¼ì…)
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 	TSubclassOf<AExplosive> ExplosiveClass;
 
-	// ÀÚµ¿ ÆøÆÄ ½Ã°£ (ÃÊ)
+	// ìë™ í­íŒŒ ì‹œê°„ (ì´ˆ)
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 	float AutoDetonateDelay = 3.0f;
 
-	// Æø¹ß ¹İÁö¸§ (±¸ ÇüÅÂ)
+	// í­ë°œ ë°˜ì§€ë¦„ (êµ¬ í˜•íƒœ)
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 	float ExplosionRadius = 300.0f;
 
-	// Æø¹ß ½Ã Àû¿ëÇÒ ÆÄ±« Effect
+	// í­ë°œ ì‹œ ì ìš©í•  íŒŒê´´ Effect
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Explosive")
 	TSubclassOf<UGameplayEffect> DestructionEffect;
 
-	// »ı¼ºµÈ Æø¹ß¹° ÀÎ½ºÅÏ½º (InstancedPerActor Á¤Ã¥ÀÌ¹Ç·Î ¸â¹ö º¯¼ö À¯Áö °¡´É)
+	// ìƒì„±ëœ í­ë°œë¬¼ ì¸ìŠ¤í„´ìŠ¤ (InstancedPerActor ì •ì±…ì´ë¯€ë¡œ ë©¤ë²„ ë³€ìˆ˜ ìœ ì§€ ê°€ëŠ¥)
 	UPROPERTY()
 	TArray<TWeakObjectPtr<AExplosive>> ExplosivesList;
 	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Explosive")
 	int32 MaxBombCount = 3;
 
-	// 3°³¸¦ ¸ğµÎ ´øÁ®¼­ ±âÆø ´ë±â »óÅÂÀÎÁö È®ÀÎÇÏ´Â ÇÃ·¡±×
+	// 3ê°œë¥¼ ëª¨ë‘ ë˜ì ¸ì„œ ê¸°í­ ëŒ€ê¸° ìƒíƒœì¸ì§€ í™•ì¸í•˜ëŠ” í”Œë˜ê·¸
 	bool bIsDetonationReady = false;
 
-	// ÇÁ¸®ºä Å¸ÀÌ¸Ó ÇÚµé
+	// í”„ë¦¬ë·° íƒ€ì´ë¨¸ í•¸ë“¤
 	FTimerHandle TickTimerHandle;
 
-	// ÅÂ½ºÅ© ÂüÁ¶ º¸°ü
+	// íƒœìŠ¤í¬ ì°¸ì¡° ë³´ê´€
 	UPROPERTY()
 	UAbilityTask_WaitInputPress* InputTask;
 
-	// ÇöÀç ÅõÃ´ ¸ñÇ¥·Î ÇÏÀÌ¶óÀÌÆ®µÈ ºí·Ï (¸Å ÇÁ·¹ÀÓ º¯ÇÒ ¼ö ÀÖÀ½)
+	// í˜„ì¬ íˆ¬ì²™ ëª©í‘œë¡œ í•˜ì´ë¼ì´íŠ¸ëœ ë¸”ë¡ (ë§¤ í”„ë ˆì„ ë³€í•  ìˆ˜ ìˆìŒ)
 	UPROPERTY()
 	TWeakObjectPtr<ABlockBase> HighlightedBlock;
 
-	// ¸ÓÆ¼¸®¾ó º¹±¸¸¦ À§ÇØ ÀúÀå
+	// ë¨¸í‹°ë¦¬ì–¼ ë³µêµ¬ë¥¼ ìœ„í•´ ì €ì¥
 	UPROPERTY()
 	TWeakObjectPtr<UMaterialInterface> OriginalMaterial;
 
-	// ÇÁ¸®ºä ÁßÀÌ°Å³ª ÇÏÀÌ¶óÀÌÆ® È¿°ú°¡ Àû¿ëµÈ ºí·ÏµéÀ» °ü¸®ÇÏ´Â ¹è¿­
+	// í”„ë¦¬ë·° ì¤‘ì´ê±°ë‚˜ í•˜ì´ë¼ì´íŠ¸ íš¨ê³¼ê°€ ì ìš©ëœ ë¸”ë¡ë“¤ì„ ê´€ë¦¬í•˜ëŠ” ë°°ì—´
 	TArray<ABlockBase*> PreviewedBlocks;
 
-	// ÅõÃ´ È®Á¤ ½Ã Å¸°ÙÆÃµÈ ºí·ÏÀ» ÀúÀå (ÂøÅº ÈÄ »¡°£»ö Ç¥½Ã¸¦ À§ÇØ ÇÊ¿ä)
+	// íˆ¬ì²™ í™•ì • ì‹œ íƒ€ê²ŸíŒ…ëœ ë¸”ë¡ì„ ì €ì¥ (ì°©íƒ„ í›„ ë¹¨ê°„ìƒ‰ í‘œì‹œë¥¼ ìœ„í•´ í•„ìš”)
 	TWeakObjectPtr<ABlockBase> SavedTargetBlock;
 };

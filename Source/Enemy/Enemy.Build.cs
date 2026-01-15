@@ -1,4 +1,4 @@
-using UnrealBuildTool;
+﻿using UnrealBuildTool;
 public class Enemy : ModuleRules
 {
     public Enemy(ReadOnlyTargetRules Target) : base(Target)

@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,19 +8,19 @@
 #include "BlockSettings.generated.h"
 
 /**
- * ÇÁ·ÎÁ§Æ® ¼¼ÆÃ(Project Settings) Ã¢¿¡ 'Block System' ¼½¼ÇÀ» Ãß°¡ÇÏ¿©
- * Àü¿ª ¼³Á¤À» °ü¸®ÇÏ´Â Å¬·¡½º
+ * í”„ë¡œì íŠ¸ ì„¸íŒ…(Project Settings) ì°½ì— 'Block System' ì„¹ì…˜ì„ ì¶”ê°€í•˜ì—¬
+ * ì „ì—­ ì„¤ì •ì„ ê´€ë¦¬í•˜ëŠ” í´ë˜ìŠ¤
  */
 UCLASS(Config = Game, DefaultConfig, meta = (DisplayName = "Block System"))
 class WORLD_API UBlockSettings : public UDeveloperSettings
 {
 	GENERATED_BODY()
 public:
-	// »ı¼ºÀÚ¿¡¼­ ¼½¼Ç ÀÌ¸§ µîÀ» ¼³Á¤ÇÒ ¼ö ÀÖÀ½
+	// ìƒì„±ìì—ì„œ ì„¹ì…˜ ì´ë¦„ ë“±ì„ ì„¤ì •í•  ìˆ˜ ìˆìŒ
 	UBlockSettings();
 
-	// µ¥ÀÌÅÍ ¿¡¼ÂÀ» ÁöÁ¤ÇÒ ÇÁ·ÎÆÛÆ¼
-	// TSoftObjectPtrÀ» »ç¿ëÇÏ¿© ¿¡¼ÂÀÌ ÇÊ¿äÇÒ ¶§ ·ÎµåµÇµµ·Ï À¯µµ (¸Ş¸ğ¸® °ü¸® Ãø¸é¿¡¼­ À¯¸®)
+	// ë°ì´í„° ì—ì…‹ì„ ì§€ì •í•  í”„ë¡œí¼í‹°
+	// TSoftObjectPtrì„ ì‚¬ìš©í•˜ì—¬ ì—ì…‹ì´ í•„ìš”í•  ë•Œ ë¡œë“œë˜ë„ë¡ ìœ ë„ (ë©”ëª¨ë¦¬ ê´€ë¦¬ ì¸¡ë©´ì—ì„œ ìœ ë¦¬)
 	UPROPERTY(Config, EditAnywhere, Category = "Config", meta = (AllowedClasses = "/Script/World.DA_BlockConfig"))
 	TSoftObjectPtr<UDA_BlockConfig> BlockConfigAsset;
 };

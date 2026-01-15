@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "GA/GA_BuffBarrier.h"
@@ -10,13 +10,13 @@
 #include "TimerManager.h"
 #include "Engine/OverlapResult.h"
 
-// ÆäÀÌÁî °ü¸®¸¦ À§ÇÑ ÅÂ±× Á¤ÀÇ
+// í˜ì´ì¦ˆ ê´€ë¦¬ë¥¼ ìœ„í•œ íƒœê·¸ ì •ì˜
 UE_DEFINE_GAMEPLAY_TAG(TAG_BuffBarrier_Phase1, "State.Skill.BuffBarrier.Phase1");
 UE_DEFINE_GAMEPLAY_TAG(TAG_BuffBarrier_Phase2, "State.Skill.BuffBarrier.Phase2");
 
 UGA_BuffBarrier::UGA_BuffBarrier()
 {
-	// °´Ã¼ »ı¼º Á¤Ã¥: ¸â¹ö º¯¼ö(HighlightedBlocks, SpawnedWalls) À¯Áö¸¦ À§ÇØ
+	// ê°ì²´ ìƒì„± ì •ì±…: ë©¤ë²„ ë³€ìˆ˜(HighlightedBlocks, SpawnedWalls) ìœ ì§€ë¥¼ ìœ„í•´
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
@@ -40,33 +40,33 @@ void UGA_BuffBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 
 
 
-	// ÇöÀç ASC¿¡ ºÙ¾îÀÖ´Â ÅÂ±×¸¦ ±â¹İÀ¸·Î ÆäÀÌÁî °áÁ¤
+	// í˜„ì¬ ASCì— ë¶™ì–´ìˆëŠ” íƒœê·¸ë¥¼ ê¸°ë°˜ìœ¼ë¡œ í˜ì´ì¦ˆ ê²°ì •
 	if (ASC->HasMatchingGameplayTag(TAG_BuffBarrier_Phase2))
 	{
-		// 2ÆäÀÌÁî ÅÂ±×°¡ ÀÖÀ¸¸é -> 3´Ü°è(ÇØÁ¦) ½ÇÇà
+		// 2í˜ì´ì¦ˆ íƒœê·¸ê°€ ìˆìœ¼ë©´ -> 3ë‹¨ê³„(í•´ì œ) ì‹¤í–‰
 		ExecutePhase3_Cleanup();
 	}
 	else if (ASC->HasMatchingGameplayTag(TAG_BuffBarrier_Phase1))
 	{
-		// 1ÆäÀÌÁî ÅÂ±×°¡ ÀÖÀ¸¸é -> 2´Ü°è(¼³Ä¡) ½ÇÇà
+		// 1í˜ì´ì¦ˆ íƒœê·¸ê°€ ìˆìœ¼ë©´ -> 2ë‹¨ê³„(ì„¤ì¹˜) ì‹¤í–‰
 		ExecutePhase2_Deploy();
 	}
 	else
 	{
-		// ÅÂ±×°¡ ¾øÀ¸¸é -> 1´Ü°è(½ÃÀÛ) ½ÇÇà
+		// íƒœê·¸ê°€ ì—†ìœ¼ë©´ -> 1ë‹¨ê³„(ì‹œì‘) ì‹¤í–‰
 		ExecutePhase1_Highlight();
 	}
 }
 
 void UGA_BuffBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// ºÎ¸ğ Å¬·¡½ºÀÇ EndAbility È£Ãâ (State.Casting ÅÂ±× Á¦°Å µî)
+	// ë¶€ëª¨ í´ë˜ìŠ¤ì˜ EndAbility í˜¸ì¶œ (State.Casting íƒœê·¸ ì œê±° ë“±)
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGA_BuffBarrier::ExecutePhase1_Highlight()
 {
-	// 1. ºñ¿ë ÁöºÒ (Ã¹ ½ÃÀü½Ã¿¡¸¸ ºñ¿ë ¼Ò¸ğ, ÄğÅ¸ÀÓÀº ³ªÁß¿¡)
+	// 1. ë¹„ìš© ì§€ë¶ˆ (ì²« ì‹œì „ì‹œì—ë§Œ ë¹„ìš© ì†Œëª¨, ì¿¨íƒ€ì„ì€ ë‚˜ì¤‘ì—)
 	if (!CommitAbilityCost(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::ExecutePhase1 - Failed to commit cost"));
@@ -74,7 +74,7 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 		return;
 	}
 
-	// 2. µ¥ÀÌÅÍ ÃÊ±âÈ­ (Àç»ç¿ë ½Ã ¾ÈÀüÀåÄ¡)
+	// 2. ë°ì´í„° ì´ˆê¸°í™” (ì¬ì‚¬ìš© ì‹œ ì•ˆì „ì¥ì¹˜)
 	HighlightedBlocks.Empty();
 	if (SpawnedWalls.Num() > 0)
 	{
@@ -87,18 +87,18 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 
 	InstallCenterLocation = GetAvatarActorFromActorInfo()->GetActorLocation();
 
-	// 3. ¹üÀ§ °è»ê ¹× ºí·Ï ¼öÁı
-	// Rune modifier Àû¿ëµÈ ¹üÀ§¸¦ °è»êÇÏ¿© RangeXY ¾÷µ¥ÀÌÆ® (RangeZ´Â °Çµå¸®Áö ¾ÊÀ½)
+	// 3. ë²”ìœ„ ê³„ì‚° ë° ë¸”ë¡ ìˆ˜ì§‘
+	// Rune modifier ì ìš©ëœ ë²”ìœ„ë¥¼ ê³„ì‚°í•˜ì—¬ RangeXY ì—…ë°ì´íŠ¸ (RangeZëŠ” ê±´ë“œë¦¬ì§€ ì•ŠìŒ)
 	float OriginalRange = RangeXY;
-	RangeXY *= GetRuneModifiedRange(); // ·é Àû¿ë
-	// RangeXY µğ¹ö±× Ãâ·Â
+	RangeXY *= GetRuneModifiedRange(); // ë£¬ ì ìš©
+	// RangeXY ë””ë²„ê·¸ ì¶œë ¥
 	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::ExecutePhase1 - Modified RangeXY: %f"), RangeXY);
 
-	// ºÎ¸ğ Å¬·¡½ºÀÇ FindBlocksInRange »ç¿ë
+	// ë¶€ëª¨ í´ë˜ìŠ¤ì˜ FindBlocksInRange ì‚¬ìš©
 	TArray<AActor*> ActorsInRange;
 	FindBlocksInRange(ActorsInRange);
 	
-	// AActor*¸¦ ABlockBase*·Î º¯È¯
+	// AActor*ë¥¼ ABlockBase*ë¡œ ë³€í™˜
 	for (AActor* Actor : ActorsInRange)
 	{
 		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
@@ -107,20 +107,20 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 		}
 	}
 
-	// RangeXY º¹±¸ (´ÙÀ½ ÇÁ·¹ÀÓÀ» À§ÇØ ¿ø»óº¹±¸)
+	// RangeXY ë³µêµ¬ (ë‹¤ìŒ í”„ë ˆì„ì„ ìœ„í•´ ì›ìƒë³µêµ¬)
 	RangeXY = OriginalRange;
 
 	if (HighlightedBlocks.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::ExecutePhase1 - No blocks found in range"));
-		// ºí·ÏÀÌ ¾ø¾îµµ ·ÎÁ÷»ó ÅÂ±×´Â ºÙ¿©¼­ ´ÙÀ½ ´Ü°è·Î °¥Áö, Á¾·áÇÒÁö °áÁ¤ÇØ¾ß ÇÔ.
-		// ¿©±â¼­´Â ºí·ÏÀÌ ¾øÀ¸¸é ÀÇ¹Ì°¡ ¾øÀ¸¹Ç·Î Áï½Ã Á¾·á
+		// ë¸”ë¡ì´ ì—†ì–´ë„ ë¡œì§ìƒ íƒœê·¸ëŠ” ë¶™ì—¬ì„œ ë‹¤ìŒ ë‹¨ê³„ë¡œ ê°ˆì§€, ì¢…ë£Œí• ì§€ ê²°ì •í•´ì•¼ í•¨.
+		// ì—¬ê¸°ì„œëŠ” ë¸”ë¡ì´ ì—†ìœ¼ë©´ ì˜ë¯¸ê°€ ì—†ìœ¼ë¯€ë¡œ ì¦‰ì‹œ ì¢…ë£Œ
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
 
-	// 4. ÇÏÀÌ¶óÀÌÆ® Àû¿ë (Preview »ö»ó)
-	// HighlightedBlocks¸¦ AActor* ¹è¿­·Î º¯È¯
+	// 4. í•˜ì´ë¼ì´íŠ¸ ì ìš© (Preview ìƒ‰ìƒ)
+	// HighlightedBlocksë¥¼ AActor* ë°°ì—´ë¡œ ë³€í™˜
 	TArray<AActor*> ActorsToHighlight;
 	for (ABlockBase* Block : HighlightedBlocks)
 	{
@@ -131,7 +131,7 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 	}
 	BatchHighlightBlocks(ActorsToHighlight, 1.0f);
 
-	// 5. ÅÂ±× ºÎÂø (Phase 1 ½ÃÀÛ ¾Ë¸²)
+	// 5. íƒœê·¸ ë¶€ì°© (Phase 1 ì‹œì‘ ì•Œë¦¼)
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	if (ASC)
 	{
@@ -142,16 +142,16 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase1 - ASC is null, cannot add tag"));
 	}
 
-	// 6. ÀÚµ¿ ÀüÈ¯ Å¸ÀÌ¸Ó ¼³Á¤
+	// 6. ìë™ ì „í™˜ íƒ€ì´ë¨¸ ì„¤ì •
 	if (UWorld* World = GetWorld())
 	{
-		// ±âÁ¸ Å¸ÀÌ¸Ó°¡ ÀÖ´Ù¸é Á¤¸®
+		// ê¸°ì¡´ íƒ€ì´ë¨¸ê°€ ìˆë‹¤ë©´ ì •ë¦¬
 		World->GetTimerManager().ClearTimer(AutoTransitionTimerHandle);
 
-		// Å¸ÀÌ¸Ó ½Ã°£ À¯È¿¼º Ã¼Å© (0ÃÊ¸é Áï½Ã ½ÇÇàµÇ¾î ²¿ÀÏ ¼ö ÀÖÀ½)
+		// íƒ€ì´ë¨¸ ì‹œê°„ ìœ íš¨ì„± ì²´í¬ (0ì´ˆë©´ ì¦‰ì‹œ ì‹¤í–‰ë˜ì–´ ê¼¬ì¼ ìˆ˜ ìˆìŒ)
 		float WaitTime = (AutoTransitionTime > 0.0f) ? AutoTransitionTime : 0.1f;
 
-		// WeakObjectPtr¸¦ »ç¿ëÇÏ¿© Ability Á¾·á ÈÄ¿¡µµ Å¸ÀÌ¸Ó°¡ ¾ÈÀüÇÏ°Ô È£ÃâµÇµµ·Ï ÇÔ
+		// WeakObjectPtrë¥¼ ì‚¬ìš©í•˜ì—¬ Ability ì¢…ë£Œ í›„ì—ë„ íƒ€ì´ë¨¸ê°€ ì•ˆì „í•˜ê²Œ í˜¸ì¶œë˜ë„ë¡ í•¨
 		TWeakObjectPtr<UGA_BuffBarrier> WeakThis(this);
 		World->GetTimerManager().SetTimer(AutoTransitionTimerHandle, [WeakThis]()
 		{
@@ -174,7 +174,7 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 
 	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Phase 1 Highlighted %d blocks"), HighlightedBlocks.Num());
 
-	// 7. ½ºÅ³ Á¾·á (ÅÂ±×´Â ³²±â°í »ı¸íÁÖ±â´Â Á¾·áÇÏ¿© ´Ù¸¥ Çàµ¿ °¡´ÉÇÏ°Ô ÇÔ)
+	// 7. ìŠ¤í‚¬ ì¢…ë£Œ (íƒœê·¸ëŠ” ë‚¨ê¸°ê³  ìƒëª…ì£¼ê¸°ëŠ” ì¢…ë£Œí•˜ì—¬ ë‹¤ë¥¸ í–‰ë™ ê°€ëŠ¥í•˜ê²Œ í•¨)
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
@@ -183,7 +183,7 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	UWorld* World = GetWorld();
 
-	// 1. Å¸ÀÌ¸Ó ¹× ÀÌÀü ÅÂ±× Á¤¸®
+	// 1. íƒ€ì´ë¨¸ ë° ì´ì „ íƒœê·¸ ì •ë¦¬
 	if (World)
 	{
 		World->GetTimerManager().ClearTimer(AutoTransitionTimerHandle);
@@ -199,18 +199,18 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase2 - ASC is null"));
 	}
 
-	// 2. °¡ÀåÀÚ¸® ºí·Ï Ã£±â
+	// 2. ê°€ì¥ìë¦¬ ë¸”ë¡ ì°¾ê¸°
 	TArray<ABlockBase*> EdgeBlocks;
 	FindEdgeBlocks(HighlightedBlocks, EdgeBlocks);
 
-	// 3. ¿ïÅ¸¸® »ı¼º
+	// 3. ìš¸íƒ€ë¦¬ ìƒì„±
 	if (WallBlockClass && World)
 	{
 		for (ABlockBase* BaseBlock : EdgeBlocks)
 		{
 			if (!BaseBlock) continue;
 
-			// ±âÁØ ºí·Ï ¹Ù·Î À§¿¡ »ı¼º
+			// ê¸°ì¤€ ë¸”ë¡ ë°”ë¡œ ìœ„ì— ìƒì„±
 			FVector SpawnLoc = BaseBlock->GetActorLocation() + FVector(0, 0, BaseBlock->GetGridSize());
 			ABlockBase* NewWall = ABlockBase::SpawnBlock(World, WallBlockClass, SpawnLoc, false);
 
@@ -229,10 +229,10 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase2 - WallBlockClass or World is null"));
 	}
 
-	// 4. ¹öÇÁ Àû¿ë
+	// 4. ë²„í”„ ì ìš©
 	ApplyBuffToTargets();
 
-	// 5. ÀÚµ¿ ÀüÈ¯ Å¸ÀÌ¸Ó Àç¼³Á¤ (3´Ü°è·Î ³Ñ¾î°¡±â À§ÇÔ)
+	// 5. ìë™ ì „í™˜ íƒ€ì´ë¨¸ ì¬ì„¤ì • (3ë‹¨ê³„ë¡œ ë„˜ì–´ê°€ê¸° ìœ„í•¨)
 	if (World)
 	{
 		TWeakObjectPtr<UGA_BuffBarrier> WeakThis(this);
@@ -259,7 +259,7 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	UWorld* World = GetWorld();
 
-	// 1. Å¸ÀÌ¸Ó ¹× ÅÂ±× Á¤¸®
+	// 1. íƒ€ì´ë¨¸ ë° íƒœê·¸ ì •ë¦¬
 	if (World)
 	{
 		World->GetTimerManager().ClearTimer(AutoTransitionTimerHandle);
@@ -274,7 +274,7 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase3 - ASC is null"));
 	}
 
-	// 2. º® Á¦°Å
+	// 2. ë²½ ì œê±°
 	for (ABlockBase* Wall : SpawnedWalls)
 	{
 		if (Wall && IsValid(Wall))
@@ -284,8 +284,8 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 	}
 	SpawnedWalls.Empty();
 
-	// 3. ¹Ù´Ú ÇÏÀÌ¶óÀÌÆ® º¹±¸
-	// HighlightedBlocks¸¦ AActor* ¹è¿­·Î º¯È¯
+	// 3. ë°”ë‹¥ í•˜ì´ë¼ì´íŠ¸ ë³µêµ¬
+	// HighlightedBlocksë¥¼ AActor* ë°°ì—´ë¡œ ë³€í™˜
 	TArray<AActor*> ActorsToReset;
 	for (ABlockBase* Block : HighlightedBlocks)
 	{
@@ -297,7 +297,7 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 	BatchHighlightBlocks(ActorsToReset, 0.0f);
 	HighlightedBlocks.Empty();
 
-	// 4. ÄğÅ¸ÀÓ Àû¿ë (¸ğµç ½ÃÄö½º°¡ ³¡³­ ½ÃÁ¡¿¡¼­ Àû¿ë)
+	// 4. ì¿¨íƒ€ì„ ì ìš© (ëª¨ë“  ì‹œí€€ìŠ¤ê°€ ëë‚œ ì‹œì ì—ì„œ ì ìš©)
 	CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 
 	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Phase 3 Cleanup complete"));
@@ -309,10 +309,10 @@ void UGA_BuffBarrier::OnAutoTransition()
 {
 	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::OnAutoTransition - Timer Fired"));
 
-	// CachedASC À¯È¿¼º °Ë»ç
+	// CachedASC ìœ íš¨ì„± ê²€ì‚¬
 	if (CachedASC.IsValid())
 	{
-		// ´Ù½Ã È°¼ºÈ­ ½Ãµµ
+		// ë‹¤ì‹œ í™œì„±í™” ì‹œë„
 		bool bSuccess = CachedASC->TryActivateAbility(CurrentSpecHandle);
 
 		if (!bSuccess)
@@ -338,8 +338,8 @@ void UGA_BuffBarrier::FindEdgeBlocks(const TArray<ABlockBase*>& InBlocks, TArray
 	float GridSize = InBlocks[0]->GetGridSize();
 	float Tolerance = 5.0f;
 
-	// [ÃÖÀûÈ­] O(N^2)¸¦ ¹æÁöÇÏ±â À§ÇØ À§Ä¡ Á¶È¸¸¦ À§ÇÑ Set »ı¼º (O(N))
-	// FVector¸¦ Key·Î ¾²±â À§ÇØ ¾à°£ÀÇ ¿ÀÂ÷¸¦ °í·ÁÇØ¾ß ÇÏÁö¸¸, ºí·ÏÀÌ ±×¸®µå¿¡ Á¤·ÄµÇ¾î ÀÖ´Ù°í °¡Á¤
+	// [ìµœì í™”] O(N^2)ë¥¼ ë°©ì§€í•˜ê¸° ìœ„í•´ ìœ„ì¹˜ ì¡°íšŒë¥¼ ìœ„í•œ Set ìƒì„± (O(N))
+	// FVectorë¥¼ Keyë¡œ ì“°ê¸° ìœ„í•´ ì•½ê°„ì˜ ì˜¤ì°¨ë¥¼ ê³ ë ¤í•´ì•¼ í•˜ì§€ë§Œ, ë¸”ë¡ì´ ê·¸ë¦¬ë“œì— ì •ë ¬ë˜ì–´ ìˆë‹¤ê³  ê°€ì •
 	TSet<FVector> BlockLocations;
 	BlockLocations.Reserve(InBlocks.Num());
 
@@ -351,7 +351,7 @@ void UGA_BuffBarrier::FindEdgeBlocks(const TArray<ABlockBase*>& InBlocks, TArray
 		}
 	}
 
-	// 4¹æÇâ (»óÇÏÁÂ¿ì)
+	// 4ë°©í–¥ (ìƒí•˜ì¢Œìš°)
 	FVector Directions[] = { FVector(1,0,0), FVector(-1,0,0), FVector(0,1,0), FVector(0,-1,0) };
 
 	for (ABlockBase* Block : InBlocks)
@@ -365,25 +365,25 @@ void UGA_BuffBarrier::FindEdgeBlocks(const TArray<ABlockBase*>& InBlocks, TArray
 		{
 			FVector CheckLoc = MyLoc + (Dir * GridSize);
 
-			// [ÃÖÀûÈ­] ÀÌÁß ¹İº¹¹® ´ë½Å Set¿¡¼­ °Ë»ö (O(1))
-			// ºÎµ¿¼Ò¼öÁ¡ ¿ÀÂ÷¸¦ °í·ÁÇØ¾ß ÇÑ´Ù¸é FIntVector º¯È¯ÀÌ³ª º°µµ Ã³¸®°¡ ÇÊ¿äÇÒ ¼ö ÀÖÀ¸³ª,
-			// ±×¸®µå ½Ã½ºÅÛÀÌ Á¤È®ÇÏ´Ù¸é Set.Contains·Î ÃæºĞÇÔ. 
-			// ¸¸¾à Set °Ë»öÀÌ ½ÇÆĞÇÑ´Ù¸é, Tolerance ¹üÀ§ ³» °Ë»ö ·ÎÁ÷À¸·Î ´ëÃ¼ ÇÊ¿äÇÒ ¼ö ÀÖÀ½.
-			// ¿©±â¼­´Â ±âÁ¸ ·ÎÁ÷ÀÇ Tolerance(5.0f)¸¦ °í·ÁÇÏ¿© Set °Ë»ö ´ë½Å FindClosestKey µîÀ» ¾²°Å³ª,
-			// ´Ü¼øÈ÷ ±×¸®µå ÁÂÇ¥°¡ Á¤È®ÇÏ´Ù°í °¡Á¤ÇÏ°í Contains¸¦ »ç¿ë.
+			// [ìµœì í™”] ì´ì¤‘ ë°˜ë³µë¬¸ ëŒ€ì‹  Setì—ì„œ ê²€ìƒ‰ (O(1))
+			// ë¶€ë™ì†Œìˆ˜ì  ì˜¤ì°¨ë¥¼ ê³ ë ¤í•´ì•¼ í•œë‹¤ë©´ FIntVector ë³€í™˜ì´ë‚˜ ë³„ë„ ì²˜ë¦¬ê°€ í•„ìš”í•  ìˆ˜ ìˆìœ¼ë‚˜,
+			// ê·¸ë¦¬ë“œ ì‹œìŠ¤í…œì´ ì •í™•í•˜ë‹¤ë©´ Set.Containsë¡œ ì¶©ë¶„í•¨. 
+			// ë§Œì•½ Set ê²€ìƒ‰ì´ ì‹¤íŒ¨í•œë‹¤ë©´, Tolerance ë²”ìœ„ ë‚´ ê²€ìƒ‰ ë¡œì§ìœ¼ë¡œ ëŒ€ì²´ í•„ìš”í•  ìˆ˜ ìˆìŒ.
+			// ì—¬ê¸°ì„œëŠ” ê¸°ì¡´ ë¡œì§ì˜ Tolerance(5.0f)ë¥¼ ê³ ë ¤í•˜ì—¬ Set ê²€ìƒ‰ ëŒ€ì‹  FindClosestKey ë“±ì„ ì“°ê±°ë‚˜,
+			// ë‹¨ìˆœíˆ ê·¸ë¦¬ë“œ ì¢Œí‘œê°€ ì •í™•í•˜ë‹¤ê³  ê°€ì •í•˜ê³  Containsë¥¼ ì‚¬ìš©.
 			if (BlockLocations.Contains(CheckLoc))
 			{
 				NeighborCount++;
 			}
 			else
 			{
-				// Á¤È®È÷ ÀÏÄ¡ÇÏÁö ¾Ê´Â °æ¿ì¸¦ ´ëºñÇØ, Set ¼øÈ¸ ¾øÀÌ 
-				// ÇöÀç ½Ã½ºÅÛ»ó ºí·ÏµéÀÌ Á¤¼ö ´ÜÀ§ ±×¸®µå¿¡ µü ¸Â°Ô ¹èÄ¡µÈ´Ù¸é À§ Contains·Î ÃæºĞÇÔ.
-				// ¸¸¾à ¹Ì¼¼ÇÑ ¿ÀÂ÷°¡ ÀÖ´Ù¸é ±âÁ¸ ¹æ½ÄÀ» ½á¾ßÇÏ³ª, ¿©±â¼­´Â ÃÖÀûÈ­¸¦ À§ÇØ ÁÂÇ¥ Á¤ÇÕ¼ºÀ» °¡Á¤ÇÔ.
+				// ì •í™•íˆ ì¼ì¹˜í•˜ì§€ ì•ŠëŠ” ê²½ìš°ë¥¼ ëŒ€ë¹„í•´, Set ìˆœíšŒ ì—†ì´ 
+				// í˜„ì¬ ì‹œìŠ¤í…œìƒ ë¸”ë¡ë“¤ì´ ì •ìˆ˜ ë‹¨ìœ„ ê·¸ë¦¬ë“œì— ë”± ë§ê²Œ ë°°ì¹˜ëœë‹¤ë©´ ìœ„ Containsë¡œ ì¶©ë¶„í•¨.
+				// ë§Œì•½ ë¯¸ì„¸í•œ ì˜¤ì°¨ê°€ ìˆë‹¤ë©´ ê¸°ì¡´ ë°©ì‹ì„ ì¨ì•¼í•˜ë‚˜, ì—¬ê¸°ì„œëŠ” ìµœì í™”ë¥¼ ìœ„í•´ ì¢Œí‘œ ì •í•©ì„±ì„ ê°€ì •í•¨.
 			}
 		}
 
-		// 4¸é Áß ÇÏ³ª¶óµµ ¶Õ·ÁÀÖÀ¸¸é(ÀÌ¿ôÀÌ ¾øÀ¸¸é) °¡ÀåÀÚ¸®·Î ÆÇÁ¤
+		// 4ë©´ ì¤‘ í•˜ë‚˜ë¼ë„ ëš«ë ¤ìˆìœ¼ë©´(ì´ì›ƒì´ ì—†ìœ¼ë©´) ê°€ì¥ìë¦¬ë¡œ íŒì •
 		if (NeighborCount < 4)
 		{
 			OutEdges.Add(Block);
@@ -415,15 +415,15 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 
 	FVector CenterLoc = InstallCenterLocation;
 
-	// ¹üÀ§ Àç°è»ê (Phase 1¿¡¼­ ½è´ø °ª°ú µ¿ÀÏÇØ¾ß ÇÔ)
+	// ë²”ìœ„ ì¬ê³„ì‚° (Phase 1ì—ì„œ ì¼ë˜ ê°’ê³¼ ë™ì¼í•´ì•¼ í•¨)
 	float Radius = GetRuneModifiedRange() * RangeXY;
 
-	// ±¸Ã¼ ÇüÅÂÀÇ ¿À¹ö·¦ °Ë»ç
+	// êµ¬ì²´ í˜•íƒœì˜ ì˜¤ë²„ë© ê²€ì‚¬
 	TArray<FOverlapResult> OverlapResults;
 	FCollisionShape OverlapShape = FCollisionShape::MakeSphere(Radius);
 
 	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn); // Pawn Å¸ÀÔ¸¸ 1Â÷ ÇÊÅÍ¸µ
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn); // Pawn íƒ€ì…ë§Œ 1ì°¨ í•„í„°ë§
 
 	FCollisionQueryParams QueryParams;
 
@@ -438,8 +438,8 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 
 	if (bOverlap)
 	{
-		// [Ãß°¡] 2. ÀÌ¹Ì Ã³¸®µÈ ¾×ÅÍ¸¦ °É·¯³»±â À§ÇÑ ÁıÇÕ(Set)
-		// OverlapMulti´Â ÄÄÆ÷³ÍÆ® ´ÜÀ§·Î °ËÃâµÇ¹Ç·Î(Ä¸½¶, ¸Ş½¬ µî), ÇÑ ¾×ÅÍ°¡ ¿©·¯ ¹ø ÀâÈ÷´Â °ÍÀ» ¹æÁö
+		// [ì¶”ê°€] 2. ì´ë¯¸ ì²˜ë¦¬ëœ ì•¡í„°ë¥¼ ê±¸ëŸ¬ë‚´ê¸° ìœ„í•œ ì§‘í•©(Set)
+		// OverlapMultiëŠ” ì»´í¬ë„ŒíŠ¸ ë‹¨ìœ„ë¡œ ê²€ì¶œë˜ë¯€ë¡œ(ìº¡ìŠ, ë©”ì‰¬ ë“±), í•œ ì•¡í„°ê°€ ì—¬ëŸ¬ ë²ˆ ì¡íˆëŠ” ê²ƒì„ ë°©ì§€
 		TSet<AActor*> ProcessedActors;
 
 		for (const FOverlapResult& Result : OverlapResults)
@@ -447,28 +447,28 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 			AActor* TargetActor = Result.GetActor();
 			if (!TargetActor) continue;
 
-			// [Ãß°¡] 3. Áßº¹ Ã³¸® ¹æÁö
+			// [ì¶”ê°€] 3. ì¤‘ë³µ ì²˜ë¦¬ ë°©ì§€
 			if (ProcessedActors.Contains(TargetActor))
 			{
 				continue;
 			}
 			ProcessedActors.Add(TargetActor);
 
-			// 1. À¯È¿¼º °Ë»ç: IAttributeSetProvider ÀÎÅÍÆäÀÌ½º ±¸Çö ¿©ºÎ È®ÀÎ
-			// ÀÌ°ÍÀ» ÅëÇØ ÀÏ¹İ ¾×ÅÍ³ª ¹è°æ µîÀ» °Å¸¦ ¼ö ÀÖÀ½
+			// 1. ìœ íš¨ì„± ê²€ì‚¬: IAttributeSetProvider ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„ ì—¬ë¶€ í™•ì¸
+			// ì´ê²ƒì„ í†µí•´ ì¼ë°˜ ì•¡í„°ë‚˜ ë°°ê²½ ë“±ì„ ê±°ë¥¼ ìˆ˜ ìˆìŒ
 			if (!TargetActor->Implements<UAttributeSetProvider>())
 			{
 				continue;
 			}
 
-			// 2. ASC °¡Á®¿À±â
+			// 2. ASC ê°€ì ¸ì˜¤ê¸°
 			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
 			if (TargetASC)
 			{
-				// 2. TAG_Player ÅÂ±×¸¦ °¡Áö°í ÀÖ´ÂÁö È®ÀÎ
+				// 2. TAG_Player íƒœê·¸ë¥¼ ê°€ì§€ê³  ìˆëŠ”ì§€ í™•ì¸
 				if (TargetASC->HasMatchingGameplayTag(TAG_Player))
 				{
-					// 3. ¹öÇÁ Àû¿ë
+					// 3. ë²„í”„ ì ìš©
 					FGameplayEffectContextHandle Context = MakeEffectContext(CurrentSpecHandle, CurrentActorInfo);
 					FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(BuffEffectClass, GetAbilityLevel(), Context);
 
@@ -479,7 +479,7 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 						SpecHandle.Data.Get()->SetSetByCallerMagnitude(MagnitudeTag, GetRuneModifiedDamage());
 						GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
-						// ¹öÇÁ Àû¿ë È®ÀÎ¿ë ·Î±×
+						// ë²„í”„ ì ìš© í™•ì¸ìš© ë¡œê·¸
 						UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Applied Buff [%s] to Player Target [%s]"),
 							*BuffEffectClass->GetName(), *TargetActor->GetName());
 					}
@@ -490,13 +490,13 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 				}
 				else
 				{
-					// ÇÃ·¹ÀÌ¾î ÅÂ±×°¡ ¾ø´Â °æ¿ì ·Î±×
+					// í”Œë ˆì´ì–´ íƒœê·¸ê°€ ì—†ëŠ” ê²½ìš° ë¡œê·¸
 					UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Target %s has ASC but no Player tag, skipping."), *TargetActor->GetName());
 				}
 			}
 			else
 			{
-				// ASC°¡ ¾ø´Â °æ¿ì ·Î±×
+				// ASCê°€ ì—†ëŠ” ê²½ìš° ë¡œê·¸
 				UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier: Target %s has no ASC"), *TargetActor->GetName());
 			}
 		}
@@ -511,10 +511,10 @@ bool UGA_BuffBarrier::CheckCost(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
 	FGameplayTagContainer* OptionalRelevantTags) const
 {
-	// ActorInfo³ª ASC°¡ À¯È¿ÇÏ´Ù¸é ÅÂ±× È®ÀÎ
+	// ActorInfoë‚˜ ASCê°€ ìœ íš¨í•˜ë‹¤ë©´ íƒœê·¸ í™•ì¸
 	if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
 	{
-		// 1ÆäÀÌÁî³ª 2ÆäÀÌÁî ÅÂ±×°¡ ºÙ¾îÀÖ´Ù¸é(ÀÌ¹Ì ½ºÅ³ ÁøÇà Áß), ºñ¿ë °Ë»ç¸¦ ÆĞ½º(true)
+		// 1í˜ì´ì¦ˆë‚˜ 2í˜ì´ì¦ˆ íƒœê·¸ê°€ ë¶™ì–´ìˆë‹¤ë©´(ì´ë¯¸ ìŠ¤í‚¬ ì§„í–‰ ì¤‘), ë¹„ìš© ê²€ì‚¬ë¥¼ íŒ¨ìŠ¤(true)
 		if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(TAG_BuffBarrier_Phase1) ||
 			ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(TAG_BuffBarrier_Phase2))
 		{
@@ -522,6 +522,6 @@ bool UGA_BuffBarrier::CheckCost(const FGameplayAbilitySpecHandle Handle,
 		}
 	}
 
-	// ±× ¿Ü(Ã¹ ½ÃÀü)¿¡´Â ±âº» ºñ¿ë °Ë»ç ¼öÇà
+	// ê·¸ ì™¸(ì²« ì‹œì „)ì—ëŠ” ê¸°ë³¸ ë¹„ìš© ê²€ì‚¬ ìˆ˜í–‰
 	return Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags);
 }

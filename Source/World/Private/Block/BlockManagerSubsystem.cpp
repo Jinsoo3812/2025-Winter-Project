@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Block/BlockManagerSubsystem.h"
@@ -10,8 +10,8 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
-    // °³¹ßÀÚ ¼³Á¤(Project Settings)¿¡¼­ ¼³Á¤ °´Ã¼ °¡Á®¿À±â
-    // GetDefault<T>()´Â CDO(Class Default Object)¸¦ °¡Á®¿À¹Ç·Î ¸Å¿ì ºü¸§
+    // ê°œë°œì ì„¤ì •(Project Settings)ì—ì„œ ì„¤ì • ê°ì²´ ê°€ì ¸ì˜¤ê¸°
+    // GetDefault<T>()ëŠ” CDO(Class Default Object)ë¥¼ ê°€ì ¸ì˜¤ë¯€ë¡œ ë§¤ìš° ë¹ ë¦„
     const UBlockSettings* Settings = GetDefault<UBlockSettings>();
 
     if (!Settings)
@@ -20,20 +20,20 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
         return;
     }
 
-    // ¼³Á¤¿¡ ÇÒ´çµÈ µ¥ÀÌÅÍ ¿¡¼ÂÀÌ ÀÖ´ÂÁö È®ÀÎ
+    // ì„¤ì •ì— í• ë‹¹ëœ ë°ì´í„° ì—ì…‹ì´ ìˆëŠ”ì§€ í™•ì¸
     if (Settings->BlockConfigAsset.IsNull())
     {
         UE_LOG(LogTemp, Warning, TEXT("BlockManagerSubsystem: BlockConfigAsset is not set in Project Settings -> Game -> Block System."));
         return;
     }
 
-    // Soft Pointer¸¦ µ¿±â ·Îµå(Synchronous Load)ÇÏ¿© ½ÇÁ¦ °´Ã¼ °¡Á®¿À±â
-    // ÃÊ±âÈ­ ´Ü°èÀÌ¹Ç·Î µ¿±â ·Îµå°¡ Çã¿ëµÊ. 
+    // Soft Pointerë¥¼ ë™ê¸° ë¡œë“œ(Synchronous Load)í•˜ì—¬ ì‹¤ì œ ê°ì²´ ê°€ì ¸ì˜¤ê¸°
+    // ì´ˆê¸°í™” ë‹¨ê³„ì´ë¯€ë¡œ ë™ê¸° ë¡œë“œê°€ í—ˆìš©ë¨. 
     UDA_BlockConfig* BlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
 
     if (BlockConfig)
     {
-        // ¸Ê µ¥ÀÌÅÍ Ä³½Ì
+        // ë§µ ë°ì´í„° ìºì‹±
         BlockClassMap = BlockConfig->BlockClassMap;
         UE_LOG(LogTemp, Log, TEXT("BlockManagerSubsystem: Successfully loaded block config from Project Settings."));
     }
@@ -45,51 +45,51 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, bool bEnableGravity)
 {
-    // ÅÂ±×¿¡ ¸Â´Â ºí·Ï Å¬·¡½º Ã£±â
+    // íƒœê·¸ì— ë§ëŠ” ë¸”ë¡ í´ë˜ìŠ¤ ì°¾ê¸°
     TSubclassOf<ABlockBase>* FoundClass = BlockClassMap.Find(BlockTypeTag);
 
-    // À¯È¿¼º °Ë»ç: Å¬·¡½º¸¦ Ã£Áö ¸øÇÑ °æ¿ì
+    // ìœ íš¨ì„± ê²€ì‚¬: í´ë˜ìŠ¤ë¥¼ ì°¾ì§€ ëª»í•œ ê²½ìš°
     if (!FoundClass || !(*FoundClass))
     {
         UE_LOG(LogTemp, Warning, TEXT("BlockManagerSubsystem: No block class found for tag %s"), *BlockTypeTag.ToString());
         return nullptr;
     }
-    // Å¬·¡½º´Â Ã£¾ÒÀ¸³ª ³»ºÎ Æ÷ÀÎÅÍ°¡ À¯È¿ÇÏÁö ¾ÊÀº °æ¿ì
+    // í´ë˜ìŠ¤ëŠ” ì°¾ì•˜ìœ¼ë‚˜ ë‚´ë¶€ í¬ì¸í„°ê°€ ìœ íš¨í•˜ì§€ ì•Šì€ ê²½ìš°
     else if (!FoundClass->Get())
     {
         UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Found class is invalid for tag %s"), *BlockTypeTag.ToString());
         return nullptr;
     }
 
-    // CDO(Class Default Object)¸¦ °¡Á®¿Í¼­ »ı¼ºµÉ ºí·ÏÀÇ ±âº» GridSize¸¦ È®ÀÎ
+    // CDO(Class Default Object)ë¥¼ ê°€ì ¸ì™€ì„œ ìƒì„±ë  ë¸”ë¡ì˜ ê¸°ë³¸ GridSizeë¥¼ í™•ì¸
     ABlockBase* CDO = FoundClass->Get()->GetDefaultObject<ABlockBase>();
     float GridSize = CDO ? CDO->GetGridSize() : 100.0f;
 
-    // À§Ä¡ Á¡À¯ È®ÀÎ
+    // ìœ„ì¹˜ ì ìœ  í™•ì¸
     if (IsLocationOccupied(Location, GridSize))
     {
         UE_LOG(LogTemp, Warning, TEXT("BlockManagerSubsystem: Location %s is occupied"), *Location.ToString());
         return nullptr;
     }
 
-    // ¼ÒÈ¯
-    // Ãæµ¹ Äõ¸®´Â ÀÌ¹Ì ÇßÀ¸¹Ç·Î AlwaysSpawn »ç¿ë
+    // ì†Œí™˜
+    // ì¶©ëŒ ì¿¼ë¦¬ëŠ” ì´ë¯¸ í–ˆìœ¼ë¯€ë¡œ AlwaysSpawn ì‚¬ìš©
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
     ABlockBase* NewBlock = GetWorld()->SpawnActor<ABlockBase>(*FoundClass, Location, FRotator::ZeroRotator, SpawnParams);
 
-    // »ı¼º ÈÄ ¼³Á¤ (Áß·Â, À§Ä¡ º¸Á¤ µî)
+    // ìƒì„± í›„ ì„¤ì • (ì¤‘ë ¥, ìœ„ì¹˜ ë³´ì • ë“±)
     if (NewBlock)
     {
-        // À§Ä¡¸¦ ¸íÈ®ÇÏ°Ô ´Ù½Ã ¼³Á¤ (SpawnActor ½Ã ¹Ì¼¼ÇÑ ¿ÀÂ÷ ¹æÁö)
+        // ìœ„ì¹˜ë¥¼ ëª…í™•í•˜ê²Œ ë‹¤ì‹œ ì„¤ì • (SpawnActor ì‹œ ë¯¸ì„¸í•œ ì˜¤ì°¨ ë°©ì§€)
         NewBlock->SetActorLocation(Location);
 
-        // Áß·Â ¼³Á¤: ¿äÃ»¹ŞÀº bEnableGravity °ª¿¡ µû¶ó ºí·Ï »óÅÂ º¯°æ
-        // BlockBaseÀÇ º¯¼ö(bCanFall)¿Í Tick ¼³Á¤À» ¿ÜºÎ¿¡¼­ Á¦¾î
+        // ì¤‘ë ¥ ì„¤ì •: ìš”ì²­ë°›ì€ bEnableGravity ê°’ì— ë”°ë¼ ë¸”ë¡ ìƒíƒœ ë³€ê²½
+        // BlockBaseì˜ ë³€ìˆ˜(bCanFall)ì™€ Tick ì„¤ì •ì„ ì™¸ë¶€ì—ì„œ ì œì–´
         if (bEnableGravity)
         {
-            NewBlock->SetCanFall(true); // Setter ÇÔ¼ö°¡ ¾ø´Ù¸é BlockBase¿¡ Ãß°¡ ±ÇÀå ¶Ç´Â public º¯¼ö Á÷Á¢ Á¢±Ù
+            NewBlock->SetCanFall(true); // Setter í•¨ìˆ˜ê°€ ì—†ë‹¤ë©´ BlockBaseì— ì¶”ê°€ ê¶Œì¥ ë˜ëŠ” public ë³€ìˆ˜ ì§ì ‘ ì ‘ê·¼
             NewBlock->SetActorTickEnabled(true);
         }
         else
@@ -115,21 +115,21 @@ bool UBlockManagerSubsystem::IsLocationOccupied(
     if (!World)
     {
         UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: World is null"));
-        return true; // ¾ÈÀüÀ» À§ÇØ true ¹İÈ¯ (»ı¼º ¸·À½)
+        return true; // ì•ˆì „ì„ ìœ„í•´ true ë°˜í™˜ (ìƒì„± ë§‰ìŒ)
     }
 
-	// MakeBox´Â ÀÎÀÚ¸¦ ¹İÁö¸§À¸·Î »ç¿ëÇÔ
-	// 0.5¸¦ ³ÖÀ¸¸é 100 * 100 * 100 Å©±âÀÇ ¹Ú½º°¡ µÇ¾î ²Ë Â÷¹Ç·Î 0.4 »ç¿ë
+	// MakeBoxëŠ” ì¸ìë¥¼ ë°˜ì§€ë¦„ìœ¼ë¡œ ì‚¬ìš©í•¨
+	// 0.5ë¥¼ ë„£ìœ¼ë©´ 100 * 100 * 100 í¬ê¸°ì˜ ë°•ìŠ¤ê°€ ë˜ì–´ ê½‰ ì°¨ë¯€ë¡œ 0.4 ì‚¬ìš©
 	FVector BoxExtent = FVector(CheckGridSize * 0.4f, CheckGridSize * 0.4f, CheckGridSize * 0.4f);
 	FCollisionShape CheckShape = FCollisionShape::MakeBox(BoxExtent);
 
-	// ObjectType ±â¹İ Äõ¸®
-	// ´Ù¸¥ ºí·ÏÀÌ ÀÖ´Â °÷¿¡´Â ½ºÆù ºÒ°¡
+	// ObjectType ê¸°ë°˜ ì¿¼ë¦¬
+	// ë‹¤ë¥¸ ë¸”ë¡ì´ ìˆëŠ” ê³³ì—ëŠ” ìŠ¤í° ë¶ˆê°€
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_Block);
 
 	FCollisionQueryParams QueryParams;
 
-	// Ãæµ¹ÇÑ ºí·ÏµéÀ» ¹İÈ¯ÇÒ °ÍÀÌ ¾Æ´Ï¹Ç·Î OverlapMulti ´ë½Å OverlapAny »ç¿ë
+	// ì¶©ëŒí•œ ë¸”ë¡ë“¤ì„ ë°˜í™˜í•  ê²ƒì´ ì•„ë‹ˆë¯€ë¡œ OverlapMulti ëŒ€ì‹  OverlapAny ì‚¬ìš©
 	return World->OverlapAnyTestByObjectType(CheckLocation, FQuat::Identity, ObjectQueryParams, CheckShape, QueryParams);
 }
