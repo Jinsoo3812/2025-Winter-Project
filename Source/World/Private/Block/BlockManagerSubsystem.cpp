@@ -4,6 +4,44 @@
 #include "Block/BlockManagerSubsystem.h"
 #include "Block/BlockBase.h"
 #include "CollisionChannels.h"
+#include "Block/BlockSettings.h"
+
+void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
+{
+    Super::Initialize(Collection);
+
+    // 개발자 설정(Project Settings)에서 설정 객체 가져오기
+    // GetDefault<T>()는 CDO(Class Default Object)를 가져오므로 매우 빠름
+    const UBlockSettings* Settings = GetDefault<UBlockSettings>();
+
+    if (!Settings)
+    {
+        UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to get BlockSettings."));
+        return;
+    }
+
+    // 설정에 할당된 데이터 에셋이 있는지 확인
+    if (Settings->BlockConfigAsset.IsNull())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("BlockManagerSubsystem: BlockConfigAsset is not set in Project Settings -> Game -> Block System."));
+        return;
+    }
+
+    // Soft Pointer를 동기 로드(Synchronous Load)하여 실제 객체 가져오기
+    // 초기화 단계이므로 동기 로드가 허용됨. 
+    UDA_BlockConfig* BlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
+
+    if (BlockConfig)
+    {
+        // 맵 데이터 캐싱
+        BlockClassMap = BlockConfig->BlockClassMap;
+        UE_LOG(LogTemp, Log, TEXT("BlockManagerSubsystem: Successfully loaded block config from Project Settings."));
+    }
+    else
+    {
+        UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to load BlockConfig asset."));
+    }
+}
 
 AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, bool bEnableGravity)
 {

@@ -29,7 +29,8 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"GameplayAbilities"
+				"GameplayAbilities",
+				"DeveloperSettings"
 			]
 		},
 		{

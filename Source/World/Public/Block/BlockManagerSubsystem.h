@@ -17,6 +17,9 @@ class WORLD_API UBlockManagerSubsystem : public UWorldSubsystem, public IBlockSp
 	GENERATED_BODY()
 	
 public:
+	// 서브시스템 초기화 함수 (엔진에 의해 호출)
+	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
+
 	/*
 	* IBlockSpawnInterface 구현: 태그에 맞는 블록을 소환하는 함수
 	* @param BlockTypeTag: 소환할 블록의 타입을 나타내는 게임플레이 태그
