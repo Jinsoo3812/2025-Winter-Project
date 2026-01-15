@@ -94,4 +94,5 @@ protected:
 	// 사망 애니메이션 몽타주
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UAnimMontage> DeadMontage;
+
 };
