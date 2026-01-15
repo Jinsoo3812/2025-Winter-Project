@@ -109,10 +109,20 @@ void UGA_SummonBarrier::UpdatePreview()
 
     // 2. 사거리 내 블록 탐색 (부모 클래스 함수 활용)
     TArray<ABlockBase*> BlocksInRange;
-    FindBlocksInRange(BlocksInRange);
+    TArray<AActor*> ActorsInRange;
+    FindBlocksInRange(ActorsInRange);
+    
+    // AActor*를 ABlockBase*로 변환
+    for (AActor* Actor : ActorsInRange)
+    {
+        if (ABlockBase* Block = Cast<ABlockBase>(Actor))
+        {
+            BlocksInRange.Add(Block);
+        }
+    }
 
     // 3. 탐색된 블록들에 일괄적으로 'Preview(파랑)' 상태 적용
-    BatchHighlightBlocks(BlocksInRange, EBlockHighlightState::Preview);
+    BatchHighlightBlocks(ActorsInRange, 1.0f);
 
     // 4. 나중에 끄기 위해 목록 백업
     PreviewedBlocks = BlocksInRange;
@@ -628,7 +638,15 @@ void UGA_SummonBarrier::ClearHighlights()
 {
 	// 1. 현재 저장된 블록들의 상태를 'None'으로 복구
 	// 배열을 비우기 전에 반드시 실행해야 색상이 돌아옵니다.
-	BatchHighlightBlocks(PreviewedBlocks, EBlockHighlightState::None);
+	TArray<AActor*> ActorsToReset;
+	for (ABlockBase* Block : PreviewedBlocks)
+	{
+		if (Block)
+		{
+			ActorsToReset.Add(Block);
+		}
+	}
+	BatchHighlightBlocks(ActorsToReset, 0.0f);
 
 	// 2. 목록 초기화
 	PreviewedBlocks.Empty();

@@ -124,7 +124,17 @@ void UGA_Construction::HighlightBlocksInRange()
 {
 	// SkillBase의 FindBlocksInRange를 활용하여 범위 내 블록 탐색
 	TArray<ABlockBase*> BlocksInRange;
-	FindBlocksInRange(BlocksInRange);
+	TArray<AActor*> ActorsInRange;
+	FindBlocksInRange(ActorsInRange);
+	
+	// AActor*를 ABlockBase*로 변환
+	for (AActor* Actor : ActorsInRange)
+	{
+		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
+		{
+			BlocksInRange.Add(Block);
+		}
+	}
 
 	// 탐색된 블록들에 파란색 하이라이트 적용 (CustomPrimitiveData)
 	for (ABlockBase* Block : BlocksInRange)
@@ -145,18 +155,18 @@ void UGA_Construction::HighlightBlocksInRange()
 
 void UGA_Construction::ClearHighlights()
 {
+	// PreviewedBlocks를 AActor* 배열로 변환
+	TArray<AActor*> ActorsToReset;
 	for (ABlockBase* Block : PreviewedBlocks)
 	{
-		if (!Block)
+		if (Block)
 		{
-			UStaticMeshComponent* MeshComp = Block->GetBlockMesh();
-			if (MeshComp)
-			{
-				// Index 0 값을 0.0(기본)으로 복구
-				MeshComp->SetCustomPrimitiveDataFloat(0, 0.0f);
-			}
+			ActorsToReset.Add(Block);
 		}
 	}
+	
+	// BatchHighlightBlocks로 일괄 처리 (0.0f = None)
+	BatchHighlightBlocks(ActorsToReset, 0.0f);
 
 	// 목록 초기화
 	PreviewedBlocks.Empty();

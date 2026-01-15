@@ -40,6 +40,11 @@
 				"Engine",
 				"GameplayAbilities"
 			]
+		},
+		{
+			"Name": "Interface",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
 		}
 	],
 	"Plugins": [

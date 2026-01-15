@@ -95,7 +95,17 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::ExecutePhase1 - Modified RangeXY: %f"), RangeXY);
 
 	// 부모 클래스의 FindBlocksInRange 사용
-	FindBlocksInRange(HighlightedBlocks);
+	TArray<AActor*> ActorsInRange;
+	FindBlocksInRange(ActorsInRange);
+	
+	// AActor*를 ABlockBase*로 변환
+	for (AActor* Actor : ActorsInRange)
+	{
+		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
+		{
+			HighlightedBlocks.Add(Block);
+		}
+	}
 
 	// RangeXY 복구 (다음 프레임을 위해 원상복구)
 	RangeXY = OriginalRange;
@@ -110,7 +120,16 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 	}
 
 	// 4. 하이라이트 적용 (Preview 색상)
-	BatchHighlightBlocks(HighlightedBlocks, EBlockHighlightState::Preview);
+	// HighlightedBlocks를 AActor* 배열로 변환
+	TArray<AActor*> ActorsToHighlight;
+	for (ABlockBase* Block : HighlightedBlocks)
+	{
+		if (Block)
+		{
+			ActorsToHighlight.Add(Block);
+		}
+	}
+	BatchHighlightBlocks(ActorsToHighlight, 1.0f);
 
 	// 5. 태그 부착 (Phase 1 시작 알림)
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
@@ -266,7 +285,16 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 	SpawnedWalls.Empty();
 
 	// 3. 바닥 하이라이트 복구
-	BatchHighlightBlocks(HighlightedBlocks, EBlockHighlightState::None);
+	// HighlightedBlocks를 AActor* 배열로 변환
+	TArray<AActor*> ActorsToReset;
+	for (ABlockBase* Block : HighlightedBlocks)
+	{
+		if (Block)
+		{
+			ActorsToReset.Add(Block);
+		}
+	}
+	BatchHighlightBlocks(ActorsToReset, 0.0f);
 	HighlightedBlocks.Empty();
 
 	// 4. 쿨타임 적용 (모든 시퀀스가 끝난 시점에서 적용)

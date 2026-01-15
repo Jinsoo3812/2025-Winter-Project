@@ -7,6 +7,7 @@
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
 #include "Engine/OverlapResult.h"
+#include "GameplayEventInterface.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Player, "Player");
 
@@ -14,6 +15,8 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
+
+UE_DEFINE_GAMEPLAY_TAG(TAG_Event_Block_Highlight, "Event.Block.Highlight");
 
 UGA_SkillBase::UGA_SkillBase()
 {
@@ -283,10 +286,10 @@ void UGA_SkillBase::EndAbility(
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_SkillBase::FindBlocksInRange(TArray<ABlockBase*>& OutBlocks)
+void UGA_SkillBase::FindBlocksInRange(TArray<AActor*>& OutActors)
 {
 	// 결과 배열 초기화 (매 프레임 호출될 수 있으므로 비워줌)
-	OutBlocks.Empty();
+	OutActors.Empty();
 
 	UWorld* World = GetWorld();
 	if (!World)
@@ -342,39 +345,47 @@ void UGA_SkillBase::FindBlocksInRange(TArray<ABlockBase*>& OutBlocks)
 		return;
 	}
 
-	// 검색된 블록들 처리
-	// FOverlapResult는 가벼우므로 &로 가져옵니다.
+	// 인터페이스 구현 여부로 필터링
 	for (const FOverlapResult& Result : OverlapResults)
 	{
-		ABlockBase* Block = Cast<ABlockBase>(Result.GetActor());
-		if (!Block)
+		AActor* HitActor = Result.GetActor();
+		if (!HitActor)
 		{
 			continue;
 		}
 
-		FVector BlockLocation = Block->GetActorLocation();
-
-		// XY 평면 거리 재확인 (박스가 사각형이므로 원형 범위로 한번 더 필터링)
-		float DistanceXY = FVector::Dist2D(PlayerLocation, BlockLocation);
-
-		// 거리가 범위 밖이라면 포함하지 않음
+		// 거리 필터링
+		FVector ActorLocation = HitActor->GetActorLocation();
+		float DistanceXY = FVector::Dist2D(PlayerLocation, ActorLocation);
 		if (DistanceXY > RangeXY)
 		{
 			continue;
 		}
 
-		// 결과 배열에 유효한 블록 추가
-		OutBlocks.Add(Block);
+		// 구체적인 클래스(BlockBase) 대신 인터페이스 구현 여부 확인
+		if (HitActor->Implements<UGameplayEventInterface>())
+		{
+			OutActors.Add(HitActor);
+		}
+		// 구현하지 않은 액터는 무시 
 	}
 }
 
-void UGA_SkillBase::BatchHighlightBlocks(const TArray<ABlockBase*>& Blocks, EBlockHighlightState State)
+void UGA_SkillBase::BatchHighlightBlocks(const TArray<AActor*>& Actors, float HighlightStateValue)
 {
-	for (ABlockBase* Block : Blocks)
+	// 이벤트 데이터 생성
+	FGameplayEventData Payload;
+	Payload.EventTag = TAG_Event_Block_Highlight;
+	Payload.Instigator = GetAvatarActorFromActorInfo();
+	Payload.EventMagnitude = HighlightStateValue; // Enum 값을 float로 전달
+
+	for (AActor* Actor : Actors)
 	{
-		if (Block)
+		IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(Actor);
+
+		if (InterfaceObj)
 		{
-			Block->SetHighlightState(State);
+			InterfaceObj->HandleGameplayEvent(Payload.EventTag, Payload);
 		}
 	}
 }

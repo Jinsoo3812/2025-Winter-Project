@@ -17,6 +17,8 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // 스킬 시전 중임을 �
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // 데미지 태그용
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Cooldown); // 쿨타임 태그용
 
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Event_Block_Highlight); // 블록 하이라이트 이벤트 태그
+
 /**
  * 모든 액티브 스킬의 부모 클래스
  * 룬 적용 로직 포함
@@ -101,10 +103,11 @@ protected:
 	void NotifySkillCastFinished();
 
 	// 스킬 사용 범위 표시에 들어오는 블록들을 찾아내는 헬퍼 함수
-	void FindBlocksInRange(TArray<ABlockBase*>& OutBlocks);
+	void FindBlocksInRange(TArray<AActor*>& OutActors);
 
+	// Gameplay Event를 이용해
 	// 범위 내 블록들의 하이라이트 상태를 일괄 변경하는 헬퍼 함수
-	void BatchHighlightBlocks(const TArray<ABlockBase*>& Blocks, EBlockHighlightState State);
+	void BatchHighlightBlocks(const TArray<AActor*>& Actors, float HighlightStateValue);
 
 private:
 	// 캐싱된 SkillManager (성능 최적화용)

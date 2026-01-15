@@ -1,19 +1,15 @@
 using UnrealBuildTool;
 
-public class World: ModuleRules
+public class Interface: ModuleRules
 {
-    public World(ReadOnlyTargetRules Target) : base(Target)
+    public Interface(ReadOnlyTargetRules Target) : base(Target)
     {
         PublicDependencyModuleNames.AddRange(new string[] {
             "Core",
             "CoreUObject",
             "Engine",
-            "InputCore",
             "GameplayAbilities",
-            "GameplayTasks",
             "GameplayTags",
-            "NavigationSystem",
-            "Interface"
         });
     }
 }

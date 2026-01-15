@@ -306,3 +306,23 @@ void ABlockBase::UpdateBombCount(int32 Delta, int32 MaxBombCount)
     }
 }
 
+void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload)
+{
+    // 태그 확인: 하이라이트 이벤트인가?
+    if (EventTag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Event.Block.Highlight"))))
+    {
+        // Payload에서 상태값 추출 (GA에서 Magnitude에 Enum 값을 넣어서 보냈음)
+        float StateValue = Payload.EventMagnitude;
+
+        // 형변환 후 적용
+        EBlockHighlightState NewState = static_cast<EBlockHighlightState>((int32)StateValue);
+
+        // 기존 함수 재사용
+        SetHighlightState(NewState);
+    }
+    else
+    {
+        // 처리할 수 없는 태그일 경우 로그
+        UE_LOG(LogTemp, Warning, TEXT("ABlockBase::HandleGameplayEventInterface: Unhandled Tag %s"), *EventTag.ToString());
+    }
+}

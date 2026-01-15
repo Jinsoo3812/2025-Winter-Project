@@ -11,8 +11,9 @@ public class Skill: ModuleRules
             "GameplayAbilities",
             "GameplayTasks",
             "GameplayTags",
-            "World",
-            "InputCore"
+            "Interface",
+            "InputCore",
+            "World"
         });
     }
 }

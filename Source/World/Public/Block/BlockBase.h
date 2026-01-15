@@ -4,9 +4,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "GameplayTagContainer.h"
+// #include "GameplayTagContainer.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "GameplayEventInterface.h"
 #include "BlockBase.generated.h"
 
 // 블록 종류 관리
@@ -33,7 +34,7 @@ constexpr int32 CPD_INDEX_BOMBCOUNT = 1;
 
 
 UCLASS()
-class WORLD_API ABlockBase : public AActor
+class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface
 {
 	GENERATED_BODY()
 	
@@ -149,4 +150,10 @@ public:
 
 	// 폭탄 개수 변경 및 색상 갱신 (빨강) - CPD 1
 	void UpdateBombCount(int32 Delta, int32 MaxBombCount);
+
+	/*
+	* GameplayEventInterface 구현
+	* GameplayEvent를 수신하는 함수
+	*/
+	void HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload) override;
 };

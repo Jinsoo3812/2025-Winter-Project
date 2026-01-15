@@ -144,10 +144,20 @@ void UGA_Explosive::UpdatePreview()
 
 	// 2. 사거리 내 블록 탐색
 	TArray<ABlockBase*> BlocksInRange;
-	FindBlocksInRange(BlocksInRange);
+	TArray<AActor*> ActorsInRange;
+	FindBlocksInRange(ActorsInRange);
+	
+	// AActor*를 ABlockBase*로 변환
+	for (AActor* Actor : ActorsInRange)
+	{
+		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
+		{
+			BlocksInRange.Add(Block);
+		}
+	}
 
 	// 3. 탐색된 블록들에 일괄적으로 'Preview(파랑)' 상태 적용
-	BatchHighlightBlocks(BlocksInRange, EBlockHighlightState::Preview);
+	BatchHighlightBlocks(ActorsInRange, 1.0f);
 
 	// 4. 나중에 끄기 위해 목록 백업
 	PreviewedBlocks = BlocksInRange;
@@ -160,7 +170,10 @@ void UGA_Explosive::UpdatePreview()
 	// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있다면 'Targeted(초록)'으로 덮어쓰기
 	if (HitBlock && PreviewedBlocks.Contains(HitBlock))
 	{
-		HitBlock->SetHighlightState(EBlockHighlightState::Targeted);
+		// Targeted = 2.0f
+		TArray<AActor*> TargetedActor;
+		TargetedActor.Add(HitBlock);
+		BatchHighlightBlocks(TargetedActor, 2.0f);
 		HighlightedBlock = HitBlock;
 	}
 	else
@@ -280,7 +293,15 @@ void UGA_Explosive::SpawnExplosive()
 void UGA_Explosive::ClearHighlights()
 {
 	// 저장된 프리뷰 블록들의 상태를 'None'으로 복구
-	BatchHighlightBlocks(PreviewedBlocks, EBlockHighlightState::None);
+	TArray<AActor*> ActorsToReset;
+	for (ABlockBase* Block : PreviewedBlocks)
+	{
+		if (Block)
+		{
+			ActorsToReset.Add(Block);
+		}
+	}
+	BatchHighlightBlocks(ActorsToReset, 0.0f);
 
 	// 목록 초기화
 	PreviewedBlocks.Empty();
