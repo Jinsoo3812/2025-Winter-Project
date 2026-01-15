@@ -292,6 +292,19 @@ void ABlockBase::SetHighlightState(EBlockHighlightState NewState)
         float StateValue = static_cast<float>(NewState);
         Mesh->SetCustomPrimitiveDataFloat(CPD_INDEX_HIGHLIGHT, StateValue);
     }
+
+
+    else
+    {
+        // 클라이언트에서 직접 호출된 경우 (혹시 모를 예외 처리)
+        // 로컬 시각 효과만 변경하거나, 아무것도 안 함
+        // 여기서는 로컬 변경 로직 수행 (아래와 동일)
+        if (MeshComponent)
+        {
+            float CPDValue = static_cast<float>(NewState);
+            MeshComponent->SetCustomPrimitiveDataFloat(CPD_INDEX_HIGHLIGHT, CPDValue);
+        }
+    }
 }
 
 void ABlockBase::UpdateBombCount(int32 Delta, int32 MaxBombCount)
@@ -306,3 +319,16 @@ void ABlockBase::UpdateBombCount(int32 Delta, int32 MaxBombCount)
     }
 }
 
+
+
+void ABlockBase::Multicast_SetHighlightState_Implementation(EBlockHighlightState NewState)
+{
+    // 실제 색상 변경 로직 (서버 및 모든 클라이언트에서 실행됨)
+    if (MeshComponent)
+    {
+        // Enum 값을 float로 변환하여 CPD 0번 인덱스에 전달
+        // 0=None, 1=Blue, 2=Green, 3=Red(Material에서 처리 필요)
+        float CPDValue = static_cast<float>(NewState);
+        MeshComponent->SetCustomPrimitiveDataFloat(CPD_INDEX_HIGHLIGHT, CPDValue);
+    }
+}
