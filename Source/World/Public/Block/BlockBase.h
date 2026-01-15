@@ -24,7 +24,8 @@ enum class EBlockHighlightState : uint8
 {
 	None = 0,
 	Preview = 1,    // 파란색
-	Targeted = 2    // 초록색 (기존 코드에서 3.0을 쓰셨다면 2나 3으로 매핑)
+	Targeted = 2,    // 초록색 (기존 코드에서 3.0을 쓰셨다면 2나 3으로 매핑)
+	Danger = 3     // 빨간색
 };
 
 // CPD 인덱스를 상수로 관리
@@ -149,4 +150,9 @@ public:
 
 	// 폭탄 개수 변경 및 색상 갱신 (빨강) - CPD 1
 	void UpdateBombCount(int32 Delta, int32 MaxBombCount);
+
+	// [추가된 부분] 모든 클라이언트에게 색상 변경을 알리기 위해 함수 선언 변경
+	// 이 함수를 호출하면 서버+모든 클라이언트에서 실행됩니다.
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_SetHighlightState(EBlockHighlightState NewState);
 };
