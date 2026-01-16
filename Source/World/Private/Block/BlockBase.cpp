@@ -346,3 +346,8 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
         UE_LOG(LogTemp, Warning, TEXT("ABlockBase::HandleGameplayEventInterface: Unhandled Tag %s"), *EventTag.ToString());
     }
 }
+
+void ABlockBase::SelfDestroy()
+{
+    Destroy();
+}

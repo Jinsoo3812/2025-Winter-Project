@@ -98,6 +98,9 @@ protected:
 	// 자신의 위 블록이 추락할 수 있도록 깨우는 함수
 	void NotifyUpperBlock();
 
+	// 자신을 파괴하는 함수
+	virtual void SelfDestroy();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
