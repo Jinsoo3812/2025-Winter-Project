@@ -10,6 +10,8 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
     Super::Initialize(Collection);
 
+    IBlockSpawnInterface::RegisterSpawner(GetWorld(), this);
+
     // 개발자 설정(Project Settings)에서 설정 객체 가져오기
     // GetDefault<T>()는 CDO(Class Default Object)를 가져오므로 매우 빠름
     const UBlockSettings* Settings = GetDefault<UBlockSettings>();
@@ -43,7 +45,15 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
     }
 }
 
-AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, bool bEnableGravity)
+void UBlockManagerSubsystem::Deinitialize()
+{
+    // [중요] 시스템 종료 시 반드시 등록 해제 (Dangling Pointer 방지)
+    IBlockSpawnInterface::UnregisterSpawner(GetWorld());
+
+    Super::Deinitialize();
+}
+
+AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity)
 {
     // 태그에 맞는 블록 클래스 찾기
     TSubclassOf<ABlockBase>* FoundClass = BlockClassMap.Find(BlockTypeTag);
@@ -77,7 +87,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
     FActorSpawnParameters SpawnParams;
     SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-    ABlockBase* NewBlock = GetWorld()->SpawnActor<ABlockBase>(*FoundClass, Location, FRotator::ZeroRotator, SpawnParams);
+    ABlockBase* NewBlock = GetWorld()->SpawnActor<ABlockBase>(*FoundClass, Location, Rotation, SpawnParams);
 
     // 생성 후 설정 (중력, 위치 보정 등)
     if (NewBlock)

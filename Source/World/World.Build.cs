@@ -13,8 +13,7 @@ public class World: ModuleRules
             "GameplayTasks",
             "GameplayTags",
             "NavigationSystem",
-            "Interface",
-            "Collision"
+            "Winter2025Core"
         });
     }
 }

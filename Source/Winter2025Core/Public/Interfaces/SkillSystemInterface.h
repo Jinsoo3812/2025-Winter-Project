@@ -18,7 +18,7 @@ class USkillSystemInterface : public UInterface
 /**
  * 
  */
-class INTERFACE_API ISkillSystemInterface
+class WINTER2025CORE_API ISkillSystemInterface
 {
 	GENERATED_BODY()
 

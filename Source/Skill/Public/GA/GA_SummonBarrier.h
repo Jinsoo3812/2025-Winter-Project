@@ -32,7 +32,7 @@ protected:
 
 	// 실제로 소환된 블록들을 관리하기 위한 배열
 	UPROPERTY()
-	TArray<TObjectPtr<ADestructibleBlock>> SpawnedBlocks;
+	TArray<TObjectPtr<AActor>> SpawnedBlocks;
 
 	// 돌진 속도
 	UPROPERTY(EditDefaultsOnly, Category = "Construction|Charge")
@@ -92,6 +92,4 @@ private:
 
 	// 매 프레임 방벽 이동 처리
 	void TickBarrierCharge();
-
-	void ClearHighlights() override;
 };

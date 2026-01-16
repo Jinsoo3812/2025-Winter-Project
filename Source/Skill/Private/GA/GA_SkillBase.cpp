@@ -8,6 +8,8 @@
 #include "AttributeSet.h"
 #include "Engine/OverlapResult.h"
 #include "GameplayEventInterface.h"
+#include "BlockGameplayTags.h"
+#include "CollisionChannels.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Player, "Player");
 
@@ -15,8 +17,6 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
-
-UE_DEFINE_GAMEPLAY_TAG(TAG_Event_Block_Highlight, "Event.Block.Highlight");
 
 UGA_SkillBase::UGA_SkillBase()
 {
@@ -320,10 +320,7 @@ void UGA_SkillBase::FindBlocksInRange(TArray<AActor*>& OutActors)
 	FCollisionObjectQueryParams ObjectQueryParams;
 
 	// 대부분의 경우 블록은 움직이지 않으므로 WorldStatic
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-
-	// 추후 스킬 사용으로 블록이 움직이면, 그 위의 블록도 움직이는 등의 상황을 고려하여 WorldDynamic도 포함
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Block);
 
 	// 충돌 쿼리의 옵션 및 예외 설정 (어떻게 찾을 지)
 	FCollisionQueryParams QueryParams;
@@ -371,21 +368,65 @@ void UGA_SkillBase::FindBlocksInRange(TArray<AActor*>& OutActors)
 	}
 }
 
-void UGA_SkillBase::BatchHighlightBlocks(const TArray<AActor*>& Actors, float HighlightStateValue)
+void UGA_SkillBase::BatchHighlightBlocks(TArray<AActor*>& Actors, FGameplayTag EventTag)
 {
 	// 이벤트 데이터 생성
 	FGameplayEventData Payload;
-	Payload.EventTag = TAG_Event_Block_Highlight;
+	Payload.EventTag = EventTag;
 	Payload.Instigator = GetAvatarActorFromActorInfo();
-	Payload.EventMagnitude = HighlightStateValue; // Enum 값을 float로 전달
+	Payload.EventMagnitude = 0.0f; // 안 씀
 
-	for (AActor* Actor : Actors)
+	// 배열 요소를 삭제하며 순회해야 하므로, 역방향으로 반복문을 실행합니다.
+	for (int32 i = Actors.Num() - 1; i >= 0; --i)
 	{
-		IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(Actor);
+		AActor* Actor = Actors[i];
 
-		if (InterfaceObj)
+		// 액터 유효성 검사 
+		if (IsValid(Actor))
 		{
-			InterfaceObj->HandleGameplayEvent(Payload.EventTag, Payload);
+			IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(Actor);
+
+			// 인터페이스 구현 여부 검사
+			if (InterfaceObj)
+			{
+				// 이벤트 전송
+				InterfaceObj->HandleGameplayEvent(Payload.EventTag, Payload);
+			}
+			else
+			{
+				// 배열에서 제거
+				Actors.RemoveAtSwap(i);
+			}
+		}
+		else
+		{
+			// 배열에서 제거
+			Actors.RemoveAtSwap(i);
 		}
 	}
+}
+
+void UGA_SkillBase::HighlightBlocks(TArray<AActor*>& Actors, FGameplayTag EventTag)
+{
+	ClearHighlights(Actors);
+
+	FindBlocksInRange(Actors);
+
+	BatchHighlightBlocks(Actors, EventTag);
+}
+
+void UGA_SkillBase::ClearHighlights(TArray<AActor*>& Actors)
+{
+	// 성능 방어를 위한 체크
+	if (Actors.IsEmpty())
+	{
+		return;
+	}
+
+	// 하이라이트 제거
+	BatchHighlightBlocks(Actors, TAG_Block_Highlight_None);
+
+	// Empty는 메모리를 해제하지만, Reset은 메모리를 유지
+	// 매 프레임 블록을 넣다 뺐다 하므로 Reset 사용
+	Actors.Reset();
 }

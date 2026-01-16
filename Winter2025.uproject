@@ -43,12 +43,7 @@
 			]
 		},
 		{
-			"Name": "Interface",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "Collision",
+			"Name": "Winter2025Core",
 			"Type": "Runtime",
 			"LoadingPhase": "Default"
 		}

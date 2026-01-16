@@ -11,9 +11,8 @@ public class Skill: ModuleRules
             "GameplayAbilities",
             "GameplayTasks",
             "GameplayTags",
-            "Interface",
-            "InputCore",
-            "World"
+            "Winter2025Core",
+            "InputCore"
         });
     }
 }

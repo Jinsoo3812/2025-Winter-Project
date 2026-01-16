@@ -2,16 +2,16 @@
 
 
 #include "GA/GA_Construction.h"
-#include "Block/DestructibleBlock.h"
-#include "Block/BlockBase.h"
 #include "GameFramework/PlayerController.h"
-#include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
-#include "Components/StaticMeshComponent.h"
 #include "InputCoreTypes.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Components/InputComponent.h"
+#include "BlockGameplayTags.h"
+#include "BlockInfoInterface.h"
+#include "BlockSpawnInterface.h"
+#include "CollisionChannels.h"
 
 UGA_Construction::UGA_Construction() {}
 
@@ -29,6 +29,9 @@ void UGA_Construction::ActivateAbility(
 		// 60FPS 간격으로 UpdatePreview 함수 호출
 		// 자식이 재정의한 UpdatePreview 또한 호출될 수 있음.
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Construction::UpdatePreview, 0.016f, true);
+
+		// BlockSpawner 캐싱
+		BlockSpawner = IBlockSpawnInterface::GetBlockManagerSubsystem(World);
 	}
 
 	// WaitInputPress 어빌리티 태스크 생성
@@ -81,8 +84,8 @@ void UGA_Construction::EndAbility(
 	// 타이머 핸들 무효화
 	TickTimerHandle.Invalidate();
 
-	// 하이라이트 제거
-	ClearHighlights();
+	// 바닥 프리뷰 하이라이트 제거
+	ClearHighlights(PreviewBlocks);
 
 	// 프리뷰 블록 제거
 	if (PreviewBlock)
@@ -120,58 +123,6 @@ void UGA_Construction::EndAbility(
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_Construction::HighlightBlocksInRange()
-{
-	// SkillBase의 FindBlocksInRange를 활용하여 범위 내 블록 탐색
-	TArray<ABlockBase*> BlocksInRange;
-	TArray<AActor*> ActorsInRange;
-	FindBlocksInRange(ActorsInRange);
-	
-	// AActor*를 ABlockBase*로 변환
-	for (AActor* Actor : ActorsInRange)
-	{
-		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
-		{
-			BlocksInRange.Add(Block);
-		}
-	}
-
-	// 탐색된 블록들에 파란색 하이라이트 적용 (CustomPrimitiveData)
-	for (ABlockBase* Block : BlocksInRange)
-	{
-		if (Block)
-		{
-			UStaticMeshComponent* Mesh = Block->GetBlockMesh();
-			if (Mesh)
-			{
-				// CustomPrimitiveData Index 0: 1.0f = Preview (Blue)
-				Mesh->SetCustomPrimitiveDataFloat(0, 1.0f);
-			}
-			// 나중에 끄기 위해 목록에 추가
-			PreviewedBlocks.Add(Block);
-		}
-	}
-}
-
-void UGA_Construction::ClearHighlights()
-{
-	// PreviewedBlocks를 AActor* 배열로 변환
-	TArray<AActor*> ActorsToReset;
-	for (ABlockBase* Block : PreviewedBlocks)
-	{
-		if (Block)
-		{
-			ActorsToReset.Add(Block);
-		}
-	}
-	
-	// BatchHighlightBlocks로 일괄 처리 (0.0f = None)
-	BatchHighlightBlocks(ActorsToReset, 0.0f);
-
-	// 목록 초기화
-	PreviewedBlocks.Empty();
-}
-
 void UGA_Construction::UpdatePreview()
 {
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
@@ -188,23 +139,21 @@ void UGA_Construction::UpdatePreview()
 		return;
 	}
 
-	// 이전 프레임의 하이라이트 초기화
-	ClearHighlights();
-
 	// 범위 내 블록들을 찾아서 파란색 하이라이트
-	HighlightBlocksInRange();
+	HighlightBlocks(PreviewBlocks, TAG_Block_Highlight_Preview);
 
 	// 마우스 커서 아래 블록 찾기
 	FHitResult HitResult;
-	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
+	PC->GetHitResultUnderCursor(ECC_Block, true, HitResult);
 
 	// bBlockingHit은 Block 응답을 가진 충돌이 발생했는지 여부
 	if (HitResult.bBlockingHit)
 	{
-		ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
+		AActor* HitActor = HitResult.GetActor();
+		IBlockInfoInterface* HitBlockInfo = Cast<IBlockInfoInterface>(HitActor);
 		
 		// 사거리 내(파란 영역)의 블록인지 확인
-		if (HitBlock && PreviewedBlocks.Contains(HitBlock))
+		if (HitBlockInfo && PreviewBlocks.Contains(HitActor))
 		{
 			// 프리뷰 블록이 없으면 생성 (BP에서 미리 디자인된 프리뷰 블록 사용)
 			if (!PreviewBlock && PreviewBlockClass)
@@ -233,8 +182,8 @@ void UGA_Construction::UpdatePreview()
 			// 프리뷰 블록을 타겟 블록 위에 배치
 			if (PreviewBlock)
 			{
-				FVector BlockLocation = HitBlock->GetActorLocation();
-				FRotator BlockRotation = HitBlock->GetActorRotation();
+				FVector BlockLocation = HitBlockInfo->GetBlockLocation();
+				FRotator BlockRotation = HitBlockInfo->GetBlockRotation();
 				
 				// 블록 크기만큼 위로 올림 (블록이 100x100x100이라 가정)
 				FVector PreviewLocation = BlockLocation + FVector(0, 0, 100.0f);
@@ -296,31 +245,16 @@ void UGA_Construction::SpawnBlock()
 		return;
 	}
 
-	if (!PreviewBlock || PreviewBlock->IsHidden()) return;
-
-	if (!BlockToSpawn)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: BlockToSpawn is null in SpawnBlock"));
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World) return;
+	if (!PreviewBlock || PreviewBlock->IsHidden()) return; 
 
 	// 프리뷰 블록 위치에 실제 블록 생성
 	FVector SpawnLocation = PreviewBlock->GetActorLocation();
 	FRotator SpawnRotation = PreviewBlock->GetActorRotation();
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	ADestructibleBlock* NewBlock = World->SpawnActor<ADestructibleBlock>(BlockToSpawn, SpawnLocation, SpawnRotation, SpawnParams);
+	AActor* NewBlock = BlockSpawner->SpawnBlockByTag(TAG_Block_Type_Destructible, SpawnLocation, SpawnRotation, true);
 
 	if (NewBlock)
 	{
-		// 블록 초기화 (필요한 경우)
-		NewBlock->SpawnBlock(SpawnLocation, EBlockType::Destructible);
-		
 		UE_LOG(LogTemp, Log, TEXT("GA_Construction: Spawned new block %s at location %s"), *NewBlock->GetName(), *SpawnLocation.ToString());
 		
 		// 스킬 종료

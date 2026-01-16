@@ -7,11 +7,10 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameplayEventInterface.h"
-#include "NativeGameplayTags.h"
+#include "BlockInfoInterface.h"
 #include "BlockBase.generated.h"
 
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Type_Terrain);
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Type_Destructible);
+class UDA_BlockConfig;
 
 // 블록 종류 관리
 UENUM()
@@ -31,13 +30,9 @@ enum class EBlockHighlightState : uint8
 	Targeted = 2    // 초록색 
 };
 
-// CPD 인덱스를 상수로 관리
-constexpr int32 CPD_INDEX_HIGHLIGHT = 0; // 하이라이트 상태
-constexpr int32 CPD_INDEX_BOMBCOUNT = 1; // 폭탄 개수별 상태 (빨강)
-
 
 UCLASS()
-class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface
+class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface, public IBlockInfoInterface
 {
 	GENERATED_BODY()
 	
@@ -74,6 +69,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UBoxComponent> CollisionComponent;
 
+	// 이 블록이 참조할 설정 파일 (블루프린트 디폴트에서 설정하거나, 스폰 시 주입)
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	TObjectPtr<UDA_BlockConfig> BlockConfig;
+
+	// 이 블록이 참조할 설정 파일 (블루프린트 디폴트에서 설정하거나, 스폰 시 주입)
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	int32 MaxBombCount;
+
 	// 낙하해도 되는 블록인지
 	bool bCanFall = false;
 
@@ -105,36 +108,13 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// [레거시] 블록의 위치와 타입 변수를 설정하고 소환합니다.
-	virtual void SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType);
+	// IBlockInfoInterface 구현
+	FVector GetBlockLocation() const override { return GetActorLocation(); }
+	FRotator GetBlockRotation() const override { return GetActorRotation(); }
+	float GetBlockGridSize() const override { return GridSize; }
 
-	// 지정된 위치에 블록을 소환합니다. 
-	// 점유 확인 및 중력 설정을 포함한 개선된 스폰 로직
-	// @param World: 블록을 생성할 월드
-	// @param BlockClass: 생성할 블록의 클래스 (BP_DestructibleBlock 등)
-	// @param SpawnLocation: 블록을 생성할 위치
-	// @param bEnableGravity: 생성 후 중력을 활성화할지 여부
-	// @return 생성된 블록 (생성 실패 시 nullptr)
-	UFUNCTION(BlueprintCallable, Category = "Block")
-	static ABlockBase* SpawnBlock(
-		UWorld* World,
-		TSubclassOf<ABlockBase> BlockClass,
-		const FVector& SpawnLocation,
-		bool bEnableGravity
-	);
-
-	// 지정된 위치가 점유되어 있는지 확인하는 헬퍼 함수
-	// @param World: 체크할 월드
-	// @param CheckLocation: 체크할 위치
-	// @param CheckGridSize: 블록의 그리드 크기
-	// @return 점유되어 있으면 true, 비어있으면 false
-	// @note 프리뷰 블록(ECC_GameTraceChannel1)은 점유 판정에서 제외됨
-	UFUNCTION(BlueprintCallable, Category = "Block")
-	static bool IsLocationOccupied(
-		UWorld* World,
-		const FVector& CheckLocation,
-		float CheckGridSize
-	);
+	//  그리드에 정렬된 위치(GridSize 단위에 맞도록)를 반환하는 함수
+	FVector GetBlockAlignedLocation() const override;
 
 	EBlockType GetBlockType() const { return BlockType; }
 	FVector GetBlockLocation() const { return Location; }
@@ -148,13 +128,6 @@ public:
 	bool IsFalling() const { return bIsFalling; }
 
 	void SetCanFall(bool bNewCanFall) { bCanFall = bNewCanFall; }
-
-	// 블록의 하이라이트 상태를 설정하는 함수 (CPD 0)
-	// 0 : 없음, 1: 프리뷰(파란색), 2: 타겟팅(초록색)
-	void SetHighlightState(EBlockHighlightState NewState);
-
-	// 폭탄 개수 변경 및 색상 갱신 (빨강) - CPD 1
-	void UpdateBombCount(int32 Delta, int32 MaxBombCount);
 
 	/*
 	* GameplayEventInterface 구현

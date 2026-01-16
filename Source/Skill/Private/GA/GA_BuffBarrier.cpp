@@ -2,7 +2,6 @@
 
 
 #include "GA/GA_BuffBarrier.h"
-#include "Block/BlockBase.h"
 #include "Interface/IAttributeSetProvider.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
