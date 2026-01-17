@@ -6,9 +6,6 @@
 #include "GA/GA_SkillBase.h"
 #include "GA_BuffBarrier.generated.h"
 
-// 페이즈 관리를 위한 태그 선언
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_BuffBarrier_Phase1); // 바닥에 범위를 표시한 상태
-UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_BuffBarrier_Phase2); // 블록을 소환한 상태
 
 /**
  * 3단계로 나뉘어 발동되는 버프/장벽 스킬
@@ -63,11 +60,11 @@ protected:
 private:
 	// 1단계에서 찾은 바닥 블록들 (InstancedPerActor 정책으로 인해 데이터 유지됨)
 	UPROPERTY()
-	TArray<class ABlockBase*> HighlightedBlocks;
+	TArray<TObjectPtr<AActor>> HighlightedBlocks;
 
 	// 2단계에서 생성한 벽 블록들
 	UPROPERTY()
-	TArray<class ABlockBase*> SpawnedWalls;
+	TArray<TObjectPtr<AActor>> SpawnedWalls;
 
 	// 자동 전환을 위한 타이머 핸들
 	FTimerHandle AutoTransitionTimerHandle;
@@ -88,7 +85,7 @@ private:
 	void OnAutoTransition();
 
 	// 가장자리 블록 판별 로직
-	void FindEdgeBlocks(const TArray<class ABlockBase*>& InBlocks, TArray<class ABlockBase*>& OutEdges);
+	void FindEdgeBlocks(const TArray<TObjectPtr<AActor>>& InBlocks, TArray<TObjectPtr<AActor>>& OutEdges);
 
 	// 범위 내 아군에게 버프 적용
 	void ApplyBuffToTargets();

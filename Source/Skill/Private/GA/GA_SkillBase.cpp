@@ -13,11 +13,6 @@
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Player, "Player");
 
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
-
 UGA_SkillBase::UGA_SkillBase()
 {
 	// 객체 생성 정책: GA를 소유한 액터마다 '하나의 GA 객체만' 생성
@@ -286,7 +281,7 @@ void UGA_SkillBase::EndAbility(
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_SkillBase::FindBlocksInRange(TArray<AActor*>& OutActors)
+void UGA_SkillBase::FindBlocksInRange(TArray<TObjectPtr<AActor>>& OutActors)
 {
 	// 결과 배열 초기화 (매 프레임 호출될 수 있으므로 비워줌)
 	OutActors.Empty();
@@ -368,7 +363,7 @@ void UGA_SkillBase::FindBlocksInRange(TArray<AActor*>& OutActors)
 	}
 }
 
-void UGA_SkillBase::BatchHighlightBlocks(TArray<AActor*>& Actors, FGameplayTag EventTag)
+void UGA_SkillBase::BatchHighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGameplayTag EventTag)
 {
 	// 이벤트 데이터 생성
 	FGameplayEventData Payload;
@@ -406,7 +401,7 @@ void UGA_SkillBase::BatchHighlightBlocks(TArray<AActor*>& Actors, FGameplayTag E
 	}
 }
 
-void UGA_SkillBase::HighlightBlocks(TArray<AActor*>& Actors, FGameplayTag EventTag)
+void UGA_SkillBase::HighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGameplayTag EventTag)
 {
 	ClearHighlights(Actors);
 
@@ -415,7 +410,7 @@ void UGA_SkillBase::HighlightBlocks(TArray<AActor*>& Actors, FGameplayTag EventT
 	BatchHighlightBlocks(Actors, EventTag);
 }
 
-void UGA_SkillBase::ClearHighlights(TArray<AActor*>& Actors)
+void UGA_SkillBase::ClearHighlights(TArray<TObjectPtr<AActor>>& Actors)
 {
 	// 성능 방어를 위한 체크
 	if (Actors.IsEmpty())
