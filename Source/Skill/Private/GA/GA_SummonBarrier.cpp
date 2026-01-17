@@ -134,7 +134,8 @@ void UGA_SummonBarrier::UpdatePreview()
 
 			// 인터페이스를 통해 블록 정보 획득 (BlockBase 의존성 제거)
 			GridSize = HitBlockInfo->GetBlockGridSize();
-			FVector CenterBaseLocation = HitBlockInfo->GetBlockAlignedLocation() + FVector(0, 0, GridSize);
+			float HalfGridSize = GridSize / 2.0f;
+			FVector CenterBaseLocation = HitBlockInfo->GetBlockAlignedLocation() + FVector(0, 0, HalfGridSize) ;
 			FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
 
 			CalculateBarrierTransforms(CenterBaseLocation, CurrentPlayerLocation, TargetTransforms);

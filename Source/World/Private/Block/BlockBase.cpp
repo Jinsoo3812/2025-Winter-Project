@@ -217,6 +217,12 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 	{
 		if (MeshComponent)
 		{   
+			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
+			{
+				CurrentBombCount = 0;
+				MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
+				return;
+			}
 			// 최대 폭탄 개수에 맞춰 Clamp
 			CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
 
@@ -247,7 +253,7 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 	else
 	{
 		// 맵에도 없고, 특수 처리 태그도 아님 -> 경고
-		UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
+		// UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
 	}
 }
 

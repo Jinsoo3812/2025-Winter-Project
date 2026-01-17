@@ -174,7 +174,7 @@ void AExplosive::Detonate()
 		{
 			FGameplayEventData Payload;
 			Payload.EventTag = TAG_Block_Highlight_None;
-			EventInterface->HandleGameplayEvent(TAG_Block_Highlight_None, Payload);
+			EventInterface->HandleGameplayEvent(TAG_Block_Highlight_Bomb_None, Payload);
 		}
 	}
 
