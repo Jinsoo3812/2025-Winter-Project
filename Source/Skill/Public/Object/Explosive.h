@@ -46,14 +46,14 @@ public:
 	// @param InDestructionEffectClass: 파괴 효과로 적용할 GE 클래스
 	void Initialize(
 		FVector StartLoc,
-		ABlockBase* Target,
+		AActor* Target,
 		float FlightDuration,
 		float InAutoDetonateDelay,
 		float InExplosionRadius,
 		int32 InMaxBombCount,
 		UAbilitySystemComponent* InSourceASC,
 		FGameplayEffectSpecHandle InDamageSpecHandle,
-		TSubclassOf<UGameplayEffect> InDestructionEffectClass
+		TSubclassOf<UGameplayEffect> InDestructionEffectClass)
 	);
 
 	// 폭발 로직 실행 (외부에서 호출)
@@ -78,9 +78,6 @@ protected:
 	UFUNCTION()
 	void OnBlockDestroyed(AActor* DestroyedActor);
 
-	// 블록의 색상을 변경하는 헬퍼 함수
-	void SetBlockColorRed(bool bEnable);
-
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	UStaticMeshComponent* MeshComponent;
@@ -102,7 +99,7 @@ protected:
 
 	// 목표 블록 포인터
 	UPROPERTY()
-	ABlockBase* TargetBlock;
+	TWeakObjectPtr<AActor> TargetBlock;
 
 	float TotalFlightTime = 1.0f;
 	float CurrentFlightTime = 0.0f;

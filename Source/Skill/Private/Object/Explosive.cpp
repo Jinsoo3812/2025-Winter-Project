@@ -1,10 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Object/Explosive.h"
-#include "Block/BlockBase.h"
+#include "BlockInfoInterface.h"
+#include "GameplayEventInterface.h"
+#include "BlockGameplayTags.h"
 #include "Components/StaticMeshComponent.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "TimerManager.h"           
 #include "AbilitySystemComponent.h" 
 #include "AbilitySystemInterface.h" 
@@ -35,7 +35,7 @@ void AExplosive::BeginPlay()
 
 void AExplosive::Initialize(
 	FVector StartLoc,
-	ABlockBase* Target,
+	AActor* Target,
 	float FlightDuration,
 	float InAutoDetonateDelay,
 	float InExplosionRadius,
@@ -56,12 +56,21 @@ void AExplosive::Initialize(
 	DamageSpecHandle = InDamageSpecHandle;
 	DestructionEffectClass = InDestructionEffectClass;
 
-	if (TargetBlock)
+	if (TargetBlock.IsValid())
 	{
-		// 목표 지점: 블록 중심 + Z 50 (윗면 중앙)
-		float HarfGridSize = TargetBlock->GetGridSize() / 2.0f;
-		FVector BlockLoc = TargetBlock->GetActorLocation();
-		TargetLocation = BlockLoc + FVector(0.0f, 0.0f, HarfGridSize);
+		// 인터페이스를 통한 그리드 정보 접근
+		if (IBlockInfoInterface* BlockInfo = Cast<IBlockInfoInterface>(TargetBlock.Get()))
+		{
+			// 목표 지점: 블록 중심 + Z (그리드 절반)
+			float HalfGridSize = BlockInfo->GetBlockGridSize() / 2.0f;
+			FVector BlockLoc = BlockInfo->GetBlockLocation();
+			TargetLocation = BlockLoc + FVector(0.0f, 0.0f, HalfGridSize);
+		}
+		else
+		{
+			// 인터페이스가 없으면 그냥 액터 위치 사용 (기본값)
+			TargetLocation = TargetBlock.Get()->GetActorLocation();
+		}
 
 		SetActorLocation(StartLocation);
 		SetActorTickEnabled(true);
@@ -71,7 +80,7 @@ void AExplosive::Initialize(
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("AExplosive::Initialize: TargetBlock is null"));
+		UE_LOG(LogTemp, Error, TEXT("AExplosive::Initialize: TargetActor is null"));
 		Destroy();
 	}
 }
@@ -113,17 +122,28 @@ void AExplosive::OnLanded()
 	// 위치 보정
 	SetActorLocation(TargetLocation);
 
-	// 바닥 블록 빨간색으로 변경
-	if (TargetBlock)
+	// 타겟 액터에 부착
+	if (TargetBlock.IsValid())
 	{
-		// 목표 위치로 이동
+		// 목표 위치로 이동 (이미 위에서 보정했지만 안전장치)
 		SetActorLocation(TargetLocation);
 
 		// 블록에 부착 (위치 고정)
 		FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
-		AttachToActor(TargetBlock, AttachmentRules);
+		AttachToActor(TargetBlock.Get(), AttachmentRules);
 
-		TargetBlock->UpdateBombCount(1, MaxBombCount);
+		// 블록 색상 변경 요청 (인터페이스 & 태그 사용)
+		// GA_StickyBomb의 Highlight Logic과 통일 (빨간색 = Attached)
+		// 기존 코드의 "UpdateBombCount" 대신 태그 이벤트를 통해 상태 전달
+		if (IGameplayEventInterface* EventInterface = Cast<IGameplayEventInterface>(TargetBlock.Get()))
+		{
+			FGameplayEventData Payload;
+			Payload.EventTag = TAG_Block_Highlight_Target; // 혹은 폭탄 부착 전용 태그 사용 가능
+			Payload.Instigator = this;
+			// 폭탄 개수는 Payload의 Magnitude 등으로 전달하거나, 블록이 알아서 처리하도록 규약 필요
+			// 여기서는 단순히 하이라이트 이벤트만 전송 (단순화)
+			EventInterface->HandleGameplayEvent(TAG_Block_Highlight_Bomb, Payload);
+		}
 	}
 	else
 	{
@@ -144,29 +164,30 @@ void AExplosive::OnLanded()
 
 void AExplosive::Detonate()
 {
-	// 블록 파괴에 걸어둔 델리게이트 해제
-	if (TargetBlock)
+	// 블록 파괴 델리게이트 해제
+	if (TargetBlock.IsValid())
 	{
 		TargetBlock->OnDestroyed.RemoveDynamic(this, &AExplosive::OnBlockDestroyed);
+
+		// 블록 색상 복구 (이벤트 전송)
+		if (IGameplayEventInterface* EventInterface = Cast<IGameplayEventInterface>(TargetBlock.Get()))
+		{
+			FGameplayEventData Payload;
+			Payload.EventTag = TAG_Block_Highlight_None;
+			EventInterface->HandleGameplayEvent(TAG_Block_Highlight_None, Payload);
+		}
 	}
 
-	// 타이머가 돌고 있다면 중지 (수동 기폭 시 중복 실행 방지)
+	// 타이머 중지
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(DetonateTimerHandle);
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: World is null, cannot clear timer"));
 	}
 
 	// GA에게 폭발 사실 알림
 	if (OnDetonatedDelegate.IsBound())
 	{
 		OnDetonatedDelegate.Broadcast();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Log, TEXT("AExplosive::Detonate: No one is listening to OnDetonatedDelegate"));
 	}
 
 	// 폭발 범위 데미지 처리 
@@ -176,7 +197,6 @@ void AExplosive::Detonate()
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(this);
 
-	// 시전자(플레이어)는 피해를 입지 않도록 제외
 	if (SourceASC.IsValid() && SourceASC->GetAvatarActor()) QueryParams.AddIgnoredActor(SourceASC->GetAvatarActor());
 
 	bool bHit = GetWorld()->OverlapMultiByChannel(
@@ -195,7 +215,6 @@ void AExplosive::Detonate()
 			AActor* HitActor = Overlap.GetActor();
 			if (!HitActor) continue;
 
-			// ASC 확인
 			UAbilitySystemComponent* TargetASC = nullptr;
 			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(HitActor))
 			{
@@ -204,108 +223,46 @@ void AExplosive::Detonate()
 
 			if (TargetASC && SourceASC.IsValid())
 			{
-				// 1. 데미지 Effect 적용
+				// 1. 데미지 적용
 				if (DamageSpecHandle.IsValid())
 				{
-					SourceASC->ApplyGameplayEffectSpecToTarget(
-						*DamageSpecHandle.Data.Get(),
-						TargetASC
-					);
-					UE_LOG(LogTemp, Log, TEXT("AExplosive::Detonate: Applied damage to %s"), *HitActor->GetName());
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: DamageSpecHandle is invalid"));
+					SourceASC->ApplyGameplayEffectSpecToTarget(*DamageSpecHandle.Data.Get(), TargetASC);
 				}
 
-				// 2. 파괴 Effect 적용
+				// 2. 파괴 효과 (Destruction)
 				if (DestructionEffectClass)
 				{
-					// Context 생성
 					FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
 					Context.AddSourceObject(this);
-
-					// Spec 생성
-					FGameplayEffectSpecHandle DestSpecHandle = SourceASC->MakeOutgoingSpec(
-						DestructionEffectClass,
-						1.0f, // Level
-						Context
-					);
+					FGameplayEffectSpecHandle DestSpecHandle = SourceASC->MakeOutgoingSpec(DestructionEffectClass, 1.0f, Context);
 
 					if (DestSpecHandle.IsValid())
 					{
-						SourceASC->ApplyGameplayEffectSpecToTarget(
-							*DestSpecHandle.Data.Get(),
-							TargetASC
-						);
+						SourceASC->ApplyGameplayEffectSpecToTarget(*DestSpecHandle.Data.Get(), TargetASC);
 					}
 				}
 			}
 		}
 	}
 
-	// 디버그 구 그리기
 	DrawDebugSphere(GetWorld(), ExplosionCenter, ExplosionRadius, 16, FColor::Red, false, 2.0f, 0, 2.0f);
 
-	// 블록 색상 복구
-	if (TargetBlock)
-	{
-		TargetBlock->UpdateBombCount(-1, MaxBombCount);
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::Detonate: TargetBlock is invalid during detonation"));
-	}
-
-	// 폭발 처리
 	Destroy();
 }
 
-// 타이머 콜백
 void AExplosive::OnAutoDetonate()
 {
-	UE_LOG(LogTemp, Log, TEXT("AExplosive::OnAutoDetonate: Time is up!"));
 	Detonate();
-}
-
-void AExplosive::SetBlockColorRed(bool bEnable)
-{
-	if (TargetBlock)
-	{
-		UStaticMeshComponent* BlockMesh = TargetBlock->GetBlockMesh();
-		if (BlockMesh)
-		{
-			// 빨간색(2.0f) 또는 원래대로(0.0f) 설정
-			// CPD Index 0 사용 (1=Preview, 2=Red/Attached, 3=Green/Targeted)
-			float ColorValue = bEnable ? 2.0f : 0.0f;
-			BlockMesh->SetCustomPrimitiveDataFloat(0, ColorValue);
-		}
-		else
-		{
-			// 유효성 검사 실패 시 로그 출력
-			UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: BlockMesh is null"));
-		}
-	}
-	else
-	{
-		// 유효성 검사 실패 시 로그 출력
-		UE_LOG(LogTemp, Warning, TEXT("AExplosive::SetBlockColorRed: TargetBlock is null"));
-	}
 }
 
 void AExplosive::OnBlockDestroyed(AActor* DestroyedActor)
 {
-	// 블록은 이미 파괴 과정에 있으므로, 타겟 포인터를 null로 비워 폭발 로직에서 접근하지 못하게 함
-	TargetBlock = nullptr;
+	// TargetBlock이 파괴되었으므로 WeakPtr이 자동으로 무효화됨 (IsValid 체크만 하면 됨)
+	// 하지만 명시적으로 로직을 분기하기 위해 체크
 
-	// 타겟 블록이 파괴되었다면?
+	// 이미 부착된 상태라면 즉시 폭발
 	if (bAttached)
 	{
-		// 이미 부착된 상태라면: 블록과 함께 즉시 폭발해야 함
 		Detonate();
-	}
-	else
-	{
-		// 날아가는 중이라면: 여기서 터뜨리지 않음
-		// Tick은 계속 돌 것이고, OnLanded()에 도착했을 때 TargetBlock이 null이므로 그때 터짐
 	}
 }

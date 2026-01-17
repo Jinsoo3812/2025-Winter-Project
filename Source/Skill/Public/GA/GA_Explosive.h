@@ -52,9 +52,6 @@ protected:
 	// 실제 폭발물 생성 및 투척 처리 로직
 	void SpawnExplosive();
 
-	// 하이라이트(프리뷰) 초기화
-	void ClearHighlights();
-
 
 	// --- 변수 및 설정 ---
 
@@ -87,9 +84,9 @@ protected:
 
 	// 현재 마우스 오버된(초록색/타겟) 블록
 	UPROPERTY()
-	TWeakObjectPtr<ABlockBase> HighlightedBlock;
+	TWeakObjectPtr<AActor> HighlightedBlock;
 
 	// 투척 확정 시 저장된 타겟 블록
 	UPROPERTY()
-	TWeakObjectPtr<ABlockBase> SavedTargetBlock;
+	TWeakObjectPtr<AActor> SavedTargetBlock;
 };

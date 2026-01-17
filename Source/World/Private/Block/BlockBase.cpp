@@ -216,7 +216,7 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 	}
 
 	// 폭탄 하이라이트 태그 처리는 중첩형이므로 특수 처리
-	if (EventTag.MatchesTag(Block_Highlight_Bomb))
+	if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb))
 	{
 		if (MeshComponent)
 		{   
