@@ -36,7 +36,7 @@ public:
 protected:
 	// 생성할 벽 블록 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "Skill|Barrier")
-	TSubclassOf<class ABlockBase> WallBlockClass;
+	TSubclassOf<AActor> WallBlockClass;
 
 	// 적용할 버프 GE
 	UPROPERTY(EditDefaultsOnly, Category = "Skill|Barrier")

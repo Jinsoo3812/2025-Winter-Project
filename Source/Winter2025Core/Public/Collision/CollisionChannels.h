@@ -9,7 +9,7 @@
 /**
  * 
  */
-class COLLISION_API CollisionChannels
+class WINTER2025CORE_API CollisionChannels
 {
 public:
 	CollisionChannels();

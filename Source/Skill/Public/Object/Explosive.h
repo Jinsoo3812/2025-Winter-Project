@@ -53,7 +53,7 @@ public:
 		int32 InMaxBombCount,
 		UAbilitySystemComponent* InSourceASC,
 		FGameplayEffectSpecHandle InDamageSpecHandle,
-		TSubclassOf<UGameplayEffect> InDestructionEffectClass)
+		TSubclassOf<UGameplayEffect> InDestructionEffectClass
 	);
 
 	// 폭발 로직 실행 (외부에서 호출)

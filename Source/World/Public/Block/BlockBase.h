@@ -116,10 +116,6 @@ public:
 	//  그리드에 정렬된 위치(GridSize 단위에 맞도록)를 반환하는 함수
 	FVector GetBlockAlignedLocation() const override;
 
-	EBlockType GetBlockType() const { return BlockType; }
-	FVector GetBlockLocation() const { return Location; }
-	float GetGridSize() const { return GridSize; }
-
 	virtual bool CanBeDestroyed() const { return IsDestrictible; }
 
 	// 블록의 메시 컴포넌트를 반환하는 함수 (머티리얼 변경 등에 사용)

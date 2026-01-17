@@ -11,7 +11,7 @@
 #include "BlockInfoInterface.h"
 #include "BlockSpawnInterface.h"
 #include "BlockGameplayTags.h"
-#include "CollisionChannels.h"
+#include "Collision/CollisionChannels.h"
 #include "AbilitySystemComponent.h"
 
 UGA_SummonBarrier::UGA_SummonBarrier()

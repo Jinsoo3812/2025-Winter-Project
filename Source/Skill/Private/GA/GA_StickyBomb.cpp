@@ -8,7 +8,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "BlockGameplayTags.h"
-#include "CollisionChannels.h"
+#include "Collision/CollisionChannels.h"
 
 UGA_StickyBomb::UGA_StickyBomb()
 {
@@ -108,7 +108,7 @@ void UGA_StickyBomb::EndAbility(
 	}
 	TickTimerHandle.Invalidate();
 
-	ClearHighlights();
+	ClearHighlights(PreviewBlocks);
 
 	// 입력 태스크 정리
 	if (InputTask)
@@ -208,7 +208,7 @@ void UGA_StickyBomb::SpawnExplosive()
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
-	ClearHighlights();
+	ClearHighlights(PreviewBlocks);
 
 	// 입력 태스크 및 바인딩 정리
 	if (InputTask)
@@ -259,7 +259,7 @@ void UGA_StickyBomb::SpawnExplosive()
 
 		// 인터페이스를 통해 위치 정보 획득 (SavedTargetBlock은 이제 AActor*)
 		IBlockInfoInterface* BlockInfo = Cast<IBlockInfoInterface>(SavedTargetBlock.Get());
-		FVector TargetLoc = BlockInfo ? BlockInfo->GetBlockLocation() : SavedTargetBlock->GetActorLocation();
+		FVector TargetLoc = BlockInfo ? BlockInfo->GetBlockLocation() : SavedTargetBlock.Get()->GetActorLocation();
 
 		NewExplosive->Initialize(
 			SpawnLoc,

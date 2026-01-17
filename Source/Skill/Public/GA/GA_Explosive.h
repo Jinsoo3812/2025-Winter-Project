@@ -8,7 +8,6 @@
 
 class AExplosive;
 class UAbilityTask_WaitInputPress;
-class ABlockBase;
 
 /**
  * 단발성 폭발물 투척 스킬.
@@ -77,10 +76,6 @@ protected:
 
 
 	// --- 상태 저장용 ---
-
-	// 현재 프리뷰 중인(파란색) 블록 목록
-	UPROPERTY()
-	TArray<ABlockBase*> PreviewedBlocks;
 
 	// 현재 마우스 오버된(초록색/타겟) 블록
 	UPROPERTY()

@@ -10,30 +10,30 @@ TMap<TWeakObjectPtr<UWorld>, IBlockSpawnInterface*> IBlockSpawnInterface::Spawne
 
 void IBlockSpawnInterface::RegisterSpawner(UWorld* World, IBlockSpawnInterface* Spawner)
 {
-    if (World && Spawner)
-    {
-        SpawnerMap.Add(World, Spawner);
-        // 로그: 등록 확인 (개발 빌드에서만)
-        UE_LOG(LogTemp, Verbose, TEXT("BlockSpawnInterface: Registered spawner for world %s"), *World->GetName());
-    }
+	if (World && Spawner)
+	{
+		SpawnerMap.Add(World, Spawner);
+		// 로그: 등록 확인 (개발 빌드에서만)
+		UE_LOG(LogTemp, Verbose, TEXT("BlockSpawnInterface: Registered spawner for world %s"), *World->GetName());
+	}
 }
 
 void IBlockSpawnInterface::UnregisterSpawner(UWorld* World)
 {
-    if (World)
-    {
-        SpawnerMap.Remove(World);
-    }
+	if (World)
+	{
+		SpawnerMap.Remove(World);
+	}
 }
 
 IBlockSpawnInterface* IBlockSpawnInterface::GetBlockManagerSubsystem(const UWorld* World)
 {
-    if (!World)
-    {
-        return nullptr;
-    }
+	if (!World)
+	{
+		return nullptr;
+	}
 
-    // TMap 검색은 평균 O(1) 시간 복잡도를 가짐
-    IBlockSpawnInterface** FoundSpawner = SpawnerMap.Find(const_cast<UWorld*>(World));
-    return FoundSpawner ? *FoundSpawner : nullptr;
+	// TMap 검색은 평균 O(1) 시간 복잡도를 가짐
+	IBlockSpawnInterface** FoundSpawner = SpawnerMap.Find(const_cast<UWorld*>(World));
+	return FoundSpawner ? *FoundSpawner : nullptr;
 }

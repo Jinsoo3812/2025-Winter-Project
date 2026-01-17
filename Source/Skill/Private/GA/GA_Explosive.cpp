@@ -8,7 +8,7 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "BlockGameplayTags.h"
-#include "CollisionChannels.h"
+#include "Collision/CollisionChannels.h"
 
 UGA_Explosive::UGA_Explosive()
 {
@@ -132,7 +132,7 @@ void UGA_Explosive::UpdatePreview()
 	AActor* HitActor = HitResult.GetActor();
 
 	// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있다면 'Targeted' 태그 적용
-	if (HitActor && PreviewedBlocks.Contains(HitActor))
+	if (HitActor && PreviewBlocks.Contains(HitActor))
 	{
 		TArray<TObjectPtr<AActor>> TargetedActor = { HitActor };
 		BatchHighlightBlocks(TargetedActor, TAG_Block_Highlight_Target);
@@ -182,7 +182,7 @@ void UGA_Explosive::SpawnExplosive()
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
-	ClearHighlights();
+	ClearHighlights(PreviewBlocks);
 
 	// 입력 태스크 정리
 	if (InputTask)

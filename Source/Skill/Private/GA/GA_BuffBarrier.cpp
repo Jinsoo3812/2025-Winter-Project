@@ -35,6 +35,17 @@ void UGA_BuffBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		CachedASC = ASC;
 	}
 
+	if (UWorld* World = GetWorld())
+	{
+		if (!BlockSpawner) {
+			// BlockSpawner 캐싱
+			BlockSpawner = IBlockSpawnInterface::GetBlockManagerSubsystem(World);
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ActivateAbility - World is null"));
+	}
+
 	// 현재 ASC에 붙어있는 태그를 기반으로 페이즈 결정
 	if (ASC->HasMatchingGameplayTag(TAG_Skill_BuffBarrier_Phase1))
 	{
@@ -174,7 +185,6 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 	FindEdgeBlocks(HighlightedBlocks, EdgeBlocks);
 
 	// 2. 울타리 생성
-	IBlockSpawnInterface* BlockSpawner = IBlockSpawnInterface::GetBlockManagerSubsystem(World);
 	if (BlockSpawner)
 	{
 		for (AActor* BaseBlock : EdgeBlocks)

@@ -83,9 +83,6 @@ private:
 	// 소환해야 할 N개 블록의 프리뷰 액터의 생성 관리 및 표시
 	void UpdateBarrierPreviewActors(const TArray<FTransform>& Transforms);
 
-	// 해당 위치에 이미 다른 블록이 존재하는지 확인
-	bool IsLocationOccupied(const FVector& Location) const;
-
 	// 돌진 시작 (두 번째 입력 시 호출)
 	UFUNCTION()
 	void StartBarrierCharge(float TimeWaited);

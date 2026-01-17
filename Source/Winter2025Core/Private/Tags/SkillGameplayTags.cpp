@@ -1,6 +1,3 @@
-
-
-
 #include "SkillGameplayTags.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");

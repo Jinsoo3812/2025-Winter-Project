@@ -7,7 +7,6 @@
 #include "GA_StickyBomb.generated.h"
 
 class AExplosive;
-class ABlockBase;
 class UAbilityTask_WaitInputPress;
 
 /**
@@ -92,12 +91,12 @@ protected:
 
 	// 현재 투척 목표로 하이라이트된 블록 (매 프레임 변할 수 있음)
 	UPROPERTY()
-	TWeakObjectPtr<ABlockBase> HighlightedBlock;
+	TWeakObjectPtr<AActor> HighlightedBlock;
 
 	// 머티리얼 복구를 위해 저장
 	UPROPERTY()
 	TWeakObjectPtr<UMaterialInterface> OriginalMaterial;
 
 	// 투척 확정 시 타겟팅된 블록을 저장 (착탄 후 빨간색 표시를 위해 필요)
-	TWeakObjectPtr<ABlockBase> SavedTargetBlock;
+	TWeakObjectPtr<AActor> SavedTargetBlock;
 };

@@ -1,7 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Tags/BlockGameplayTags.h"
+#include "BlockGameplayTags.h"
 
 // Block Type Tags
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Terrain, "Block.Type.Terrain");
