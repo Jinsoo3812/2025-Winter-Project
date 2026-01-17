@@ -28,11 +28,11 @@ public:
 protected:
 	// N개의 프리뷰 액터를 관리하기 위한 배열
 	UPROPERTY()
-	TArray<TObjectPtr<AActor>> BarrierPreviewBlocks;
+	TArray<TWeakObjectPtr<AActor>> BarrierPreviewBlocks;
 
 	// 실제로 소환된 블록들을 관리하기 위한 배열
 	UPROPERTY()
-	TArray<TObjectPtr<AActor>> SpawnedBlocks;
+	TArray<TWeakObjectPtr<AActor>> SpawnedBlocks;
 
 	// 돌진 속도
 	UPROPERTY(EditDefaultsOnly, Category = "Construction|Charge")

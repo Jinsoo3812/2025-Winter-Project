@@ -58,36 +58,36 @@ protected:
 
 	/* 프리뷰로 생성된 블록 인스턴스 */	
 	UPROPERTY()
-	TObjectPtr<AActor> PreviewBlock;
+	TWeakObjectPtr<AActor> PreviewBlock;
 
 	/* 프리뷰 중이거나 하이라이트 효과가 적용된 블록들을 관리하는 배열 */
-	TArray<TObjectPtr<AActor>> PreviewBlocks;
+	TArray<TWeakObjectPtr<AActor>> PreviewBlocks;
 
 	/*
 	* 스킬 사용 범위 표시에 들어오는 블록들을 찾아내는 헬퍼 함수
 	* 스킬 사용 범위를 찾는 로직이 다른 스킬들을 위한 가상함수
 	*/
-	virtual void FindBlocksInRange(TArray<TObjectPtr<AActor>>& OutActors);
+	virtual void FindBlocksInRange(TArray<TWeakObjectPtr<AActor>>& OutActors);
 
 	/*
 	* GameplayTag을 이용해 블록들을 하이라이트를 변경하는 함수
 	* @param Actors 하이라이트를 변경할 블록들의 배열
 	* @param EventTag 하이라이트 변경에 사용할 GameplayTag
 	*/
-	void BatchHighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGameplayTag EventTag);
+	void BatchHighlightBlocks(TArray<TWeakObjectPtr<AActor>>& Actors, FGameplayTag EventTag);
 
 	/*
 	* 배열 초기화, 블록 찾기, 하이라이트 적용까지 한 번에 처리하는 헬퍼 함수
 	* @param Actors 하이라이트를 변경할 블록들의 배열
 	* @param EventTag 하이라이트 변경에 사용할 GameplayTag
 	*/
-	void HighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGameplayTag EventTag);
+	void HighlightBlocks(TArray<TWeakObjectPtr<AActor>>& Actors, FGameplayTag EventTag);
 
 	/*
 	* 블록들에 적용된 하이라이트를 제거하는 함수
 	* @param Actors 하이라이트를 제거할 블록들의 배열
 	*/
-	void ClearHighlights(TArray<TObjectPtr<AActor>>& Actors);
+	void ClearHighlights(TArray<TWeakObjectPtr<AActor>>& Actors);
 
 	// -----------------------------------------------------------------------------
 	// Rune 관련

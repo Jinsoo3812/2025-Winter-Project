@@ -49,11 +49,11 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 	ChargeTimerHandle.Invalidate();
 
 	// 프리뷰 액터 정리
-	for (TObjectPtr<AActor>& PreviewActor : BarrierPreviewBlocks)
+	for (TWeakObjectPtr<AActor>& PreviewActor : BarrierPreviewBlocks)
 	{
-		if (PreviewActor && IsValid(PreviewActor))
+		if (PreviewActor.IsValid())
 		{
-			PreviewActor->Destroy();
+			PreviewActor.Get()->Destroy();
 		}
 	}
 	BarrierPreviewBlocks.Reset();
@@ -62,11 +62,11 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 	ClearHighlights(PreviewBlocks);
 
 	// 스킬이 취소/종료되면 남은 블록들도 모두 제거
-	for (TObjectPtr<AActor>& Block : SpawnedBlocks)
+	for (TWeakObjectPtr<AActor>& Block : SpawnedBlocks)
 	{
-		if (Block && IsValid(Block))
+		if (Block.IsValid())
 		{
-			Block->Destroy();
+			Block.Get()->Destroy();
 		}
 	}
 
@@ -127,8 +127,17 @@ void UGA_SummonBarrier::UpdatePreview()
 		IBlockInfoInterface* HitBlockInfo = Cast<IBlockInfoInterface>(HitActor);
 
 		// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있을 때만 설치 가능
-		// Contains 체크 시 Actor 포인터끼리 비교해야 함
-		if (HitBlockInfo && PreviewBlocks.Contains(HitActor))
+		bool bIsInPreviewBlocks = false;
+		for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
+		{
+			if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
+			{
+				bIsInPreviewBlocks = true;
+				break;
+			}
+		}
+		
+		if (HitBlockInfo && bIsInPreviewBlocks)
 		{
 			bValidTargetFound = true;
 
@@ -150,7 +159,7 @@ void UGA_SummonBarrier::UpdatePreview()
 	{
 		for (auto& Preview : BarrierPreviewBlocks)
 		{
-			if (Preview) Preview->SetActorHiddenInGame(true);
+			if (Preview.IsValid()) Preview.Get()->SetActorHiddenInGame(true);
 		}
 	}
 }
@@ -228,8 +237,8 @@ void UGA_SummonBarrier::UpdateBarrierPreviewActors(const TArray<FTransform>& Tra
 	// 위치 적용 및 점유 확인
 	for (int32 i = 0; i < BarrierPreviewBlocks.Num(); ++i)
 	{
-		AActor* Preview = BarrierPreviewBlocks[i];
-		if (!Preview) continue;
+		if (!BarrierPreviewBlocks[i].IsValid()) continue;
+		AActor* Preview = BarrierPreviewBlocks[i].Get();
 
 		// 만들어 놓은 프리뷰 블록이 필요량보다 많으면 숨김
 		if (i < Transforms.Num())
@@ -296,12 +305,12 @@ void UGA_SummonBarrier::SpawnBlock()
 	FVector AverageLocation = FVector::ZeroVector;
 	int32 Count = 0;
 
-	for (TObjectPtr<AActor>& Preview : BarrierPreviewBlocks)
+	for (TWeakObjectPtr<AActor>& Preview : BarrierPreviewBlocks)
 	{
-		if (!Preview || Preview->IsHidden()) continue;
+		if (!Preview.IsValid() || Preview.Get()->IsHidden()) continue;
 
-		FVector SpawnLoc = Preview->GetActorLocation();
-		FRotator SpawnRot = Preview->GetActorRotation();
+		FVector SpawnLoc = Preview.Get()->GetActorLocation();
+		FRotator SpawnRot = Preview.Get()->GetActorRotation();
 
 		// 인터페이스를 통해 파괴 가능한 블록 생성
 		AActor* NewBlock = BlockSpawner->SpawnBlockByTag(TAG_Block_Type_Destructible, SpawnLoc, SpawnRot, false);
@@ -335,7 +344,7 @@ void UGA_SummonBarrier::SpawnBlock()
 	// 프리뷰 정리
 	for (auto& Preview : BarrierPreviewBlocks)
 	{
-		if (Preview) Preview->Destroy();
+		if (Preview.IsValid()) Preview.Get()->Destroy();
 	}
 	BarrierPreviewBlocks.Empty();
 	ClearHighlights(PreviewBlocks);
@@ -351,7 +360,7 @@ void UGA_SummonBarrier::SpawnBlock()
 	NotifySkillCastFinished();
 
 	// 돌진 방향 설정
-	if (SpawnedBlocks.Num() > 0 && SpawnedBlocks[0])
+	if (SpawnedBlocks.Num() > 0 && SpawnedBlocks[0].IsValid())
 	{
 		FVector PlayerLoc = OwnerPawn->GetActorLocation();
 		AverageLocation /= Count;
@@ -405,8 +414,8 @@ void UGA_SummonBarrier::StartBarrierCharge(float TimeWaited)
 
 	for (int32 i = 0; i < SpawnedBlocks.Num(); ++i)
 	{
-		AActor* MyBlock = SpawnedBlocks[i];
-		if (!MyBlock || !IsValid(MyBlock)) continue;
+		if (!SpawnedBlocks[i].IsValid()) continue;
+		AActor* MyBlock = SpawnedBlocks[i].Get();
 
 		// 1. Tick 비활성화 (Grid Snap 방지) - 이미 되어있지만 안전장치
 		MyBlock->SetActorTickEnabled(false);
@@ -420,9 +429,9 @@ void UGA_SummonBarrier::StartBarrierCharge(float TimeWaited)
 			for (int32 j = 0; j < SpawnedBlocks.Num(); ++j)
 			{
 				if (i == j) continue; // 자기 자신 제외
-				if (SpawnedBlocks[j] && IsValid(SpawnedBlocks[j]))
+				if (SpawnedBlocks[j].IsValid())
 				{
-					RootPrim->IgnoreActorWhenMoving(SpawnedBlocks[j], true);
+					RootPrim->IgnoreActorWhenMoving(SpawnedBlocks[j].Get(), true);
 				}
 			}
 		}
@@ -467,9 +476,9 @@ void UGA_SummonBarrier::TickBarrierCharge()
 	// 역순 순회 (삭제 대응)
 	for (int32 i = SpawnedBlocks.Num() - 1; i >= 0; --i)
 	{
-		AActor* Block = SpawnedBlocks[i];
+		AActor* Block = SpawnedBlocks[i].Get();
 
-		if (!Block || !IsValid(Block))
+		if (!Block)
 		{
 			SpawnedBlocks.RemoveAt(i);
 			continue;
@@ -484,7 +493,16 @@ void UGA_SummonBarrier::TickBarrierCharge()
 			AActor* HitActor = HitResult.GetActor();
 
 			// 부딪힌 액터가 자기 자신이거나 동료 방벽 블록이면 무시
-			if (SpawnedBlocks.Contains(HitActor)) continue;
+			bool bIsSpawnedBlock = false;
+			for (const TWeakObjectPtr<AActor>& SpawnedBlock : SpawnedBlocks)
+			{
+				if (SpawnedBlock.IsValid() && SpawnedBlock.Get() == HitActor)
+				{
+					bIsSpawnedBlock = true;
+					break;
+				}
+			}
+			if (bIsSpawnedBlock) continue;
 			if (HitActor == GetAvatarActorFromActorInfo()) continue;
 
 			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
@@ -552,7 +570,7 @@ void UGA_SummonBarrier::OnLeftClickPressed()
 
 	for (const auto& Preview : BarrierPreviewBlocks)
 	{
-		if (Preview && !Preview->IsHidden())
+		if (Preview.IsValid() && !Preview.Get()->IsHidden())
 		{
 			bCanSpawn = true;
 			break;

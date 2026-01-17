@@ -60,11 +60,11 @@ protected:
 private:
 	// 1단계에서 찾은 바닥 블록들 (InstancedPerActor 정책으로 인해 데이터 유지됨)
 	UPROPERTY()
-	TArray<TObjectPtr<AActor>> HighlightedBlocks;
+	TArray<TWeakObjectPtr<AActor>> HighlightedBlocks;
 
 	// 2단계에서 생성한 벽 블록들
 	UPROPERTY()
-	TArray<TObjectPtr<AActor>> SpawnedWalls;
+	TArray<TWeakObjectPtr<AActor>> SpawnedWalls;
 
 	// 자동 전환을 위한 타이머 핸들
 	FTimerHandle AutoTransitionTimerHandle;
@@ -85,7 +85,7 @@ private:
 	void OnAutoTransition();
 
 	// 가장자리 블록 판별 로직
-	void FindEdgeBlocks(const TArray<TObjectPtr<AActor>>& InBlocks, TArray<TObjectPtr<AActor>>& OutEdges);
+	void FindEdgeBlocks(const TArray<TWeakObjectPtr<AActor>>& InBlocks, TArray<TWeakObjectPtr<AActor>>& OutEdges);
 
 	// 범위 내 아군에게 버프 적용
 	void ApplyBuffToTargets();

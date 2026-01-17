@@ -257,6 +257,35 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 	}
 }
 
+void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
+{
+	if (MeshComponent)
+	{	
+		// 폭탄이 모두 터져서 하이라이트를 제거해야 하는 경우
+		if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
+		{
+			CurrentBombCount = 0;
+			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
+			return;
+		}
+
+		// 폭탄 개수 증가 하이라이트
+		// 최대 폭탄 개수에 맞춰 Clamp
+		CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
+
+		// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
+		float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
+
+		// 폭탄 CPD Index도 Config에 정의되어 있음
+		MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
+	}
+	return;
+}
+
 FVector ABlockBase::GetBlockAlignedLocation() const
 {
 	// 현재 실제 액터의 위치

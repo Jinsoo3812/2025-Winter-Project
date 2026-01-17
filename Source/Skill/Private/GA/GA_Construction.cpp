@@ -90,10 +90,10 @@ void UGA_Construction::EndAbility(
 	ClearHighlights(PreviewBlocks);
 
 	// 프리뷰 블록 제거
-	if (PreviewBlock)
+	if (PreviewBlock.IsValid())
 	{
-		PreviewBlock->Destroy();
-		PreviewBlock = nullptr;
+		PreviewBlock.Get()->Destroy();
+		PreviewBlock.Reset();
 	}
 
 	// Ability Task 정리
@@ -154,45 +154,58 @@ void UGA_Construction::UpdatePreview()
 		AActor* HitActor = HitResult.GetActor();
 		IBlockInfoInterface* HitBlockInfo = Cast<IBlockInfoInterface>(HitActor);
 		
-		// 사거리 내(파란 영역)의 블록인지 확인
-		if (HitBlockInfo && PreviewBlocks.Contains(HitActor))
+	// 사거리 내(파란 영역)의 블록인지 확인
+	bool bIsInPreviewBlocks = false;
+	for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
+	{
+		if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
+		{
+			bIsInPreviewBlocks = true;
+			break;
+		}
+	}
+	
+	if (HitBlockInfo && bIsInPreviewBlocks)
 		{
 			// 프리뷰 블록이 없으면 생성 (BP에서 미리 디자인된 프리뷰 블록 사용)
-			if (!PreviewBlock && PreviewBlockClass)
+			if (!PreviewBlock.IsValid() && PreviewBlockClass)
 			{
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 				
-				PreviewBlock = GetWorld()->SpawnActor<AActor>(
+			AActor* SpawnedPreview = GetWorld()->SpawnActor<AActor>(
 					PreviewBlockClass, 
 					FVector::ZeroVector, 
 					FRotator::ZeroRotator, 
 					SpawnParams
 				);
 				
-				if (PreviewBlock)
-				{
-					// 충돌 비활성화
-					PreviewBlock->SetActorEnableCollision(false);
-				}
+			if (SpawnedPreview)
+			{
+				// WeakObjectPtr에 할당
+				PreviewBlock = SpawnedPreview;
+				// 충돌 비활성화
+				SpawnedPreview->SetActorEnableCollision(false);
+			}
 				else
 				{
 					UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to spawn PreviewBlock"));
 				}
 			}
 
-			// 프리뷰 블록을 타겟 블록 위에 배치
-			if (PreviewBlock)
-			{
-				FVector BlockLocation = HitBlockInfo->GetBlockLocation();
+		// 프리뷰 블록을 타겟 블록 위에 배치
+		if (PreviewBlock.IsValid())
+		{
+			AActor* PreviewActor = PreviewBlock.Get();
+			FVector BlockLocation = HitBlockInfo->GetBlockLocation();
 				FRotator BlockRotation = HitBlockInfo->GetBlockRotation();
 				
 				// 블록 크기만큼 위로 올림 (블록이 100x100x100이라 가정)
 				FVector PreviewLocation = BlockLocation + FVector(0, 0, 100.0f);
 				
-				FCollisionQueryParams CheckParams;
-				CheckParams.AddIgnoredActor(PreviewBlock);
-				CheckParams.AddIgnoredActor(OwnerPawn); // 플레이어 충돌 제외
+			FCollisionQueryParams CheckParams;
+			CheckParams.AddIgnoredActor(PreviewActor);
+			CheckParams.AddIgnoredActor(OwnerPawn); // 플레이어 충돌 제외
 
 				// 블록 크기(50)보다 약간 작게(45) 설정하여 인접 블록과의 미세한 간섭 방지
 				bool bIsOccupied = GetWorld()->OverlapBlockingTestByChannel(
@@ -203,37 +216,37 @@ void UGA_Construction::UpdatePreview()
 					CheckParams
 				);
 
-				if (!bIsOccupied)
-				{
-					// 비어있는 공간이면 프리뷰 표시
-					PreviewBlock->SetActorLocation(PreviewLocation);
-					PreviewBlock->SetActorRotation(BlockRotation);
-					PreviewBlock->SetActorHiddenInGame(false);
-				}
-				else
-				{
-					// 이미 자리에 블록이 있으면 숨김 처리
-					PreviewBlock->SetActorHiddenInGame(true);
-				}
-			}
-		}
-		else
-		{
-			// 마우스 포인터가 가리키는 블록이 범위 밖이면 프리뷰 숨김
-			if (PreviewBlock)
+			if (!bIsOccupied)
 			{
-				PreviewBlock->SetActorHiddenInGame(true);
+				// 비어있는 공간이면 프리뷰 표시
+				PreviewActor->SetActorLocation(PreviewLocation);
+				PreviewActor->SetActorRotation(BlockRotation);
+				PreviewActor->SetActorHiddenInGame(false);
+			}
+			else
+			{
+				// 이미 자리에 블록이 있으면 숨김 처리
+				PreviewActor->SetActorHiddenInGame(true);
+			}
 			}
 		}
-	}
 	else
 	{
-		// 마우스 포인터가 가리키는 곳에서 Block 응답을 가진 충돌이 없으면 프리뷰 숨김
-		if (PreviewBlock)
+		// 마우스 포인터가 가리키는 블록이 범위 밖이면 프리뷰 숨김
+		if (PreviewBlock.IsValid())
 		{
-			PreviewBlock->SetActorHiddenInGame(true);
+			PreviewBlock.Get()->SetActorHiddenInGame(true);
 		}
 	}
+}
+else
+{
+	// 마우스 포인터가 가리키는 곳에서 Block 응답을 가진 충돌이 없으면 프리뷰 숨김
+	if (PreviewBlock.IsValid())
+	{
+		PreviewBlock.Get()->SetActorHiddenInGame(true);
+	}
+}
 }
 
 void UGA_Construction::SpawnBlock()
@@ -247,11 +260,11 @@ void UGA_Construction::SpawnBlock()
 		return;
 	}
 
-	if (!PreviewBlock || PreviewBlock->IsHidden()) return; 
+	if (!PreviewBlock.IsValid() || PreviewBlock.Get()->IsHidden()) return; 
 
 	// 프리뷰 블록 위치에 실제 블록 생성
-	FVector SpawnLocation = PreviewBlock->GetActorLocation();
-	FRotator SpawnRotation = PreviewBlock->GetActorRotation();
+	FVector SpawnLocation = PreviewBlock.Get()->GetActorLocation();
+	FRotator SpawnRotation = PreviewBlock.Get()->GetActorRotation();
 
 	AActor* NewBlock = BlockSpawner->SpawnBlockByTag(TAG_Block_Type_Destructible, SpawnLocation, SpawnRotation, true);
 
@@ -271,7 +284,7 @@ void UGA_Construction::SpawnBlock()
 void UGA_Construction::OnLeftClickPressed()
 {
 	// 프리뷰 블록이 존재하고, 숨겨져 있지 않을 때만 블록 생성 시도
-	if (PreviewBlock && !PreviewBlock->IsHidden())
+	if (PreviewBlock.IsValid() && !PreviewBlock.Get()->IsHidden())
 	{
 		// 실제 스킬 시전 시작 알림
 		// State.Busy 태그를 부여

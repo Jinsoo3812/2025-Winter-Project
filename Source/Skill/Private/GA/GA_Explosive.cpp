@@ -132,9 +132,19 @@ void UGA_Explosive::UpdatePreview()
 	AActor* HitActor = HitResult.GetActor();
 
 	// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있다면 'Targeted' 태그 적용
-	if (HitActor && PreviewBlocks.Contains(HitActor))
+	bool bIsInPreviewBlocks = false;
+	for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
 	{
-		TArray<TObjectPtr<AActor>> TargetedActor = { HitActor };
+		if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
+		{
+			bIsInPreviewBlocks = true;
+			break;
+		}
+	}
+
+	if (HitActor && bIsInPreviewBlocks)
+	{
+		TArray<TWeakObjectPtr<AActor>> TargetedActor = { HitActor };
 		BatchHighlightBlocks(TargetedActor, TAG_Block_Highlight_Target);
 		HighlightedBlock = HitActor;
 	}

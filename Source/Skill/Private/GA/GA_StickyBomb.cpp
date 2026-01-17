@@ -157,10 +157,20 @@ void UGA_StickyBomb::UpdatePreview()
 	PC->GetHitResultUnderCursor(ECC_Block, true, HitResult);
 	AActor* HitActor = HitResult.GetActor();
 
-	if (HitActor && PreviewBlocks.Contains(HitActor))
+	bool bIsInPreviewBlocks = false;
+	for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
+	{
+		if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
+		{
+			bIsInPreviewBlocks = true;
+			break;
+		}
+	}
+
+	if (HitActor && bIsInPreviewBlocks)
 	{
 		// 타겟 하이라이트 적용
-		TArray<TObjectPtr<AActor>> TargetedActor = { HitActor };
+		TArray<TWeakObjectPtr<AActor>> TargetedActor = { HitActor };
 		BatchHighlightBlocks(TargetedActor, TAG_Block_Highlight_Target);
 		HighlightedBlock = HitActor;
 	}

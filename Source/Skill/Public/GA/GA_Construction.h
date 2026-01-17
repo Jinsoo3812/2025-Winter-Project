@@ -36,7 +36,6 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UAbilityTask_WaitInputPress> WaitInputTask;
 
-
 	// 마우스 커서 아래 블록 찾기 및 프리뷰 업데이트
 	virtual void UpdatePreview();
 

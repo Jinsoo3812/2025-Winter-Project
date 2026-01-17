@@ -83,9 +83,9 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 	ClearHighlights(HighlightedBlocks);
 	if (SpawnedWalls.Num() > 0)
 	{
-		for (AActor* Wall : SpawnedWalls)
+		for (TWeakObjectPtr<AActor>& Wall : SpawnedWalls)
 		{
-			if (IsValid(Wall)) Wall->Destroy();
+			if (Wall.IsValid()) Wall.Get()->Destroy();
 		}
 		SpawnedWalls.Empty();
 	}
@@ -97,15 +97,6 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 	RangeXY *= GetRuneModifiedRange(); // 룬 적용
 
 	FindBlocksInRange(HighlightedBlocks);
-
-	// 인터페이스 구현 여부로 필터링하여 보관
-	for (AActor* Actor : HighlightedBlocks)
-	{
-		if (IsValid(Actor) && Actor->Implements<UBlockInfoInterface>())
-		{
-			HighlightedBlocks.Add(Actor);
-		}
-	}
 
 	// RangeXY 복구
 	RangeXY = OriginalRange;
@@ -181,15 +172,16 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 	}
 
 	// 1. 가장자리 블록 찾기
-	TArray<TObjectPtr<AActor>> EdgeBlocks;
+	TArray<TWeakObjectPtr<AActor>> EdgeBlocks;
 	FindEdgeBlocks(HighlightedBlocks, EdgeBlocks);
 
 	// 2. 울타리 생성
 	if (BlockSpawner)
 	{
-		for (AActor* BaseBlock : EdgeBlocks)
+		for (TWeakObjectPtr<AActor>& BaseBlock : EdgeBlocks)
 		{
-			IBlockInfoInterface* BlockInfo = Cast<IBlockInfoInterface>(BaseBlock);
+			if (!BaseBlock.IsValid()) continue;
+			IBlockInfoInterface* BlockInfo = Cast<IBlockInfoInterface>(BaseBlock.Get());
 			if (!BlockInfo) continue;
 
 			// 인터페이스를 통해 위치 및 그리드 사이즈 획득
@@ -265,11 +257,11 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 	}
 
 	// 생성된 벽 제거
-	for (AActor* Wall : SpawnedWalls)
+	for (TWeakObjectPtr<AActor>& Wall : SpawnedWalls)
 	{
-		if (IsValid(Wall))
+		if (Wall.IsValid())
 		{
-			Wall->Destroy();
+			Wall.Get()->Destroy();
 		}
 	}
 	SpawnedWalls.Empty();
@@ -299,31 +291,40 @@ void UGA_BuffBarrier::OnAutoTransition()
 	}
 }
 
-void UGA_BuffBarrier::FindEdgeBlocks(const TArray<TObjectPtr<AActor>>& InBlocks, TArray<TObjectPtr<AActor>>& OutEdges)
+void UGA_BuffBarrier::FindEdgeBlocks(const TArray<TWeakObjectPtr<AActor>>& InBlocks, TArray<TWeakObjectPtr<AActor>>& OutEdges)
 {
 	OutEdges.Empty();
 	if (InBlocks.Num() == 0) return;
 
-	// 첫 번째 블록에서 그리드 사이즈 획득 (인터페이스 사용)
-	IBlockInfoInterface* FirstBlock = Cast<IBlockInfoInterface>(InBlocks[0]);
+	// 첫 번째 유효한 블록에서 그리드 사이즈 획득 (인터페이스 사용)
+	IBlockInfoInterface* FirstBlock = nullptr;
+	for (const TWeakObjectPtr<AActor>& WeakBlock : InBlocks)
+	{
+		if (WeakBlock.IsValid())
+		{
+			FirstBlock = Cast<IBlockInfoInterface>(WeakBlock.Get());
+			if (FirstBlock) break;
+		}
+	}
 	if (!FirstBlock) return;
 
 	float GridSize = FirstBlock->GetBlockGridSize();
 
 	TSet<FVector> BlockLocations;
-	for (AActor* Actor : InBlocks)
+	for (const TWeakObjectPtr<AActor>& WeakActor : InBlocks)
 	{
-		if (Actor)
+		if (WeakActor.IsValid())
 		{
-			BlockLocations.Add(Actor->GetActorLocation());
+			BlockLocations.Add(WeakActor.Get()->GetActorLocation());
 		}
 	}
 
 	FVector Directions[] = { FVector(1,0,0), FVector(-1,0,0), FVector(0,1,0), FVector(0,-1,0) };
 
-	for (AActor* Actor : InBlocks)
+	for (const TWeakObjectPtr<AActor>& WeakActor : InBlocks)
 	{
-		IBlockInfoInterface* Info = Cast<IBlockInfoInterface>(Actor);
+		if (!WeakActor.IsValid()) continue;
+		IBlockInfoInterface* Info = Cast<IBlockInfoInterface>(WeakActor.Get());
 		if (!Info) continue;
 
 		FVector MyLoc = Info->GetBlockLocation();
@@ -340,7 +341,7 @@ void UGA_BuffBarrier::FindEdgeBlocks(const TArray<TObjectPtr<AActor>>& InBlocks,
 
 		if (NeighborCount < 4)
 		{
-			OutEdges.Add(Actor);
+			OutEdges.Add(WeakActor);
 		}
 	}
 }

@@ -281,7 +281,7 @@ void UGA_SkillBase::EndAbility(
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_SkillBase::FindBlocksInRange(TArray<TObjectPtr<AActor>>& OutActors)
+void UGA_SkillBase::FindBlocksInRange(TArray<TWeakObjectPtr<AActor>>& OutActors)
 {
 	// 결과 배열 초기화 (매 프레임 호출될 수 있으므로 비워줌)
 	OutActors.Empty();
@@ -363,7 +363,7 @@ void UGA_SkillBase::FindBlocksInRange(TArray<TObjectPtr<AActor>>& OutActors)
 	}
 }
 
-void UGA_SkillBase::BatchHighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGameplayTag EventTag)
+void UGA_SkillBase::BatchHighlightBlocks(TArray<TWeakObjectPtr<AActor>>& Actors, FGameplayTag EventTag)
 {
 	// 이벤트 데이터 생성
 	FGameplayEventData Payload;
@@ -374,24 +374,22 @@ void UGA_SkillBase::BatchHighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGa
 	// 배열 요소를 삭제하며 순회해야 하므로, 역방향으로 반복문을 실행합니다.
 	for (int32 i = Actors.Num() - 1; i >= 0; --i)
 	{
-		AActor* Actor = Actors[i];
-
-		// 액터 유효성 검사 
-		if (IsValid(Actor))
+		// WeakObjectPtr 유효성 검사
+		if (!Actors[i].IsValid())
 		{
-			IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(Actor);
+			// 배열에서 제거
+			Actors.RemoveAtSwap(i);
+			continue;
+		}
 
-			// 인터페이스 구현 여부 검사
-			if (InterfaceObj)
-			{
-				// 이벤트 전송
-				InterfaceObj->HandleGameplayEvent(Payload.EventTag, Payload);
-			}
-			else
-			{
-				// 배열에서 제거
-				Actors.RemoveAtSwap(i);
-			}
+		AActor* Actor = Actors[i].Get();
+
+		// 인터페이스 구현 여부 검사
+		IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(Actor);
+		if (InterfaceObj)
+		{
+			// 이벤트 전송
+			InterfaceObj->HandleGameplayEvent(Payload.EventTag, Payload);
 		}
 		else
 		{
@@ -401,7 +399,7 @@ void UGA_SkillBase::BatchHighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGa
 	}
 }
 
-void UGA_SkillBase::HighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGameplayTag EventTag)
+void UGA_SkillBase::HighlightBlocks(TArray<TWeakObjectPtr<AActor>>& Actors, FGameplayTag EventTag)
 {
 	ClearHighlights(Actors);
 
@@ -410,7 +408,7 @@ void UGA_SkillBase::HighlightBlocks(TArray<TObjectPtr<AActor>>& Actors, FGamepla
 	BatchHighlightBlocks(Actors, EventTag);
 }
 
-void UGA_SkillBase::ClearHighlights(TArray<TObjectPtr<AActor>>& Actors)
+void UGA_SkillBase::ClearHighlights(TArray<TWeakObjectPtr<AActor>>& Actors)
 {
 	// 성능 방어를 위한 체크
 	if (Actors.IsEmpty())
