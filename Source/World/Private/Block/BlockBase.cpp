@@ -27,9 +27,6 @@ ABlockBase::ABlockBase()
 
 	// 블록들의 충돌 채널인 ECC_Block
 	CollisionComponent->SetCollisionObjectType(ECC_Block);
-
-	// 충돌 프로필 설정
-	CollisionComponent->SetCollisionProfileName(TEXT("BlockAll"));
 }
 
 // Called when the game starts or when spawned

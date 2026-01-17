@@ -47,7 +47,7 @@ void UGA_BuffBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 
 	// 현재 ASC에 붙어있는 태그를 기반으로 페이즈 결정
-	if (ASC->HasMatchingGameplayTag(TAG_Skill_BuffBarrier_Phase1))
+	if (ASC->HasMatchingGameplayTag(TAG_Skill_BuffBarrier_Phase2))
 	{
 		// 2페이즈 태그가 있으면 -> 3단계(해제) 실행
 		ExecutePhase3_Cleanup();
