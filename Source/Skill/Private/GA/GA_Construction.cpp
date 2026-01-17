@@ -147,7 +147,7 @@ void UGA_Construction::ClearHighlights()
 {
 	for (ABlockBase* Block : PreviewedBlocks)
 	{
-		if (!Block)
+		if (Block)
 		{
 			UStaticMeshComponent* MeshComp = Block->GetBlockMesh();
 			if (MeshComp)
