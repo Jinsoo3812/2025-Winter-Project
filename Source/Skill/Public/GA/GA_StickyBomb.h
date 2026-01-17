@@ -56,9 +56,6 @@ protected:
 	// 폭발물의 폭발 알림 수신
 	void OnExplosiveDetonated();
 
-	// 프리뷰 및 하이라이트 정리
-	void ClearHighlights();
-
 protected:
 	// 폭발물 액터 클래스 (BP 주입)
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
@@ -100,9 +97,6 @@ protected:
 	// 머티리얼 복구를 위해 저장
 	UPROPERTY()
 	TWeakObjectPtr<UMaterialInterface> OriginalMaterial;
-
-	// 프리뷰 중이거나 하이라이트 효과가 적용된 블록들을 관리하는 배열
-	TArray<ABlockBase*> PreviewedBlocks;
 
 	// 투척 확정 시 타겟팅된 블록을 저장 (착탄 후 빨간색 표시를 위해 필요)
 	TWeakObjectPtr<ABlockBase> SavedTargetBlock;

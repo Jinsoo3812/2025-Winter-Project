@@ -16,6 +16,7 @@ UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Type_Destructible);
 // Block Highlight Tags
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_None);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Preview);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Target);
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Bomb);
 
 class WINTER2025CORE_API BlockGameplayTags

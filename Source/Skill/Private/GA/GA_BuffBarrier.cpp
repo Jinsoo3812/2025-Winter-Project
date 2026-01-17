@@ -3,7 +3,6 @@
 #include "GA/GA_BuffBarrier.h"
 #include "BlockInfoInterface.h"
 #include "BlockSpawnInterface.h"
-#include "GameplayEventInterface.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Engine/World.h"
@@ -37,12 +36,12 @@ void UGA_BuffBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	}
 
 	// 현재 ASC에 붙어있는 태그를 기반으로 페이즈 결정
-	if (ASC->HasMatchingGameplayTag(TAG_BuffBarrier_Phase2))
+	if (ASC->HasMatchingGameplayTag(TAG_Skill_BuffBarrier_Phase1))
 	{
 		// 2페이즈 태그가 있으면 -> 3단계(해제) 실행
 		ExecutePhase3_Cleanup();
 	}
-	else if (ASC->HasMatchingGameplayTag(TAG_BuffBarrier_Phase1))
+	else if (ASC->HasMatchingGameplayTag(TAG_Skill_BuffBarrier_Phase1))
 	{
 		// 1페이즈 태그가 있으면 -> 2단계(설치) 실행
 		ExecutePhase2_Deploy();
@@ -113,7 +112,7 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 	// 태그 부착 (Phase 1 시작 알림)
 	if (CachedASC.IsValid())
 	{
-		CachedASC->AddLooseGameplayTag(TAG_BuffBarrier_Phase1);
+		CachedASC->AddLooseGameplayTag(TAG_Skill_BuffBarrier_Phase1);
 	}
 	else
 	{
@@ -162,8 +161,8 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 
 	if (ASC)
 	{
-		ASC->RemoveLooseGameplayTag(TAG_BuffBarrier_Phase1);
-		ASC->AddLooseGameplayTag(TAG_BuffBarrier_Phase2);
+		ASC->RemoveLooseGameplayTag(TAG_Skill_BuffBarrier_Phase1);
+		ASC->AddLooseGameplayTag(TAG_Skill_BuffBarrier_Phase2);
 	}
 	else
 	{
@@ -248,7 +247,7 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 
 	if (ASC)
 	{
-		ASC->RemoveLooseGameplayTag(TAG_BuffBarrier_Phase2);
+		ASC->RemoveLooseGameplayTag(TAG_Skill_BuffBarrier_Phase2);
 	}
 	else
 	{
@@ -402,7 +401,7 @@ bool UGA_BuffBarrier::CheckCost(const FGameplayAbilitySpecHandle Handle, const F
 	if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
 	{
 		if (ActorInfo->AbilitySystemComponent->HasAnyMatchingGameplayTags(
-			FGameplayTagContainer::CreateFromArray(TArray<FGameplayTag>{TAG_BuffBarrier_Phase1, TAG_BuffBarrier_Phase2})))
+			FGameplayTagContainer::CreateFromArray(TArray<FGameplayTag>{TAG_Skill_BuffBarrier_Phase1, TAG_Skill_BuffBarrier_Phase2})))
 		{
 			return true;
 		}

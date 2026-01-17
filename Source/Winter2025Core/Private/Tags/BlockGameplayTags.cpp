@@ -4,13 +4,14 @@
 #include "Tags/BlockGameplayTags.h"
 
 // Block Type Tags
-UE_DEFINE_GAMEPLAY_TAG(Block_Type_Terrain, "Block.Type.Terrain");
-UE_DEFINE_GAMEPLAY_TAG(Block_Type_Destructible, "Block.Type.Destructible");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Terrain, "Block.Type.Terrain");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Destructible, "Block.Type.Destructible");
 
 // Block Highlight Tags
-UE_DEFINE_GAMEPLAY_TAG(Block_Type_Destructible, "Block.Highlight.None");
-UE_DEFINE_GAMEPLAY_TAG(Block_Type_Destructible, "Block.Highlight.Preview");
-UE_DEFINE_GAMEPLAY_TAG(Block_Type_Destructible, "Block.Highlight.Bomb");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_None, "Block.Highlight.None");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Preview, "Block.Highlight.Preview");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Target, "Block.Highlight.Target");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb, "Block.Highlight.Bomb");
 
 BlockGameplayTags::BlockGameplayTags()
 {
