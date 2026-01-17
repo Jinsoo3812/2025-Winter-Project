@@ -148,7 +148,11 @@ void AEnemyBase::Die()
 	// 3. AI 컨트롤러 정지 (BrainComponent 정지)
 	if (AAIController* AICon = Cast<AAIController>(GetController()))
 	{
-		AICon->BrainComponent->StopLogic("Died");
+		// BrainComponent가 null이 아닐 때만 정지
+		if (AICon->BrainComponent)
+		{
+			AICon->BrainComponent->StopLogic("Died");
+		}
 	}
 
 	// 4. 일정 시간 뒤 액터 제거 (필요하다면)
