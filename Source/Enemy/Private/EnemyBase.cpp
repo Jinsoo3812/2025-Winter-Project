@@ -29,9 +29,10 @@ void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 1. GAS 시스템 초기화 (유효성 검사)
 	if (AbilitySystemComponent)
 	{
-		// 1. GAS 초기화 (AI는 Owner=Avatar=Self)
+		// [필수] Owner와 Avatar를 설정합니다. AI는 둘 다 자기 자신(this)입니다.
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
 		// 2. 초기 태그 부여 (에디터 설정값 적용)
@@ -40,66 +41,60 @@ void AEnemyBase::BeginPlay()
 			AbilitySystemComponent->AddLooseGameplayTags(InitialGameplayTags);
 		}
 
-		// 3. (서버만) 스탯 초기화 및 스킬 부여
-		// 클라이언트는 복제된 값을 받으므로 서버에서만 처리하면 됩니다.
+		// 3. (서버 전용) 스탯 초기화 및 스킬 부여
+		// 클라이언트는 서버에서 복제(Replication)된 값을 받으므로, 
+		// 데이터 변경 권한이 있는 서버(Authority)에서만 실행해야 합니다.
 		if (HasAuthority())
 		{
+			// A. 스탯 초기화 (체력, 마나 등을 GE_InitStats로 설정)
 			InitializeAttributes();
-			GiveDefaultAbilities();
-		}
 
-		// StartupAbilities에 등록된 스킬들을 실제로 부여
-		// (서버에서만 실행해야 함)
-		if (HasAuthority())
-		{
-			for (TSubclassOf<UGameplayAbility>& AbilityClass : StartupAbilities)
-			{
-				if (AbilityClass)
-				{
-					// 레벨 1짜리 스킬 생성 및 부여
-					FGameplayAbilitySpec Spec(AbilityClass, 1);
-					AbilitySystemComponent->GiveAbility(Spec);
-				}
-			}
+			// B. 스킬 부여 (평타, 패턴 등 StartupAbilities에 있는 것들 배우기)
+			GiveDefaultAbilities();
 		}
 	}
 }
 
 void AEnemyBase::InitializeAttributes()
 {
-	// 에디터에 할당된 GE가 있고, ASC가 유효하다면 적용
+	// 에디터의 'DefaultAttributeEffect'에 GE가 할당되어 있어야 함 (예: GE_BossInitStats)
 	if (AbilitySystemComponent && DefaultAttributeEffect)
 	{
-		// GE 컨텍스트 생성 (누가 누구에게 적용하는가?)
+		// GE 적용을 위한 문맥(Context) 생성
 		FGameplayEffectContextHandle EffectContext = AbilitySystemComponent->MakeEffectContext();
 		EffectContext.AddSourceObject(this);
 
-		// GE 스펙 생성 (적용할 효과의 명세서)
+		// GE 스펙(Spec) 생성
 		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(DefaultAttributeEffect, 1.0f, EffectContext);
 
 		if (SpecHandle.IsValid())
 		{
-			// 자신에게 적용 (ApplyGameplayEffectSpecToSelf)
+			// 나 자신에게 GE 적용 (이때 체력이 10000 등으로 변함)
 			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+			UE_LOG(LogTemp, Log, TEXT("[EnemyBase] Attributes Initialized via GE: %s"), *DefaultAttributeEffect->GetName());
 		}
 	}
 }
 
 void AEnemyBase::GiveDefaultAbilities()
 {
-	// 에디터에 설정된 스킬 목록 순회
+	// 에디터의 'StartupAbilities' 배열에 있는 스킬들을 순회
 	if (HasAuthority() && AbilitySystemComponent)
 	{
 		for (TSubclassOf<UGameplayAbility>& AbilityClass : StartupAbilities)
 		{
 			if (AbilityClass)
 			{
-				// 스킬 부여 (GiveAbility)
-				// Level 1로 부여, InputID는 AI라 보통 -1(없음) 사용
-				FGameplayAbilitySpec Spec(AbilityClass, 1, -1);
+				// 스킬 스펙 생성 (레벨 1)
+				// AI는 별도의 InputID가 필요 없으므로 -1 사용
+				FGameplayAbilitySpec Spec(AbilityClass, 1, -1, this);
+
+				// 실제로 스킬 부여 (이제부터 TryActivateAbility 사용 가능)
 				AbilitySystemComponent->GiveAbility(Spec);
 			}
 		}
+		UE_LOG(LogTemp, Log, TEXT("[EnemyBase] Granted %d Startup Abilities."), StartupAbilities.Num());
 	}
 }
 

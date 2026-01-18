@@ -41,6 +41,17 @@ UAbilitySystemComponent* ADestructibleBlock::GetAbilitySystemComponent() const
 
 void ADestructibleBlock::OnGameplayEffectApplied(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle)
 {
+	// --- [범인 색출 로그 추가] ---
+	AActor* Killer = SpecApplied.GetEffectContext().GetInstigator();
+	FString KillerName = Killer ? Killer->GetName() : TEXT("Unknown");
+	FString GETag = SpecApplied.Def->InheritableGameplayEffectTags.CombinedTags.ToString();
+
+	// 로그 출력: 누가 나를 때렸고, 무슨 태그가 들어왔는지 확인
+	UE_LOG(LogTemp, Error, TEXT("[BLOCK DESTROYED] I was hit by: %s / Tags: %s"), *KillerName, *GETag);
+	// ---------------------------
+
+
+
 	// DestructionTag이 유효하지 않으면 리턴
 	if (!DestructionTag.IsValid())
 	{
