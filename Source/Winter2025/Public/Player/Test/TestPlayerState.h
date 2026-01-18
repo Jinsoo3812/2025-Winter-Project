@@ -20,7 +20,7 @@ class UDataTable;
  * 플레이어가 죽었다 부활해도 유지되어야 하는 정보들을 담고 있다.
  */
 UCLASS()
-class WINTER2025_API ATestPlayerState : public APlayerState, public IAbilitySystemInterface, public ISkillSystemInterface
+class WINTER2025_API ATestPlayerState : public APlayerState, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -34,7 +34,7 @@ public:
 
 	// SkillManager 접근자
 	UFUNCTION(BlueprintCallable, Category = "GAS")
-	USkillManagerComponent* GetSkillManager() const override;
+	USkillManagerComponent* GetSkillManager() const;
 
 	// AttributeSet 접근자 (체력/마나 등의 수치 데이터)
 	UFUNCTION(BlueprintCallable, Category = "GAS")

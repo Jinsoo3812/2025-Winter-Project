@@ -6,7 +6,7 @@
 #include "UObject/Interface.h"
 #include "SkillSystemInterface.generated.h"
 
-class USkillManagerComponent;
+class UAbilitySystemComponent;
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -24,9 +24,6 @@ class WINTER2025CORE_API ISkillSystemInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	// 스킬 매니저 컴포넌트 반환 함수
-	virtual USkillManagerComponent* GetSkillManager() const = 0;
-
-	// 스킬 매니저 초기화 함수
-	virtual void InitializeSkills() = 0;
+	// 스킬 시스템 초기화 (ASC 주입)
+	virtual void InitializeSkillSystem(UAbilitySystemComponent* InASC) = 0;
 };
