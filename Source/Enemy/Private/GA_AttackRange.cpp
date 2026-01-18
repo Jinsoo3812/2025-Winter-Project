@@ -79,7 +79,7 @@ void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 			TimerHandle_SpeedUp,
 			this,
 			&UGA_AttackRange::RestoreMontageSpeed,
-			TelegraphDuration, // n초 뒤 실행
+			TelegraphDuration,
 			false
 		);
 	}
@@ -104,59 +104,77 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 	APawn* AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (!AvatarPawn) return;
 
-	// 혹시 켜져있는 색상이 있다면 초기화 (깜빡임 방지)
+	// 기존에 켜져 있는 장판이 있다면 초기화 (잔상/깜빡임 방지)
 	ResetBlockColors();
 
-	// 1. 현재 위치 기준으로 범위 박스 계산
-	// (Root Motion으로 보스가 이동했을 수 있으므로 매번 새로 계산합니다)
+	// 1. 박스 위치 계산
+	// 보스의 현재 위치와 바라보는 방향을 기준으로 계산합니다.
 	FVector ForwardDir = AvatarPawn->GetActorForwardVector();
 	FVector Origin = AvatarPawn->GetActorLocation();
-
 	float HalfLength = AttackRangeForward * 0.5f;
 
+	// [중요] 중심점 계산 및 캐싱
+	// 보스가 몽타주 재생 중 앞으로 이동(Root Motion)하더라도, 
+	// 타격 판정은 처음에 장판을 깔았던 이 위치에서 발생해야 하므로 변수에 저장해둡니다.
 	CachedTargetLocation = Origin + (ForwardDir * (AttackForwardOffset + HalfLength));
+
 	FVector BoxCenter = CachedTargetLocation;
 
-	// 바닥 감지용 높이 보정 (-50)
-	BoxCenter.Z -= 50.0f;
+	// [높이 보정 로직]
+	// 보스 발바닥 높이(Z=0)에 딱 맞추면 바닥 블록을 감지 못하는 경우가 생깁니다.
+	// 박스 중심을 지하 100까지 내리고, 두께를 150으로 두껍게 설정하여
+	// 지형의 높낮이 차이가 있어도 바닥 블록(WorldStatic)을 확실하게 감지하도록 합니다.
+	BoxCenter.Z -= 100.0f;
+	FVector BoxExtent = FVector(HalfLength, AttackWidth * 0.5f, 150.0f);
 
-	FVector BoxExtent = FVector(HalfLength, AttackWidth * 0.5f, 50.0f);
-
-	// 2. 오버랩 검사 (WorldStatic = 블록)
+	// 2. 오버랩 검사 (WorldStatic = 바닥 블록 감지)
 	TArray<AActor*> OverlappedActors;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
 
 	UKismetSystemLibrary::BoxOverlapActors(
-		this, BoxCenter, BoxExtent, ObjectTypes, ABlockBase::StaticClass(),
-		{ AvatarPawn }, OverlappedActors
+		this,
+		BoxCenter,
+		BoxExtent,
+		ObjectTypes,
+		ABlockBase::StaticClass(),
+		{ AvatarPawn }, // 보스 자신은 제외
+		OverlappedActors
 	);
 
-	// 3. 색상 변경 및 저장
+	// 3. 감지된 블록들 색상 변경 (빨간색)
 	for (AActor* Actor : OverlappedActors)
 	{
 		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
 		{
 			Block->SetHighlightState(EBlockHighlightState::Danger);
+			// 나중에 끄기 위해 배열에 포인터 저장 (Weak Pointer 권장)
 			AffectedBlocks.Add(Block);
 		}
 	}
 
-	// 몽타주 속도를 다시 늦춤 (관성 느낌)
+	// 4. 엇박자 연출 (Time Dilation) 적용
+	// 공격 예고(Telegraph) 순간에는 몽타주를 느리게 재생하여 긴장감을 줍니다.
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (Character && Character->GetMesh()->GetAnimInstance())
 	{
 		UAnimInstance* AnimInst = Character->GetMesh()->GetAnimInstance();
+
+		// 현재 공격 몽타주가 재생 중인지 확인
 		if (AnimInst->Montage_IsPlaying(AttackMontage))
 		{
+			// 설정된 속도(예: 0.1)로 변경하여 뜸 들이기 연출
 			AnimInst->Montage_SetPlayRate(AttackMontage, TelegraphPlayRate);
 
-			// 다시 n초 뒤에 빨라지도록 타이머 재설정
+			// [타이머 재설정]
+			// 기존에 돌고 있던 속도 복구 타이머가 있다면 취소하고 새로 설정합니다.
+			// 이는 2연타, 3연타 시 타이밍이 꼬이는 것을 방지합니다.
+			GetWorld()->GetTimerManager().ClearTimer(TimerHandle_SpeedUp);
 			GetWorld()->GetTimerManager().SetTimer(
 				TimerHandle_SpeedUp,
 				this,
 				&UGA_AttackRange::RestoreMontageSpeed,
-				TelegraphDuration,
+				TelegraphDuration, // 지정된 시간(예: 1초) 뒤에 원래 속도로 복구
 				false
 			);
 		}

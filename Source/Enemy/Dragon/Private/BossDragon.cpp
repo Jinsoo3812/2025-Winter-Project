@@ -238,34 +238,47 @@ void ABossDragon::ExecuteHeightJudgmentKill(FVector Center, float Radius, float 
     TArray<AActor*> OutActors;
     UKismetSystemLibrary::SphereOverlapActors(GetWorld(), Center, Radius, ObjectTypes, nullptr, TArray<AActor*>(), OutActors);
 
-    // 2. 필터링 (여기가 핵심!)
+    // 2. 필터링
     for (AActor* Target : OutActors)
     {
-        if (!Target || Target == this) continue;
+        // 1. 캐릭터 확인 (바닥 제외)
+        ACharacter* PlayerChar = Cast<ACharacter>(Target);
+        if (!PlayerChar) continue;
 
-        // [중요] 타겟을 캐릭터(ACharacter)로 캐스팅해봅니다.
-        // - 플레이어: 성공 (PlayerCharacter 변수에 값이 들어감)
-        // - 블럭(ADestructibleBlock): 실패 (nullptr이 됨 -> 왜? Actor 상속이라서)
-        ACharacter* PlayerCharacter = Cast<ACharacter>(Target);
-
-        // 캐스팅에 실패했다면(즉, 캐릭터가 아니라면) 무조건 건너뜁니다.
-        if (PlayerCharacter == nullptr)
-        {
-            continue;
-        }
-
-        // (선택) 더 확실하게 태그 확인
-        if (!Target->ActorHasTag("Player"))
-        {
-            continue;
-        }
-
-        // 3. 높이 확인 후 처형
-        float TargetZ = Target->GetActorLocation().Z;
+        // 2. 높이 확인 (커트라인보다 낮으면 사망)
+        float TargetZ = PlayerChar->GetActorLocation().Z;
         if (TargetZ < SafeHeightThreshold)
         {
-            // 처형 로직 (ApplyDamage, GAS 등)
-            UE_LOG(LogTemp, Warning, TEXT("Executing Player: %s"), *Target->GetName());
+            // [처형 로직 시작]
+            if (InstantDeathEffectClass)
+            {
+                // 타겟(플레이어)의 ASC 가져오기
+                UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(PlayerChar);
+
+                if (TargetASC)
+                {
+                    // GE 적용을 위한 Context 생성 (누가 때렸나?)
+                    FGameplayEffectContextHandle ContextHandle = TargetASC->MakeEffectContext();
+                    ContextHandle.AddSourceObject(this); // 보스가 원인 제공자
+
+                    // GE Spec(설계도) 생성
+                    FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(InstantDeathEffectClass, 1.0f, ContextHandle);
+
+                    if (SpecHandle.IsValid())
+                    {
+                        // 쾅! 즉사 효과 적용
+                        TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+
+                        UE_LOG(LogTemp, Error, TEXT("☠️ EXECUTION COMPLETED: %s"), *PlayerChar->GetName());
+                    }
+                }
+            }
+            else
+            {
+                // GE가 할당 안 됐을 때를 대비한 비상용 일반 데미지 (선택 사항)
+                // UGameplayStatics::ApplyDamage(PlayerChar, 99999.f, GetController(), this, UDamageType::StaticClass());
+                UE_LOG(LogTemp, Warning, TEXT("InstantDeathEffectClass is NULL! Assign it in BP!"));
+            }
         }
     }
 }

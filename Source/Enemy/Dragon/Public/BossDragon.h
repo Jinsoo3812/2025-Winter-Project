@@ -42,6 +42,10 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "BossPattern")
 	void DestroySafetyStairs(float Radius);
 
+	// 즉사 데미지용 GameplayEffect 클래스 (에디터에서 할당)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS")
+	TSubclassOf<class UGameplayEffect> InstantDeathEffectClass;
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void PostInitializeComponents() override; // 컴포넌트 세팅 완료 후 호출됨
