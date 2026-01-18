@@ -4,9 +4,13 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayTagContainer.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
 #include "Winter2025Player.generated.h"
 
 class UPlayerInputConfig;
+class UInputAction;
+class UInputMappingContext;
 struct FGameplayEventData;
 struct FInputActionValue;
 struct FOnAttributeChangeData;

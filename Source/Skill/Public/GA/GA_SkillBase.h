@@ -8,7 +8,7 @@
 #include "SkillGameplayTags.h"
 #include "GA_SkillBase.generated.h"
 
-class USkillManagerComponent;
+class USkillComponent;
 class IBlockSpawnInterface;
 
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Player);
@@ -97,13 +97,13 @@ protected:
 	* SkillManager를 가져오는 헬퍼 함수
 	* 성능 최적화를 위해 캐싱된 값이 있으면 재사용
 	*/
-	USkillManagerComponent* GetSkillManagerFromAvatar() const;
+	USkillComponent* GetSkillManagerFromAvatar() const;
 
 	/*
 	* 캐싱된 SkillManager (성능 최적화용)
 	* mutable: const 함수에서도 수정 가능
 	*/
-	mutable TWeakObjectPtr<USkillManagerComponent> CachedSkillManager;
+	mutable TWeakObjectPtr<USkillComponent> CachedSkillComp;
 
 	/* 데미지 적용을 위한 GE 클래스 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Effects")

@@ -86,9 +86,55 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Skill")
 	void EquipSkill(FGameplayTag SlotTag, TSubclassOf<UGameplayAbility> AbilityClass);
 
+	// -----------------
+
+	// 해당 슬롯의 '피해량(Red)' 룬 합계 반환 (예: 1.5 = 150%)
+	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
+	float GetTotalDamageMultiplier(int32 SlotIndex) const;
+
+	// 해당 슬롯의 '쿨타임(Yellow)' 룬 합계 반환
+	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
+	float GetTotalCooldownReduction(int32 SlotIndex) const;
+
+	// 해당 슬롯의 '범위(Blue)' 룬 합계 반환
+	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
+	float GetTotalRangeMultiplier(int32 SlotIndex) const;
+
+	// 룬 장착 함수
+	// @param SlotIndex: 스킬 슬롯 인덱스
+	// @param RuneSlotIndex: 룬 슬롯 인덱스 (0~2)
+	// @param RuneData: 장착할 룬 데이터 에셋
+	// @return 성공 여부
+	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
+	bool EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* RuneData);
+
+	// 룬 장착 해제 함수
+	// @param SlotIndex: 스킬 슬롯 인덱스
+	// @param RuneSlotIndex: 해제할 룬 슬롯 인덱스 (0~2)
+	// @return 성공 여부
+	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
+	bool UnequipRune(int32 SlotIndex, int32 RuneSlotIndex);
+
+
+	// 룬 ID(RowName)를 통해 데이터 테이블에서 룬을 찾아 장착하는 함수
+	// @param SlotIndex: 스킬 슬롯 인덱스
+	// @param RuneSlotIndex: 룬 슬롯 인덱스
+	// @param RuneID: 데이터 테이블의 행 이름 (RowName)
+	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
+	bool EquipRuneByID(int32 SlotIndex, int32 RuneSlotIndex, FName RuneID);
+
 protected:
 	// 실제 어빌리티 부여 로직
 	void GiveAbility(FGameplayTag SlotTag, TSubclassOf<UGameplayAbility> AbilityClass);
+
+	// ---
+
+	// 슬롯 인덱스가 유효한지 검사하는 헬퍼 함수
+	bool IsValidSlotIndex(int32 SlotIndex) const;
+
+	// 룬 데이터베이스
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Manager|Data")
+	TObjectPtr<UDataTable> RuneDataTable;
 
 private:
 	UPROPERTY()
@@ -108,4 +154,10 @@ private:
 	// BP Class Defaults에서 설정하는 초기 스킬셋
 	UPROPERTY(EditDefaultsOnly, Category = "Skill")
 	TArray<FSkillSlot> DefaultSkillSets;
+
+	// -----------------
+	
+	// 스킬 슬롯 배열
+	UPROPERTY(EditDefaultsOnly, Category = "Skill Manager")
+	TArray<FSkillSlot> SkillSlots;
 };

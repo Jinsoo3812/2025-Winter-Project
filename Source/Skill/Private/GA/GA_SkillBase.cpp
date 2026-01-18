@@ -3,13 +3,13 @@
 #include "GA/GA_SkillBase.h"
 #include "Interface/ISkillManagerProvider.h"
 #include "Interface/IAttributeSetProvider.h"
-#include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
 #include "Engine/OverlapResult.h"
 #include "GameplayEventInterface.h"
 #include "BlockGameplayTags.h"
 #include "CollisionChannels.h"
+#include "SkillComponent.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Player, "Player");
 
@@ -36,37 +36,31 @@ UGA_SkillBase::UGA_SkillBase()
 	ActivationBlockedTags.AddTag(TAG_Skill_Casting);
 }
 
-USkillManagerComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
+USkillComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
 {
-	// 캐싱된 SkillManager가 유효하면 재사용 (성능 최적화)
-	if (CachedSkillManager.IsValid())
+	// 1. 이미 찾은 적이 있다면 캐시된 값 반환
+	if (CachedSkillComp.IsValid())
 	{
-		return CachedSkillManager.Get();
+		return CachedSkillComp.Get();
 	}
 
-	// Avatar 가져오기
-	AActor* Avatar = GetAvatarActorFromActorInfo();
-	if (!Avatar)
+	// 2. AvatarActor (PlayerState 혹은 Character) 가져오기
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!AvatarActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetSkillManagerFromAvatar: Avatar is null"));
 		return nullptr;
 	}
 
-	// ISkillManagerProvider 인터페이스를 구현했는지 확인
-	ISkillManagerProvider* Provider = Cast<ISkillManagerProvider>(Avatar);
-	if (Provider)
+	// 핵심: PlayerState의 구체적인 클래스(Winter2025...)를 몰라도 됨
+	// 그냥 "네가 누구든 상관없는데, 혹시 SkillComponent 가지고 있니?" 라고 물어봄
+	USkillComponent* FoundComp = AvatarActor->FindComponentByClass<USkillComponent>();
+
+	if (FoundComp)
 	{
-		// 인터페이스를 통해 SkillManager 가져오기 (캐싱된 값)
-		USkillManagerComponent* SkillManager = Provider->GetSkillManager();
-		if (SkillManager)
-		{
-			// 다음 호출을 위해 캐싱
-			CachedSkillManager = SkillManager;
-			return SkillManager;
-		}
+		CachedSkillComp = FoundComp;
+		return FoundComp;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetSkillManagerFromAvatar: Avatar does not implement ISkillManagerProvider or SkillManager is null"));
 	return nullptr;
 }
 
@@ -76,7 +70,7 @@ float UGA_SkillBase::GetRuneModifiedDamage() const
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
+	USkillComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
 		return BaseDamage; // 매니저가 없으면 기본 피해량 반환
@@ -120,7 +114,7 @@ float UGA_SkillBase::GetRuneModifiedRange() const
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
+	USkillComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
 		return BaseRange; // 매니저가 없으면 기본 범위 반환
@@ -136,7 +130,7 @@ float UGA_SkillBase::GetRuneModifiedCooldown() const
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
+	USkillComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
 		return BaseCooldown; // 매니저가 없으면 기본 쿨타임 반환

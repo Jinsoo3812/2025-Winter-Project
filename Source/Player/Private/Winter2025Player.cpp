@@ -111,23 +111,24 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	}
 
 	// 이동 (Move) 바인딩
-	if (MoveAction)
+	if (MoveAction.Get())
 	{
-		EnhancedInput->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ATestCharacter::Move);
+		EnhancedInput->BindAction(MoveAction.Get(), ETriggerEvent::Triggered, this, &AWinter2025Player::Move);
 	}
 
 	// 점프 (Jump) 바인딩
-	if (JumpAction)
+	if (JumpAction.Get())
 	{
 		// ACharacter::Jump는 존재하지만, StopJump는 없습니다. StopJumping을 써야 합니다.
-		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInput->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EnhancedInput->BindAction(JumpAction.Get(), ETriggerEvent::Started, this, &ACharacter::Jump);
+		EnhancedInput->BindAction(JumpAction.Get(), ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 	}
 
 	// 좌클릭 바인딩
-	if (LeftClickAction)
+	if (LeftClickAction.Get())
 	{
-		EnhancedInput->BindAction(LeftClickAction, ETriggerEvent::Started, this, &ATestCharacter::OnLeftClick);
+		// 임시; 빌드만 되도록 해놨음
+		EnhancedInput->BindAction(LeftClickAction.Get(), ETriggerEvent::Started, this, &ACharacter::StopJumping);
 	}
 }
 

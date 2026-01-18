@@ -3,7 +3,10 @@
 #include "CoreMinimal.h"
 #include "AttributeSet.h"
 #include "Engine/DataTable.h"
+#include "AbilitySystemComponent.h"
 #include "Winter2025PlayerAttributeSet.generated.h"
+
+class UAbilitySystemComponent;
 
 // [매크로] Getter, Setter, Init 함수 자동 생성기
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \

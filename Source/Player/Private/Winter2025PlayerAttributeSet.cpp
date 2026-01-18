@@ -3,6 +3,7 @@
 #include "Winter2025PlayerAttributeSet.h"
 #include "Net/UnrealNetwork.h"        // 네트워크 동기화(DOREPLIFETIME)를 위해 필수
 #include "GameplayEffectExtension.h"  // GE 데이터를 다루기 위해 필수
+#include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
