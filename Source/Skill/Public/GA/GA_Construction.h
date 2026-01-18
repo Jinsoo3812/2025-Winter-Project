@@ -42,10 +42,11 @@ protected:
 	// 블록 생성
 	virtual void SpawnBlock();
 
-	// 좌클릭 입력 콜백
-	virtual void OnLeftClickPressed();
-
 	// W키 재입력 콜백 (스킬 취소)
 	UFUNCTION()
 	void OnCancelPressed(float TimeWaited);
+
+	// 좌클릭 이벤트 수신 콜백
+	UFUNCTION()
+	virtual void OnLeftClickEventReceived(FGameplayEventData Payload);
 };

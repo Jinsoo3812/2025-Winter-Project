@@ -73,8 +73,8 @@ protected:
 	// 취소 가능 여부를 판단하는 함수
 	virtual bool CanBeCanceled() const override;
 
-	// 좌클릭 입력 처리 (부모의 단일 프리뷰 확인 로직을 대체하기 위함)
-	virtual void OnLeftClickPressed() override;
+	// 좌클릭 이벤트 수신 처리 (부모의 단일 프리뷰 확인 로직을 대체하기 위함)
+	virtual void OnLeftClickEventReceived(FGameplayEventData Payload) override;
 
 private:
 	// 중심 위치와 플레이어 위치를 기반으로 소환해야 할 N개 블록의 위치 배열을 OutTransforms에 반환

@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
 #include "InputAction.h"
+#include "InputGameplayTags.h"
 
 
 ATestCharacter::ATestCharacter()
@@ -58,6 +59,12 @@ void ATestCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Mapping Context added"));
 			}
 		}
+	}
+
+	// 좌클릭 바인딩
+	if (LeftClickAction)
+	{
+		EnhancedInput->BindAction(LeftClickAction, ETriggerEvent::Started, this, &ATestCharacter::OnLeftClick);
 	}
 
 	// 3. 이동 (Move) 바인딩
@@ -287,5 +294,23 @@ void ATestCharacter::OnMovementSpeedChanged(const FOnAttributeChangeData& Data)
 		CMC->MaxWalkSpeed = Data.NewValue;
 		UE_LOG(LogTemp, Log, TEXT("ATestCharacter: MovementSpeed changed to %f"), Data.NewValue);
 	}
+}
+
+void ATestCharacter::OnLeftClick(const FInputActionValue& Value)
+{
+	if (!CachedAbilitySystemComponent) return;
+
+	// 1. 이벤트 데이터 생성 (누가 보냈는지, 타겟은 누구인지 등)
+	FGameplayEventData EventData;
+	EventData.Instigator = this;
+	EventData.Target = this;
+
+	// 2. "Input.Action.Confirm" 태그와 함께 이벤트 발행
+	// 이 태그는 GA_Construction에서 기다리고 있는 태그와 정확히 일치해야 합니다.
+	FGameplayTag ConfirmTag = TAG_Input_LeftClick;
+
+	// 3. ASC를 통해 이벤트 전송
+	// 활성화된 모든 어빌리티 중, 이 태그를 기다리는(WaitGameplayEvent) 어빌리티에게 신호가 갑니다.
+	CachedAbilitySystemComponent->HandleGameplayEvent(ConfirmTag, &EventData);
 }
 

@@ -112,4 +112,9 @@ protected:
 	UPROPERTY(EditAnywhere, Category = "Input")
 	TObjectPtr<UInputAction> MoveAction;
 
+	UPROPERTY(EditAnywhere, Category = "Input")
+	TObjectPtr<UInputAction> LeftClickAction;
+
+	UFUNCTION()
+	void OnLeftClick(const FInputActionValue& Value);
 };

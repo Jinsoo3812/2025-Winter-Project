@@ -37,9 +37,9 @@ protected:
 	// 매 프레임 프리뷰 업데이트
 	void UpdatePreview();
 
-	// 좌클릭 시 호출 (폭발물 투척)
+	// 좌클릭 이벤트 수신 시 호출 (폭발물 투척)
 	UFUNCTION()
-	void OnLeftClickPressed();
+	void OnLeftClickEventReceived(FGameplayEventData Payload);
 
 	// 취소 키(스킬 키) 입력 시 호출
 	UFUNCTION()

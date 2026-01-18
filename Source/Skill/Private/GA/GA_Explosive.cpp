@@ -4,10 +4,12 @@
 #include "Object/Explosive.h"
 #include "BlockInfoInterface.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "BlockGameplayTags.h"
+#include "InputGameplayTags.h"
 #include "Collision/CollisionChannels.h"
 
 UGA_Explosive::UGA_Explosive()
@@ -48,23 +50,24 @@ void UGA_Explosive::ActivateAbility(
 		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to create WaitInputTask"));
 	}
 
-	// 좌클릭 바인딩
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
+	// 좌클릭 이벤트 대기 태스크 생성
+	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+		this,
+		TAG_Input_LeftClick,
+		nullptr,
+		false,
+		false
+	);
+
+	if (WaitEventTask)
 	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			PC->InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &UGA_Explosive::OnLeftClickPressed);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Explosive: PlayerController or InputComponent is null"));
-		}
+		WaitEventTask->EventReceived.AddDynamic(this, &UGA_Explosive::OnLeftClickEventReceived);
+		WaitEventTask->ReadyForActivation();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: OwnerPawn is null"));
+		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to create WaitGameplayEvent task"));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
 }
 
@@ -90,23 +93,6 @@ void UGA_Explosive::EndAbility(
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
-	}
-
-	// 좌클릭 바인딩 수동 해제
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
-	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
 	}
 
 	SavedTargetBlock.Reset();
@@ -154,12 +140,17 @@ void UGA_Explosive::UpdatePreview()
 	}
 }
 
-void UGA_Explosive::OnLeftClickPressed()
+void UGA_Explosive::OnLeftClickEventReceived(FGameplayEventData Payload)
 {
 	if (HighlightedBlock.IsValid())
 	{
 		NotifySkillCastStarted();
 		SpawnExplosive();
+	}
+	else
+	{
+		// 프리뷰가 유효하지 않을 때 클릭하면 로그 (디버깅용)
+		UE_LOG(LogTemp, Verbose, TEXT("GA_Explosive: Clicked but invalid preview"));
 	}
 }
 
@@ -201,23 +192,7 @@ void UGA_Explosive::SpawnExplosive()
 		InputTask = nullptr;
 	}
 
-	// 입력 바인딩 해제 (StickyBomb의 안전한 해제 로직 적용)
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
-	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this &&
-					PC->InputComponent->KeyBindings[i].Chord.Key == EKeys::LeftMouseButton)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
-	}
 
 	// 폭발물 생성
 	FVector SpawnLoc = OwnerPawn ? OwnerPawn->GetActorLocation() : FVector::ZeroVector;

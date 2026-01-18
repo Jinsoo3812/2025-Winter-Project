@@ -40,9 +40,9 @@ protected:
 	UFUNCTION()
 	void UpdatePreview();
 
-	// 좌클릭 시 호출 (투척 확정)
+	// 좌클릭 이벤트 수신 시 호출 (투척 확정)
 	UFUNCTION()
-	void OnLeftClickPressed();
+	void OnLeftClickEventReceived(FGameplayEventData Payload);
 
 	// 취소 키 입력 시 호출
 	UFUNCTION()

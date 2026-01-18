@@ -8,9 +8,11 @@
 #include "Components/PrimitiveComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "BlockInfoInterface.h"
 #include "BlockSpawnInterface.h"
 #include "BlockGameplayTags.h"
+#include "InputGameplayTags.h"
 #include "Collision/CollisionChannels.h"
 #include "AbilitySystemComponent.h"
 
@@ -35,8 +37,6 @@ void UGA_SummonBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	SpawnedBlocks.Empty();
 	CurrentMovedDistance = 0.0f;
 	bIsCharging = false;
-
-	// GridSize는 UpdatePreview에서 마우스 오버된 블록에 맞춰 갱신됨
 }
 
 void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
@@ -71,24 +71,6 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 	}
 
 	SpawnedBlocks.Reset();
-
-	// 남은 바인딩 제거
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
-	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			// InputComponent에서 이 객체에 바인딩된 모든 키 바인딩 제거
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
-	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -282,23 +264,7 @@ void UGA_SummonBarrier::SpawnBlock()
 		return;
 	}
 
-	// 좌클릭 바인딩 해제
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
-	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this &&
-					PC->InputComponent->KeyBindings[i].Chord.Key == EKeys::LeftMouseButton)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
-	}
 
 	// 블록 생성
 	SpawnedBlocks.Empty();
@@ -563,7 +529,7 @@ bool UGA_SummonBarrier::CanBeCanceled() const
 	return Super::CanBeCanceled();
 }
 
-void UGA_SummonBarrier::OnLeftClickPressed()
+void UGA_SummonBarrier::OnLeftClickEventReceived(FGameplayEventData Payload)
 {
 	// BarrierPreviewBlocks 배열 중 하나라도 유효하고(보이고) 있다면 설치 가능한 상태로 간주
 	bool bCanSpawn = false;
@@ -583,5 +549,10 @@ void UGA_SummonBarrier::OnLeftClickPressed()
 		NotifySkillCastStarted();
 		// 블록 생성 시도
 		SpawnBlock();
+	}
+	else
+	{
+		// 프리뷰가 유효하지 않을 때 클릭하면 로그 (디버깅용)
+		UE_LOG(LogTemp, Verbose, TEXT("GA_SummonBarrier: Clicked but invalid preview"));
 	}
 }

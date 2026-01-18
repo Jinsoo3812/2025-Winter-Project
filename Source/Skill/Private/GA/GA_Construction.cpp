@@ -7,7 +7,9 @@
 #include "TimerManager.h"
 #include "InputCoreTypes.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Components/InputComponent.h"
+#include "InputGameplayTags.h"
 #include "BlockGameplayTags.h"
 #include "BlockInfoInterface.h"
 #include "BlockSpawnInterface.h"
@@ -38,36 +40,33 @@ void UGA_Construction::ActivateAbility(
 
 	// WaitInputPress 어빌리티 태스크 생성
 	WaitInputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
-	if (WaitInputTask)
-	{
-		// OnPress 델리게이트에 콜백 함수(스킬 취소) 바인딩
-		WaitInputTask->OnPress.AddDynamic(this, &UGA_Construction::OnCancelPressed);
+    if (WaitInputTask)
+    {
+        WaitInputTask->OnPress.AddDynamic(this, &UGA_Construction::OnCancelPressed);
+        WaitInputTask->ReadyForActivation();
+    }
+    else {
+        UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create WaitInputTask"));
+    }
 
-		// 어빌리티 태스크 활성화
-		WaitInputTask->ReadyForActivation();
-	}
-	else {
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create WaitInputTask"));
-	}
+	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+		this,
+		TAG_Input_LeftClick,
+		nullptr,
+		false,
+		false
+	);
 
-	// 좌클릭 입력 바인딩
-	// 좌클릭은 사용 범위가 넓고, 여러 어빌리티에서 공통으로 사용될 수 있으므로
-	// Ability Task 대신 직접 InputComponent에 바인딩
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
+	if (WaitEventTask)
 	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			// 좌클릭 키 바인딩 추가
-			PC->InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &UGA_Construction::OnLeftClickPressed);
-		}
-		else {
-			UE_LOG(LogTemp, Error, TEXT("GA_Construction: PlayerController or InputComponent is null"));
-		}
+		WaitEventTask->EventReceived.AddDynamic(this, &UGA_Construction::OnLeftClickEventReceived);
+		WaitEventTask->ReadyForActivation();
 	}
-	else {
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: OwnerPawn is null"));
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create WaitGameplayEvent task"));
+		// 태스크 생성 실패 시 안전하게 종료하거나 예외 처리
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
 }
 
@@ -101,24 +100,6 @@ void UGA_Construction::EndAbility(
 	{
 		WaitInputTask->EndTask();
 		WaitInputTask = nullptr;
-	}
-
-	// 좌클릭 바인딩 명시적 해제
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
-	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			// InputComponent에서 이 객체에 바인딩된 모든 키 바인딩 제거 (ASC를 사용하지 않았기에 수동 제거)
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
 	}
 
 	// 끝내는 함수는 자식이 먼저 호출하고, 마지막에 부모 함수 호출
@@ -281,22 +262,26 @@ void UGA_Construction::SpawnBlock()
 	}
 }
 
-void UGA_Construction::OnLeftClickPressed()
+void UGA_Construction::OnCancelPressed(float TimeWaited)
+{
+	// W키 재입력 시 스킬 취소
+	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+}
+
+void UGA_Construction::OnLeftClickEventReceived(FGameplayEventData Payload)
 {
 	// 프리뷰 블록이 존재하고, 숨겨져 있지 않을 때만 블록 생성 시도
 	if (PreviewBlock.IsValid() && !PreviewBlock.Get()->IsHidden())
 	{
 		// 실제 스킬 시전 시작 알림
-		// State.Busy 태그를 부여
 		NotifySkillCastStarted();
-		// 좌클릭 시 블록 생성 시도
+		// 블록 생성 시도
 		SpawnBlock();
 	}
-}
-
-void UGA_Construction::OnCancelPressed(float TimeWaited)
-{
-	// W키 재입력 시 스킬 취소
-	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+	else
+	{
+		// 프리뷰가 유효하지 않을 때 클릭하면 로그 (디버깅용)
+		UE_LOG(LogTemp, Verbose, TEXT("GA_Construction: Clicked but invalid preview"));
+	}
 }
 
