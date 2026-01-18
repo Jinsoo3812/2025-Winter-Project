@@ -60,21 +60,55 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 
 	FGameplayAttribute ChangedAttribute = Data.EvaluatedData.Attribute;
 
-	if (ChangedAttribute == GetHealthAttribute())
-	{
-		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+    // 체력이 변했을 때 로직 수행
+    if (ChangedAttribute == GetHealthAttribute())
+    {
+        // 0. 타겟(맞은 애) 가져오기
+        AActor* TargetActor = nullptr;
+        if (Data.Target.AbilityActorInfo->AvatarActor.IsValid())
+        {
+            TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
+        }
 
-		// [수정된 부분: 실제 사망 로직 연결]
-		if (GetHealth() <= 0.0f)
-		{
-			// 데이터로부터 Target Actor(이 AttributeSet의 주인)를 찾습니다.
-			AActor* TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
+        // -----------------------------------------------------------------
+        // [허수아비 로직] 액터 태그에 "Scarecrow"가 붙어 있는지 확인
+        // -----------------------------------------------------------------
+        if (TargetActor && TargetActor->ActorHasTag(FName("Scarecrow")))
+        {
+            // 1. 입은 데미지 계산 (체력이 깎인 양 = Magnitude는 음수이므로 -를 붙임)
+            float DamageReceived = -Data.EvaluatedData.Magnitude;
 
-			// AEnemyBase로 형변환하여 Die() 함수 호출
-			if (AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor))
-			{
-				Enemy->Die(); // <-- 여기서 드디어 죽습니다!
-			}
-		}
-	}
+            // 2. 데미지가 있을 때만 로그 출력 (치유나 0 데미지 제외)
+            if (DamageReceived > 0.0f)
+            {
+                // 화면에 붉은색 글씨로 띄우기 (디버깅용)
+                GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red,
+                    FString::Printf(TEXT("[허수아비] 아야! 데미지: %.1f"), DamageReceived));
+
+                // 출력 로그창에 남기기
+                UE_LOG(LogTemp, Warning, TEXT("[Scarecrow] Took Damage: %f | Current HP: %f"),
+                    DamageReceived, GetHealth());
+            }
+
+            // 3. [무한 체력 핵심] 체력을 즉시 최대치로 복구
+            SetHealth(GetMaxHealth());
+
+            // 4. 여기서 함수 종료 (아래의 사망 처리 로직으로 넘어가지 않음 -> 절대 안 죽음)
+            return;
+        }
+        // -----------------------------------------------------------------
+
+        // [일반 몬스터 로직]
+        // 체력을 0~Max 사이로 자름
+        SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+
+        // 체력이 0 이하라면 사망 처리
+        if (GetHealth() <= 0.0f)
+        {
+            if (AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor))
+            {
+                Enemy->Die(); // 사망 함수 호출
+            }
+        }
+    }
 }
