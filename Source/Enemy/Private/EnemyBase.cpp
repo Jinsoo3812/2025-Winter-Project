@@ -29,31 +29,33 @@ void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// 1. GAS 시스템 초기화 (유효성 검사)
+	
+}
+
+void AEnemyBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// GAS 시스템 초기화는 여기서 하는 것이 가장 안전합니다.
 	if (AbilitySystemComponent)
 	{
-		// [필수] Owner와 Avatar를 설정합니다. AI는 둘 다 자기 자신(this)입니다.
+		// 1. Owner와 Avatar 설정
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 
-		// 2. 초기 태그 부여 (에디터 설정값 적용)
+		// 2. 초기 태그 및 스탯 초기화
 		if (InitialGameplayTags.IsValid())
 		{
 			AbilitySystemComponent->AddLooseGameplayTags(InitialGameplayTags);
 		}
 
-		// 3. (서버 전용) 스탯 초기화 및 스킬 부여
-		// 클라이언트는 서버에서 복제(Replication)된 값을 받으므로, 
-		// 데이터 변경 권한이 있는 서버(Authority)에서만 실행해야 합니다.
 		if (HasAuthority())
 		{
-			// A. 스탯 초기화 (체력, 마나 등을 GE_InitStats로 설정)
 			InitializeAttributes();
-
-			// B. 스킬 부여 (평타, 패턴 등 StartupAbilities에 있는 것들 배우기)
-			GiveDefaultAbilities();
+			GiveDefaultAbilities(); // 스킬 지급
 		}
 	}
 }
+
 
 void AEnemyBase::InitializeAttributes()
 {

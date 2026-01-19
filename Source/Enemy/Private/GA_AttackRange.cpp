@@ -20,6 +20,7 @@ UGA_AttackRange::UGA_AttackRange()
 
 void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
+
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	APawn* AvatarPawn = Cast<APawn>(CurrentActorInfo->AvatarActor.Get());
@@ -160,21 +161,22 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 	{
 		UAnimInstance* AnimInst = Character->GetMesh()->GetAnimInstance();
 
-		// 현재 공격 몽타주가 재생 중인지 확인
-		if (AnimInst->Montage_IsPlaying(AttackMontage))
+		// 어차피 방금 PlayMontageAndWait로 틀었으니, 강제로 속도를 세팅합니다.
+		// 만약 진짜로 재생 중이 아니라면 SetPlayRate는 그냥 무시되므로 안전합니다. (Crash 안 남)
+
+		if (AttackMontage)
 		{
-			// 설정된 속도(예: 0.1)로 변경하여 뜸 들이기 연출
+			// "재생 중이면 바꿔라"가 아니라 "이 몽타주의 현재 인스턴스를 찾아서 바꿔라"
+			// 혹은 그냥 강제로 실행
 			AnimInst->Montage_SetPlayRate(AttackMontage, TelegraphPlayRate);
 
-			// [타이머 재설정]
-			// 기존에 돌고 있던 속도 복구 타이머가 있다면 취소하고 새로 설정합니다.
-			// 이는 2연타, 3연타 시 타이밍이 꼬이는 것을 방지합니다.
+			// 타이머는 무조건 돕니다.
 			GetWorld()->GetTimerManager().ClearTimer(TimerHandle_SpeedUp);
 			GetWorld()->GetTimerManager().SetTimer(
 				TimerHandle_SpeedUp,
 				this,
 				&UGA_AttackRange::RestoreMontageSpeed,
-				TelegraphDuration, // 지정된 시간(예: 1초) 뒤에 원래 속도로 복구
+				TelegraphDuration,
 				false
 			);
 		}
@@ -208,17 +210,6 @@ void UGA_AttackRange::ExecuteAttack()
 	// 높이(Z)를 넉넉하게(100) 주어 점프한 플레이어도 맞게 설정
 	float HalfLength = AttackRangeForward * 0.5f;
 	FVector BoxExtent = FVector(HalfLength, AttackWidth * 0.5f, 100.0f);
-
-	// ▼▼▼ [디버그 추가] 공격 판정 박스를 화면에 2초간 그립니다 ▼▼▼
-	DrawDebugBox(
-		GetWorld(),
-		BoxCenter,
-		BoxExtent,
-		FColor::Green, // 타격 박스는 초록색
-		false,
-		2.0f
-	);
-	// ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
 
 
 	TArray<AActor*> OverlappedPawns;
@@ -262,6 +253,7 @@ void UGA_AttackRange::ExecuteAttack()
 // [함수 4] 몽타주가 완전히 끝나면 호출 (스킬 종료)
 void UGA_AttackRange::OnMontageFinished()
 {
+
 	// 장판이 켜진 채로 끝났을 수도 있으니 정리
 	ResetBlockColors();
 

@@ -2,9 +2,12 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "EnemyBase.h"
 #include "EnemyAttributeSet.h"
+#include "Kismet/GameplayStatics.h"
+#include "GameFramework/PlayerController.h" //없어도 되는 것 같음
 
 
-// [추가 1] 키 이름 정의 (이제 "DistanceToTarget" 문자열을 직접 안 써도 됨)
+// 키 이름 정의 (이제 "DistanceToTarget" 문자열을 직접 안 써도 됨)
+const FName ADragonAI::BBKey_TargetActor(TEXT("TargetActor"));
 const FName ADragonAI::BBKey_DistanceToTarget(TEXT("DistanceToTarget"));
 
 
@@ -74,4 +77,56 @@ void ADragonAI::UpdateAIState()
 			}
 		}
 	}
+}
+
+
+AActor* ADragonAI::UpdateTargetToNearestPlayer()
+{
+	APawn* MyPawn = GetPawn();
+	if (!MyPawn || !Blackboard) return nullptr;
+
+	AActor* NearestPlayer = nullptr;
+	float MinDistance = FLT_MAX; // float 최대값으로 초기화
+
+	// [최적화 핵심] 
+	// 맵 전체를 뒤지는 대신, '접속한 플레이어 목록'만 순회합니다. (3인 멀티면 딱 3번만 돔)
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		APlayerController* PC = It->Get();
+		if (PC && PC->GetPawn())
+		{
+			AActor* PlayerActor = PC->GetPawn();
+
+			// 1. 나 자신(혹시 모를 오류 방지) 제외
+			if (PlayerActor == MyPawn) continue;
+
+			// 2. 죽은 플레이어 제외 (선택 사항)
+			// 만약 플레이어가 죽으면 'Dead' 태그를 붙이거나 Destroy된다면 이 체크가 중요합니다.
+			// if (PlayerActor->ActorHasTag("Dead")) continue;
+
+			// 3. 거리 계산
+			float Dist = MyPawn->GetDistanceTo(PlayerActor);
+			if (Dist < MinDistance)
+			{
+				MinDistance = Dist;
+				NearestPlayer = PlayerActor;
+			}
+		}
+	}
+
+	// 결과 처리
+	if (NearestPlayer)
+	{
+		// 타겟 갱신
+		Blackboard->SetValueAsObject(BBKey_TargetActor, NearestPlayer);
+		Blackboard->SetValueAsFloat(BBKey_DistanceToTarget, MinDistance);
+
+		// 디버그 로그 (필요 없으면 주석 처리)
+		// UE_LOG(LogTemp, Log, TEXT("[DragonAI] New Target: %s (Dist: %.1f)"), *NearestPlayer->GetName(), MinDistance);
+
+		return NearestPlayer;
+	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[DragonAI] No Valid Player Found!"));
+	return nullptr;
 }
