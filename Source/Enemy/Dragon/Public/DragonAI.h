@@ -26,6 +26,8 @@ class ENEMY_API ADragonAI : public AEnemyAI
 public:
 	ADragonAI();
 
+	virtual void Tick(float DeltaTime) override;
+
 protected:
 	/** 부모의 로직(타겟 찾기) + 드래곤 전용 로직(공격 판단) 실행 */
 	virtual void UpdateAIState() override;
@@ -44,4 +46,6 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")
 	FName BBKey_Phase = "Phase"; // 현재 페이즈 (1, 2, 3...)
+
+	static const FName BBKey_DistanceToTarget;
 };

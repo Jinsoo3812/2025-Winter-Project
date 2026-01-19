@@ -47,6 +47,21 @@ void AEnemyBase::BeginPlay()
 			InitializeAttributes();
 			GiveDefaultAbilities();
 		}
+
+		// StartupAbilities에 등록된 스킬들을 실제로 부여
+		// (서버에서만 실행해야 함)
+		if (HasAuthority())
+		{
+			for (TSubclassOf<UGameplayAbility>& AbilityClass : StartupAbilities)
+			{
+				if (AbilityClass)
+				{
+					// 레벨 1짜리 스킬 생성 및 부여
+					FGameplayAbilitySpec Spec(AbilityClass, 1);
+					AbilitySystemComponent->GiveAbility(Spec);
+				}
+			}
+		}
 	}
 }
 
@@ -133,7 +148,11 @@ void AEnemyBase::Die()
 	// 3. AI 컨트롤러 정지 (BrainComponent 정지)
 	if (AAIController* AICon = Cast<AAIController>(GetController()))
 	{
-		AICon->BrainComponent->StopLogic("Died");
+		// BrainComponent가 null이 아닐 때만 정지
+		if (AICon->BrainComponent)
+		{
+			AICon->BrainComponent->StopLogic("Died");
+		}
 	}
 
 	// 4. 일정 시간 뒤 액터 제거 (필요하다면)

@@ -22,7 +22,8 @@ public class Enemy : ModuleRules
             "GameplayAbilities", 
             "GameplayTags", 
             "GameplayTasks",
-            "MotionWarping"
+            "MotionWarping",
+            "World"
         });
     }
 }

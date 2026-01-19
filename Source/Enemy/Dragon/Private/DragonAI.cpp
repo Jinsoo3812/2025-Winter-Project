@@ -3,9 +3,22 @@
 #include "EnemyBase.h"
 #include "EnemyAttributeSet.h"
 
+
+// [추가 1] 키 이름 정의 (이제 "DistanceToTarget" 문자열을 직접 안 써도 됨)
+const FName ADragonAI::BBKey_DistanceToTarget(TEXT("DistanceToTarget"));
+
+
 ADragonAI::ADragonAI()
 {
 	// 필요시 초기값 설정
+}
+
+void ADragonAI::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// 매 프레임 AI 상태(거리 등)를 갱신
+	UpdateAIState();
 }
 
 void ADragonAI::UpdateAIState()
@@ -27,7 +40,7 @@ void ADragonAI::UpdateAIState()
 		// 공격 타입을 여기서 정하지 말고, "거리"만 블랙보드에 저장합니다.
 		// 블랙보드에 'DistanceToTarget'이라는 키가 있다고 가정하고 값을 쏴줍니다.
 		// (블랙보드 키 이름은 프로젝트 설정에 맞춰주세요. 보통 FName 변수로 관리하시겠지만, 일단 문자열로 적습니다.)
-		Blackboard->SetValueAsFloat(TEXT("DistanceToTarget"), Distance);
+		Blackboard->SetValueAsFloat(BBKey_DistanceToTarget, Distance);
 
 		// --- [디버깅] 거리 확인용 ---
 		if (GEngine)
@@ -39,7 +52,7 @@ void ADragonAI::UpdateAIState()
 	else
 	{
 		// 타겟 없으면 거리 0 (또는 아주 큰 값)
-		Blackboard->SetValueAsFloat(TEXT("DistanceToTarget"), 99999.0f);
+		Blackboard->SetValueAsFloat(BBKey_DistanceToTarget, 99999.0f);
 	}
 
 	// 4. 페이즈 판단 로직 (생략 없이 그대로 유지)
