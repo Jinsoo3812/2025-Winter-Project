@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -13,7 +13,7 @@ class ABlockBase;
 class UAbilitySystemComponent;
 class UGameplayEffect;
 
-// í­ë°œ ì‹œì ì„ GA_Explosiveì— ì•Œë¦¬ê¸° ìœ„í•œ ë¸ë¦¬ê²Œì´íŠ¸
+// Æø¹ß ½ÃÁ¡À» GA_Explosive¿¡ ¾Ë¸®±â À§ÇÑ µ¨¸®°ÔÀÌÆ®
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnExplosiveDetonated);
 
 UCLASS()
@@ -33,20 +33,20 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// ì´ˆê¸°í™” í•¨ìˆ˜: ì‹œì‘ì , ëª©í‘œ ë¸”ë¡, ë¹„í–‰ ì‹œê°„ì„ ì„¤ì •
-	// @param StartLoc: í­ë°œë¬¼ì˜ ì‹œì‘ ìœ„ì¹˜
-	// @param Target: ëª©í‘œ ë¸”ë¡
-	// @param FlightDuration: ëª©í‘œê¹Œì§€ ë„ë‹¬í•˜ëŠ” ë° ê±¸ë¦¬ëŠ” ì‹œê°„ (ì´ˆ)
-	// @param InAutoDetonateDelay: ìë™ ê¸°í­ ëŒ€ê¸° ì‹œê°„ (ì´ˆ)
-	// @param InExplosionRadius: í­ë°œ ë°˜ê²½
-	// @param InMaxBombCount: ìµœëŒ€ íˆ¬ì²™ í­íƒ„ ê°œìˆ˜
+	// ÃÊ±âÈ­ ÇÔ¼ö: ½ÃÀÛÁ¡, ¸ñÇ¥ ºí·Ï, ºñÇà ½Ã°£À» ¼³Á¤
+	// @param StartLoc: Æø¹ß¹°ÀÇ ½ÃÀÛ À§Ä¡
+	// @param Target: ¸ñÇ¥ ºí·Ï
+	// @param FlightDuration: ¸ñÇ¥±îÁö µµ´ŞÇÏ´Â µ¥ °É¸®´Â ½Ã°£ (ÃÊ)
+	// @param InAutoDetonateDelay: ÀÚµ¿ ±âÆø ´ë±â ½Ã°£ (ÃÊ)
+	// @param InExplosionRadius: Æø¹ß ¹İ°æ
+	// @param InMaxBombCount: ÃÖ´ë ÅõÃ´ ÆøÅº °³¼ö
 	// @
-	// @param InSourceASC: ë°ë¯¸ì§€ ì ìš©ì— ì‚¬ìš©í•  ì†ŒìŠ¤ ASC
-	// @param InDamageSpecHandle: ë°ë¯¸ì§€ ì ìš©ì— ì‚¬ìš©í•  GE Spec Handle
-	// @param InDestructionEffectClass: íŒŒê´´ íš¨ê³¼ë¡œ ì ìš©í•  GE í´ë˜ìŠ¤
+	// @param InSourceASC: µ¥¹ÌÁö Àû¿ë¿¡ »ç¿ëÇÒ ¼Ò½º ASC
+	// @param InDamageSpecHandle: µ¥¹ÌÁö Àû¿ë¿¡ »ç¿ëÇÒ GE Spec Handle
+	// @param InDestructionEffectClass: ÆÄ±« È¿°ú·Î Àû¿ëÇÒ GE Å¬·¡½º
 	void Initialize(
 		FVector StartLoc,
-		AActor* Target,
+		ABlockBase* Target,
 		float FlightDuration,
 		float InAutoDetonateDelay,
 		float InExplosionRadius,
@@ -56,27 +56,30 @@ public:
 		TSubclassOf<UGameplayEffect> InDestructionEffectClass
 	);
 
-	// í­ë°œ ë¡œì§ ì‹¤í–‰ (ì™¸ë¶€ì—ì„œ í˜¸ì¶œ)
+	// Æø¹ß ·ÎÁ÷ ½ÇÇà (¿ÜºÎ¿¡¼­ È£Ãâ)
 	void Detonate();
 
-	// í˜„ì¬ ë¶€ì°©ë˜ì–´ ìˆëŠ”ì§€ í™•ì¸
+	// ÇöÀç ºÎÂøµÇ¾î ÀÖ´ÂÁö È®ÀÎ
 	bool IsAttached() const { return bAttached; }
 
-	// í­ë°œ ì•Œë¦¼ ë¸ë¦¬ê²Œì´íŠ¸
+	// Æø¹ß ¾Ë¸² µ¨¸®°ÔÀÌÆ®
 	UPROPERTY(BlueprintAssignable, Category = "Event")
 	FOnExplosiveDetonated OnDetonatedDelegate;
 
 protected:
-	// ëª©í‘œ ì§€ì ì— ë„ì°©í–ˆì„ ë•Œ ì²˜ë¦¬
+	// ¸ñÇ¥ ÁöÁ¡¿¡ µµÂøÇßÀ» ¶§ Ã³¸®
 	void OnLanded();
 
-	// ìë™ í­íŒŒ íƒ€ì´ë¨¸ì— ì˜í•´ í˜¸ì¶œë¨
+	// ÀÚµ¿ ÆøÆÄ Å¸ÀÌ¸Ó¿¡ ÀÇÇØ È£ÃâµÊ
 	UFUNCTION()
 	void OnAutoDetonate();
 
-	// ë¸”ë¡ì´ íŒŒê´´ë˜ì—ˆì„ ë•Œ ë™ì‹œì— íŒŒê´´ë˜ê¸° ìœ„í•œ ì½œë°± í•¨ìˆ˜
+	// ºí·ÏÀÌ ÆÄ±«µÇ¾úÀ» ¶§ µ¿½Ã¿¡ ÆÄ±«µÇ±â À§ÇÑ Äİ¹é ÇÔ¼ö
 	UFUNCTION()
 	void OnBlockDestroyed(AActor* DestroyedActor);
+
+	// ºí·ÏÀÇ »ö»óÀ» º¯°æÇÏ´Â ÇïÆÛ ÇÔ¼ö
+	void SetBlockColorRed(bool bEnable);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -86,43 +89,43 @@ protected:
 	bool bAttached = false;
 
 	/**
-	* ë¹„í–‰ ê´€ë ¨ ë³€ìˆ˜
+	* ºñÇà °ü·Ã º¯¼ö
 	*/
 
-	// ì‹œì‘ ìœ„ì¹˜
+	// ½ÃÀÛ À§Ä¡
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Flight")
 	FVector StartLocation;
 
-	// ëª©í‘œ ë¸”ë¡ì˜ ìœ„ì¹˜(ëª©í‘œ ë¸”ë¡ì˜ ìœ—ë©´ ì¤‘ì•™)
+	// ¸ñÇ¥ ºí·ÏÀÇ À§Ä¡(¸ñÇ¥ ºí·ÏÀÇ À­¸é Áß¾Ó)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Flight")
 	FVector TargetLocation;
 
-	// ëª©í‘œ ë¸”ë¡ í¬ì¸í„°
+	// ¸ñÇ¥ ºí·Ï Æ÷ÀÎÅÍ
 	UPROPERTY()
-	TWeakObjectPtr<AActor> TargetBlock;
+	ABlockBase* TargetBlock;
 
 	float TotalFlightTime = 1.0f;
 	float CurrentFlightTime = 0.0f;
-	float ArcHeight = 300.0f; // í¬ë¬¼ì„  ë†’ì´
+	float ArcHeight = 300.0f; // Æ÷¹°¼± ³ôÀÌ
 
 	/**
-	 *  í­ë°œ ê´€ë ¨ ë³€ìˆ˜
+	 *  Æø¹ß °ü·Ã º¯¼ö
 	 */
 	float AutoDetonateDelay = 3.0f;
 	float ExplosionRadius = 300.0f;
 
-	// ë°ë¯¸ì§€ ì ìš©ì„ ìœ„í•œ ì‹œì „ìì˜ ASC
+	// µ¥¹ÌÁö Àû¿ëÀ» À§ÇÑ ½ÃÀüÀÚÀÇ ASC
 	UPROPERTY()
 	TWeakObjectPtr<UAbilitySystemComponent> SourceASC;
 
-	// ë°ë¯¸ì§€ ìŠ¤í™ í•¸ë“¤ (ìŠ¤ëƒ…ìƒ· ëœ ë°ë¯¸ì§€ ë°ì´í„°)
+	// µ¥¹ÌÁö ½ºÆå ÇÚµé (½º³À¼¦ µÈ µ¥¹ÌÁö µ¥ÀÌÅÍ)
 	FGameplayEffectSpecHandle DamageSpecHandle;
 
-	// ì¶”ê°€ íŒŒê´´ ì´í™íŠ¸ í´ë˜ìŠ¤
+	// Ãß°¡ ÆÄ±« ÀÌÆåÆ® Å¬·¡½º
 	UPROPERTY()
 	TSubclassOf<UGameplayEffect> DestructionEffectClass;
 
-	// ìë™ í­íŒŒ íƒ€ì´ë¨¸ í•¸ë“¤
+	// ÀÚµ¿ ÆøÆÄ Å¸ÀÌ¸Ó ÇÚµé
 	FTimerHandle DetonateTimerHandle;
 
 	int32 MaxBombCount = 3;

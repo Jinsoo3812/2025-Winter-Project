@@ -49,6 +49,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	void PossessedBy(AController* NewController) override;
+
 	/**
 	 * [GiveDefaultAbilities]
 	 * 캐릭터 생성 시 에디터에 설정된 'StartupAbilities' 스킬들을 자동으로 부여합니다.

@@ -1,4 +1,4 @@
-﻿using UnrealBuildTool;
+using UnrealBuildTool;
 public class Enemy : ModuleRules
 {
     public Enemy(ReadOnlyTargetRules Target) : base(Target)
@@ -23,8 +23,7 @@ public class Enemy : ModuleRules
             "GameplayTags", 
             "GameplayTasks",
             "MotionWarping",
-            "World",
-            "Winter2025Core"
+            "World"
         });
     }
 }

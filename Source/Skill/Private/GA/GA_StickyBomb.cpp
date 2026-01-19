@@ -1,21 +1,21 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
+
 
 #include "GA/GA_StickyBomb.h"
 #include "Object/Explosive.h"
-#include "BlockInfoInterface.h"
+#include "Block/BlockBase.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
-#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
-#include "BlockGameplayTags.h"
-#include "InputGameplayTags.h"
-#include "Collision/CollisionChannels.h"
+#include "Components/StaticMeshComponent.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
+#include "Engine/OverlapResult.h"
+#include "DrawDebugHelpers.h"
 
 UGA_StickyBomb::UGA_StickyBomb()
 {
-	// í­íƒ„ ë¦¬ìŠ¤íŠ¸ ìƒíƒœ ìœ ì§€ë¥¼ ìœ„í•´ ì¸ìŠ¤í„´ì‹± ì •ì±… ì„¤ì •
-	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
 void UGA_StickyBomb::ActivateAbility(
@@ -26,12 +26,15 @@ void UGA_StickyBomb::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// 1. ìœ íš¨í•˜ì§€ ì•Šì€ í­íƒ„ ì •ë¦¬
+	// À¯È¿ÇÏÁö ¾ÊÀº(ÀÌ¹Ì ÅÍÁö°Å³ª ÆÄ±«µÈ) ÆøÅº¸¸ Ã£¾Æ ¹è¿­¿¡¼­ Á¤¸®
+	// RemoveAll: °ıÈ£ ¾ÈÀÇ Á¶°ÇÀ» ¸¸Á·ÇÏ´Â ¸ğµç ¿ä¼Ò¸¦ TArray¿¡¼­ Á¦°Å
+	// Á¶°Ç: TWeakObjectPtr°¡ °¡¸®Å°´Â °´Ã¼°¡ À¯È¿ÇÏÁö ¾ÊÀº °æ¿ì
 	ExplosivesList.RemoveAll([](const TWeakObjectPtr<AExplosive>& Ptr) { return !Ptr.IsValid(); });
 
-	// 2. ê¸°í­ ì¡°ê±´ í™•ì¸ (ìµœëŒ€ ê°œìˆ˜ ë„ë‹¬ í˜¹ì€ ê¸°í­ ì¤€ë¹„ ìƒíƒœ)
+	// ÆøÅºÀÌ 3°³ ¸ğ¿´°Å³ª, ÀÌ¹Ì 3°³¸¦ ´Ù ´øÁ³´ø »óÅÂ¶ó¸é ±âÆø ½Ãµµ
 	if (ExplosivesList.Num() >= MaxBombCount || bIsDetonationReady)
 	{
+		// ¸ğµç ÆøÅºÀÌ ÂøÁöÇß´ÂÁö °Ë»ç
 		bool bAllLanded = true;
 		for (const TWeakObjectPtr<AExplosive>& WeakExplosive : ExplosivesList)
 		{
@@ -51,49 +54,41 @@ void UGA_StickyBomb::ActivateAbility(
 			UE_LOG(LogTemp, Warning, TEXT("GA_StickyBomb: Cannot detonate yet. Some bombs are still flying."));
 			EndAbility(Handle, ActorInfo, ActivationInfo, true, false);
 		}
+
 		return;
 	}
 
-	// 3. íˆ¬ì²™ ëª¨ë“œ ì§„ì… (í”„ë¦¬ë·° ì‹œì‘)
+	// ¾ÆÁ÷ 3°³°¡ ¾È µÇ¾ú´Ù¸é 'ÅõÃ´' ¸ğµå(Á¶ÁØ ÇÁ¸®ºä) ÁøÀÔ
+
+	// ÇÁ¸®ºä Å¸ÀÌ¸Ó ½ÃÀÛ
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_StickyBomb::UpdatePreview, 0.016f, true);
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_StickyBomb: World is null"));
-	}
 
-	// ì·¨ì†Œ ì…ë ¥ ëŒ€ê¸°
+	// Ãë¼Ò ÀÔ·Â ´ë±â (½ºÅ³ ÀçÀÔ·Â½Ã Á¶ÁØ Ãë¼Ò)
 	InputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
 	if (InputTask)
 	{
 		InputTask->OnPress.AddDynamic(this, &UGA_StickyBomb::OnCancelPressed);
 		InputTask->ReadyForActivation();
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_StickyBomb: Failed to create WaitInputTask"));
+	else {
+		UE_LOG(LogTemp, Error, TEXT("GA_StickyBomb: Failed to create WaitInputTask for targeting"));
 	}
 
-	// ì¢Œí´ë¦­ ì´ë²¤íŠ¸ ëŒ€ê¸° íƒœìŠ¤í¬ ìƒì„±
-	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-		this,
-		TAG_Input_LeftClick,
-		nullptr,
-		false,
-		false
-	);
-
-	if (WaitEventTask)
+	// ÁÂÅ¬¸¯ ¹ÙÀÎµù (ÅõÃ´ È®Á¤)
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (OwnerPawn)
 	{
-		WaitEventTask->EventReceived.AddDynamic(this, &UGA_StickyBomb::OnLeftClickEventReceived);
-		WaitEventTask->ReadyForActivation();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_StickyBomb: Failed to create WaitGameplayEvent task"));
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+		if (PC && PC->InputComponent)
+		{
+			PC->InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &UGA_StickyBomb::OnLeftClickPressed);
+		}
+		else {
+			UE_LOG(LogTemp, Error, TEXT("GA_StickyBomb: PlayerController or InputComponent is null"));
+		}
 	}
 }
 
@@ -104,23 +99,43 @@ void UGA_StickyBomb::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// íƒ€ì´ë¨¸ ë° í•˜ì´ë¼ì´íŠ¸ ì •ë¦¬
+	// Å¸ÀÌ¸Ó Á¤¸®
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 	TickTimerHandle.Invalidate();
 
-	ClearHighlights(PreviewBlocks);
+	// ÇÏÀÌ¶óÀÌÆ® Á¤¸®
+	ClearHighlights();
 
-	// ì…ë ¥ íƒœìŠ¤í¬ ì •ë¦¬
+	// ÅÂ½ºÅ© Á¤¸®
 	if (InputTask)
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
 	}
 
+	// ÀÔ·Â ¹ÙÀÎµù ÇØÁ¦
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (OwnerPawn)
+	{
+		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+		if (PC && PC->InputComponent)
+		{
+			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
+			{
+				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
+				{
+					PC->InputComponent->KeyBindings.RemoveAt(i);
+				}
+			}
+		}
+	}
+
+	// Æø¹ß¹°¿¡°Ô Á¤º¸¸¦ ³Ñ°ÜÁÙ °ÍÀÌ¹Ç·Î ¸®¼ÂÇØµµ µÊ
 	SavedTargetBlock.Reset();
+
 	NotifySkillCastFinished();
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -129,36 +144,36 @@ void UGA_StickyBomb::EndAbility(
 void UGA_StickyBomb::UpdatePreview()
 {
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	APlayerController* PC = (OwnerPawn) ? Cast<APlayerController>(OwnerPawn->GetController()) : nullptr;
+	if (!OwnerPawn) return;
 
-	if (!PC)
-	{
-		return; // ë¡œê¹… ìƒëµ (ë§¤ í”„ë ˆì„ í˜¸ì¶œë¨)
-	}
+	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+	if (!PC) return;
 
-	HighlightBlocks(PreviewBlocks, TAG_Block_Highlight_Preview);
+	// 1. ÀÌÀü ÇÁ·¹ÀÓÀÇ ÇÏÀÌ¶óÀÌÆ®(ÆÄ¶õ»ö/ÃÊ·Ï»ö) ÃÊ±âÈ­
+	//    -> ÆøÅº »ö(»¡°­)Àº °Çµå¸®Áö ¾ÊÀ½ (SetHighlightState´Â CPD 0¸¸ ¼öÁ¤ÇÏ¹Ç·Î ¾ÈÀü)
+	ClearHighlights();
 
-	// 4. ë§ˆìš°ìŠ¤ ì»¤ì„œ íƒ€ê²ŸíŒ… ì²˜ë¦¬
+	// 2. »ç°Å¸® ³» ºí·Ï Å½»ö
+	TArray<ABlockBase*> BlocksInRange;
+	FindBlocksInRange(BlocksInRange);
+
+	// 3. Å½»öµÈ ºí·Ïµé¿¡ ÀÏ°ıÀûÀ¸·Î 'Preview(ÆÄ¶û)' »óÅÂ Àû¿ë
+	BatchHighlightBlocks(BlocksInRange, EBlockHighlightState::Preview);
+
+	// 4. ³ªÁß¿¡ ²ô±â À§ÇØ ¸ñ·Ï ¹é¾÷
+	PreviewedBlocks = BlocksInRange;
+
+
+	// 5. ¸¶¿ì½º Ä¿¼­ À§Ä¡ÀÇ ºí·Ï Å¸°ÙÆÃ Ã³¸®
 	FHitResult HitResult;
-	PC->GetHitResultUnderCursor(ECC_Block, true, HitResult);
-	AActor* HitActor = HitResult.GetActor();
+	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
+	ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
 
-	bool bIsInPreviewBlocks = false;
-	for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
+	// ¸¶¿ì½º ¹ØÀÇ ºí·ÏÀÌ »ç°Å¸®(ÆÄ¶õ ¿µ¿ª) ¾È¿¡ Æ÷ÇÔµÇ¾î ÀÖ´Ù¸é 'Targeted(ÃÊ·Ï)'À¸·Î µ¤¾î¾²±â
+	if (HitBlock && PreviewedBlocks.Contains(HitBlock))
 	{
-		if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
-		{
-			bIsInPreviewBlocks = true;
-			break;
-		}
-	}
-
-	if (HitActor && bIsInPreviewBlocks)
-	{
-		// íƒ€ê²Ÿ í•˜ì´ë¼ì´íŠ¸ ì ìš©
-		TArray<TWeakObjectPtr<AActor>> TargetedActor = { HitActor };
-		BatchHighlightBlocks(TargetedActor, TAG_Block_Highlight_Target);
-		HighlightedBlock = HitActor;
+		HitBlock->SetHighlightState(EBlockHighlightState::Targeted);
+		HighlightedBlock = HitBlock;
 	}
 	else
 	{
@@ -166,62 +181,81 @@ void UGA_StickyBomb::UpdatePreview()
 	}
 }
 
-void UGA_StickyBomb::OnLeftClickEventReceived(FGameplayEventData Payload)
+void UGA_StickyBomb::OnLeftClickPressed()
 {
+	// ÇÏÀÌ¶óÀÌÆ®µÈ ºí·ÏÀÌ À¯È¿ÇÒ ¶§¸¸ ½ÃÀü
 	if (HighlightedBlock.IsValid())
 	{
+		// ½ºÅ³ ½ÃÀü ½ÃÀÛ (Busy ÅÂ±× µî Àû¿ë)
 		NotifySkillCastStarted();
+
+		// Æø¹ß¹° ÅõÃ´ ¹× ½ºÅ³ Á¾·á
 		SpawnExplosive();
-	}
-	else
-	{
-		// í”„ë¦¬ë·°ê°€ ìœ íš¨í•˜ì§€ ì•Šì„ ë•Œ í´ë¦­í•˜ë©´ ë¡œê·¸ (ë””ë²„ê¹…ìš©)
-		UE_LOG(LogTemp, Verbose, TEXT("GA_StickyBomb: Clicked but invalid preview"));
 	}
 }
 
 void UGA_StickyBomb::OnCancelPressed(float TimeWaited)
 {
+	// Á¶ÁØ Ãë¼Ò ¹× Á¾·á
 	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 }
 
 void UGA_StickyBomb::SpawnExplosive()
 {
+	// ÅõÃ´ ½ÃÁ¡¿¡´Â ÄğÅ¸ÀÓÀÌ Àû¿ëµÇÁö ¾ÊÀ½
 	if (!CommitAbilityCost(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_StickyBomb: Failed to commit cost"));
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		UE_LOG(LogTemp, Warning, TEXT("GA_StickyBomb: Failed to commit ability"));
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
 		return;
 	}
 
 	if (!ExplosiveClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_StickyBomb: ExplosiveClass is null"));
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		UE_LOG(LogTemp, Error, TEXT("GA_StickyBomb: ExplosiveClass is not set"));
+		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
 		return;
 	}
 
-	// íƒ€ê²Ÿ ë¸”ë¡ ì •ë³´ ë°±ì—…
+	// ÀÌÁ¦ ¸ñÇ¥ ºí·ÏÀÌ ¹Ù²îÁö ¾ÊÀ¸¹Ç·Î SavedTargetBlock¿¡ °íÁ¤ ¹é¾÷
 	SavedTargetBlock = HighlightedBlock.Get();
 
-	// íƒ€ì´ë¨¸ ë° í”„ë¦¬ë·° ì¦‰ì‹œ ì •ë¦¬
+	// ÇÁ¸®ºä Á¾·á: Æø¹ß¹°ÀÌ ³¯¾Æ°¡´Â µ¿¾È¿£ »¡°£»öÀÌ ²¨Á®¾ß ÇÔ
+	// Å¸ÀÌ¸Ó¸¦ ²ô°í ÇÏÀÌ¶óÀÌÆ®¸¦ Á¦°Å
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
-	ClearHighlights(PreviewBlocks);
+	ClearHighlights(); // ÀÌ¶§ HighlightedBlockÀº nullÀÌ µÇÁö¸¸, À§¿¡¼­ SavedTargetBlock¿¡ ¹é¾÷ÇØµÒ
 
-	// ì…ë ¥ íƒœìŠ¤í¬ ì •ë¦¬
+	// ÁÂÅ¬¸¯ ¹ÙÀÎµù ÇØÁ¦ (´õ ÀÌ»ó ÅõÃ´ ºÒ°¡)
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (OwnerPawn)
+	{
+		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
+		if (PC && PC->InputComponent)
+		{
+			// Å° ¹ÙÀÎµù ·çÇÁ¸¦ µ¹¸ç ÇöÀç °´Ã¼¿¡ ¿¬°áµÈ ¹ÙÀÎµù(ÁÂÅ¬¸¯) Á¦°Å
+			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
+			{
+				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this &&
+					PC->InputComponent->KeyBindings[i].Chord.Key == EKeys::LeftMouseButton)
+				{
+					PC->InputComponent->KeyBindings.RemoveAt(i);
+				}
+			}
+		}
+	}
+
+	// 3. Á¶ÁØ Ãë¼Ò¿ë ÀÔ·Â ÅÂ½ºÅ© Á¾·á
 	if (InputTask)
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
 	}
 
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	
-	// í­ë°œë¬¼ ìƒì„±
-	FVector SpawnLoc = OwnerPawn ? OwnerPawn->GetActorLocation() : FVector::ZeroVector;
+	// 4. Æø¹ß¹° »ı¼º
+	FVector SpawnLoc = OwnerPawn->GetActorLocation();
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
@@ -229,8 +263,11 @@ void UGA_StickyBomb::SpawnExplosive()
 
 	if (NewExplosive && SavedTargetBlock.IsValid())
 	{
+		// Æø¹ß¹° ¸®½ºÆ®¿¡ Ãß°¡
 		ExplosivesList.Add(NewExplosive);
 
+		// ÆøÅºÀÌ 3°³°¡ µÇ¾ú´Ù¸é '±âÆø ÁØºñ ¿Ï·á' »óÅÂ·Î ÀüÈ¯
+		// ÀÌÈÄ ÆøÅº ÇÏ³ª°¡ ÅÍÁ®¼­ 2°³°¡ µÇ¾îµµ ÀÌ ÇÃ·¡±×´Â trueÀÌ¹Ç·Î ±âÆø °¡´É
 		if (ExplosivesList.Num() >= 3)
 		{
 			bIsDetonationReady = true;
@@ -238,13 +275,10 @@ void UGA_StickyBomb::SpawnExplosive()
 
 		NewExplosive->OnDetonatedDelegate.AddDynamic(this, &UGA_StickyBomb::OnExplosiveDetonated);
 
-		// ë°ë¯¸ì§€ ìŠ¤í™ ìƒì„±
+		// GA°¡ Á¾·áµÈ ÈÄ¿¡µµ ¾×ÅÍ°¡ µ¥¹ÌÁö¸¦ ÁÙ ¼ö ÀÖµµ·Ï SpecHandleÀ» »ı¼ºÇÏ¿© Àü´Ş
 		FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
-		// ì¸í„°í˜ì´ìŠ¤ë¥¼ í†µí•´ ìœ„ì¹˜ ì •ë³´ íšë“ (SavedTargetBlockì€ ì´ì œ AActor*)
-		IBlockInfoInterface* BlockInfo = Cast<IBlockInfoInterface>(SavedTargetBlock.Get());
-		FVector TargetLoc = BlockInfo ? BlockInfo->GetBlockLocation() : SavedTargetBlock.Get()->GetActorLocation();
-
+		// Æø¹ß¹° ÃÊ±âÈ­
 		NewExplosive->Initialize(
 			SpawnLoc,
 			SavedTargetBlock.Get(),
@@ -257,10 +291,11 @@ void UGA_StickyBomb::SpawnExplosive()
 			DestructionEffect
 		);
 
+		// ¼º°øÀûÀ¸·Î ´øÁ³À¸¹Ç·Î bWasCancelled = false.
+		// Æø¹ß ´ë±â´Â ÀÌÁ¦ ¾×ÅÍ°¡ ½º½º·Î ÇÏ°Å³ª, ÇÃ·¹ÀÌ¾î°¡ ´Ù½Ã ½ºÅ³À» ´­·¯ Ã³¸®
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 	}
-	else
-	{
+	else {
 		UE_LOG(LogTemp, Error, TEXT("GA_StickyBomb: Failed to spawn bomb or invalid target"));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 	}
@@ -268,32 +303,75 @@ void UGA_StickyBomb::SpawnExplosive()
 
 void UGA_StickyBomb::PerformDetonateAndEnd()
 {
+	// Æø¹ß¹° ¸®½ºÆ®ÀÇ ¾ÈÀüÇÑ ¼øÈ¸¸¦ À§ÇÑ º¹»ç
 	TArray<TWeakObjectPtr<AExplosive>> TempList = ExplosivesList;
+
+	// ¿øº» ¸®½ºÆ®´Â Áï½Ã ºñ¿ò (Áßº¹ Ã³¸® ¹æÁö ¹× ±ò²ûÇÑ »óÅÂ À¯Áö)
 	ExplosivesList.Empty();
 
+	// ¸®½ºÆ®¿¡ ÀÖ´Â ¸ğµç À¯È¿ÇÑ Æø¹ß¹° ±âÆø
 	bool bAnyDetonated = false;
+
 	for (TWeakObjectPtr<AExplosive>& Explosive : TempList)
 	{
 		if (Explosive.IsValid())
 		{
+			// Æø¹ß ½ÇÇà (°¢ Æø¹ß¹°ÀÇ ³»ºÎ ·ÎÁ÷ ½ÇÇà)
 			Explosive->Detonate();
 			bAnyDetonated = true;
 		}
 	}
 
+	// Æø¹ß¹° ¸ñ·Ï ÃÊ±âÈ­
+	ExplosivesList.Empty();
+
+	if (!bAnyDetonated)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GA_StickyBomb: Detonate requested but no valid bombs found."));
+	}
+
+	// ±âÆøÀ» ¼öÇàÇßÀ¸¹Ç·Î ÁØºñ »óÅÂ ÇØÁ¦
 	bIsDetonationReady = false;
+
+	// ±âÆø ½ÃÁ¡¿¡ ÄğÅ¸ÀÓ Àû¿ë 
+	// 3°³¸¦ ´Ù ´øÁö°í ÅÍ¶ß·ÈÀ¸¹Ç·Î ÀÌÁ¦ ÄğÅ¸ÀÓÀÌ µ¹¾Æ¾ß ÇÔ
 	CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+// ÇÏÀÌ¶óÀÌÆ® Á¦°Å ·ÎÁ÷
+void UGA_StickyBomb::ClearHighlights()
+{
+	// ÀúÀåµÈ ÇÁ¸®ºä ºí·ÏµéÀÇ »óÅÂ¸¦ 'None'À¸·Î º¹±¸
+	BatchHighlightBlocks(PreviewedBlocks, EBlockHighlightState::None);
+
+	// ¸ñ·Ï ÃÊ±âÈ­
+	PreviewedBlocks.Empty();
+	HighlightedBlock.Reset();
 }
 
 void UGA_StickyBomb::OnExplosiveDetonated()
 {
-	ExplosivesList.RemoveAll([](const TWeakObjectPtr<AExplosive>& Ptr) { return !Ptr.IsValid(); });
-
+	// Æø¹ß¹°ÀÌ ÅÍÁö¸é RemoveAll¿¡ ÀÇÇØ »èÁ¦µÊ
+	// ¿¹¿Ü »óÈ²À¸·Î ÀÎÇØ OnExplosiveDetonated°¡ È£ÃâµÇÁö ¾ÊÀº °æ¿ìµµ
+	// ´ÙÀ½ OnExplosiveDetonated È£Ãâ ½ÃÁ¡¿¡ Á¤¸®µÊ
+	ExplosivesList.RemoveAll([](const TWeakObjectPtr<AExplosive>& Ptr) {
+		return !Ptr.IsValid();
+		});
+	
+	// ExplosivesList°¡ ºñ¾îÀÖ´Ù¸é ¸ğµç Æø¹ß¹°ÀÌ ÅÍÁø °ÍÀÌ¹Ç·Î ÄğÅ¸ÀÓ ½ÃÀÛ
+	// (±âÆø ÀÔ·ÂÀ» ³Ö±âµµ Àü¿¡ ¸ğµç Æø¹ß¹°ÀÌ »ç¶óÁø °æ¿ì ´ëºñ)
 	if (ExplosivesList.Num() == 0)
 	{
+		// ¸ğµç ÆøÅºÀÌ ¼ÒÁøµÇ¾úÀ¸¹Ç·Î ÁØºñ »óÅÂ ÇØÁ¦
 		bIsDetonationReady = false;
+
+		// ½ºÅ³ÀÌ EndAbility·Î Á¾·áµÈ »óÅÂ¿©µµ
+		// InstancedPerActor Á¤Ã¥ÀÌ¶ó¸é °´Ã¼´Â »ì¾ÆÀÖÀ¸¹Ç·Î
+		// ÄğÅ¸ÀÓ Effect¸¦ Àû¿ëÇÒ ¼ö ÀÖÀ½.
 		CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
-		UE_LOG(LogTemp, Log, TEXT("GA_StickyBomb: All bombs detonated. Cooldown started."));
+
+		UE_LOG(LogTemp, Log, TEXT("GA_StickyBomb: All bombs detonated/destroyed. Cooldown started."));
 	}
 }

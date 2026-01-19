@@ -26,7 +26,10 @@ class ENEMY_API ADragonAI : public AEnemyAI
 public:
 	ADragonAI();
 
-	virtual void Tick(float DeltaTime) override;
+	// 가장 가까운 플레이어를 찾아 타겟으로 지정하고, 시선을 고정(SetFocus)하는 함수
+	// BlueprintCallable을 붙여서 비헤이비어 트리 태스크(BTTask)에서 바로 부를 수 있게 합니다.
+	UFUNCTION(BlueprintCallable, Category = "Dragon AI")
+	AActor* UpdateTargetToNearestPlayer();
 
 protected:
 	/** 부모의 로직(타겟 찾기) + 드래곤 전용 로직(공격 판단) 실행 */
@@ -47,5 +50,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")
 	FName BBKey_Phase = "Phase"; // 현재 페이즈 (1, 2, 3...)
 
+	static const FName BBKey_TargetActor;
 	static const FName BBKey_DistanceToTarget;
 };

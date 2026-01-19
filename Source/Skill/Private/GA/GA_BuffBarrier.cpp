@@ -1,19 +1,22 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
+
 
 #include "GA/GA_BuffBarrier.h"
-#include "BlockInfoInterface.h"
-#include "BlockSpawnInterface.h"
+#include "Block/BlockBase.h"
+#include "Interface/IAttributeSetProvider.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "Engine/OverlapResult.h"
-#include "BlockGameplayTags.h"
-#include "SkillGameplayTags.h"
+
+// ÆäÀÌÁî °ü¸®¸¦ À§ÇÑ ÅÂ±× Á¤ÀÇ
+UE_DEFINE_GAMEPLAY_TAG(TAG_BuffBarrier_Phase1, "State.Skill.BuffBarrier.Phase1");
+UE_DEFINE_GAMEPLAY_TAG(TAG_BuffBarrier_Phase2, "State.Skill.BuffBarrier.Phase2");
 
 UGA_BuffBarrier::UGA_BuffBarrier()
 {
-	// ê°ì²´ ìƒì„± ì •ì±…: ë©¤ë²„ ë³€ìˆ˜(HighlightedBlocks, SpawnedWalls) ìœ ì§€ë¥¼ ìœ„í•´
+	// °´Ã¼ »ı¼º Á¤Ã¥: ¸â¹ö º¯¼ö(HighlightedBlocks, SpawnedWalls) À¯Áö¸¦ À§ÇØ
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
@@ -35,44 +38,35 @@ void UGA_BuffBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		CachedASC = ASC;
 	}
 
-	if (UWorld* World = GetWorld())
-	{
-		if (!BlockSpawner) {
-			// BlockSpawner ìºì‹±
-			BlockSpawner = IBlockSpawnInterface::GetBlockManagerSubsystem(World);
-		}
-	}
-	else {
-		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ActivateAbility - World is null"));
-	}
 
-	// í˜„ì¬ ASCì— ë¶™ì–´ìˆëŠ” íƒœê·¸ë¥¼ ê¸°ë°˜ìœ¼ë¡œ í˜ì´ì¦ˆ ê²°ì •
-	if (ASC->HasMatchingGameplayTag(TAG_Skill_BuffBarrier_Phase2))
+
+	// ÇöÀç ASC¿¡ ºÙ¾îÀÖ´Â ÅÂ±×¸¦ ±â¹İÀ¸·Î ÆäÀÌÁî °áÁ¤
+	if (ASC->HasMatchingGameplayTag(TAG_BuffBarrier_Phase2))
 	{
-		// 2í˜ì´ì¦ˆ íƒœê·¸ê°€ ìˆìœ¼ë©´ -> 3ë‹¨ê³„(í•´ì œ) ì‹¤í–‰
+		// 2ÆäÀÌÁî ÅÂ±×°¡ ÀÖÀ¸¸é -> 3´Ü°è(ÇØÁ¦) ½ÇÇà
 		ExecutePhase3_Cleanup();
 	}
-	else if (ASC->HasMatchingGameplayTag(TAG_Skill_BuffBarrier_Phase1))
+	else if (ASC->HasMatchingGameplayTag(TAG_BuffBarrier_Phase1))
 	{
-		// 1í˜ì´ì¦ˆ íƒœê·¸ê°€ ìˆìœ¼ë©´ -> 2ë‹¨ê³„(ì„¤ì¹˜) ì‹¤í–‰
+		// 1ÆäÀÌÁî ÅÂ±×°¡ ÀÖÀ¸¸é -> 2´Ü°è(¼³Ä¡) ½ÇÇà
 		ExecutePhase2_Deploy();
 	}
 	else
 	{
-		// íƒœê·¸ê°€ ì—†ìœ¼ë©´ -> 1ë‹¨ê³„(ì‹œì‘) ì‹¤í–‰
+		// ÅÂ±×°¡ ¾øÀ¸¸é -> 1´Ü°è(½ÃÀÛ) ½ÇÇà
 		ExecutePhase1_Highlight();
 	}
 }
 
 void UGA_BuffBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// ë¶€ëª¨ í´ë˜ìŠ¤ì˜ EndAbility í˜¸ì¶œ (State.Casting íƒœê·¸ ì œê±° ë“±)
+	// ºÎ¸ğ Å¬·¡½ºÀÇ EndAbility È£Ãâ (State.Casting ÅÂ±× Á¦°Å µî)
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
 void UGA_BuffBarrier::ExecutePhase1_Highlight()
 {
-	// ë¹„ìš© ì§€ë¶ˆ (ì²« ì‹œì „ì‹œì—ë§Œ ë¹„ìš© ì†Œëª¨, ì¿¨íƒ€ì„ì€ ë‚˜ì¤‘ì—)
+	// 1. ºñ¿ë ÁöºÒ (Ã¹ ½ÃÀü½Ã¿¡¸¸ ºñ¿ë ¼Ò¸ğ, ÄğÅ¸ÀÓÀº ³ªÁß¿¡)
 	if (!CommitAbilityCost(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::ExecutePhase1 - Failed to commit cost"));
@@ -80,74 +74,88 @@ void UGA_BuffBarrier::ExecutePhase1_Highlight()
 		return;
 	}
 
-	ClearHighlights(HighlightedBlocks);
+	// 2. µ¥ÀÌÅÍ ÃÊ±âÈ­ (Àç»ç¿ë ½Ã ¾ÈÀüÀåÄ¡)
+	HighlightedBlocks.Empty();
 	if (SpawnedWalls.Num() > 0)
 	{
-		for (TWeakObjectPtr<AActor>& Wall : SpawnedWalls)
+		for (auto& Wall : SpawnedWalls)
 		{
-			if (Wall.IsValid()) Wall.Get()->Destroy();
+			if (Wall && IsValid(Wall)) Wall->Destroy();
 		}
 		SpawnedWalls.Empty();
 	}
 
 	InstallCenterLocation = GetAvatarActorFromActorInfo()->GetActorLocation();
 
-	// ë²”ìœ„ ê³„ì‚° ë° ë¸”ë¡ ìˆ˜ì§‘
+	// 3. ¹üÀ§ °è»ê ¹× ºí·Ï ¼öÁı
+	// Rune modifier Àû¿ëµÈ ¹üÀ§¸¦ °è»êÇÏ¿© RangeXY ¾÷µ¥ÀÌÆ® (RangeZ´Â °Çµå¸®Áö ¾ÊÀ½)
 	float OriginalRange = RangeXY;
-	RangeXY *= GetRuneModifiedRange(); // ë£¬ ì ìš©
+	RangeXY *= GetRuneModifiedRange(); // ·é Àû¿ë
+	// RangeXY µğ¹ö±× Ãâ·Â
+	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::ExecutePhase1 - Modified RangeXY: %f"), RangeXY);
 
+	// ºÎ¸ğ Å¬·¡½ºÀÇ FindBlocksInRange »ç¿ë
 	FindBlocksInRange(HighlightedBlocks);
 
-	// RangeXY ë³µêµ¬
+	// RangeXY º¹±¸ (´ÙÀ½ ÇÁ·¹ÀÓÀ» À§ÇØ ¿ø»óº¹±¸)
 	RangeXY = OriginalRange;
 
 	if (HighlightedBlocks.Num() == 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::ExecutePhase1 - No blocks found in range"));
+		// ºí·ÏÀÌ ¾ø¾îµµ ·ÎÁ÷»ó ÅÂ±×´Â ºÙ¿©¼­ ´ÙÀ½ ´Ü°è·Î °¥Áö, Á¾·áÇÒÁö °áÁ¤ÇØ¾ß ÇÔ.
+		// ¿©±â¼­´Â ºí·ÏÀÌ ¾øÀ¸¸é ÀÇ¹Ì°¡ ¾øÀ¸¹Ç·Î Áï½Ã Á¾·á
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
 
-	// í•˜ì´ë¼ì´íŠ¸ ì ìš©
-	BatchHighlightBlocks(HighlightedBlocks, TAG_Block_Highlight_Preview);
+	// 4. ÇÏÀÌ¶óÀÌÆ® Àû¿ë (Preview »ö»ó)
+	BatchHighlightBlocks(HighlightedBlocks, EBlockHighlightState::Preview);
 
-	// íƒœê·¸ ë¶€ì°© (Phase 1 ì‹œì‘ ì•Œë¦¼)
-	if (CachedASC.IsValid())
+	// 5. ÅÂ±× ºÎÂø (Phase 1 ½ÃÀÛ ¾Ë¸²)
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (ASC)
 	{
-		CachedASC->AddLooseGameplayTag(TAG_Skill_BuffBarrier_Phase1);
+		ASC->AddLooseGameplayTag(TAG_BuffBarrier_Phase1);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase1 - ASC is invalid"));
+		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase1 - ASC is null, cannot add tag"));
 	}
 
-	// ìë™ ì „í™˜ íƒ€ì´ë¨¸ ì„¤ì •
+	// 6. ÀÚµ¿ ÀüÈ¯ Å¸ÀÌ¸Ó ¼³Á¤
 	if (UWorld* World = GetWorld())
 	{
+		// ±âÁ¸ Å¸ÀÌ¸Ó°¡ ÀÖ´Ù¸é Á¤¸®
 		World->GetTimerManager().ClearTimer(AutoTransitionTimerHandle);
+
+		// Å¸ÀÌ¸Ó ½Ã°£ À¯È¿¼º Ã¼Å© (0ÃÊ¸é Áï½Ã ½ÇÇàµÇ¾î ²¿ÀÏ ¼ö ÀÖÀ½)
 		float WaitTime = (AutoTransitionTime > 0.0f) ? AutoTransitionTime : 0.1f;
 
-		// ì–´ë–¤ ì´ìœ ë¡œ GA ê°ì²´ê°€ ì‚¬ë¼ì¡Œì„ ë•Œë¥¼ ëŒ€ë¹„í•œ TWeakObjectPtr ë°©ì–´ í”„ë¡œê·¸ë˜ë°
-		// InstnacedPerActor ì •ì±…ì´ë¯€ë¡œ GA ê°ì²´ê°€ ìœ ì§€ë˜ê¸´ í•˜ì§€ë§Œ ì•ˆì „ì„ ìœ„í•´
+		// WeakObjectPtr¸¦ »ç¿ëÇÏ¿© Ability Á¾·á ÈÄ¿¡µµ Å¸ÀÌ¸Ó°¡ ¾ÈÀüÇÏ°Ô È£ÃâµÇµµ·Ï ÇÔ
 		TWeakObjectPtr<UGA_BuffBarrier> WeakThis(this);
 		World->GetTimerManager().SetTimer(AutoTransitionTimerHandle, [WeakThis]()
+		{
+			if (WeakThis.IsValid())
 			{
-				if (WeakThis.IsValid())
-				{
-					WeakThis->OnAutoTransition();
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::AutoTransition - Ability object is invalid"));
-				}
-			}, WaitTime, false);
+				WeakThis->OnAutoTransition();
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::AutoTransition - Ability object is no longer valid"));
+			}
+		}, WaitTime, false);
+		
+		UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::ExecutePhase1 - Timer Set for %.2f seconds"), WaitTime);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase1 - World is null"));
 	}
 
-	// ìŠ¤í‚¬ ì¢…ë£Œ (íƒœê·¸ëŠ” ë‚¨ê¹€)
+	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Phase 1 Highlighted %d blocks"), HighlightedBlocks.Num());
+
+	// 7. ½ºÅ³ Á¾·á (ÅÂ±×´Â ³²±â°í »ı¸íÁÖ±â´Â Á¾·áÇÏ¿© ´Ù¸¥ Çàµ¿ °¡´ÉÇÏ°Ô ÇÔ)
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
@@ -156,6 +164,7 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	UWorld* World = GetWorld();
 
+	// 1. Å¸ÀÌ¸Ó ¹× ÀÌÀü ÅÂ±× Á¤¸®
 	if (World)
 	{
 		World->GetTimerManager().ClearTimer(AutoTransitionTimerHandle);
@@ -163,32 +172,28 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 
 	if (ASC)
 	{
-		ASC->RemoveLooseGameplayTag(TAG_Skill_BuffBarrier_Phase1);
-		ASC->AddLooseGameplayTag(TAG_Skill_BuffBarrier_Phase2);
+		ASC->RemoveLooseGameplayTag(TAG_BuffBarrier_Phase1);
+		ASC->AddLooseGameplayTag(TAG_BuffBarrier_Phase2);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase2 - ASC is null"));
 	}
 
-	// 1. ê°€ì¥ìë¦¬ ë¸”ë¡ ì°¾ê¸°
-	TArray<TWeakObjectPtr<AActor>> EdgeBlocks;
+	// 2. °¡ÀåÀÚ¸® ºí·Ï Ã£±â
+	TArray<ABlockBase*> EdgeBlocks;
 	FindEdgeBlocks(HighlightedBlocks, EdgeBlocks);
 
-	// 2. ìš¸íƒ€ë¦¬ ìƒì„±
-	if (BlockSpawner)
+	// 3. ¿ïÅ¸¸® »ı¼º
+	if (WallBlockClass && World)
 	{
-		for (TWeakObjectPtr<AActor>& BaseBlock : EdgeBlocks)
+		for (ABlockBase* BaseBlock : EdgeBlocks)
 		{
-			if (!BaseBlock.IsValid()) continue;
-			IBlockInfoInterface* BlockInfo = Cast<IBlockInfoInterface>(BaseBlock.Get());
-			if (!BlockInfo) continue;
+			if (!BaseBlock) continue;
 
-			// ì¸í„°í˜ì´ìŠ¤ë¥¼ í†µí•´ ìœ„ì¹˜ ë° ê·¸ë¦¬ë“œ ì‚¬ì´ì¦ˆ íšë“
-			FVector SpawnLoc = BlockInfo->GetBlockLocation() + FVector(0, 0, BlockInfo->GetBlockGridSize());
-
-			// íƒœê·¸ë¥¼ ì‚¬ìš©í•˜ì—¬ ë¸”ë¡ ìƒì„±
-			AActor* NewWall = BlockSpawner->SpawnBlockByTag(TAG_Block_Type_Destructible, SpawnLoc, FRotator::ZeroRotator, false);
+			// ±âÁØ ºí·Ï ¹Ù·Î À§¿¡ »ı¼º
+			FVector SpawnLoc = BaseBlock->GetActorLocation() + FVector(0, 0, BaseBlock->GetGridSize());
+			ABlockBase* NewWall = ABlockBase::SpawnBlock(World, WallBlockClass, SpawnLoc, false);
 
 			if (NewWall)
 			{
@@ -196,43 +201,36 @@ void UGA_BuffBarrier::ExecutePhase2_Deploy()
 			}
 			else
 			{
-				UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::ExecutePhase2 - Failed to spawn wall via tag"));
+				UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::ExecutePhase2 - Failed to spawn wall at %s"), *SpawnLoc.ToString());
 			}
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase2 - BlockSpawner is null"));
+		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase2 - WallBlockClass or World is null"));
 	}
 
-	// ë²„í”„ ì ìš©
+	// 4. ¹öÇÁ Àû¿ë
 	ApplyBuffToTargets();
 
-	// ìë™ ì „í™˜ íƒ€ì´ë¨¸ ì¬ì„¤ì •
+	// 5. ÀÚµ¿ ÀüÈ¯ Å¸ÀÌ¸Ó Àç¼³Á¤ (3´Ü°è·Î ³Ñ¾î°¡±â À§ÇÔ)
 	if (World)
 	{
-		World->GetTimerManager().ClearTimer(AutoTransitionTimerHandle);
-		float WaitTime = (AutoTransitionTime > 0.0f) ? AutoTransitionTime : 0.1f;
-
-		// ì–´ë–¤ ì´ìœ ë¡œ GA ê°ì²´ê°€ ì‚¬ë¼ì¡Œì„ ë•Œë¥¼ ëŒ€ë¹„í•œ TWeakObjectPtr ë°©ì–´ í”„ë¡œê·¸ë˜ë°
-		// InstnacedPerActor ì •ì±…ì´ë¯€ë¡œ GA ê°ì²´ê°€ ìœ ì§€ë˜ê¸´ í•˜ì§€ë§Œ ì•ˆì „ì„ ìœ„í•´
 		TWeakObjectPtr<UGA_BuffBarrier> WeakThis(this);
 		World->GetTimerManager().SetTimer(AutoTransitionTimerHandle, [WeakThis]()
+		{
+			if (WeakThis.IsValid())
 			{
-				if (WeakThis.IsValid())
-				{
-					WeakThis->OnAutoTransition();
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::AutoTransition - Ability object is invalid"));
-				}
-			}, WaitTime, false);
+				WeakThis->OnAutoTransition();
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::AutoTransition - Ability object is no longer valid"));
+			}
+		}, AutoTransitionTime, false);
 	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase1 - World is null"));
-	}
+
+	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Phase 2 Deployed %d walls"), SpawnedWalls.Num());
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
@@ -242,6 +240,7 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
 	UWorld* World = GetWorld();
 
+	// 1. Å¸ÀÌ¸Ó ¹× ÅÂ±× Á¤¸®
 	if (World)
 	{
 		World->GetTimerManager().ClearTimer(AutoTransitionTimerHandle);
@@ -249,99 +248,117 @@ void UGA_BuffBarrier::ExecutePhase3_Cleanup()
 
 	if (ASC)
 	{
-		ASC->RemoveLooseGameplayTag(TAG_Skill_BuffBarrier_Phase2);
+		ASC->RemoveLooseGameplayTag(TAG_BuffBarrier_Phase2);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ExecutePhase3 - ASC is null"));
 	}
 
-	// ìƒì„±ëœ ë²½ ì œê±°
-	for (TWeakObjectPtr<AActor>& Wall : SpawnedWalls)
+	// 2. º® Á¦°Å
+	for (ABlockBase* Wall : SpawnedWalls)
 	{
-		if (Wall.IsValid())
+		if (Wall && IsValid(Wall))
 		{
-			Wall.Get()->Destroy();
+			Wall->Destroy();
 		}
 	}
 	SpawnedWalls.Empty();
 
-	// ë°”ë‹¥ í•˜ì´ë¼ì´íŠ¸ ì œê±°
-	ClearHighlights(HighlightedBlocks);
+	// 3. ¹Ù´Ú ÇÏÀÌ¶óÀÌÆ® º¹±¸
+	BatchHighlightBlocks(HighlightedBlocks, EBlockHighlightState::None);
+	HighlightedBlocks.Empty();
 
-	// ì¿¨íƒ€ì„ ì ìš©
+	// 4. ÄğÅ¸ÀÓ Àû¿ë (¸ğµç ½ÃÄö½º°¡ ³¡³­ ½ÃÁ¡¿¡¼­ Àû¿ë)
 	CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+
+	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Phase 3 Cleanup complete"));
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 void UGA_BuffBarrier::OnAutoTransition()
 {
+	UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::OnAutoTransition - Timer Fired"));
+
+	// CachedASC À¯È¿¼º °Ë»ç
 	if (CachedASC.IsValid())
 	{
+		// ´Ù½Ã È°¼ºÈ­ ½Ãµµ
 		bool bSuccess = CachedASC->TryActivateAbility(CurrentSpecHandle);
+
 		if (!bSuccess)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::OnAutoTransition - Failed to auto-activate"));
+			UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::OnAutoTransition - Failed to auto-activate ability."));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier::OnAutoTransition - Successfully reactivated for next phase"));
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::OnAutoTransition - Cached ASC is invalid"));
+		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::OnAutoTransition - Cached ASC is invalid or expired"));
 	}
 }
 
-void UGA_BuffBarrier::FindEdgeBlocks(const TArray<TWeakObjectPtr<AActor>>& InBlocks, TArray<TWeakObjectPtr<AActor>>& OutEdges)
+void UGA_BuffBarrier::FindEdgeBlocks(const TArray<ABlockBase*>& InBlocks, TArray<ABlockBase*>& OutEdges)
 {
 	OutEdges.Empty();
 	if (InBlocks.Num() == 0) return;
 
-	// ì²« ë²ˆì§¸ ìœ íš¨í•œ ë¸”ë¡ì—ì„œ ê·¸ë¦¬ë“œ ì‚¬ì´ì¦ˆ íšë“ (ì¸í„°í˜ì´ìŠ¤ ì‚¬ìš©)
-	IBlockInfoInterface* FirstBlock = nullptr;
-	for (const TWeakObjectPtr<AActor>& WeakBlock : InBlocks)
-	{
-		if (WeakBlock.IsValid())
-		{
-			FirstBlock = Cast<IBlockInfoInterface>(WeakBlock.Get());
-			if (FirstBlock) break;
-		}
-	}
-	if (!FirstBlock) return;
+	float GridSize = InBlocks[0]->GetGridSize();
+	float Tolerance = 5.0f;
 
-	float GridSize = FirstBlock->GetBlockGridSize();
-
+	// [ÃÖÀûÈ­] O(N^2)¸¦ ¹æÁöÇÏ±â À§ÇØ À§Ä¡ Á¶È¸¸¦ À§ÇÑ Set »ı¼º (O(N))
+	// FVector¸¦ Key·Î ¾²±â À§ÇØ ¾à°£ÀÇ ¿ÀÂ÷¸¦ °í·ÁÇØ¾ß ÇÏÁö¸¸, ºí·ÏÀÌ ±×¸®µå¿¡ Á¤·ÄµÇ¾î ÀÖ´Ù°í °¡Á¤
 	TSet<FVector> BlockLocations;
-	for (const TWeakObjectPtr<AActor>& WeakActor : InBlocks)
+	BlockLocations.Reserve(InBlocks.Num());
+
+	for (ABlockBase* Block : InBlocks)
 	{
-		if (WeakActor.IsValid())
+		if (Block)
 		{
-			BlockLocations.Add(WeakActor.Get()->GetActorLocation());
+			BlockLocations.Add(Block->GetActorLocation());
 		}
 	}
 
+	// 4¹æÇâ (»óÇÏÁÂ¿ì)
 	FVector Directions[] = { FVector(1,0,0), FVector(-1,0,0), FVector(0,1,0), FVector(0,-1,0) };
 
-	for (const TWeakObjectPtr<AActor>& WeakActor : InBlocks)
+	for (ABlockBase* Block : InBlocks)
 	{
-		if (!WeakActor.IsValid()) continue;
-		IBlockInfoInterface* Info = Cast<IBlockInfoInterface>(WeakActor.Get());
-		if (!Info) continue;
+		if (!Block) continue;
 
-		FVector MyLoc = Info->GetBlockLocation();
+		FVector MyLoc = Block->GetActorLocation();
 		int32 NeighborCount = 0;
 
 		for (const FVector& Dir : Directions)
 		{
 			FVector CheckLoc = MyLoc + (Dir * GridSize);
+
+			// [ÃÖÀûÈ­] ÀÌÁß ¹İº¹¹® ´ë½Å Set¿¡¼­ °Ë»ö (O(1))
+			// ºÎµ¿¼Ò¼öÁ¡ ¿ÀÂ÷¸¦ °í·ÁÇØ¾ß ÇÑ´Ù¸é FIntVector º¯È¯ÀÌ³ª º°µµ Ã³¸®°¡ ÇÊ¿äÇÒ ¼ö ÀÖÀ¸³ª,
+			// ±×¸®µå ½Ã½ºÅÛÀÌ Á¤È®ÇÏ´Ù¸é Set.Contains·Î ÃæºĞÇÔ. 
+			// ¸¸¾à Set °Ë»öÀÌ ½ÇÆĞÇÑ´Ù¸é, Tolerance ¹üÀ§ ³» °Ë»ö ·ÎÁ÷À¸·Î ´ëÃ¼ ÇÊ¿äÇÒ ¼ö ÀÖÀ½.
+			// ¿©±â¼­´Â ±âÁ¸ ·ÎÁ÷ÀÇ Tolerance(5.0f)¸¦ °í·ÁÇÏ¿© Set °Ë»ö ´ë½Å FindClosestKey µîÀ» ¾²°Å³ª,
+			// ´Ü¼øÈ÷ ±×¸®µå ÁÂÇ¥°¡ Á¤È®ÇÏ´Ù°í °¡Á¤ÇÏ°í Contains¸¦ »ç¿ë.
 			if (BlockLocations.Contains(CheckLoc))
 			{
 				NeighborCount++;
 			}
+			else
+			{
+				// Á¤È®È÷ ÀÏÄ¡ÇÏÁö ¾Ê´Â °æ¿ì¸¦ ´ëºñÇØ, Set ¼øÈ¸ ¾øÀÌ 
+				// ÇöÀç ½Ã½ºÅÛ»ó ºí·ÏµéÀÌ Á¤¼ö ´ÜÀ§ ±×¸®µå¿¡ µü ¸Â°Ô ¹èÄ¡µÈ´Ù¸é À§ Contains·Î ÃæºĞÇÔ.
+				// ¸¸¾à ¹Ì¼¼ÇÑ ¿ÀÂ÷°¡ ÀÖ´Ù¸é ±âÁ¸ ¹æ½ÄÀ» ½á¾ßÇÏ³ª, ¿©±â¼­´Â ÃÖÀûÈ­¸¦ À§ÇØ ÁÂÇ¥ Á¤ÇÕ¼ºÀ» °¡Á¤ÇÔ.
+			}
 		}
 
+		// 4¸é Áß ÇÏ³ª¶óµµ ¶Õ·ÁÀÖÀ¸¸é(ÀÌ¿ôÀÌ ¾øÀ¸¸é) °¡ÀåÀÚ¸®·Î ÆÇÁ¤
 		if (NeighborCount < 4)
 		{
-			OutEdges.Add(WeakActor);
+			OutEdges.Add(Block);
 		}
 	}
 }
@@ -361,61 +378,122 @@ void UGA_BuffBarrier::ApplyBuffToTargets()
 		return;
 	}
 
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (!OwnerPawn)
+	{
+		UE_LOG(LogTemp, Error, TEXT("GA_BuffBarrier::ApplyBuffToTargets - OwnerPawn is null"));
+		return;
+	}
+
 	FVector CenterLoc = InstallCenterLocation;
+
+	// ¹üÀ§ Àç°è»ê (Phase 1¿¡¼­ ½è´ø °ª°ú µ¿ÀÏÇØ¾ß ÇÔ)
 	float Radius = GetRuneModifiedRange() * RangeXY;
 
+	// ±¸Ã¼ ÇüÅÂÀÇ ¿À¹ö·¦ °Ë»ç
 	TArray<FOverlapResult> OverlapResults;
 	FCollisionShape OverlapShape = FCollisionShape::MakeSphere(Radius);
-	FCollisionObjectQueryParams ObjectQueryParams(ECC_Pawn);
+
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn); // Pawn Å¸ÀÔ¸¸ 1Â÷ ÇÊÅÍ¸µ
+
 	FCollisionQueryParams QueryParams;
 
-	bool bOverlap = World->OverlapMultiByObjectType(OverlapResults, CenterLoc, FQuat::Identity, ObjectQueryParams, OverlapShape, QueryParams);
+	bool bOverlap = World->OverlapMultiByObjectType(
+		OverlapResults,
+		CenterLoc,
+		FQuat::Identity,
+		ObjectQueryParams,
+		OverlapShape,
+		QueryParams
+	);
 
 	if (bOverlap)
 	{
+		// [Ãß°¡] 2. ÀÌ¹Ì Ã³¸®µÈ ¾×ÅÍ¸¦ °É·¯³»±â À§ÇÑ ÁıÇÕ(Set)
+		// OverlapMulti´Â ÄÄÆ÷³ÍÆ® ´ÜÀ§·Î °ËÃâµÇ¹Ç·Î(Ä¸½¶, ¸Ş½¬ µî), ÇÑ ¾×ÅÍ°¡ ¿©·¯ ¹ø ÀâÈ÷´Â °ÍÀ» ¹æÁö
 		TSet<AActor*> ProcessedActors;
+
 		for (const FOverlapResult& Result : OverlapResults)
 		{
 			AActor* TargetActor = Result.GetActor();
-			if (!TargetActor || ProcessedActors.Contains(TargetActor)) continue;
+			if (!TargetActor) continue;
 
+			// [Ãß°¡] 3. Áßº¹ Ã³¸® ¹æÁö
+			if (ProcessedActors.Contains(TargetActor))
+			{
+				continue;
+			}
 			ProcessedActors.Add(TargetActor);
 
-			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
-			if (TargetASC && TargetASC->HasMatchingGameplayTag(TAG_Player))
+			// 1. À¯È¿¼º °Ë»ç: IAttributeSetProvider ÀÎÅÍÆäÀÌ½º ±¸Çö ¿©ºÎ È®ÀÎ
+			// ÀÌ°ÍÀ» ÅëÇØ ÀÏ¹İ ¾×ÅÍ³ª ¹è°æ µîÀ» °Å¸¦ ¼ö ÀÖÀ½
+			if (!TargetActor->Implements<UAttributeSetProvider>())
 			{
-				FGameplayEffectContextHandle Context = MakeEffectContext(CurrentSpecHandle, CurrentActorInfo);
-				FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(BuffEffectClass, GetAbilityLevel(), Context);
+				continue;
+			}
 
-				if (SpecHandle.IsValid())
+			// 2. ASC °¡Á®¿À±â
+			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+			if (TargetASC)
+			{
+				// 2. TAG_Player ÅÂ±×¸¦ °¡Áö°í ÀÖ´ÂÁö È®ÀÎ
+				if (TargetASC->HasMatchingGameplayTag(TAG_Player))
 				{
-					SpecHandle.Data.Get()->SetSetByCallerMagnitude(TAG_Data_Damage, GetRuneModifiedDamage());
-					GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+					// 3. ¹öÇÁ Àû¿ë
+					FGameplayEffectContextHandle Context = MakeEffectContext(CurrentSpecHandle, CurrentActorInfo);
+					FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponentFromActorInfo()->MakeOutgoingSpec(BuffEffectClass, GetAbilityLevel(), Context);
+
+					if (SpecHandle.IsValid())
+					{
+
+						FGameplayTag MagnitudeTag = FGameplayTag::RequestGameplayTag(FName("Data.Skill.Damage"));
+						SpecHandle.Data.Get()->SetSetByCallerMagnitude(MagnitudeTag, GetRuneModifiedDamage());
+						GetAbilitySystemComponentFromActorInfo()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+
+						// ¹öÇÁ Àû¿ë È®ÀÎ¿ë ·Î±×
+						UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Applied Buff [%s] to Player Target [%s]"),
+							*BuffEffectClass->GetName(), *TargetActor->GetName());
+					}
+					else
+					{
+						UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier: Failed to create SpecHandle for target %s"), *TargetActor->GetName());
+					}
 				}
-				else {
-					UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier::ApplyBuffToTargets - Failed to create SpecHandle"));
+				else
+				{
+					// ÇÃ·¹ÀÌ¾î ÅÂ±×°¡ ¾ø´Â °æ¿ì ·Î±×
+					UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: Target %s has ASC but no Player tag, skipping."), *TargetActor->GetName());
 				}
 			}
-			else {
-				// ASCê°€ ì—†ê±°ë‚˜ í”Œë ˆì´ì–´ê°€ ì•„ë‹Œ ê²½ìš° ë¬´ì‹œ
+			else
+			{
+				// ASC°¡ ¾ø´Â °æ¿ì ·Î±×
+				UE_LOG(LogTemp, Warning, TEXT("GA_BuffBarrier: Target %s has no ASC"), *TargetActor->GetName());
 			}
 		}
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: No targets found in radius"));
+		UE_LOG(LogTemp, Log, TEXT("GA_BuffBarrier: No targets found for buff within radius %f"), Radius);
 	}
 }
 
-bool UGA_BuffBarrier::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, FGameplayTagContainer* OptionalRelevantTags) const
+bool UGA_BuffBarrier::CheckCost(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	FGameplayTagContainer* OptionalRelevantTags) const
 {
+	// ActorInfo³ª ASC°¡ À¯È¿ÇÏ´Ù¸é ÅÂ±× È®ÀÎ
 	if (ActorInfo && ActorInfo->AbilitySystemComponent.IsValid())
 	{
-		if (ActorInfo->AbilitySystemComponent->HasAnyMatchingGameplayTags(
-			FGameplayTagContainer::CreateFromArray(TArray<FGameplayTag>{TAG_Skill_BuffBarrier_Phase1, TAG_Skill_BuffBarrier_Phase2})))
+		// 1ÆäÀÌÁî³ª 2ÆäÀÌÁî ÅÂ±×°¡ ºÙ¾îÀÖ´Ù¸é(ÀÌ¹Ì ½ºÅ³ ÁøÇà Áß), ºñ¿ë °Ë»ç¸¦ ÆĞ½º(true)
+		if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(TAG_BuffBarrier_Phase1) ||
+			ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(TAG_BuffBarrier_Phase2))
 		{
 			return true;
 		}
 	}
+
+	// ±× ¿Ü(Ã¹ ½ÃÀü)¿¡´Â ±âº» ºñ¿ë °Ë»ç ¼öÇà
 	return Super::CheckCost(Handle, ActorInfo, OptionalRelevantTags);
 }

@@ -1,4 +1,4 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 using UnrealBuildTool;
 
@@ -27,8 +27,7 @@ public class Winter2025 : ModuleRules
 			"GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks",
-            "MotionWarping",
-			"Winter2025Core"
+            "MotionWarping"
         });
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });

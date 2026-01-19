@@ -13,4 +13,5 @@ UCLASS()
 class WORLD_API ATerrainBlock : public ABlockBase
 {
 	GENERATED_BODY()
+	
 };

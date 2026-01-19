@@ -29,26 +29,11 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
-				"GameplayAbilities",
-				"DeveloperSettings"
-			]
-		},
-		{
-			"Name": "Skill",
-			"Type": "Runtime",
-			"LoadingPhase": "Default",
-			"AdditionalDependencies": [
-				"Engine",
 				"GameplayAbilities"
 			]
 		},
 		{
-			"Name": "Winter2025Core",
-			"Type": "Runtime",
-			"LoadingPhase": "Default"
-		},
-		{
-			"Name": "Player",
+			"Name": "Skill",
 			"Type": "Runtime",
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [

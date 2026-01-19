@@ -1,4 +1,4 @@
-ï»¿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,9 +8,10 @@
 
 class AExplosive;
 class UAbilityTask_WaitInputPress;
+class ABlockBase;
 
 /**
- * ë‹¨ë°œì„± í­ë°œë¬¼ íˆ¬ì²™ ìŠ¤í‚¬.
+ * ´Ü¹ß¼º Æø¹ß¹° ÅõÃ´ ½ºÅ³.
  */
 UCLASS()
 class SKILL_API UGA_Explosive : public UGA_SkillBase
@@ -34,54 +35,61 @@ public:
 		bool bWasCancelled) override;
 
 protected:
-	// --- ê¸°ëŠ¥ í•¨ìˆ˜ ---
+	// --- ±â´É ÇÔ¼ö ---
 
-	// ë§¤ í‹±ë§ˆë‹¤ í˜¸ì¶œë˜ì–´ ì¡°ì¤€ì„ (í”„ë¦¬ë·°) ì—…ë°ì´íŠ¸
+	// ¸Å Æ½¸¶´Ù È£ÃâµÇ¾î Á¶ÁØ¼±(ÇÁ¸®ºä) ¾÷µ¥ÀÌÆ®
 	UFUNCTION()
 	void UpdatePreview();
 
-	// ì¢Œí´ë¦­ ì´ë²¤íŠ¸ ìˆ˜ì‹  ì‹œ í˜¸ì¶œ (íˆ¬ì²™ í™•ì •)
+	// ÁÂÅ¬¸¯ ½Ã È£Ãâ (ÅõÃ´ È®Á¤)
 	UFUNCTION()
-	void OnLeftClickEventReceived(FGameplayEventData Payload);
+	void OnLeftClickPressed();
 
-	// ì·¨ì†Œ í‚¤ ì…ë ¥ ì‹œ í˜¸ì¶œ
+	// Ãë¼Ò Å° ÀÔ·Â ½Ã È£Ãâ
 	UFUNCTION()
 	void OnCancelPressed(float TimeWaited);
 
-	// ì‹¤ì œ í­ë°œë¬¼ ìƒì„± ë° íˆ¬ì²™ ì²˜ë¦¬ ë¡œì§
+	// ½ÇÁ¦ Æø¹ß¹° »ı¼º ¹× ÅõÃ´ Ã³¸® ·ÎÁ÷
 	void SpawnExplosive();
 
+	// ÇÏÀÌ¶óÀÌÆ®(ÇÁ¸®ºä) ÃÊ±âÈ­
+	void ClearHighlights();
 
-	// --- ë³€ìˆ˜ ë° ì„¤ì • ---
 
-	// ì¡°ì¤€ ì—…ë°ì´íŠ¸ë¥¼ ìœ„í•œ íƒ€ì´ë¨¸
+	// --- º¯¼ö ¹× ¼³Á¤ ---
+
+	// Á¶ÁØ ¾÷µ¥ÀÌÆ®¸¦ À§ÇÑ Å¸ÀÌ¸Ó
 	UPROPERTY()
 	FTimerHandle TickTimerHandle;
 
-	// ì…ë ¥ ëŒ€ê¸° íƒœìŠ¤í¬
+	// ÀÔ·Â ´ë±â ÅÂ½ºÅ©
 	UPROPERTY()
 	UAbilityTask_WaitInputPress* InputTask;
 
-	// ìƒì„±í•  í­ë°œë¬¼ í´ë˜ìŠ¤
+	// »ı¼ºÇÒ Æø¹ß¹° Å¬·¡½º
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 	TSubclassOf<AExplosive> ExplosiveClass;
 
-	// í­ë°œ ë°˜ê²½
+	// Æø¹ß ¹İ°æ
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 	float ExplosionRadius = 300.0f;
 
-	// íŒŒê´´ ì‹œ ì ìš©í•  ì´í™íŠ¸ (êµ¬ì¡°ë¬¼ íŒŒê´´ìš©)
+	// ÆÄ±« ½Ã Àû¿ëÇÒ ÀÌÆåÆ® (±¸Á¶¹° ÆÄ±«¿ë)
 	UPROPERTY(EditDefaultsOnly, Category = "Explosive")
 	TSubclassOf<UGameplayEffect> DestructionEffect;
 
 
-	// --- ìƒíƒœ ì €ì¥ìš© ---
+	// --- »óÅÂ ÀúÀå¿ë ---
 
-	// í˜„ì¬ ë§ˆìš°ìŠ¤ ì˜¤ë²„ëœ(ì´ˆë¡ìƒ‰/íƒ€ê²Ÿ) ë¸”ë¡
+	// ÇöÀç ÇÁ¸®ºä ÁßÀÎ(ÆÄ¶õ»ö) ºí·Ï ¸ñ·Ï
 	UPROPERTY()
-	TWeakObjectPtr<AActor> HighlightedBlock;
+	TArray<ABlockBase*> PreviewedBlocks;
 
-	// íˆ¬ì²™ í™•ì • ì‹œ ì €ì¥ëœ íƒ€ê²Ÿ ë¸”ë¡
+	// ÇöÀç ¸¶¿ì½º ¿À¹öµÈ(ÃÊ·Ï»ö/Å¸°Ù) ºí·Ï
 	UPROPERTY()
-	TWeakObjectPtr<AActor> SavedTargetBlock;
+	TWeakObjectPtr<ABlockBase> HighlightedBlock;
+
+	// ÅõÃ´ È®Á¤ ½Ã ÀúÀåµÈ Å¸°Ù ºí·Ï
+	UPROPERTY()
+	TWeakObjectPtr<ABlockBase> SavedTargetBlock;
 };
