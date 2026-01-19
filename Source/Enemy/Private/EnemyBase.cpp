@@ -29,6 +29,19 @@ void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// BeginPlay에서도 ASC 초기화를 시도합니다.
+	// PossessedBy가 아직 안 불렸거나 순서가 꼬였을 때를 대비한 안전장치입니다.
+	if (AbilitySystemComponent)
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		// 권한이 있을 때만 Attribute 초기화
+		if (HasAuthority())
+		{
+			InitializeAttributes();
+			GiveDefaultAbilities();
+		}
+	}
 	
 }
 

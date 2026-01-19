@@ -1,7 +1,6 @@
 #include "Enemy/Public/GA_AttackRange.h"
 #include "Block/BlockBase.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
-#include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Abilities/GameplayAbilityTypes.h"
@@ -9,7 +8,8 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimInstance.h"
-#include "GameFramework/CharacterMovementComponent.h" // 이동 제어용
+#include "GameFramework/CharacterMovementComponent.h"
+#include "AIController.h"
 
 UGA_AttackRange::UGA_AttackRange()
 {
@@ -19,9 +19,6 @@ UGA_AttackRange::UGA_AttackRange()
 
 void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
-	// [디버그] 실행 확인용 로그
-	// UE_LOG(LogTemp, Warning, TEXT("[GAS] Ability ACTIVATED: %s"), *GetName());
-
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
 	APawn* AvatarPawn = Cast<APawn>(CurrentActorInfo->AvatarActor.Get());
@@ -31,117 +28,69 @@ void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 		return;
 	}
 
-	// [안전 장치] 스킬 시전 중 이동 방지 (미끄러짐 및 캔슬 방지)
+	// AI 시선 고정 (이건 여전히 유용합니다. 공격 중 딴청 피우기 방지)
 	if (AController* Controller = AvatarPawn->GetController())
 	{
 		Controller->StopMovement();
+		if (AAIController* AIC = Cast<AAIController>(Controller))
+		{
+			AIC->ClearFocus(EAIFocusPriority::Gameplay);
+		}
 	}
 
-	// =================================================================
-	// [분기 A] 몽타주 기반 공격 (메인 로직)
-	// =================================================================
 	if (AttackMontage)
 	{
-		// 1. 몽타주 재생 태스크 생성 (멤버 변수에 할당!)
-		// [중요] 앞에 'UAbilityTask_PlayMontageAndWait* ' 타입을 쓰지 않습니다.
-		MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
-			this, NAME_None, AttackMontage, TelegraphPlayRate, NAME_None, false
-		);
-
-		// 몽타주 종료/취소 시 처리 연결
-		MontageTask->OnCompleted.AddDynamic(this, &UGA_AttackRange::OnMontageFinished);
-		MontageTask->OnInterrupted.AddDynamic(this, &UGA_AttackRange::OnMontageFinished);
-		MontageTask->OnBlendOut.AddDynamic(this, &UGA_AttackRange::OnMontageFinished);
-		MontageTask->ReadyForActivation();
-
-		// 2. Hit 이벤트 대기 태스크 (멤버 변수에 할당!)
-		WaitHitTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-			this, HitEventTag, nullptr, false, false
-		);
-		WaitHitTask->EventReceived.AddDynamic(this, &UGA_AttackRange::OnHitEventReceived);
-		WaitHitTask->ReadyForActivation();
-
-		// 3. Telegraph 이벤트 대기 태스크 (멤버 변수에 할당!)
-		WaitTelegraphTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-			this, TelegraphEventTag, nullptr, false, false
-		);
-		WaitTelegraphTask->EventReceived.AddDynamic(this, &UGA_AttackRange::EnableTelegraph);
+		// 1. 리스너 먼저 등록 (안정성)
+		WaitTelegraphTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, TelegraphEventTag, nullptr, false, false);
+		WaitTelegraphTask->EventReceived.AddDynamic(this, &UGA_AttackRange::OnTelegraphEvent);
 		WaitTelegraphTask->ReadyForActivation();
 
-		// 4. [즉시 실행] 첫 타격 예고 장판 켜기
-		// 노티파이(Notify)를 기다리지 않고 강제로 실행하여 "가끔 안 켜지는" 버그 방지
-		FGameplayEventData DummyData;
-		EnableTelegraph(DummyData);
+		WaitHitTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, HitEventTag, nullptr, false, false);
+		WaitHitTask->EventReceived.AddDynamic(this, &UGA_AttackRange::OnHitEvent);
+		WaitHitTask->ReadyForActivation();
 
-		// 속도 복구 타이머 시작
-		GetWorld()->GetTimerManager().SetTimer(
-			TimerHandle_SpeedUp,
-			this,
-			&UGA_AttackRange::RestoreMontageSpeed,
-			TelegraphDuration,
-			false
+		// 2. 몽타주 재생
+		MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
+			this, NAME_None, AttackMontage, 1.0f, NAME_None, false
 		);
+		MontageTask->OnCompleted.AddDynamic(this, &UGA_AttackRange::OnMontageEnded);
+		MontageTask->OnInterrupted.AddDynamic(this, &UGA_AttackRange::OnMontageEnded);
+		MontageTask->OnBlendOut.AddDynamic(this, &UGA_AttackRange::OnMontageEnded);
+		MontageTask->ReadyForActivation();
 	}
-	// =================================================================
-	// [분기 B] 몽타주 없는 경우 (타이머 기반)
-	// =================================================================
 	else
 	{
-		FGameplayEventData DummyData;
-		EnableTelegraph(DummyData);
-
-		UAbilityTask_WaitDelay* DelayTask = UAbilityTask_WaitDelay::WaitDelay(this, TelegraphDuration);
-		DelayTask->OnFinish.AddDynamic(this, &UGA_AttackRange::ExecuteAttack);
-		DelayTask->ReadyForActivation();
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
 }
 
 void UGA_AttackRange::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// [중요] 어빌리티 종료 시 정리 작업
-
-	// 1. 타이머 제거
-	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_SpeedUp);
-
-	// 2. 장판 색상 초기화
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_SafetyRestore);
 	ResetBlockColors();
 
-	// 3. 태스크 포인터 초기화 (GC가 수거해갈 수 있도록 놓아줌)
 	MontageTask = nullptr;
-	WaitHitTask = nullptr;
 	WaitTelegraphTask = nullptr;
+	WaitHitTask = nullptr;
 
-	// 4. 부모 함수 호출 (필수)
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
+void UGA_AttackRange::OnTelegraphEvent(FGameplayEventData Payload)
 {
-	APawn* AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (!AvatarPawn) return;
-
 	ResetBlockColors();
 
-	// 1. 위치 계산 (캐싱)
-	FVector ForwardDir = AvatarPawn->GetActorForwardVector();
-	FVector Origin = AvatarPawn->GetActorLocation();
-	float HalfLength = AttackRangeForward * 0.5f;
+	// 1. 박스 계산 (Standard)
+	FVector BoxCenter, BoxExtent;
+	CalculateAttackBox(BoxCenter, BoxExtent, true);
 
-	CachedTargetLocation = Origin + (ForwardDir * (AttackForwardOffset + HalfLength));
-
-	// 2. 판정 박스 설정 (바닥 감지 강화)
-	FVector BoxCenter = CachedTargetLocation;
-	BoxCenter.Z -= 100.0f; // 바닥 아래로 깊숙이
-	FVector BoxExtent = FVector(HalfLength, AttackWidth * 0.5f, 150.0f); // 두껍게
-
-	// 3. 오버랩 검사
 	TArray<AActor*> OverlappedActors;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
 
 	UKismetSystemLibrary::BoxOverlapActors(
 		this, BoxCenter, BoxExtent, ObjectTypes, ABlockBase::StaticClass(),
-		{ AvatarPawn }, OverlappedActors
+		{ GetAvatarActorFromActorInfo() }, OverlappedActors
 	);
 
 	for (AActor* Actor : OverlappedActors)
@@ -153,51 +102,33 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 		}
 	}
 
-	// 4. [중요] 몽타주 속도 조절 (조건 없이 강제 실행)
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (Character && Character->GetMesh()->GetAnimInstance() && AttackMontage)
 	{
-		UAnimInstance* AnimInst = Character->GetMesh()->GetAnimInstance();
-
-		// IsPlaying 체크 없이 강제로 설정하여 타이밍 이슈 방지
-		AnimInst->Montage_SetPlayRate(AttackMontage, TelegraphPlayRate);
-
-		// 타이머 재설정 (N연타 고려)
-		GetWorld()->GetTimerManager().ClearTimer(TimerHandle_SpeedUp);
-		GetWorld()->GetTimerManager().SetTimer(
-			TimerHandle_SpeedUp,
-			this,
-			&UGA_AttackRange::RestoreMontageSpeed,
-			TelegraphDuration,
-			false
-		);
+		Character->GetMesh()->GetAnimInstance()->Montage_SetPlayRate(AttackMontage, TelegraphPlayRate);
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(
+		TimerHandle_SafetyRestore, this, &UGA_AttackRange::RestoreMontageSpeed, SafetyDuration, false
+	);
 }
 
-void UGA_AttackRange::OnHitEventReceived(FGameplayEventData Payload)
+void UGA_AttackRange::OnHitEvent(FGameplayEventData Payload)
 {
+	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_SafetyRestore);
 	ExecuteAttack();
-	// EndAbility 호출 안 함 (콤보 대기)
 }
 
 void UGA_AttackRange::ExecuteAttack()
 {
+	RestoreMontageSpeed();
 	ResetBlockColors();
 
 	APawn* AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (!AvatarPawn) return;
 
-	// 판정 박스 설정 (공격용: 위로 올림)
-	FVector BoxCenter = CachedTargetLocation;
-	BoxCenter.Z += 50.0f;
-	FVector BoxExtent = FVector(AttackRangeForward * 0.5f, AttackWidth * 0.5f, 100.0f);
-
-	// [디버그] 초록 박스 표시
-	/*
-	DrawDebugBox(
-		GetWorld(), BoxCenter, BoxExtent, FColor::Green, false, 1.0f
-	);
-	*/
+	FVector BoxCenter, BoxExtent;
+	CalculateAttackBox(BoxCenter, BoxExtent, false);
 
 	TArray<AActor*> OverlappedPawns;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
@@ -208,7 +139,6 @@ void UGA_AttackRange::ExecuteAttack()
 		{ AvatarPawn }, OverlappedPawns
 	);
 
-	// 데미지 적용
 	if (DamageEffectClass)
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass);
@@ -227,18 +157,53 @@ void UGA_AttackRange::ExecuteAttack()
 			}
 		}
 	}
+}
 
-	// 몽타주 없으면 바로 종료
-	if (!AttackMontage)
+// 공격범위	박스 계산 함수 (Standard)
+void UGA_AttackRange::CalculateAttackBox(FVector& OutCenter, FVector& OutExtent, bool bIsTelegraph)
+{
+	APawn* AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (!AvatarPawn) return;
+
+	FVector ForwardDir = AvatarPawn->GetActorForwardVector();
+	FVector Origin = AvatarPawn->GetActorLocation();
+
+	// [Standard Math]
+	// "보스 중심에서 Offset만큼 떨어진 곳부터, Range만큼 뻗어나가는 박스"
+
+	// 박스의 중심점 거리 = 오프셋 + (사거리 / 2)
+	float CenterDistance = AttackForwardOffset + (AttackRangeForward * 0.5f);
+
+	CachedTargetLocation = Origin + (ForwardDir * CenterDistance);
+	OutCenter = CachedTargetLocation;
+
+	if (bIsTelegraph)
 	{
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		// 바닥 감지용: 박스를 살짝 아래로 (-100)
+		OutCenter.Z -= 100.0f;
+		OutExtent = FVector(AttackRangeForward * 0.5f, AttackWidth * 0.5f, 150.0f);
+	}
+	else
+	{
+		// 공격 판정용: 박스를 살짝 위로 (+50)
+		OutCenter.Z += 50.0f;
+		OutExtent = FVector(AttackRangeForward * 0.5f, AttackWidth * 0.5f, 100.0f);
 	}
 }
 
-void UGA_AttackRange::OnMontageFinished()
+void UGA_AttackRange::OnMontageEnded()
 {
 	ResetBlockColors();
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+}
+
+void UGA_AttackRange::RestoreMontageSpeed()
+{
+	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
+	if (Character && Character->GetMesh()->GetAnimInstance() && AttackMontage)
+	{
+		Character->GetMesh()->GetAnimInstance()->Montage_SetPlayRate(AttackMontage, 1.0f);
+	}
 }
 
 void UGA_AttackRange::ResetBlockColors()
@@ -251,13 +216,4 @@ void UGA_AttackRange::ResetBlockColors()
 		}
 	}
 	AffectedBlocks.Empty();
-}
-
-void UGA_AttackRange::RestoreMontageSpeed()
-{
-	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
-	if (Character && Character->GetMesh()->GetAnimInstance() && AttackMontage)
-	{
-		Character->GetMesh()->GetAnimInstance()->Montage_SetPlayRate(AttackMontage, 1.0f);
-	}
 }

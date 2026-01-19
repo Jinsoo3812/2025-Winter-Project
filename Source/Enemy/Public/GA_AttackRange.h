@@ -4,17 +4,17 @@
 #include "Abilities/GameplayAbility.h"
 #include "GA_AttackRange.generated.h"
 
-// 전방 선언 (헤더 의존성 최소화)
+// 전방 선언
 class ABlockBase;
 class UAnimMontage;
 class UAbilityTask_PlayMontageAndWait;
 class UAbilityTask_WaitGameplayEvent;
 
 /**
- * [범용 범위 공격 어빌리티]
- * - 몽타주 기반의 N연타 공격 지원
- * - AnimNotify(Telegraph/Hit)를 통한 정밀한 타이밍 제어
- * - UPROPERTY Task 보호를 통한 GC 방지 (안정성 강화)
+ * [범용 범위 공격 어빌리티 - Standard Ver.]
+ * - Push Capsule 덕분에 복잡한 사각지대 보정 로직 제거됨.
+ * - 설정한 Offset 위치에 정확히 공격 박스를 생성.
+ * - Tag 이벤트 기반 (순서: Wait -> Play)
  */
 UCLASS()
 class ENEMY_API UGA_AttackRange : public UGameplayAbility
@@ -24,32 +24,29 @@ class ENEMY_API UGA_AttackRange : public UGameplayAbility
 public:
 	UGA_AttackRange();
 
-	// [생명주기] 어빌리티 시작
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
-
-	// [생명주기] 어빌리티 종료 (중요: 여기서 Task 정리)
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	// =================================================================
-	// [설정 변수] 블루프린트에서 수정 가능
-	// =================================================================
-
+	// --- 설정 ---
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Animation")
 	TObjectPtr<UAnimMontage> AttackMontage;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Animation")
-	FGameplayTag TelegraphEventTag; // 예: Event.Montage.Telegraph
+	FGameplayTag TelegraphEventTag;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Animation")
-	FGameplayTag HitEventTag;       // 예: Event.Montage.Hit
+	FGameplayTag HitEventTag;
 
+	// 공격 사거리 (박스 길이)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackRangeForward = 300.0f;
 
+	// 공격 폭 (박스 너비)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackWidth = 300.0f;
 
+	// 공격 시작 위치 오프셋 (보스 중심에서 얼마나 떨어져서 생성할지)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackForwardOffset = 150.0f;
 
@@ -57,53 +54,40 @@ protected:
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Timing")
-	float TelegraphDuration = 1.5f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Timing")
 	float TelegraphPlayRate = 0.1f;
 
-	// =================================================================
-	// [내부 상태 관리]
-	// =================================================================
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Timing")
+	float SafetyDuration = 1.5f;
 
-	FTimerHandle TimerHandle_SpeedUp;
-
-	// 장판 블록 관리 (WeakPtr로 안전하게 참조)
+	// --- 내부 변수 ---
+	FTimerHandle TimerHandle_SafetyRestore;
 	TArray<TWeakObjectPtr<ABlockBase>> AffectedBlocks;
+	FVector CachedTargetLocation; // 판정 위치 기억용
 
-	// 예고(Telegraph) 당시의 공격 중심점 (루트 모션으로 인한 오차 방지)
-	FVector CachedTargetLocation;
-
-	// =================================================================
-	// [Task 멤버 변수] UPROPERTY로 보호하여 GC(가비지 컬렉션) 방지
-	// =================================================================
-
+	// --- Tasks ---
 	UPROPERTY()
 	UAbilityTask_PlayMontageAndWait* MontageTask;
 
 	UPROPERTY()
-	UAbilityTask_WaitGameplayEvent* WaitHitTask;
-
-	UPROPERTY()
 	UAbilityTask_WaitGameplayEvent* WaitTelegraphTask;
 
-	// =================================================================
-	// [함수 선언]
-	// =================================================================
+	UPROPERTY()
+	UAbilityTask_WaitGameplayEvent* WaitHitTask;
+
+	// --- 함수 ---
+	UFUNCTION()
+	void OnTelegraphEvent(FGameplayEventData Payload);
 
 	UFUNCTION()
-	void RestoreMontageSpeed();
+	void OnHitEvent(FGameplayEventData Payload);
 
 	UFUNCTION()
-	void EnableTelegraph(FGameplayEventData Payload);
-
-	UFUNCTION()
-	void OnHitEventReceived(FGameplayEventData Payload);
+	void OnMontageEnded();
 
 	void ExecuteAttack();
-
-	UFUNCTION()
-	void OnMontageFinished();
-
+	void RestoreMontageSpeed();
 	void ResetBlockColors();
+
+	// 박스 계산 함수 (Standard)
+	void CalculateAttackBox(FVector& OutCenter, FVector& OutExtent, bool bIsTelegraph);
 };
