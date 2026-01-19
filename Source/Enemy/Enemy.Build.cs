@@ -23,7 +23,8 @@ public class Enemy : ModuleRules
             "GameplayTags", 
             "GameplayTasks",
             "MotionWarping",
-            "World"
+            "World",
+            "Winter2025Core"
         });
     }
 }
