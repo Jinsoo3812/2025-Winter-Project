@@ -3,17 +3,15 @@
 #include "GA/GA_SkillBase.h"
 #include "Interface/ISkillManagerProvider.h"
 #include "Interface/IAttributeSetProvider.h"
-#include "SkillManagerComponent.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"
 #include "Engine/OverlapResult.h"
+#include "GameplayEventInterface.h"
+#include "BlockGameplayTags.h"
+#include "CollisionChannels.h"
+#include "SkillComponent.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Player, "Player");
-
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
 
 UGA_SkillBase::UGA_SkillBase()
 {
@@ -38,37 +36,31 @@ UGA_SkillBase::UGA_SkillBase()
 	ActivationBlockedTags.AddTag(TAG_Skill_Casting);
 }
 
-USkillManagerComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
+USkillComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const
 {
-	// 캐싱된 SkillManager가 유효하면 재사용 (성능 최적화)
-	if (CachedSkillManager.IsValid())
+	// 1. 이미 찾은 적이 있다면 캐시된 값 반환
+	if (CachedSkillComp.IsValid())
 	{
-		return CachedSkillManager.Get();
+		return CachedSkillComp.Get();
 	}
 
-	// Avatar 가져오기
-	AActor* Avatar = GetAvatarActorFromActorInfo();
-	if (!Avatar)
+	// 2. AvatarActor (PlayerState 혹은 Character) 가져오기
+	AActor* AvatarActor = GetAvatarActorFromActorInfo();
+	if (!AvatarActor)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetSkillManagerFromAvatar: Avatar is null"));
 		return nullptr;
 	}
 
-	// ISkillManagerProvider 인터페이스를 구현했는지 확인
-	ISkillManagerProvider* Provider = Cast<ISkillManagerProvider>(Avatar);
-	if (Provider)
+	// 핵심: PlayerState의 구체적인 클래스(Winter2025...)를 몰라도 됨
+	// 그냥 "네가 누구든 상관없는데, 혹시 SkillComponent 가지고 있니?" 라고 물어봄
+	USkillComponent* FoundComp = AvatarActor->FindComponentByClass<USkillComponent>();
+
+	if (FoundComp)
 	{
-		// 인터페이스를 통해 SkillManager 가져오기 (캐싱된 값)
-		USkillManagerComponent* SkillManager = Provider->GetSkillManager();
-		if (SkillManager)
-		{
-			// 다음 호출을 위해 캐싱
-			CachedSkillManager = SkillManager;
-			return SkillManager;
-		}
+		CachedSkillComp = FoundComp;
+		return FoundComp;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("UGA_SkillBase::GetSkillManagerFromAvatar: Avatar does not implement ISkillManagerProvider or SkillManager is null"));
 	return nullptr;
 }
 
@@ -78,7 +70,7 @@ float UGA_SkillBase::GetRuneModifiedDamage() const
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
+	USkillComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
 		return BaseDamage; // 매니저가 없으면 기본 피해량 반환
@@ -122,7 +114,7 @@ float UGA_SkillBase::GetRuneModifiedRange() const
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
+	USkillComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
 		return BaseRange; // 매니저가 없으면 기본 범위 반환
@@ -138,7 +130,7 @@ float UGA_SkillBase::GetRuneModifiedCooldown() const
 	int32 SlotIndex = GetCurrentAbilitySpec()->InputID;
 
 	// SkillManager 가져오기
-	USkillManagerComponent* SkillManager = GetSkillManagerFromAvatar();
+	USkillComponent* SkillManager = GetSkillManagerFromAvatar();
 	if (!SkillManager)
 	{
 		return BaseCooldown; // 매니저가 없으면 기본 쿨타임 반환
@@ -283,10 +275,10 @@ void UGA_SkillBase::EndAbility(
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
-void UGA_SkillBase::FindBlocksInRange(TArray<ABlockBase*>& OutBlocks)
+void UGA_SkillBase::FindBlocksInRange(TArray<TWeakObjectPtr<AActor>>& OutActors)
 {
 	// 결과 배열 초기화 (매 프레임 호출될 수 있으므로 비워줌)
-	OutBlocks.Empty();
+	OutActors.Empty();
 
 	UWorld* World = GetWorld();
 	if (!World)
@@ -317,10 +309,7 @@ void UGA_SkillBase::FindBlocksInRange(TArray<ABlockBase*>& OutBlocks)
 	FCollisionObjectQueryParams ObjectQueryParams;
 
 	// 대부분의 경우 블록은 움직이지 않으므로 WorldStatic
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-
-	// 추후 스킬 사용으로 블록이 움직이면, 그 위의 블록도 움직이는 등의 상황을 고려하여 WorldDynamic도 포함
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Block);
 
 	// 충돌 쿼리의 옵션 및 예외 설정 (어떻게 찾을 지)
 	FCollisionQueryParams QueryParams;
@@ -342,39 +331,89 @@ void UGA_SkillBase::FindBlocksInRange(TArray<ABlockBase*>& OutBlocks)
 		return;
 	}
 
-	// 검색된 블록들 처리
-	// FOverlapResult는 가벼우므로 &로 가져옵니다.
+	// 인터페이스 구현 여부로 필터링
 	for (const FOverlapResult& Result : OverlapResults)
 	{
-		ABlockBase* Block = Cast<ABlockBase>(Result.GetActor());
-		if (!Block)
+		AActor* HitActor = Result.GetActor();
+		if (!HitActor)
 		{
 			continue;
 		}
 
-		FVector BlockLocation = Block->GetActorLocation();
-
-		// XY 평면 거리 재확인 (박스가 사각형이므로 원형 범위로 한번 더 필터링)
-		float DistanceXY = FVector::Dist2D(PlayerLocation, BlockLocation);
-
-		// 거리가 범위 밖이라면 포함하지 않음
+		// 거리 필터링
+		FVector ActorLocation = HitActor->GetActorLocation();
+		float DistanceXY = FVector::Dist2D(PlayerLocation, ActorLocation);
 		if (DistanceXY > RangeXY)
 		{
 			continue;
 		}
 
-		// 결과 배열에 유효한 블록 추가
-		OutBlocks.Add(Block);
+		// 구체적인 클래스(BlockBase) 대신 인터페이스 구현 여부 확인
+		if (HitActor->Implements<UGameplayEventInterface>())
+		{
+			OutActors.Add(HitActor);
+		}
+		// 구현하지 않은 액터는 무시 
 	}
 }
 
-void UGA_SkillBase::BatchHighlightBlocks(const TArray<ABlockBase*>& Blocks, EBlockHighlightState State)
+void UGA_SkillBase::BatchHighlightBlocks(TArray<TWeakObjectPtr<AActor>>& Actors, FGameplayTag EventTag)
 {
-	for (ABlockBase* Block : Blocks)
+	// 이벤트 데이터 생성
+	FGameplayEventData Payload;
+	Payload.EventTag = EventTag;
+	Payload.Instigator = GetAvatarActorFromActorInfo();
+	Payload.EventMagnitude = 0.0f; // 안 씀
+
+	// 배열 요소를 삭제하며 순회해야 하므로, 역방향으로 반복문을 실행합니다.
+	for (int32 i = Actors.Num() - 1; i >= 0; --i)
 	{
-		if (Block)
+		// WeakObjectPtr 유효성 검사
+		if (!Actors[i].IsValid())
 		{
-			Block->SetHighlightState(State);
+			// 배열에서 제거
+			Actors.RemoveAtSwap(i);
+			continue;
+		}
+
+		AActor* Actor = Actors[i].Get();
+
+		// 인터페이스 구현 여부 검사
+		IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(Actor);
+		if (InterfaceObj)
+		{
+			// 이벤트 전송
+			InterfaceObj->HandleGameplayEvent(Payload.EventTag, Payload);
+		}
+		else
+		{
+			// 배열에서 제거
+			Actors.RemoveAtSwap(i);
 		}
 	}
+}
+
+void UGA_SkillBase::HighlightBlocks(TArray<TWeakObjectPtr<AActor>>& Actors, FGameplayTag EventTag)
+{
+	ClearHighlights(Actors);
+
+	FindBlocksInRange(Actors);
+
+	BatchHighlightBlocks(Actors, EventTag);
+}
+
+void UGA_SkillBase::ClearHighlights(TArray<TWeakObjectPtr<AActor>>& Actors)
+{
+	// 성능 방어를 위한 체크
+	if (Actors.IsEmpty())
+	{
+		return;
+	}
+
+	// 하이라이트 제거
+	BatchHighlightBlocks(Actors, TAG_Block_Highlight_None);
+
+	// Empty는 메모리를 해제하지만, Reset은 메모리를 유지
+	// 매 프레임 블록을 넣다 뺐다 하므로 Reset 사용
+	Actors.Reset();
 }

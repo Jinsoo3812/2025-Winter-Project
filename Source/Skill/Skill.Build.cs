@@ -1,4 +1,4 @@
-using UnrealBuildTool;
+﻿using UnrealBuildTool;
 
 public class Skill: ModuleRules
 {
@@ -11,7 +11,7 @@ public class Skill: ModuleRules
             "GameplayAbilities",
             "GameplayTasks",
             "GameplayTags",
-            "World",
+            "Winter2025Core",
             "InputCore"
         });
     }

@@ -3,8 +3,6 @@
 #include "GA/GA_Destruction.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
-#include "GameplayEffect.h"
-#include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"
 #include "CollisionQueryParams.h"
@@ -12,7 +10,6 @@
 #include "TimerManager.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Components/InputComponent.h"
-#include "SkillManagerComponent.h"
 
 UGA_Destruction::UGA_Destruction() {}
 
