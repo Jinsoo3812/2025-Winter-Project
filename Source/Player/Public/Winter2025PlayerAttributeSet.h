@@ -6,8 +6,6 @@
 #include "AbilitySystemComponent.h"
 #include "Winter2025PlayerAttributeSet.generated.h"
 
-class UAbilitySystemComponent;
-
 // [매크로] Getter, Setter, Init 함수 자동 생성기
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 		GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \

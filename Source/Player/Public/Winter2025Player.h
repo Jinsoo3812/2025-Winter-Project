@@ -4,8 +4,6 @@
 #include "GameFramework/Character.h"
 #include "AbilitySystemInterface.h"
 #include "GameplayTagContainer.h"
-#include "InputAction.h"
-#include "InputMappingContext.h"
 #include "Winter2025Player.generated.h"
 
 class UPlayerInputConfig;
@@ -21,6 +19,9 @@ class AWinter2025Player : public ACharacter, public IAbilitySystemInterface
 	GENERATED_BODY()
 
 public:
+	// ------------------
+	// 초기화 함수
+	// ------------------
 	AWinter2025Player();
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -29,41 +30,55 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
-	void InitializeGAS(); // 공통 초기화 로직
+	// ------------------
+	// 초기화 함수
+	// ------------------
 
-	// 입력을 처리하는 일반화된 함수
-	void Input_AbilityTagPressed(FGameplayTag InputTag);
-	void Input_AbilityTagReleased(FGameplayTag InputTag);
+	/*
+	* 서버 - 클라이언트 공통 GAS 초기화 함수
+	*/
+	void InitializeGAS();
 
-	// AttributeSet의 이벤트를 처리할 콜백
-	void HandleAttributeEvent(FGameplayTag EventTag, const FGameplayEventData* Payload);
-
-private:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UPlayerInputConfig> InputConfig;
 
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> CachedASC;
 
-	// Input Mapping Context 할당 변수
-	// [기본] 이동/점프 전용 (WASD, Space) - Priority 0
-	UPROPERTY(EditAnywhere, Category = "Input")
+	// ------------------
+	// 입력 바인딩 처리 관련
+	// IMC로 물리 키와 InputAction 매핑
+	// ------------------
+
+	// 이동/점프 전용 (WASD, Space) - Priority 0
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> BasicMappingContext;
 
-	// [스킬] 스킬 전용 (Q, E, R, 1, 2, 3 등) - Priority 1
-	UPROPERTY(EditAnywhere, Category = "Input")
+	// 스킬 전용 (Q, E, R, 1, 2, 3 등) - Priority 1
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> SkillMappingContext;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> MoveAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> LeftClickAction;
 
-	UPROPERTY(EditAnywhere, Category = "Input")
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
 
 	void Move(const FInputActionValue& Value);
 
 	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
+
+	void OnLeftClick(const FInputActionValue& Value);
+
+	// ------------------
+	// 스킬 입력 처리 일반화
+	// 태그 기반으로 어빌리티 활성화 시도
+	// ------------------
+
+	void Input_AbilityTagPressed(FGameplayTag InputTag);
+
+	void Input_AbilityTagReleased(FGameplayTag InputTag);
 };

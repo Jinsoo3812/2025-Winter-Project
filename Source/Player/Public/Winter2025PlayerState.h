@@ -18,9 +18,14 @@ class AWinter2025PlayerState : public APlayerState, public IAbilitySystemInterfa
 public:
 	AWinter2025PlayerState();
 
-	// IAbilitySystemInterface
+	/* IAbilitySystemInterface 구현 */
 	UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+
+	/* Player AttributeSet Getter */
 	UWinter2025PlayerAttributeSet* GetAttributeSet() const { return AttributeSet; }
+
+	/* 플레이어 기본 스탯 초기화 */
+	void InitializePlayerStats(int32 Level);
 
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "GAS")
@@ -29,11 +34,11 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UWinter2025PlayerAttributeSet> AttributeSet;
 
+	/* 레벨 별 플레이어 기본 스탯 */
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	UDataTable* PlayerStatsDataTable;
 
+	/* 현재 플레이어 레벨 */
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	int32 PlayerLevel = 1;
-
-	void InitializePlayerStats(int32 Level);
 };

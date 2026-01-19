@@ -7,36 +7,18 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 
-UWinter2025PlayerAttributeSet::UWinter2025PlayerAttributeSet()
-{
-	// [초기화]
-	// 게임 시작 시 플레이어의 체력을 100으로 설정합니다.
-	// 나중에는 데이터 테이블(Excel)에서 불러오도록 수정할 수 있습니다.
-	Health.SetBaseValue(100.0f);
-	Health.SetCurrentValue(100.0f);
-
-	MaxHealth.SetBaseValue(100.0f);
-	MaxHealth.SetCurrentValue(100.0f);
-
-	Mana.SetBaseValue(100.0f);
-	Mana.SetCurrentValue(100.0f);
-
-	MaxMana.SetBaseValue(100.0f);
-	MaxMana.SetCurrentValue(100.0f);
-
-	AttackPower.SetBaseValue(10.0f);
-	AttackPower.SetCurrentValue(10.0f);
-
-	MovementSpeed.SetBaseValue(600.0f);
-	MovementSpeed.SetCurrentValue(600.0f);
-}
+UWinter2025PlayerAttributeSet::UWinter2025PlayerAttributeSet() {}
 
 void UWinter2025PlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// [동기화 등록]
-	// "Health 변수는 서버에서 바뀌면 무조건(Always) 클라이언트한테 알려줘라"
+	/*
+	* 동기화 등록
+	* 서버의 Attribute Set이 변하면, 클라이언트의 Attribute Set으로 복제한다.
+	* COND_None: 조건 없이 항상 복제
+	* REPNOTIFY_Always: 값이 바뀔 때마다 OnRep_XXX 함수를 호출
+	*/
 	DOREPLIFETIME_CONDITION_NOTIFY(UWinter2025PlayerAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UWinter2025PlayerAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UWinter2025PlayerAttributeSet, Mana, COND_None, REPNOTIFY_Always);
@@ -47,8 +29,10 @@ void UWinter2025PlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeP
 
 void UWinter2025PlayerAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
-	// GAS 시스템에게 "체력 값이 서버로부터 갱신되었습니다"라고 알립니다.
-	// 이 코드가 있어야 예측(Prediction) 시스템이 정상 작동합니다.
+	/*
+	* 클라이언트 GAS의 예측값과 서버에서 온 실제 값이 다를 수 있으므로
+	* 그 둘을 비교해서 동기화 작업을 수행하는 매크로
+	*/
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UWinter2025PlayerAttributeSet, Health, OldHealth);
 }
 
@@ -86,7 +70,16 @@ void UWinter2025PlayerAttributeSet::OnRep_MovementSpeed(const FGameplayAttribute
 			{
 				CMC->MaxWalkSpeed = GetMovementSpeed();
 			}
+			else {
+				UE_LOG(LogTemp, Warning, TEXT("OnRep_MovementSpeed: CharacterMovementComponent is null"));
+			}
 		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("OnRep_MovementSpeed: Could not cast AvatarActor to ACharacter"));
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("OnRep_MovementSpeed: Could not update Character Movement Speed"));
 	}
 }
 

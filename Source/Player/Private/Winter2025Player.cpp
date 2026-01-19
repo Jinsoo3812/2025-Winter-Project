@@ -4,6 +4,7 @@
 #include "Winter2025PlayerState.h"
 #include "SkillSystemInterface.h"
 #include "PlayerInputConfig.h"
+#include "InputGameplayTags.h"
 #include "AbilitySystemComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
@@ -23,6 +24,13 @@ void AWinter2025Player::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	InitializeGAS(); // 서버 측 초기화
+
+	// 권한을 가진 서버에서만 플레이어 스탯 초기화
+	if (AWinter2025PlayerState* PS = GetPlayerState<AWinter2025PlayerState>())
+	{
+		// 예: 1레벨로 초기화 (나중에 저장된 레벨을 불러올 수도 있음)
+		PS->InitializePlayerStats(1);
+	}
 }
 
 void AWinter2025Player::OnRep_PlayerState()
@@ -39,6 +47,7 @@ void AWinter2025Player::InitializeGAS()
 	CachedASC = PS->GetAbilitySystemComponent();
 	if (CachedASC)
 	{
+		// ASC 초기화
 		CachedASC->InitAbilityActorInfo(PS, this);
 
 		// 구체적인 컴포넌트 클래스(USkillComponent) 대신 인터페이스를 찾음
@@ -48,11 +57,10 @@ void AWinter2025Player::InitializeGAS()
 
 		for (UActorComponent* Comp : Components)
 		{
-			// 인터페이스 캐스팅 (Cast 대신 InterfaceCast 사용 가능하지만, IWinter2025SkillInterface는 순수 가상이 아닐 수 있으므로 Cast 사용)
+			// SkillComponent 초기화
 			if (ISkillSystemInterface* SkillInterface = Cast<ISkillSystemInterface>(Comp))
 			{
 				SkillInterface->InitializeSkillSystem(CachedASC);
-				UE_LOG(LogTemp, Log, TEXT("Winter2025Player: Skill System Initialized via Interface."));
 				break; // 하나만 있다고 가정
 			}
 		}
@@ -61,7 +69,9 @@ void AWinter2025Player::InitializeGAS()
 			UWinter2025PlayerAttributeSet::GetMovementSpeedAttribute()
 		).AddUObject(this, &AWinter2025Player::OnMovementSpeedChanged);
 
-		// (이하 사망 이벤트 바인딩 로직 유지)
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("Winter2025Player: Failed to get AbilitySystemComponent from PlayerState."));
 	}
 }
 
@@ -70,7 +80,10 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
 	UEnhancedInputComponent* EnhancedInput = Cast<UEnhancedInputComponent>(PlayerInputComponent);
-	if (!EnhancedInput || !InputConfig) return;
+	if (!EnhancedInput || !InputConfig) {
+		UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: EnhancedInputComponent or InputConfig is null."));
+		return;
+	}
 
 	// 로컬 플레이어인 경우에만 Input Mapping Context(IMC) 추가
 	// (AI나 서버 측 캐릭터는 입력 매핑이 필요 없으므로)
@@ -82,7 +95,9 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 			if (BasicMappingContext)
 			{
 				Subsystem->AddMappingContext(BasicMappingContext, 0);
-				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Basic Mapping Context added"));
+			}
+			else {
+				UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: Basic Mapping Context is null"));
 			}
 
 			// (2) 스킬용 IMC (우선순위 1)
@@ -90,16 +105,29 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 			if (SkillMappingContext)
 			{
 				Subsystem->AddMappingContext(SkillMappingContext, 1);
-				UE_LOG(LogTemp, Log, TEXT("ATestCharacter: Skill Mapping Context added"));
+			}
+			else {
+				UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: Skill Mapping Context is null"));
 			}
 		}
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: Failed to get EnhancedInputLocalPlayerSubsystem."));
+			return;
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: Controller is not a PlayerController."));
 	}
 
 	// DataAsset에 정의된 모든 입력을 순회하며 바인딩
+	UE_LOG(LogTemp, Warning, TEXT("[Setup] Binding %d Ability Input Actions"), InputConfig->AbilityInputActions.Num());
 	for (const FPlayerInputAction& Action : InputConfig->AbilityInputActions)
 	{
 		if (Action.InputAction && Action.InputTag.IsValid())
 		{
+			UE_LOG(LogTemp, Warning, TEXT("[Setup] Binding InputAction: %s to Tag: %s"), 
+				*Action.InputAction->GetName(), *Action.InputTag.ToString());
+
 			// 눌렀을 때
 			EnhancedInput->BindAction(Action.InputAction, ETriggerEvent::Started, this,
 				&AWinter2025Player::Input_AbilityTagPressed, Action.InputTag);
@@ -107,6 +135,10 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 			// 뗐을 때
 			EnhancedInput->BindAction(Action.InputAction, ETriggerEvent::Completed, this,
 				&AWinter2025Player::Input_AbilityTagReleased, Action.InputTag);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[Setup] Invalid InputAction or InputTag in AbilityInputActions!"));
 		}
 	}
 
@@ -120,50 +152,62 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	if (JumpAction.Get())
 	{
 		// ACharacter::Jump는 존재하지만, StopJump는 없습니다. StopJumping을 써야 합니다.
-		EnhancedInput->BindAction(JumpAction.Get(), ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInput->BindAction(JumpAction.Get(), ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+		EnhancedInput->BindAction(JumpAction.Get(), ETriggerEvent::Started, this, &AWinter2025Player::Jump);
+		EnhancedInput->BindAction(JumpAction.Get(), ETriggerEvent::Completed, this, &AWinter2025Player::StopJumping);
 	}
 
 	// 좌클릭 바인딩
 	if (LeftClickAction.Get())
 	{
 		// 임시; 빌드만 되도록 해놨음
-		EnhancedInput->BindAction(LeftClickAction.Get(), ETriggerEvent::Started, this, &ACharacter::StopJumping);
+		EnhancedInput->BindAction(LeftClickAction.Get(), ETriggerEvent::Started, this, &AWinter2025Player::OnLeftClick);
 	}
 }
 
 void AWinter2025Player::Input_AbilityTagPressed(FGameplayTag InputTag)
 {
-	if (!CachedASC) return;
-
-	// 태그를 기반으로 AbilitySpec을 찾아 활성화 시도
-	// (SkillComponent에서 GiveAbility 할 때 DynamicAbilityTags에 InputTag를 넣었으므로 찾을 수 있음)
-	TArray<FGameplayAbilitySpec*> Specs;
-	CachedASC->GetActivatableGameplayAbilitySpecsByAllMatchingTags(FGameplayTagContainer(InputTag), Specs);
-
-	for (FGameplayAbilitySpec* Spec : Specs)
+	if (!CachedASC)
 	{
-		if (Spec && Spec->Ability)
+		UE_LOG(LogTemp, Error, TEXT("[Input] CachedASC is NULL!"));
+		return;
+	}
+
+	// 태그에 해당하는 Spec을 찾아서 InputID를 통해 입력 이벤트로 활성화
+	TArray<FGameplayAbilitySpec>& AllSpecs = CachedASC->GetActivatableAbilities();
+
+	for (FGameplayAbilitySpec& Spec : AllSpecs)
+	{
+		if (Spec.DynamicAbilityTags.HasTag(InputTag))
 		{
-			CachedASC->TryActivateAbility(Spec->Handle);
+			// 찾았다면 InputID를 통해 입력 이벤트로 활성화
+			if (Spec.InputID >= 0)
+			{
+				CachedASC->AbilityLocalInputPressed(Spec.InputID);
+				return;
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("[Input] Spec has invalid InputID: %d"), Spec.InputID);
+			}
 		}
 	}
+
+	UE_LOG(LogTemp, Error, TEXT("[Input] No ability found with tag: %s"), *InputTag.ToString());
 }
 
 void AWinter2025Player::Input_AbilityTagReleased(FGameplayTag InputTag)
 {
-	// 필요 시 구현 (차징 스킬 등)
-	// ASC->AbilityLocalInputReleased(...) 등은 InputID 기반이라 태그 기반에서는 
-	// 직접 Spec을 찾아 CancelAbility 등을 호출하거나 별도 이벤트를 보내야 함.
-}
+	if (!CachedASC) return;
 
-void AWinter2025Player::HandleAttributeEvent(FGameplayTag EventTag, const FGameplayEventData* Payload)
-{
-	if (EventTag == FGameplayTag::RequestGameplayTag("Event.Character.Death"))
+	TArray<FGameplayAbilitySpec>& AllSpecs = CachedASC->GetActivatableAbilities();
+	
+	for (FGameplayAbilitySpec& Spec : AllSpecs)
 	{
-		// 사망 처리 (Ragdoll, UI 표시, 조작 불능 등)
-		UE_LOG(LogTemp, Warning, TEXT("Character Died!"));
-		DetachFromControllerPendingDestroy();
+		if (Spec.DynamicAbilityTags.HasTag(InputTag) && Spec.InputID >= 0)
+		{
+			CachedASC->AbilityLocalInputReleased(Spec.InputID);
+			return;
+		}
 	}
 }
 
@@ -189,4 +233,25 @@ void AWinter2025Player::OnMovementSpeedChanged(const FOnAttributeChangeData& Dat
 	{
 		CMC->MaxWalkSpeed = Data.NewValue;
 	}
+}
+
+void AWinter2025Player::OnLeftClick(const FInputActionValue& Value)
+{
+	if (!CachedASC) {
+		UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: OnLeftClick - CachedASC is null."));
+		return;
+	}
+
+	// 이벤트 데이터 생성 (누가 보냈는지, 타겟은 누구인지 등)
+	FGameplayEventData EventData;
+	EventData.Instigator = this;
+	EventData.Target = this;
+
+	// "Input.Action.Confirm" 태그와 함께 이벤트 발행
+	// 이 태그는 GA_Construction에서 기다리고 있는 태그와 정확히 일치해야 합니다.
+	FGameplayTag ConfirmTag = TAG_Input_LeftClick;
+
+	// ASC를 통해 이벤트 전송
+	// 활성화된 모든 어빌리티 중, 이 태그를 기다리는(WaitGameplayEvent) 어빌리티에게 신호가 갑니다.
+	CachedASC->HandleGameplayEvent(ConfirmTag, &EventData);
 }

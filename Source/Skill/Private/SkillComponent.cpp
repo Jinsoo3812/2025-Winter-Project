@@ -3,56 +3,90 @@
 #include "SkillComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
-#include "InputGameplayTags.h"
 #include "Rune/DA_Rune.h"
+#include "Net/UnrealNetwork.h"
 
 USkillComponent::USkillComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
 	bWantsInitializeComponent = true;
+
+	// 컴포넌트 자체의 리플리케이션 활성화
+	SetIsReplicatedByDefault(true);
 }
 
 void USkillComponent::InitializeSkillSystem(UAbilitySystemComponent* InASC)
 {
 	CachedASC = InASC;
-	if (!CachedASC) return;
+	if (!CachedASC) {
+		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: InitializeSkillSystem called with NULL ASC!"));
+		return;
+	}
 
-	UE_LOG(LogTemp, Log, TEXT("SkillComponent: Initialize via Interface. Loading Default Skills..."));
-
-	for (int32 i = 0; i < DefaultSkillSets.Num(); ++i)
+	/*
+	* BP에서 설정한 스킬 및 룬 세트를 장착
+	* DefaultSkillSets를 항상 SkillSlots로 복사하여 사용
+	* (런타임에 SkillSlots를 수정하면서 사용, DefaultSkillSets는 원본 유지)
+	*/
+	if (DefaultSkillSets.Num() > 0)
 	{
-		FSkillSlot& SkillSlot = DefaultSkillSets[i];
+		SkillSlots = DefaultSkillSets;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[SkillComponent] DefaultSkillSets is empty! Please configure skills in Blueprint."));
+		return;
+	}
 
-		// 1. Slot Tag 유효성 검사 (BP에서 설정을 깜빡했을 경우 대비)
-		if (!SkillSlot.SlotTag.IsValid())
+	// 2. 서버 권한이 있을 때만 로직 수행 (GAS 부여 및 데이터 갱신)
+	if (GetOwner()->HasAuthority())
+	{
+		// SkillSlots 배열 하나만 순회하면 됩니다. (이중 루프 X)
+		for (int32 i = 0; i < SkillSlots.Num(); ++i)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Slot index %d has NO SlotTag! Skipping."), i);
-			continue;
-		}
+			FSkillSlot& SkillSlot = SkillSlots[i]; // 참조로 가져와야 원본 수정 가능
 
-		// 2. 룬 캐시 업데이트
-		SkillSlot.UpdateGreenRuneCache();
-
-		// 3. 장착할 스킬 결정 (기본값)
-		TSubclassOf<UGameplayAbility> SkillToEquip = SkillSlot.EquippedSkill;
-
-		// 4. 초록 룬(스킬 교체) 로직
-		if (SkillSlot.EquippedGreenRune)
-		{
-			UDA_Rune* GreenRune = SkillSlot.EquippedGreenRune;
-			if (GreenRune->OriginalSkillClass && SkillToEquip && SkillToEquip->IsChildOf(GreenRune->OriginalSkillClass))
+			// Tag 유효성 검사
+			if (!SkillSlot.SlotTag.IsValid())
 			{
-				if (GreenRune->ReplacementSkillClass)
+				UE_LOG(LogTemp, Warning, TEXT("SkillComponent: SkillSlot %d has invalid SlotTag!"), i);
+				continue;
+			}
+
+			// 룬 캐시 업데이트
+			SkillSlot.UpdateGreenRuneCache();
+
+			// 장착할 스킬 결정 (기본값)
+			TSubclassOf<UGameplayAbility> FinalSkillClass = SkillSlot.EquippedSkill;
+
+			// 3. 초록 룬(스킬 교체) 적용 로직
+			if (SkillSlot.EquippedGreenRune)
+			{
+				UDA_Rune* GreenRune = SkillSlot.EquippedGreenRune;
+
+				// 상속 관계 확인 (안전장치)
+				if (GreenRune->OriginalSkillClass && FinalSkillClass && FinalSkillClass->IsChildOf(GreenRune->OriginalSkillClass))
 				{
-					SkillToEquip = GreenRune->ReplacementSkillClass;
+					if (GreenRune->ReplacementSkillClass)
+					{
+						// 교체할 스킬로 변경
+						FinalSkillClass = GreenRune->ReplacementSkillClass;
+
+						// [중요] 실제 데이터(구조체)도 변경해줘야 리플리케이션을 통해 클라이언트 UI가 바뀜
+						SkillSlot.EquippedSkill = FinalSkillClass;
+					}
 				}
 			}
-		}
 
-		// 5. EquipSkill 호출
-		if (SkillToEquip)
-		{
-			EquipSkill(SkillSlot.SlotTag, SkillToEquip);
+			// 4. 최종 결정된 스킬을 GAS에 등록
+			if (FinalSkillClass)
+			{
+				EquipSkill(SkillSlot.SlotTag, FinalSkillClass);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[SkillComponent] Slot %d has no FinalSkillClass!"), i);
+			}
 		}
 	}
 }
@@ -85,16 +119,29 @@ void USkillComponent::GiveAbility(FGameplayTag SlotTag, TSubclassOf<UGameplayAbi
 {
 	if (!CachedASC || !AbilityClass) return;
 
-	// [InputID 제거 이유]
-	// InputID는 ASC 내부 배열 인덱스와 1:1 매핑되어 경직된 구조를 만듭니다.
-	// 대신 Tag를 사용하여 "이 능력이 발동되어야 하는 상황(트리거)"을 명시합니다.
+	// SlotTag를 InputID로 변환 (Slot1 -> 0, Slot2 -> 1, Slot3 -> 2)
+	int32 InputID = INDEX_NONE;
+	
+	// SkillSlots 배열에서 이 SlotTag의 인덱스 찾기
+	for (int32 i = 0; i < SkillSlots.Num(); ++i)
+	{
+		if (SkillSlots[i].SlotTag == SlotTag)
+		{
+			InputID = i;
+			break;
+		}
+	}
 
-	// AbilitySpec 생성 (Level: 1, InputID: -1)
-	FGameplayAbilitySpec Spec(AbilityClass, 1, INDEX_NONE, this);
+	if (InputID == INDEX_NONE)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[SkillComponent] Could not find slot index for tag: %s"), *SlotTag.ToString());
+		return;
+	}
 
-	// [핵심] Spec에 "동적 태그"로 SlotTag를 붙입니다.
-	// 이제 Player가 "Input.Ability.Slot1" 태그 이벤트를 보내면, 
-	// ASC는 이 태그가 붙은 Spec을 찾아서 실행시킵니다.
+	// AbilitySpec 생성 (InputID 설정!)
+	FGameplayAbilitySpec Spec(AbilityClass, 1, InputID, this);
+
+	// DynamicTag도 추가 (태그 기반 검색용)
 	Spec.DynamicAbilityTags.AddTag(SlotTag);
 
 	// ASC에 등록하고 영수증(Handle) 받기
@@ -298,4 +345,12 @@ void FSkillSlot::UpdateGreenRuneCache()
 			break; // 초록 룬은 하나만 가능하므로 찾으면 중단
 		}
 	}
+}
+
+void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// SkillSlots 배열을 서버 -> 클라이언트로 복제
+	DOREPLIFETIME(USkillComponent, SkillSlots);
 }
