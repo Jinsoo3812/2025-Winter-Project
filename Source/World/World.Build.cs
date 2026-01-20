@@ -15,5 +15,11 @@ public class World: ModuleRules
             "NavigationSystem",
             "Winter2025Core"
         });
+
+        PublicIncludePaths.AddRange(new string[] {
+			"World",
+			"World/Public/Block",
+			"World/Public/Chunk"
+		});
     }
 }
