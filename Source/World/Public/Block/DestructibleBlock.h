@@ -9,6 +9,8 @@
 #include "GameplayTagContainer.h"
 #include "DestructibleBlock.generated.h"
 
+class UBlockAttributeSet;
+
 /**
  * 
  */
@@ -25,7 +27,8 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	// 자신을 파괴하는 함수
-	void SelfDestroy();
+	virtual void SelfDestroy();
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -33,14 +36,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
-	// 파괴 트리거 태그 (이 태그를 가진 GE를 받으면 파괴됨)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "GAS")
-	FGameplayTag DestructionTag;
+	UPROPERTY()
+	UBlockAttributeSet* BlockAttributeSet;
 
-	// GE를 적용받았을 때 호출할 콜백 함수. 이 곳에서 태그를 검사한다.
-	// Target: GE가 적용된 대상의 ASC (보통 본인)
-	// SpecApplied: 적용된 GE의 스펙 (Attributes, Tags 등 포함)
-	// ActiveHandle: 적용된 GE의 핸들 (GE의 식별자이며 GE가 활성화된 동안 유효)
-	UFUNCTION()
-	void OnGameplayEffectApplied(UAbilitySystemComponent* Target, const FGameplayEffectSpec& SpecApplied, FActiveGameplayEffectHandle ActiveHandle);
+	// AttributeSet의 OnDestroyed 델리게이트에 바인딩 될 함수
+	void HandleDestroyed(AActor* InstigatorActor);
 };

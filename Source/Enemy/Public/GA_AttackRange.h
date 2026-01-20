@@ -11,10 +11,9 @@ class UAbilityTask_PlayMontageAndWait;
 class UAbilityTask_WaitGameplayEvent;
 
 /**
- * [범용 범위 공격 어빌리티 - Standard Ver.]
- * - Push Capsule 덕분에 복잡한 사각지대 보정 로직 제거됨.
- * - 설정한 Offset 위치에 정확히 공격 박스를 생성.
- * - Tag 이벤트 기반 (순서: Wait -> Play)
+ * [범용 범위 공격 어빌리티 - Interface & Tag 버전]
+ * - Push Box 덕분에 사각지대 보정 불필요 (Standard Math)
+ * - BlockBase의 변경된 구조(Interface + Tag)를 사용하여 색상 변경
  */
 UCLASS()
 class ENEMY_API UGA_AttackRange : public UGameplayAbility
@@ -38,15 +37,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Animation")
 	FGameplayTag HitEventTag;
 
-	// 공격 사거리 (박스 길이)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackRangeForward = 300.0f;
 
-	// 공격 폭 (박스 너비)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackWidth = 300.0f;
 
-	// 공격 시작 위치 오프셋 (보스 중심에서 얼마나 떨어져서 생성할지)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackForwardOffset = 150.0f;
 
@@ -61,8 +57,10 @@ protected:
 
 	// --- 내부 변수 ---
 	FTimerHandle TimerHandle_SafetyRestore;
+
+	// 색상을 변경한 블록들 추적
 	TArray<TWeakObjectPtr<ABlockBase>> AffectedBlocks;
-	FVector CachedTargetLocation; // 판정 위치 기억용
+	FVector CachedTargetLocation;
 
 	// --- Tasks ---
 	UPROPERTY()
@@ -88,6 +86,5 @@ protected:
 	void RestoreMontageSpeed();
 	void ResetBlockColors();
 
-	// 박스 계산 함수 (Standard)
 	void CalculateAttackBox(FVector& OutCenter, FVector& OutExtent, bool bIsTelegraph);
 };

@@ -1,4 +1,4 @@
-using UnrealBuildTool;
+﻿using UnrealBuildTool;
 
 public class World: ModuleRules
 {
@@ -12,7 +12,8 @@ public class World: ModuleRules
             "GameplayAbilities",
             "GameplayTasks",
             "GameplayTags",
-            "NavigationSystem"
+            "NavigationSystem",
+            "Winter2025Core"
         });
     }
 }

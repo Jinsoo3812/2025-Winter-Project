@@ -16,13 +16,26 @@ ADragonAI::ADragonAI()
 	// 필요시 초기값 설정
 }
 
+
+void ADragonAI::OnPossess(APawn* InPawn)
+{
+	// 부모의 OnPossess 호출 (타이머 시작됨)
+	Super::OnPossess(InPawn);
+
+	// [중요] Dragon 전용 비헤이비어 트리 실행
+	// 에디터에서 'BehaviorTreeAsset'에 'BT_BossDragon'을 꼭 넣어줘야 함!
+	if (BehaviorTreeAsset)
+	{
+		RunBehaviorTree(BehaviorTreeAsset);
+		UE_LOG(LogTemp, Warning, TEXT("DragonAI.cpp : [DragonAI] Behavior Tree Started!"));
+	}
+}
+
 void ADragonAI::UpdateAIState()
 {
-	// [수정 1] 부모 함수(Super) 호출 삭제!
-	// 부모는 느린 방식(GetAllActorsWithTag)을 쓰므로 실행할 필요 없습니다.
-	// Super::UpdateAIState(); <--- 삭제
 
-	// [수정 2] 폰(Pawn) 캐싱
+
+	// 폰(Pawn) 캐싱
 	// 함수 내에서 여러 번 쓰이므로 변수에 담아둡니다.
 	APawn* MyPawn = GetPawn();
 	if (!MyPawn) return;

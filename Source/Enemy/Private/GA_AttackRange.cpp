@@ -1,5 +1,6 @@
 #include "Enemy/Public/GA_AttackRange.h"
-#include "Block/BlockBase.h"
+#include "Block/BlockBase.h" 
+#include "BlockGameplayTags.h" 
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
 #include "Kismet/KismetSystemLibrary.h"
@@ -9,7 +10,7 @@
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "AIController.h"
+#include "AIController.h" 
 
 UGA_AttackRange::UGA_AttackRange()
 {
@@ -28,7 +29,7 @@ void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 		return;
 	}
 
-	// AI 시선 고정 (이건 여전히 유용합니다. 공격 중 딴청 피우기 방지)
+	// AI 시선 고정
 	if (AController* Controller = AvatarPawn->GetController())
 	{
 		Controller->StopMovement();
@@ -40,19 +41,25 @@ void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 
 	if (AttackMontage)
 	{
-		// 1. 리스너 먼저 등록 (안정성)
-		WaitTelegraphTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, TelegraphEventTag, nullptr, false, false);
+		// 1. Telegraph 대기
+		WaitTelegraphTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+			this, TelegraphEventTag, nullptr, false, false
+		);
 		WaitTelegraphTask->EventReceived.AddDynamic(this, &UGA_AttackRange::OnTelegraphEvent);
 		WaitTelegraphTask->ReadyForActivation();
 
-		WaitHitTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(this, HitEventTag, nullptr, false, false);
+		// 2. Hit 대기
+		WaitHitTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+			this, HitEventTag, nullptr, false, false
+		);
 		WaitHitTask->EventReceived.AddDynamic(this, &UGA_AttackRange::OnHitEvent);
 		WaitHitTask->ReadyForActivation();
 
-		// 2. 몽타주 재생
+		// 3. 몽타주 재생
 		MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this, NAME_None, AttackMontage, 1.0f, NAME_None, false
 		);
+
 		MontageTask->OnCompleted.AddDynamic(this, &UGA_AttackRange::OnMontageEnded);
 		MontageTask->OnInterrupted.AddDynamic(this, &UGA_AttackRange::OnMontageEnded);
 		MontageTask->OnBlendOut.AddDynamic(this, &UGA_AttackRange::OnMontageEnded);
@@ -76,11 +83,11 @@ void UGA_AttackRange::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
+// [이벤트 수신] 예고 신호
 void UGA_AttackRange::OnTelegraphEvent(FGameplayEventData Payload)
 {
 	ResetBlockColors();
 
-	// 1. 박스 계산 (Standard)
 	FVector BoxCenter, BoxExtent;
 	CalculateAttackBox(BoxCenter, BoxExtent, true);
 
@@ -95,9 +102,20 @@ void UGA_AttackRange::OnTelegraphEvent(FGameplayEventData Payload)
 
 	for (AActor* Actor : OverlappedActors)
 	{
+		// 1. 블록 캐스팅
 		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
 		{
-			Block->SetHighlightState(EBlockHighlightState::Danger);
+			// 2. 인터페이스를 통해 이벤트 전달
+			// IGameplayEventInterface는 ABlockBase가 상속받았으므로 바로 호출 가능
+			// Target 태그가 "빨간색/위험"을 의미한다고 가정합니다.
+
+			// 페이로드 준비 (누가 보냈는지 등)
+			FGameplayEventData EventData;
+			EventData.Instigator = GetAvatarActorFromActorInfo();
+			EventData.EventTag = TAG_Block_Highlight_Target;
+
+			Block->HandleGameplayEvent(TAG_Block_Highlight_Target, EventData);
+
 			AffectedBlocks.Add(Block);
 		}
 	}
@@ -109,10 +127,15 @@ void UGA_AttackRange::OnTelegraphEvent(FGameplayEventData Payload)
 	}
 
 	GetWorld()->GetTimerManager().SetTimer(
-		TimerHandle_SafetyRestore, this, &UGA_AttackRange::RestoreMontageSpeed, SafetyDuration, false
+		TimerHandle_SafetyRestore,
+		this,
+		&UGA_AttackRange::RestoreMontageSpeed,
+		SafetyDuration,
+		false
 	);
 }
 
+// [이벤트 수신] 타격 신호
 void UGA_AttackRange::OnHitEvent(FGameplayEventData Payload)
 {
 	GetWorld()->GetTimerManager().ClearTimer(TimerHandle_SafetyRestore);
@@ -159,7 +182,6 @@ void UGA_AttackRange::ExecuteAttack()
 	}
 }
 
-// 공격범위	박스 계산 함수 (Standard)
 void UGA_AttackRange::CalculateAttackBox(FVector& OutCenter, FVector& OutExtent, bool bIsTelegraph)
 {
 	APawn* AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
@@ -168,10 +190,6 @@ void UGA_AttackRange::CalculateAttackBox(FVector& OutCenter, FVector& OutExtent,
 	FVector ForwardDir = AvatarPawn->GetActorForwardVector();
 	FVector Origin = AvatarPawn->GetActorLocation();
 
-	// [Standard Math]
-	// "보스 중심에서 Offset만큼 떨어진 곳부터, Range만큼 뻗어나가는 박스"
-
-	// 박스의 중심점 거리 = 오프셋 + (사거리 / 2)
 	float CenterDistance = AttackForwardOffset + (AttackRangeForward * 0.5f);
 
 	CachedTargetLocation = Origin + (ForwardDir * CenterDistance);
@@ -179,13 +197,11 @@ void UGA_AttackRange::CalculateAttackBox(FVector& OutCenter, FVector& OutExtent,
 
 	if (bIsTelegraph)
 	{
-		// 바닥 감지용: 박스를 살짝 아래로 (-100)
-		OutCenter.Z -= 100.0f;
-		OutExtent = FVector(AttackRangeForward * 0.5f, AttackWidth * 0.5f, 150.0f);
+		OutCenter.Z -= 50.0f;
+		OutExtent = FVector(AttackRangeForward * 0.5f, AttackWidth * 0.5f, 100.0f);
 	}
 	else
 	{
-		// 공격 판정용: 박스를 살짝 위로 (+50)
 		OutCenter.Z += 50.0f;
 		OutExtent = FVector(AttackRangeForward * 0.5f, AttackWidth * 0.5f, 100.0f);
 	}
@@ -206,13 +222,20 @@ void UGA_AttackRange::RestoreMontageSpeed()
 	}
 }
 
+// [색상 초기화] 태그 방식 적용
 void UGA_AttackRange::ResetBlockColors()
 {
+	FGameplayEventData EventData;
+	EventData.Instigator = GetAvatarActorFromActorInfo();
+	// None 태그 = 원래대로 복구
+	EventData.EventTag = TAG_Block_Highlight_None;
+
 	for (TWeakObjectPtr<ABlockBase> BlockPtr : AffectedBlocks)
 	{
 		if (BlockPtr.IsValid())
 		{
-			BlockPtr->SetHighlightState(EBlockHighlightState::None);
+			// HandleGameplayEvent 호출 (색상 끄기)
+			BlockPtr->HandleGameplayEvent(TAG_Block_Highlight_None, EventData);
 		}
 	}
 	AffectedBlocks.Empty();

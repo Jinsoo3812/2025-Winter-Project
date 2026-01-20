@@ -3,43 +3,30 @@
 
 #include "Block/BlockBase.h"
 #include "Engine/World.h"
-#include "Engine/OverlapResult.h"
+#include "CollisionChannels.h"
+#include "Block/DA_BlockConfig.h"
+#include "BlockGameplayTags.h"
+
 
 // Sets default values
 ABlockBase::ABlockBase()
 {
-	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+	// Tick을 사용할 수는 있지만,
 	PrimaryActorTick.bCanEverTick = true;
-	// Tick은 사용하지만, 처음에는 비활성화 상태로 시작
-    PrimaryActorTick.bStartWithTickEnabled = false;
 
-    // [수정] 1. 물리 충돌을 담당할 BoxComponent 생성 (Root)
-    CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
-    RootComponent = CollisionComponent;
+	// 처음에는 비활성화 상태로 시작
+	PrimaryActorTick.bStartWithTickEnabled = false;
 
-    // 박스 크기 설정: 100의 절반인 50에서 아주 살짝 줄인 49.5로 설정 (전체 크기 99)
-    // 시각적(Mesh)으로는 100으로 꽉 차 보이지만, 물리적으로는 1.0의 틈이 생겨 마찰/끼임 방지
-    CollisionComponent->SetBoxExtent(FVector(49.5f, 49.5f, 49.5f));
+	// 물리 충돌을 담당할 BoxComponent 생성 (Root)
+	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
+	RootComponent = CollisionComponent;
 
-    // 충돌 프로필 설정 (기존 Mesh가 하던 역할)
-    CollisionComponent->SetCollisionProfileName(TEXT("BlockAll"));
-    // 물리 시뮬레이션 관련 설정이 필요하다면 여기서 추가 (예: SetSimulatePhysics)
+	// 박스 크기 설정: 100의 절반인 50에서 아주 살짝 줄인 49.5로 설정
+	// 시각적(Mesh)으로는 100으로 꽉 차 보이지만, 물리적으로는 1.0의 틈이 생겨 마찰/끼임 방지
+	CollisionComponent->SetBoxExtent(FVector(49.5f, 49.5f, 49.5f));
 
-
-    // [수정] 2. 외형을 담당할 StaticMeshComponent 생성 (Child)
-    MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BlockMesh"));
-    MeshComponent->SetupAttachment(RootComponent); // 루트인 박스에 부착
-
-    // 메시는 충돌을 끔 (충돌은 부모인 Box가 담당하므로)
-    MeshComponent->SetCollisionProfileName(TEXT("NoCollision"));
-
-	// 기본 Cube 메시 로드
-	static ConstructorHelpers::FObjectFinder<UStaticMesh> CubeMesh(TEXT("/Engine/BasicShapes/Cube"));
-	if (CubeMesh.Succeeded())
-	{
-		DefaultBlockMesh = CubeMesh.Object;
-		MeshComponent->SetStaticMesh(DefaultBlockMesh);
-	}
+	// 블록들의 충돌 채널인 ECC_Block
+	CollisionComponent->SetCollisionObjectType(ECC_Block);
 }
 
 // Called when the game starts or when spawned
@@ -48,287 +35,273 @@ void ABlockBase::BeginPlay()
 	Super::BeginPlay();
 }
 
+void ABlockBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	// MeshComponent 캐시
+	if (!MeshComponent)
+	{
+		// 모든 StaticMeshComponent를 다 가져온다.
+		TArray<UStaticMeshComponent*> Components;
+		GetComponents<UStaticMeshComponent>(Components);
+
+		// 이름이 "Cube"인 것을 찾는다.
+		for (UStaticMeshComponent* Comp : Components)
+		{
+			// MeshComponent에 캐시
+			// (주의: 에디터에서 보이는 이름과 실제 변수명이 다를 수 있으나, 보통 일치함)
+			if (Comp && Comp->GetName().Contains(TEXT("Cube")))
+			{
+				MeshComponent = Comp;
+				break;
+			}
+		}
+	}
+
+	// 유효성 검사 (찾았는지 확인)
+	if (!MeshComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent not found in %s"), *GetName());
+	}
+}
+
 // Called every frame
 void ABlockBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-    // 낙하 기능이 있는 블록만 처리
+	// 낙하 기능이 있는 블록만 처리
 	if (bCanFall) {
 		UpdateGravity(DeltaTime);
 	}
 }
 
-void ABlockBase::SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType)
+void ABlockBase::UpdateGravity(float DeltaTime)
 {
-	Location = SpawnLocation;
-	BlockType = NewBlockType;
-	SetActorLocation(Location);
+	FVector Start = GetActorLocation();
 
-    // 블록이 소환되자마자 떨어져야 하는지 검사하기 위해 Tick 켬
-	SetActorTickEnabled(true);
-}
+	// 레이캐스트 길이를 속도에 비례하게 늘려서, 고속 낙하 시 터널링(바닥 뚫음) 방지
+	// 최소 길이는 60
+	float CheckDistance = FMath::Max(60.0f, (FMath::Abs(VerticalVelocity) * DeltaTime) + 10.0f);
+	FVector End = Start + FVector(0.0f, 0.0f, -CheckDistance);
 
-ABlockBase* ABlockBase::SpawnBlock(
-	UWorld* World,
-	TSubclassOf<ABlockBase> BlockClass,
-	const FVector& SpawnLocation,
-	bool bEnableGravity)
-{
-	if (!World)
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	bool bHitSomething = GetWorld()->LineTraceSingleByChannel(
+		HitResult, Start, End, ECC_Visibility, Params
+	);
+
+	// 바닥에 뭔가가 닿았는데, 그게 '추락 중인 블록'이라면 바닥이 없는 것으로 간주해야 함
+	if (bHitSomething)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - World is null"));
-		return nullptr;
+		ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
+		if (HitBlock && HitBlock->IsFalling())
+		{
+			// 아래 있는 블록이 같이 추락 중이라면, 바닥이 없는 것으로 간주
+			bHitSomething = false;
+		}
 	}
 
-	if (!BlockClass)
+	if (bHitSomething)
 	{
-		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - BlockClass is null"));
-		return nullptr;
-	}
+		// 바닥이 확실히 있음
+		if (bIsFalling)
+		{
+			CheckLanding();
+		}
+		else
+		{
+			// 안정적인 상태 유지 (물리를 켜놓으면 어디에 끼거나 진동하거나 하여튼,,)
+			SetActorTickEnabled(false);
+		}
 
-	// 기본 GridSize 가져오기 (CDO 사용)
-	ABlockBase* CDO = BlockClass->GetDefaultObject<ABlockBase>();
-	float GridSize = CDO ? CDO->GetGridSize() : 100.0f;
-
-	// 점유 확인
-	if (IsLocationOccupied(World, SpawnLocation, GridSize))
-	{
-		UE_LOG(LogTemp, Warning, TEXT("BlockBase::SpawnBlockAdvanced - Location %s is occupied"), *SpawnLocation.ToString());
-		return nullptr;
-	}
-
-	// 블록 생성
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	ABlockBase* NewBlock = World->SpawnActor<ABlockBase>(BlockClass, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
-
-	if (!NewBlock)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BlockBase::SpawnBlockAdvanced - Failed to spawn block at %s"), *SpawnLocation.ToString());
-		return nullptr;
-	}
-
-	// 블록 위치 설정
-	NewBlock->Location = SpawnLocation;
-	NewBlock->SetActorLocation(SpawnLocation);
-
-	// 중력 설정
-	if (bEnableGravity)
-	{
-		NewBlock->bCanFall = true;
-		NewBlock->SetActorTickEnabled(true);
+		bIsFalling = false;
+		VerticalVelocity = 0.0f;
 	}
 	else
 	{
-		NewBlock->bCanFall = false;
-		NewBlock->SetActorTickEnabled(false);
+		// 바닥이 없음 -> 낙하 처리
+		if (!bIsFalling)
+		{
+			bIsFalling = true;
+			NotifyUpperBlock(); // 내 위의 블록도 깨움
+			// UE_LOG(LogTemp, Warning, TEXT("BlockBase: %s started falling."), *GetName());
+		}
+
+		// 속도 갱신
+		VerticalVelocity += GravityAcceleration * DeltaTime;
+		FVector DeltaMove = FVector(0.0f, 0.0f, VerticalVelocity * DeltaTime);
+
+		// 옆면 마찰 문제 해결
+		// 매 프레임 아래로 떨어지는 것은 일종의 순간이동인데
+		// 그 때마다 양 옆에 부딪힌다면 제대로 이동하지 못하므로 sweep을 끔
+		AddActorWorldOffset(DeltaMove, false);
 	}
-
-	return NewBlock;
-}
-
-bool ABlockBase::IsLocationOccupied(
-	UWorld* World,
-	const FVector& CheckLocation,
-	float CheckGridSize)
-{
-	if (!World)
-	{
-		UE_LOG(LogTemp, Error, TEXT("BlockBase::IsLocationOccupied - World is null"));
-		return true;
-	}
-
-	// MakeBox는 인자를 반지름으로 사용함
-	// 0.5를 넣으면 100 * 100 * 100 크기의 박스가 되어 꽉 차므로 0.4 사용
-	FVector BoxExtent = FVector(CheckGridSize * 0.4f, CheckGridSize * 0.4f, CheckGridSize * 0.4f);
-	FCollisionShape CheckShape = FCollisionShape::MakeBox(BoxExtent);
-
-	// ObjectType 기반 쿼리 (WorldStatic, WorldDynamic만 체크)
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-
-	FCollisionQueryParams QueryParams;
-
-	// 충돌한 블록들을 반환할 것이 아니므로 OverlapMulti 대신 OverlapAny 사용
-	return World->OverlapAnyTestByObjectType(CheckLocation, FQuat::Identity, ObjectQueryParams, CheckShape, QueryParams);
-}
-
-void ABlockBase::UpdateGravity(float DeltaTime)
-{
-    FVector Start = GetActorLocation();
-
-    // 레이캐스트 길이를 속도에 비례하게 늘려서, 고속 낙하 시 터널링(바닥 뚫음) 방지
-    // 최소 길이는 60
-    float CheckDistance = FMath::Max(60.0f, (FMath::Abs(VerticalVelocity) * DeltaTime) + 10.0f);
-    FVector End = Start + FVector(0.0f, 0.0f, -CheckDistance);
-
-    FHitResult HitResult;
-    FCollisionQueryParams Params;
-    Params.AddIgnoredActor(this);
-
-    bool bHitSomething = GetWorld()->LineTraceSingleByChannel(
-        HitResult, Start, End, ECC_Visibility, Params
-    );
-
-    // 바닥에 뭔가가 닿았는데, 그게 '추락 중인 블록'이라면 바닥이 없는 것으로 간주해야 함
-    if (bHitSomething)
-    {
-        ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
-        if (HitBlock && HitBlock->IsFalling())
-        {
-            // 아래 있는 블록이 같이 추락 중이라면, 바닥이 없는 것으로 간주
-            bHitSomething = false;
-        }
-    }
-
-    if (bHitSomething)
-    {
-        // 바닥이 확실히 있음
-        if (bIsFalling)
-        {
-            CheckLanding();
-        }
-        else
-        {
-            // 안정적인 상태 유지 (물리를 켜놓으면 어디에 끼거나 진동하거나 하여튼,,)
-            SetActorTickEnabled(false);
-        }
-
-        bIsFalling = false;
-        VerticalVelocity = 0.0f;
-    }
-    else
-    {
-        // 바닥이 없음 -> 낙하 처리
-        if (!bIsFalling)
-        {
-            bIsFalling = true;
-            NotifyUpperBlock(); // 내 위의 블록도 깨움
-            // UE_LOG(LogTemp, Warning, TEXT("BlockBase: %s started falling."), *GetName());
-        }
-
-        // 속도 갱신
-        VerticalVelocity += GravityAcceleration * DeltaTime;
-        FVector DeltaMove = FVector(0.0f, 0.0f, VerticalVelocity * DeltaTime);
-
-        // 옆면 마찰 문제 해결
-        // 매 프레임 아래로 떨어지는 것은 일종의 순간이동인데
-        // 그 때마다 양 옆에 부딪힌다면 제대로 이동하지 못하므로 sweep을 끔
-        AddActorWorldOffset(DeltaMove, false);
-    }
 }
 
 void ABlockBase::CheckLanding()
 {
-    FVector CurrentLoc = GetActorLocation();
+	FVector CurrentLoc = GetActorLocation();
 
 	// 152, 99 처럼 중간에 걸친 위치를 그리드에 스냅
 	float HalfSize = GridSize / 2.0f;
-    float SnappedZ = FMath::RoundToFloat((CurrentLoc.Z - HalfSize) / GridSize) * GridSize + HalfSize;
-    float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize; // X, Y는 중심이 0 기준이면 그대로 둠
-    float SnappedY = FMath::RoundToFloat(CurrentLoc.Y / GridSize) * GridSize;
+	float SnappedZ = FMath::RoundToFloat((CurrentLoc.Z - HalfSize) / GridSize) * GridSize + HalfSize;
+	float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize; // X, Y는 중심이 0 기준이면 그대로 둠
+	float SnappedY = FMath::RoundToFloat(CurrentLoc.Y / GridSize) * GridSize;
 
-    FVector NewLoc = FVector(SnappedX, SnappedY, SnappedZ);
+	FVector NewLoc = FVector(SnappedX, SnappedY, SnappedZ);
 
-    if (SetActorLocation(NewLoc))
-    {
-        // 스냅 성공 및 가상 물리 연산 종료
-        bIsFalling = false;
-        VerticalVelocity = 0.0f;
-        SetActorTickEnabled(false);
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("BlockBase: Failed to snap to grid %s"), *GetName());
-    }
+	if (SetActorLocation(NewLoc))
+	{
+		// 스냅 성공 및 가상 물리 연산 종료
+		bIsFalling = false;
+		VerticalVelocity = 0.0f;
+		SetActorTickEnabled(false);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: Failed to snap to grid %s"), *GetName());
+	}
 }
 
 void ABlockBase::NotifyUpperBlock()
 {
-    // 내 위치에서 위로 100 + 10(offset) 만큼 레이캐스트
-    FVector Start = GetActorLocation();
-    FVector End = Start + FVector(0.0f, 0.0f, 110.0f);
+	// 내 위치에서 위로 100 + 10(offset) 만큼 레이캐스트
+	FVector Start = GetActorLocation();
+	FVector End = Start + FVector(0.0f, 0.0f, 110.0f);
 
-    FHitResult HitResult;
-    FCollisionQueryParams Params;
-    Params.AddIgnoredActor(this);
+	FHitResult HitResult;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
 
-    // 위쪽에 블록이 있는지 검사.
-    bool bHit = GetWorld()->LineTraceSingleByChannel(
-        HitResult, Start, End, ECC_Visibility, Params
-    );
+	// 위쪽에 블록이 있는지 검사.
+	bool bHit = GetWorld()->LineTraceSingleByChannel(
+		HitResult, Start, End, ECC_Visibility, Params
+	);
 
-    if (bHit && HitResult.GetActor())
-    {
-        // 닿은 액터가 BlockBase인지 확인하고 깨움
-        ABlockBase* UpperBlock = Cast<ABlockBase>(HitResult.GetActor());
-        if (UpperBlock)
-        {
-            // 잠자던 위쪽 블록의 Tick을 켜서 추락하게 함
-            UpperBlock->SetActorTickEnabled(true);
-            // 로그 확인용
-            // UE_LOG(LogTemp, Log, TEXT("BlockBase: %s woke up %s"), *GetName(), *UpperBlock->GetName());
-        }
-        else
-        {
-            // 블록이 아닌 다른 물체일 경우 (로그 생략 가능)
-        }
-    }
-    else
-    {
-        // 위에 아무것도 없으므로 아무 작업도 하지 않음 (정상 상황)
-    }
+	if (bHit && HitResult.GetActor())
+	{
+		// 닿은 액터가 BlockBase인지 확인하고 깨움
+		ABlockBase* UpperBlock = Cast<ABlockBase>(HitResult.GetActor());
+		if (UpperBlock)
+		{
+			// 잠자던 위쪽 블록의 Tick을 켜서 추락하게 함
+			UpperBlock->SetActorTickEnabled(true);
+			// 로그 확인용
+			// UE_LOG(LogTemp, Log, TEXT("BlockBase: %s woke up %s"), *GetName(), *UpperBlock->GetName());
+		}
+		else
+		{
+			// 블록이 아닌 다른 물체일 경우 (로그 생략 가능)
+		}
+	}
+	else
+	{
+		// 위에 아무것도 없으므로 아무 작업도 하지 않음 (정상 상황)
+	}
 }
 
-// (참고) SetHighlightState는 Index 0만 건드리므로 폭탄 색(Index 1)에 영향 없음
-void ABlockBase::SetHighlightState(EBlockHighlightState NewState)
+void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload)
 {
-    if (UStaticMeshComponent* Mesh = GetBlockMesh())
-    {
-        // Enum을 float로 변환하여 전달
-        float StateValue = static_cast<float>(NewState);
-        Mesh->SetCustomPrimitiveDataFloat(CPD_INDEX_HIGHLIGHT, StateValue);
-    }
+	// Config 유효성 체크
+	if (!BlockConfig) {
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
+		return;
+	}
 
+	// 폭탄 하이라이트 태그 처리는 중첩형이므로 특수 처리
+	if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb))
+	{
+		if (MeshComponent)
+		{   
+			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
+			{
+				CurrentBombCount = 0;
+				MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
+				return;
+			}
+			// 최대 폭탄 개수에 맞춰 Clamp
+			CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
 
-    else
-    {
-        // 클라이언트에서 직접 호출된 경우 (혹시 모를 예외 처리)
-        // 로컬 시각 효과만 변경하거나, 아무것도 안 함
-        // 여기서는 로컬 변경 로직 수행 (아래와 동일)
-        if (MeshComponent)
-        {
-            float CPDValue = static_cast<float>(NewState);
-            MeshComponent->SetCustomPrimitiveDataFloat(CPD_INDEX_HIGHLIGHT, CPDValue);
-        }
-    }
+			// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
+			float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
+
+			// 폭탄 CPD Index도 Config에 정의되어 있음
+			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
+		}
+		return;
+	}
+
+	// 일반적인 On/Off 형태의 Highlight 태그 처리
+	// Ex) Block.Highlight.Preview 같은 태그가 왔을 때,
+	// BlockCPDIndexMap에서 해당 태그에 맞는 CPD 정보를 찾음
+	if (const FBlockCPDInfo* FoundInfo = BlockConfig->BlockCPDIndexMap.Find(EventTag))
+	{
+		// 찾은 정보대로 CPD 업데이트
+		if (MeshComponent)
+		{
+			MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
+		}
+	}
+	else
+	{
+		// 맵에도 없고, 특수 처리 태그도 아님 -> 경고
+		// UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
+	}
 }
 
-void ABlockBase::UpdateBombCount(int32 Delta, int32 MaxBombCount)
+void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
 {
-    CurrentBombCount = FMath::Clamp(CurrentBombCount + Delta, 0, MaxBombCount);
+	if (MeshComponent)
+	{	
+		// 폭탄이 모두 터져서 하이라이트를 제거해야 하는 경우
+		if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
+		{
+			CurrentBombCount = 0;
+			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
+			return;
+		}
 
-    if (UStaticMeshComponent* Mesh = GetBlockMesh())
-    {
-        // 0 ~ 1 사이 실수로 변환하여 전달 (예: 1개=0.33, 2개=0.66, 3개=1.0)
-        float ColorRatio = (float)CurrentBombCount / (float)MaxBombCount;
-        Mesh->SetCustomPrimitiveDataFloat(CPD_INDEX_BOMBCOUNT, ColorRatio); // Index 1 사용
-    }
+		// 폭탄 개수 증가 하이라이트
+		// 최대 폭탄 개수에 맞춰 Clamp
+		CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
+
+		// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
+		float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
+
+		// 폭탄 CPD Index도 Config에 정의되어 있음
+		MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
+	}
+	return;
 }
 
-
-
-void ABlockBase::Multicast_SetHighlightState_Implementation(EBlockHighlightState NewState)
+FVector ABlockBase::GetBlockAlignedLocation() const
 {
-    // 실제 색상 변경 로직 (서버 및 모든 클라이언트에서 실행됨)
-    if (MeshComponent)
-    {
-        // Enum 값을 float로 변환하여 CPD 0번 인덱스에 전달
-        // 0=None, 1=Blue, 2=Green, 3=Red(Material에서 처리 필요)
-        float CPDValue = static_cast<float>(NewState);
-        MeshComponent->SetCustomPrimitiveDataFloat(CPD_INDEX_HIGHLIGHT, CPDValue);
-    }
+	// 현재 실제 액터의 위치
+	FVector CurrentLoc = GetActorLocation();
+
+	float HalfSize = GridSize / 2.0f;
+
+	// 0, 100, 200, -100... 등 정수 배수 좌표로 스냅
+	float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize;
+	float SnappedY = FMath::RoundToFloat(CurrentLoc.Y / GridSize) * GridSize;
+	float SnappedZ = FMath::RoundToFloat(CurrentLoc.Z / GridSize) * GridSize;
+
+	return FVector(SnappedX, SnappedY, SnappedZ);
+}
+
+void ABlockBase::SelfDestroy()
+{
+	Destroy();
 }

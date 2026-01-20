@@ -4,37 +4,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "GameplayTagContainer.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
+#include "GameplayEventInterface.h"
+#include "BlockInfoInterface.h"
 #include "BlockBase.generated.h"
 
-// 블록 종류 관리
-UENUM()
-enum class EBlockType : uint8 {
-	IMMUTABLE UMETA(DisplayName = "Immutable"),
-	Warning UMETA(DisplayName = "Warning"),
-	Destructible UMETA(DisplayName = "Destructible"),
-	Recordable UMETA(DisplayName = "Recordable")
-};
-
-// 블록 하이라이트 상태 관리
-UENUM(BlueprintType)
-enum class EBlockHighlightState : uint8
-{
-	None = 0,
-	Preview = 1,    // 파란색
-	Targeted = 2,    // 초록색 (기존 코드에서 3.0을 쓰셨다면 2나 3으로 매핑)
-	Danger = 3     // 빨간색
-};
-
-// CPD 인덱스를 상수로 관리
-constexpr int32 CPD_INDEX_HIGHLIGHT = 0;
-constexpr int32 CPD_INDEX_BOMBCOUNT = 1;
+class UDA_BlockConfig;
 
 
 UCLASS()
-class WORLD_API ABlockBase : public AActor
+class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface, public IBlockInfoInterface
 {
 	GENERATED_BODY()
 	
@@ -42,19 +22,21 @@ public:
 	ABlockBase();
 
 protected:
-	// Called when the game starts or when spawned
+	// -----------------------------------------------------------------------------
+	// 초기화 함수들
+	// -----------------------------------------------------------------------------
+
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, Category = "Block")
-	// 블록의 타입을 담는 변수
-	EBlockType BlockType = EBlockType::IMMUTABLE;
+	virtual void PostInitializeComponents() override;
 
+	// -----------------------------------------------------------------------------
+	// BlockBase 고유
+	// -----------------------------------------------------------------------------
+
+	// 블록(정육면체)의 한 변의 길이
 	UPROPERTY(EditDefaultsOnly, Category = "Grid")
 	float GridSize = 100.0f;
-	
-	UPROPERTY(VisibleAnywhere, Category = "Block")
-	// 블록의 위치를 담는 변수 (AActor에 BlockLocation이름이 이미 존재하여 Location으로 변경)
-	FVector Location;
 
 	// 블록이 파괴 가능한지 여부를 담는 변수
 	UPROPERTY(VisibleAnywhere, Category = "Block")
@@ -68,9 +50,23 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UBoxComponent> CollisionComponent;
 
-	// BP에서 설정 가능한 기본 메시 (기본값: Cube)
-	UPROPERTY(EditDefaultsOnly, Category = "Block")
-	TObjectPtr<UStaticMesh> DefaultBlockMesh;
+	// 이 블록이 참조할 설정 파일 (블루프린트 디폴트에서 설정하거나, 스폰 시 주입)
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	TObjectPtr<UDA_BlockConfig> BlockConfig;
+
+	// 이 블록이 참조할 설정 파일 (블루프린트 디폴트에서 설정하거나, 스폰 시 주입)
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	int32 MaxBombCount;
+
+	// 블록이 파괴 가능한지 여부를 반환하는 함수
+	virtual bool CanBeDestroyed() const { return IsDestrictible; }
+
+	// 자신을 파괴하는 함수
+	virtual void SelfDestroy();
+
+	// -----------------------------------------------------------------------------
+	// 낙하 관련
+	// -----------------------------------------------------------------------------
 
 	// 낙하해도 되는 블록인지
 	bool bCanFall = false;
@@ -84,8 +80,8 @@ protected:
 	// 중력 가속도
 	const float GravityAcceleration = -980.0f;
 
-	// 현재 부착된 폭탄 개수 추적용
-	int32 CurrentBombCount = 0;
+	// 낙하 중인지 반환하는 함수
+	bool IsFalling() const { return bIsFalling; }
 
 	// 낙하 로직을 처리하는 함수
 	void UpdateGravity(float DeltaTime);
@@ -96,63 +92,44 @@ protected:
 	// 자신의 위 블록이 추락할 수 있도록 깨우는 함수
 	void NotifyUpperBlock();
 
+	// -----------------------------------------------------------------------------
+	// 폭발 관련
+	// -----------------------------------------------------------------------------
+
+	void HandleBombEvent(const FGameplayTag& EventTag);
+
+	// 현재 부착된 폭탄 개수 추적용
+	int32 CurrentBombCount = 0;
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	// [레거시] 블록의 위치와 타입 변수를 설정하고 소환합니다.
-	virtual void SpawnBlock(FVector SpawnLocation, EBlockType NewBlockType);
+	// -----------------------------------------------------------------------------
+	// BlockInfoInterface 구현
+	// -----------------------------------------------------------------------------
 
-	// 지정된 위치에 블록을 소환합니다. 
-	// 점유 확인 및 중력 설정을 포함한 개선된 스폰 로직
-	// @param World: 블록을 생성할 월드
-	// @param BlockClass: 생성할 블록의 클래스 (BP_DestructibleBlock 등)
-	// @param SpawnLocation: 블록을 생성할 위치
-	// @param bEnableGravity: 생성 후 중력을 활성화할지 여부
-	// @return 생성된 블록 (생성 실패 시 nullptr)
-	UFUNCTION(BlueprintCallable, Category = "Block")
-	static ABlockBase* SpawnBlock(
-		UWorld* World,
-		TSubclassOf<ABlockBase> BlockClass,
-		const FVector& SpawnLocation,
-		bool bEnableGravity
-	);
+	FVector GetBlockLocation() const override { return GetActorLocation(); }
+	FRotator GetBlockRotation() const override { return GetActorRotation(); }
+	float GetBlockGridSize() const override { return GridSize; }
 
-	// 지정된 위치가 점유되어 있는지 확인하는 헬퍼 함수
-	// @param World: 체크할 월드
-	// @param CheckLocation: 체크할 위치
-	// @param CheckGridSize: 블록의 그리드 크기
-	// @return 점유되어 있으면 true, 비어있으면 false
-	// @note 프리뷰 블록(ECC_GameTraceChannel1)은 점유 판정에서 제외됨
-	UFUNCTION(BlueprintCallable, Category = "Block")
-	static bool IsLocationOccupied(
-		UWorld* World,
-		const FVector& CheckLocation,
-		float CheckGridSize
-	);
+	// -----------------------------------------------------------------------------
+	// 헬퍼 함수
+	// -----------------------------------------------------------------------------
 
-	EBlockType GetBlockType() const { return BlockType; }
-	FVector GetBlockLocation() const { return Location; }
-	float GetGridSize() const { return GridSize; }
-
-	virtual bool CanBeDestroyed() const { return IsDestrictible; }
+	//  그리드에 정렬된 위치(GridSize 단위에 맞도록)를 반환하는 함수
+	FVector GetBlockAlignedLocation() const override;
 
 	// 블록의 메시 컴포넌트를 반환하는 함수 (머티리얼 변경 등에 사용)
 	UStaticMeshComponent* GetBlockMesh() const { return MeshComponent; }
 
-	bool IsFalling() const { return bIsFalling; }
-
+	// 낙하 가능 여부 설정 함수
 	void SetCanFall(bool bNewCanFall) { bCanFall = bNewCanFall; }
 
-	// 블록의 하이라이트 상태를 설정하는 함수 (CPD 0)
-	// 0 : 없음, 1: 프리뷰(파란색), 2: 타겟팅(초록색)
-	void SetHighlightState(EBlockHighlightState NewState);
+	// -----------------------------------------------------------------------------
+	// GameplayEventInterface 구현
+	// -----------------------------------------------------------------------------
 
-	// 폭탄 개수 변경 및 색상 갱신 (빨강) - CPD 1
-	void UpdateBombCount(int32 Delta, int32 MaxBombCount);
-
-	// [추가된 부분] 모든 클라이언트에게 색상 변경을 알리기 위해 함수 선언 변경
-	// 이 함수를 호출하면 서버+모든 클라이언트에서 실행됩니다.
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_SetHighlightState(EBlockHighlightState NewState);
+	/* GameplayEvent를 수신하는 함수 */
+	void HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload) override;
 };

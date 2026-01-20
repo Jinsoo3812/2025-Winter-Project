@@ -2,14 +2,19 @@
 
 
 #include "GA/GA_SummonBarrier.h"
-#include "Block/DestructibleBlock.h"
-#include "Block/BlockBase.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
-#include "Engine/OverlapResult.h"
+#include "Components/PrimitiveComponent.h"
 #include "AbilitySystemBlueprintLibrary.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "BlockInfoInterface.h"
+#include "BlockSpawnInterface.h"
+#include "BlockGameplayTags.h"
+#include "InputGameplayTags.h"
+#include "Collision/CollisionChannels.h"
+#include "AbilitySystemComponent.h"
 
 UGA_SummonBarrier::UGA_SummonBarrier()
 {
@@ -17,6 +22,10 @@ UGA_SummonBarrier::UGA_SummonBarrier()
 	CurrentMovedDistance = 0.0f;
 	bIsCharging = false;
 	ChargeDirection = FVector::ForwardVector;
+
+	// 초기 그리드 사이즈는 기본값으로 설정하되,
+	// UpdatePreview에서 타겟 블록의 정보를 받아 동적으로 갱신됨
+	GridSize = 100.0f;
 }
 
 void UGA_SummonBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -28,7 +37,6 @@ void UGA_SummonBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	SpawnedBlocks.Empty();
 	CurrentMovedDistance = 0.0f;
 	bIsCharging = false;
-	GridSize = BlockToSpawn ? BlockToSpawn->GetDefaultObject<ADestructibleBlock>()->GetGridSize() : 100.0f;
 }
 
 void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
@@ -41,46 +49,28 @@ void UGA_SummonBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, cons
 	ChargeTimerHandle.Invalidate();
 
 	// 프리뷰 액터 정리
-	for (TObjectPtr<AActor>& PreviewActor : BarrierPreviewBlocks)
+	for (TWeakObjectPtr<AActor>& PreviewActor : BarrierPreviewBlocks)
 	{
-		if (PreviewActor && IsValid(PreviewActor))
+		if (PreviewActor.IsValid())
 		{
-			PreviewActor->Destroy();
+			PreviewActor.Get()->Destroy();
 		}
 	}
-	BarrierPreviewBlocks.Empty();
+	BarrierPreviewBlocks.Reset();
 
 	// 바닥 타일 하이라이트 정리
-	ClearHighlights();
+	ClearHighlights(PreviewBlocks);
 
 	// 스킬이 취소/종료되면 남은 블록들도 모두 제거
-	for (TObjectPtr<ADestructibleBlock>& Block : SpawnedBlocks)
+	for (TWeakObjectPtr<AActor>& Block : SpawnedBlocks)
 	{
-		if (Block && IsValid(Block))
+		if (Block.IsValid())
 		{
-			Block->Destroy();
+			Block.Get()->Destroy();
 		}
 	}
 
-	SpawnedBlocks.Empty();
-
-	// 남은 바인딩 제거
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
-	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			// InputComponent에서 이 객체에 바인딩된 모든 키 바인딩 제거
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
-	}
+	SpawnedBlocks.Reset();
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
@@ -104,42 +94,44 @@ void UGA_SummonBarrier::UpdatePreview()
 		return;
 	}
 
-	// 1. 이전 프레임의 하이라이트 초기화
-    ClearHighlights();
+	HighlightBlocks(PreviewBlocks, TAG_Block_Highlight_Preview);
 
-    // 2. 사거리 내 블록 탐색 (부모 클래스 함수 활용)
-    TArray<ABlockBase*> BlocksInRange;
-    FindBlocksInRange(BlocksInRange);
+	// 마우스 커서 타겟팅 및 방벽 프리뷰 계산
+	FHitResult HitResult;
+	PC->GetHitResultUnderCursor(ECC_Block, true, HitResult);
 
-    // 3. 탐색된 블록들에 일괄적으로 'Preview(파랑)' 상태 적용
-    BatchHighlightBlocks(BlocksInRange, EBlockHighlightState::Preview);
+	bool bValidTargetFound = false;
+	TArray<FTransform> TargetTransforms;
 
-    // 4. 나중에 끄기 위해 목록 백업
-    PreviewedBlocks = BlocksInRange;
+	if (HitResult.bBlockingHit)
+	{
+		AActor* HitActor = HitResult.GetActor();
+		IBlockInfoInterface* HitBlockInfo = Cast<IBlockInfoInterface>(HitActor);
 
-    // 5. 마우스 커서 타겟팅 및 방벽 프리뷰 계산
-    FHitResult HitResult;
-    PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
+		// 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있을 때만 설치 가능
+		bool bIsInPreviewBlocks = false;
+		for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
+		{
+			if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
+			{
+				bIsInPreviewBlocks = true;
+				break;
+			}
+		}
+		
+		if (HitBlockInfo && bIsInPreviewBlocks)
+		{
+			bValidTargetFound = true;
 
-    bool bValidTargetFound = false;
-    TArray<FTransform> TargetTransforms;
+			// 인터페이스를 통해 블록 정보 획득 (BlockBase 의존성 제거)
+			GridSize = HitBlockInfo->GetBlockGridSize();
+			float HalfGridSize = GridSize / 2.0f;
+			FVector CenterBaseLocation = HitBlockInfo->GetBlockAlignedLocation() + FVector(0, 0, HalfGridSize) ;
+			FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
 
-    if (HitResult.bBlockingHit)
-    {
-        ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
-
-        // 마우스 밑의 블록이 사거리(파란 영역) 안에 포함되어 있을 때만 설치 가능
-        if (HitBlock && PreviewedBlocks.Contains(HitBlock))
-        {
-            bValidTargetFound = true;
-
-            // 방벽의 중심 블록의 생성 위치 계산
-            // 중심 블록은 마우스를 가져간 블록의 바로 윗 블록
-            FVector CenterBaseLocation = HitBlock->GetActorLocation() + FVector(0, 0, GridSize);
-            FVector CurrentPlayerLocation = OwnerPawn->GetActorLocation();
-            CalculateBarrierTransforms(CenterBaseLocation, CurrentPlayerLocation, TargetTransforms);
-        }
-    }
+			CalculateBarrierTransforms(CenterBaseLocation, CurrentPlayerLocation, TargetTransforms);
+		}
+	}
 
 	if (bValidTargetFound)
 	{
@@ -149,7 +141,7 @@ void UGA_SummonBarrier::UpdatePreview()
 	{
 		for (auto& Preview : BarrierPreviewBlocks)
 		{
-			if (Preview) Preview->SetActorHiddenInGame(true);
+			if (Preview.IsValid()) Preview.Get()->SetActorHiddenInGame(true);
 		}
 	}
 }
@@ -180,19 +172,10 @@ void UGA_SummonBarrier::CalculateBarrierTransforms(const FVector& CenterLocation
 	* [벽 생성 구조 및 오프셋 설명]
 	* 기준점(CenterLocation)을 중심으로 좌우 대칭인 3칸 너비, 2층 높이의 벽을 생성합니다.
 	* Offsets 배열 { 0, -1, 1 }을 사용하여 기준점으로부터의 가로 위치를 결정합니다.
-	* 
-	*    [ -1 ] [ 0 ] [ 1 ]   <-- 2층 (UpperPos: BasePos + Z축 높이)
-	*    [ -1 ] [ 0 ] [ 1 ]   <-- 1층 (BasePos: 기준 바닥 위치)
-	*      ↑      ↑      ↑
-	*     Left  Center Right
-	* 
-	* - 0.0f : 중앙 (Center, 마우스가 가리키는 기준점)
-	* - -1.0f: 왼쪽 (Left, RightVector 반대 방향으로 1칸)
-	* - 1.0f : 오른쪽 (Right, RightVector 방향으로 1칸)
 	*/
 	float Offsets[] = { 0.0f, -1.0f, 1.0f };
 
-	// 첫 순회에서 가운데 블록, 두 번째 순회에서 왼쪽 블록, 세 번째 순회에서 오른쪽 블록 생성
+	// 순회하며 위치 계산
 	for (float OffsetMultiplier : Offsets)
 	{
 		FVector BasePos = CenterLocation + (RightVector * (GridSize * OffsetMultiplier));
@@ -236,15 +219,14 @@ void UGA_SummonBarrier::UpdateBarrierPreviewActors(const TArray<FTransform>& Tra
 	// 위치 적용 및 점유 확인
 	for (int32 i = 0; i < BarrierPreviewBlocks.Num(); ++i)
 	{
-		AActor* Preview = BarrierPreviewBlocks[i];
-		if (!Preview) continue;
+		if (!BarrierPreviewBlocks[i].IsValid()) continue;
+		AActor* Preview = BarrierPreviewBlocks[i].Get();
 
-		// 만들어 놓은 프리뷰 블록(BarrierPreviewBlocks)이
-		// 소환 할 블록 개수(Transforms.Num())보다 많다면 숨김 처리
+		// 만들어 놓은 프리뷰 블록이 필요량보다 많으면 숨김
 		if (i < Transforms.Num())
 		{
 			const FTransform& TargetTransform = Transforms[i];
-			if (IsLocationOccupied(TargetTransform.GetLocation()))
+			if (BlockSpawner->IsLocationOccupied(TargetTransform.GetLocation(), GridSize))
 			{
 				// 소환 할 수 없는 곳은 프리뷰하지 않음
 				Preview->SetActorHiddenInGame(true);
@@ -262,35 +244,6 @@ void UGA_SummonBarrier::UpdateBarrierPreviewActors(const TArray<FTransform>& Tra
 	}
 }
 
-bool UGA_SummonBarrier::IsLocationOccupied(const FVector& Location) const
-{
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_SummonBarrier: World is null in IsLocationOccupied"));
-		return true;
-	}
-
-	// MakeBox는 인자를 반지름으로 사용함
-	// 0.5를 넣으면 100 * 100 * 100 크기의 박스가 되어 꽉 차므로 0.4 사용
-	FVector BoxExtent = FVector(GridSize * 0.4f, GridSize * 0.4f, GridSize * 0.4f);
-	FCollisionShape CheckShape = FCollisionShape::MakeBox(BoxExtent);
-
-	FCollisionObjectQueryParams ObjectQueryParams;
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
-	ObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-
-	FCollisionQueryParams QueryParams;
-	for (const auto& Preview : BarrierPreviewBlocks)
-	{
-		// 프리뷰 블록끼리는 충돌 무시
-		if (Preview) QueryParams.AddIgnoredActor(Preview);
-	}
-
-	TArray<FOverlapResult> OverlapResults;
-	return World->OverlapMultiByObjectType(OverlapResults, Location, FQuat::Identity, ObjectQueryParams, CheckShape, QueryParams);
-}
-
 void UGA_SummonBarrier::SpawnBlock()
 {
 	// 비용 및 쿨타임 커밋
@@ -301,71 +254,49 @@ void UGA_SummonBarrier::SpawnBlock()
 		return;
 	}
 
-	if (!BlockToSpawn)
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_SummonBarrier: BlockToSpawn is not set"));
-		return;
-	}
-
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	// 좌클릭 바인딩'만' 해제
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
+	if (!BlockSpawner)
 	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			// 좌클릭 바인딩 제거
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this &&
-					PC->InputComponent->KeyBindings[i].Chord.Key == EKeys::LeftMouseButton)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("GA_SummonBarrier: PC or InputComponent is null"));
-		}
+		UE_LOG(LogTemp, Error, TEXT("GA_SummonBarrier: Failed to get BlockManagerSubsystem"));
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
 	}
 
-	// 1. 블록 생성
+	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+
+	// 블록 생성
 	SpawnedBlocks.Empty();
 	FVector AverageLocation = FVector::ZeroVector;
 	int32 Count = 0;
 
-	for (TObjectPtr<AActor>& Preview : BarrierPreviewBlocks)
+	for (TWeakObjectPtr<AActor>& Preview : BarrierPreviewBlocks)
 	{
-		if (!Preview || Preview->IsHidden()) continue;
+		if (!Preview.IsValid() || Preview.Get()->IsHidden()) continue;
 
-		FVector SpawnLoc = Preview->GetActorLocation();
-		FRotator SpawnRot = Preview->GetActorRotation();
+		FVector SpawnLoc = Preview.Get()->GetActorLocation();
+		FRotator SpawnRot = Preview.Get()->GetActorRotation();
 
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		// 인터페이스를 통해 파괴 가능한 블록 생성
+		AActor* NewBlock = BlockSpawner->SpawnBlockByTag(TAG_Block_Type_Destructible, SpawnLoc, SpawnRot, false);
 
-		ADestructibleBlock* NewBlock = World->SpawnActor<ADestructibleBlock>(BlockToSpawn, SpawnLoc, SpawnRot, SpawnParams);
 		if (NewBlock)
 		{
-			NewBlock->SpawnBlock(SpawnLoc, EBlockType::Destructible);
+			// 생성된 블록 초기화
+			NewBlock->SetActorLocationAndRotation(SpawnLoc, SpawnRot);
 
-			// 생성 직후 중력/스냅 로직 끄기
+			// 생성 직후 중력/스냅 로직 끄기 (BlockBase::Tick이 실행되지 않도록 함)
 			NewBlock->SetActorTickEnabled(false);
 
-			// 방벽을 구성하는 파괴가능블록은 추락 옵션 비활성화
-			NewBlock->SetCanFall(false);
-
-			// StaticMeshComponent는 기본적으로 런타임에 움직일 수 없음
-			// 따라서 Mobility를 Movable로 설정
+			// 방벽은 움직여야 하므로 Mobility를 Movable로 설정
+			// BlockBase를 모르므로 UPrimitiveComponent(엔진 클래스)를 통해 설정
 			if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(NewBlock->GetRootComponent()))
 			{
 				RootPrim->SetMobility(EComponentMobility::Movable);
 			}
 
+			// 생성된 블록 목록에 추가
 			SpawnedBlocks.Add(NewBlock);
 			AverageLocation += SpawnLoc;
 			Count++;
@@ -379,10 +310,10 @@ void UGA_SummonBarrier::SpawnBlock()
 	// 프리뷰 정리
 	for (auto& Preview : BarrierPreviewBlocks)
 	{
-		if (Preview) Preview->Destroy();
+		if (Preview.IsValid()) Preview.Get()->Destroy();
 	}
 	BarrierPreviewBlocks.Empty();
-	ClearHighlights();
+	ClearHighlights(PreviewBlocks);
 
 	// 소환된 블록이 없으면 종료
 	if (Count == 0)
@@ -391,23 +322,18 @@ void UGA_SummonBarrier::SpawnBlock()
 		return;
 	}
 
-	// 방벽 건설이 완료되었으므로, 다른 스킬을 쓸 수 있도록 State.Busy 태그 즉시 제거
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	if (ASC)
-	{
-		// GA_SkillBase에 선언된 TAG_Skill_Casting (State.Busy) 사용
-		NotifySkillCastFinished();
-	}
+	// 방벽 건설 완료 -> State.Busy 태그 제거
+	NotifySkillCastFinished();
 
-	// 2. 돌진 방향 설정
-	if (SpawnedBlocks.Num() > 0 && SpawnedBlocks[0])
+	// 돌진 방향 설정
+	if (SpawnedBlocks.Num() > 0 && SpawnedBlocks[0].IsValid())
 	{
 		FVector PlayerLoc = OwnerPawn->GetActorLocation();
 		AverageLocation /= Count;
-		// 건설 당시 플레이어 위치를 기준으로 발사 방향	결정
+
+		// 건설 당시 플레이어 위치를 기준으로 발사 방향 결정
 		FVector DirectionToWall = (AverageLocation - PlayerLoc).GetSafeNormal2D();
 
-		// 방향이 0(플레이어와 겹침)이면 시선 방향
 		if (DirectionToWall.IsZero())
 		{
 			DirectionToWall = OwnerPawn->GetActorForwardVector().GetSafeNormal2D();
@@ -425,8 +351,7 @@ void UGA_SummonBarrier::SpawnBlock()
 
 	UE_LOG(LogTemp, Log, TEXT("GA_SummonBarrier: Wall spawned. Waiting for charge input."));
 
-	// 기존 태스크를 종료시키지 않고 새로운 태스크를 만들면
-	// 이전 태스크가 남아있게 되어 다중 바인딩 문제가 발생할 수 있음
+	// 돌진 입력 대기
 	if (WaitInputTask)
 	{
 		WaitInputTask->EndTask();
@@ -455,26 +380,24 @@ void UGA_SummonBarrier::StartBarrierCharge(float TimeWaited)
 
 	for (int32 i = 0; i < SpawnedBlocks.Num(); ++i)
 	{
-		ADestructibleBlock* MyBlock = SpawnedBlocks[i];
-		if (!MyBlock || !IsValid(MyBlock)) continue;
+		if (!SpawnedBlocks[i].IsValid()) continue;
+		AActor* MyBlock = SpawnedBlocks[i].Get();
 
-		// 1. Tick 비활성화 (Grid Snap 방지)
+		// 1. Tick 비활성화 (Grid Snap 방지) - 이미 되어있지만 안전장치
 		MyBlock->SetActorTickEnabled(false);
 
 		// 2. 약간 띄우기 (바닥 마찰 방지)
 		MyBlock->AddActorWorldOffset(FVector(0, 0, 5.0f), false);
 
-		// 형제 블록 무시 설정
-		// AActor가 아닌 RootComponent(UPrimitiveComponent) 수준에서 설정해야 함
+		// 형제 블록 무시 설정 (UPrimitiveComponent 레벨에서 처리)
 		if (UPrimitiveComponent* RootPrim = Cast<UPrimitiveComponent>(MyBlock->GetRootComponent()))
 		{
 			for (int32 j = 0; j < SpawnedBlocks.Num(); ++j)
 			{
 				if (i == j) continue; // 자기 자신 제외
-				if (SpawnedBlocks[j] && IsValid(SpawnedBlocks[j]))
+				if (SpawnedBlocks[j].IsValid())
 				{
-					// 이 컴포넌트가 이동할 때 해당 액터를 무시하도록 설정
-					RootPrim->IgnoreActorWhenMoving(SpawnedBlocks[j], true);
+					RootPrim->IgnoreActorWhenMoving(SpawnedBlocks[j].Get(), true);
 				}
 			}
 		}
@@ -519,17 +442,16 @@ void UGA_SummonBarrier::TickBarrierCharge()
 	// 역순 순회 (삭제 대응)
 	for (int32 i = SpawnedBlocks.Num() - 1; i >= 0; --i)
 	{
-		ADestructibleBlock* Block = SpawnedBlocks[i];
+		AActor* Block = SpawnedBlocks[i].Get();
 
-		if (!Block || !IsValid(Block))
+		if (!Block)
 		{
 			SpawnedBlocks.RemoveAt(i);
 			continue;
 		}
 
 		FHitResult HitResult;
-		// Sweep 이동. StartBarrierCharge에서 서로 Ignore 설정을 했으므로
-		// 이제 옆 블록에 막히지 않고 전진함
+		// Sweep 이동.
 		Block->AddActorWorldOffset(DeltaMove, true, &HitResult);
 
 		if (HitResult.bBlockingHit)
@@ -537,7 +459,16 @@ void UGA_SummonBarrier::TickBarrierCharge()
 			AActor* HitActor = HitResult.GetActor();
 
 			// 부딪힌 액터가 자기 자신이거나 동료 방벽 블록이면 무시
-			if (SpawnedBlocks.Contains(HitActor)) continue;
+			bool bIsSpawnedBlock = false;
+			for (const TWeakObjectPtr<AActor>& SpawnedBlock : SpawnedBlocks)
+			{
+				if (SpawnedBlock.IsValid() && SpawnedBlock.Get() == HitActor)
+				{
+					bIsSpawnedBlock = true;
+					break;
+				}
+			}
+			if (bIsSpawnedBlock) continue;
 			if (HitActor == GetAvatarActorFromActorInfo()) continue;
 
 			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
@@ -558,7 +489,8 @@ void UGA_SummonBarrier::TickBarrierCharge()
 
 			UE_LOG(LogTemp, Log, TEXT("GA_SummonBarrier: Block %s hit obstacle %s"), *Block->GetName(), *GetNameSafe(HitActor));
 
-			Block->SelfDestroy();
+			// BlockBase::SelfDestroy() 대신 일반 액터 파괴 사용
+			Block->Destroy();
 			SpawnedBlocks.RemoveAt(i);
 		}
 	}
@@ -577,7 +509,7 @@ void UGA_SummonBarrier::OnCancelPressed(float TimeWaited)
 		Super::OnCancelPressed(TimeWaited);
 	}
 	else
-	{	
+	{
 		// 방벽이 이미 생성된 상태이므로 돌진 시작
 		if (!bIsCharging)
 		{
@@ -588,27 +520,23 @@ void UGA_SummonBarrier::OnCancelPressed(float TimeWaited)
 
 bool UGA_SummonBarrier::CanBeCanceled() const
 {
-	// 방벽이 이미 생성되어 관리 목록(SpawnedBlocks)에 있다면?
-	// 대기 중이거나 돌진 중인 상태이므로 취소되면 안 됨.
+	// 방벽이 이미 생성되어 관리 목록에 있다면? (취소 불가)
 	if (SpawnedBlocks.Num() > 0)
 	{
 		return false;
 	}
 
-	// 방벽이 없다면?
-	// 아직 건설 전(프리뷰) 상태이므로, 다른 스킬 입력 시 취소(교체)되어야 함.
 	return Super::CanBeCanceled();
 }
 
-void UGA_SummonBarrier::OnLeftClickPressed()
+void UGA_SummonBarrier::OnLeftClickEventReceived(FGameplayEventData Payload)
 {
 	// BarrierPreviewBlocks 배열 중 하나라도 유효하고(보이고) 있다면 설치 가능한 상태로 간주
 	bool bCanSpawn = false;
 
 	for (const auto& Preview : BarrierPreviewBlocks)
 	{
-		// IsHidden()이 false여야 화면에 보이고 있다는 뜻 
-		if (Preview && !Preview->IsHidden())
+		if (Preview.IsValid() && !Preview.Get()->IsHidden())
 		{
 			bCanSpawn = true;
 			break;
@@ -617,19 +545,14 @@ void UGA_SummonBarrier::OnLeftClickPressed()
 
 	if (bCanSpawn)
 	{
-		// 실제 스킬 시전 시작 알림 (State.Busy 태그 부여)
+		// 실제 스킬 시전 시작 알림
 		NotifySkillCastStarted();
 		// 블록 생성 시도
 		SpawnBlock();
 	}
-}
-
-void UGA_SummonBarrier::ClearHighlights()
-{
-	// 1. 현재 저장된 블록들의 상태를 'None'으로 복구
-	// 배열을 비우기 전에 반드시 실행해야 색상이 돌아옵니다.
-	BatchHighlightBlocks(PreviewedBlocks, EBlockHighlightState::None);
-
-	// 2. 목록 초기화
-	PreviewedBlocks.Empty();
+	else
+	{
+		// 프리뷰가 유효하지 않을 때 클릭하면 로그 (디버깅용)
+		UE_LOG(LogTemp, Verbose, TEXT("GA_SummonBarrier: Clicked but invalid preview"));
+	}
 }

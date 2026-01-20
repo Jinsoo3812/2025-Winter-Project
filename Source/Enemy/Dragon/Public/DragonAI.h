@@ -35,6 +35,8 @@ protected:
 	/** 부모의 로직(타겟 찾기) + 드래곤 전용 로직(공격 판단) 실행 */
 	virtual void UpdateAIState() override;
 
+	virtual void OnPossess(APawn* InPawn) override;
+
 protected:
 	// --- 설정값 (에디터에서 수정 가능) ---
 	UPROPERTY(EditDefaultsOnly, Category = "Dragon AI")
