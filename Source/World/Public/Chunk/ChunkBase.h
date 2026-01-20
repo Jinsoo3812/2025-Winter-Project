@@ -1,51 +1,10 @@
-
-
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "BlockCommon.h"
 #include "ChunkBase.generated.h"
-
-/**
- * 블록의 종류를 정의하는 Enum (기존 GameplayTag 대체)
- * 메모리 최적화를 위해 uint8 사용 (최대 255개 종류)
- */
-UENUM(BlueprintType)
-enum class EBlockType : uint8
-{
-	None 	UMETA(DisplayName = "None"), // 빈 공간
-	Terrain		UMETA(DisplayName = "Terrain"),
-	Destructible	UMETA(DisplayName = "Destructible")
-	// 필요에 따라 추가
-};
-
-/**
- * 개별 블록의 데이터를 담는 구조체
- * AActor가 아닌 순수 데이터로 존재해야 병렬처리 가능
- */
-USTRUCT(BlueprintType)
-struct FBlockData
-{
-	GENERATED_BODY()
-
-	// 블록 타입 (1 Byte)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	EBlockType Type = EBlockType::None;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float MaxHealth = 100.0f;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float Health = 100.0f;
-
-	// 회전(Bitmask) 등을 여기에 추가
-	/*
-	* 해당 구조체는 개별 블록이 가지므로 월드 내에 수만개가 존재할 수 있음
-	* 4Byte 단위로 끊기는 패딩으로 인한 메모리 낭비 / 캐시 적중률 저하를 예방하기 위하여
-	* 큰 자료형부터 선언하거나 Bitfield 등을 활용하여 크기를 최소화할 것
-	*/
-};
 
 UCLASS()
 class WORLD_API AChunkBase : public AActor
@@ -76,6 +35,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Chunk Data")
 	TArray<FBlockData> BlockDataArray;
 
+	// 이웃한 청크의 포인터 저장
+	TWeakObjectPtr<AChunkBase> Neighbors[(int32)EBlockNeighbor::Count];
+
 	// 특정 좌표의 블록 타입 설정
 	void SetBlockType(int32 X, int32 Y, int32 Z, EBlockType NewType);
 
@@ -86,6 +48,8 @@ public:
 	// 3D 좌표 -> 1D 배열 인덱스 변환
 	// @return 인덱스 값, 범위 벗어나면 -1 반환
 	int32 GetBlockIndex(int32 X, int32 Y, int32 Z) const;
+
+	void SetNeighbor(EBlockNeighbor Direction, AChunkBase* Neighbor) { Neighbors[(int32)Direction] = Neighbor; }
 
 	// -------------------------------------------------------------------------
 	// 렌더링 (HISM)

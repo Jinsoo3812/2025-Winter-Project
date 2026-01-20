@@ -23,9 +23,6 @@ AChunkBase::AChunkBase()
 void AChunkBase::BeginPlay()
 {
 	Super::BeginPlay();
-
-	// 테스트용: 실제 게임에서는 WorldManager나 Generator가 데이터를 채워준 후 Update를 호출해야 함
-	// UpdateChunkVisuals(); 
 }
 
 int32 AChunkBase::GetBlockIndex(int32 X, int32 Y, int32 Z) const
@@ -186,42 +183,75 @@ void AChunkBase::UpdateChunkVisuals()
 						// ---------------------------------------------------------
 						bool bIsVisible = false;
 
-						// 검사할 6방향 이웃 좌표 (상, 하, 좌, 우, 앞, 뒤)
-						FIntVector NeighborOffsets[] = {
-							FIntVector(0, 0, 1),  FIntVector(0, 0, -1),
-							FIntVector(0, 1, 0),  FIntVector(0, -1, 0),
-							FIntVector(1, 0, 0),  FIntVector(-1, 0, 0)
+						// 검사할 6방향 이웃 좌표와 해당 면의 방향(Direction)
+						struct FNeighborCheck {
+							FIntVector Offset;
+							EBlockNeighbor Dir;
 						};
 
-						for (const FIntVector& Offset : NeighborOffsets)
+						FNeighborCheck Checks[] = {
+							{ FIntVector(0, 0, 1),  EBlockNeighbor::Up },
+							{ FIntVector(0, 0, -1), EBlockNeighbor::Down },
+							{ FIntVector(0, 1, 0),  EBlockNeighbor::Right },
+							{ FIntVector(0, -1, 0), EBlockNeighbor::Left },
+							{ FIntVector(1, 0, 0),  EBlockNeighbor::Front },
+							{ FIntVector(-1, 0, 0), EBlockNeighbor::Back }
+						};
+
+						for (const auto& Check : Checks)
 						{
-							int32 NX = x + Offset.X;
-							int32 NY = y + Offset.Y;
-							int32 NZ = z + Offset.Z;
+							int32 NX = x + Check.Offset.X;
+							int32 NY = y + Check.Offset.Y;
+							int32 NZ = z + Check.Offset.Z;
 
-							// 청크 범위를 벗어나는지 확인
-							if (NX < 0 || NX >= SizeX || NY < 0 || NY >= SizeY || NZ < 0 || NZ >= SizeZ)
+							// 내 청크 범위 안인 경우 
+							if (NX >= 0 && NX < SizeX && NY >= 0 && NY < SizeY && NZ >= 0 && NZ < SizeZ)
 							{
-								// 범위 밖은 '공기'라고 가정하고 무조건 그린다.
-								// 즉, 내가 이 청크의 경계에 있는 블록이라면 항상 보인다.
-								// (나중에 WorldManager가 생기면 옆 청크를 확인해야 함)
-								bIsVisible = true;
-								break;
-							}
-
-							// 이웃 블록의 인덱스 계산
-							int32 NeighborIndex = NX + (NY * SizeX) + (NZ * SizeX * SizeY);
-
-							// 이웃이 비어있거나(Invalid),
-							if (DataCopy.IsValidIndex(NeighborIndex))
-							{	
-								// 이웃이 비어있다면(None)
-								if (DataCopy[NeighborIndex].Type == EBlockType::None)
+								// 이웃 블록이 유효하며 None(투명)인지 확인
+								int32 NeighborIndex = NX + (NY * SizeX) + (NZ * SizeX * SizeY);
+								if (DataCopy.IsValidIndex(NeighborIndex) && DataCopy[NeighborIndex].Type == EBlockType::None)
 								{
 									bIsVisible = true;
-									break; // 하나라도 뚫려있으면 그린다. 루프 탈출.
+									break;
 								}
 							}
+							// 내 청크 범위를 벗어난 경우 (이웃 블록이 옆 청크인 경우)
+							else
+							{
+								// 해당 방향의 이웃 청크 가져오기
+								// (스레드 안전을 위해 WeakThis 체크 필수)
+								if (!WeakThis.IsValid()) {
+									UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Chunk destroyed during neighbor check."));
+									return;
+								}
+
+								AChunkBase* NeighborChunk = WeakThis->Neighbors[(int32)Check.Dir].Get();
+
+								if (NeighborChunk)
+								{
+									// 이웃 청크 기준에서의 좌표로 변환
+									// 예: 내 X가 -1이면 -> 이웃의 X는 (SizeX - 1)
+									int32 LocalX = (NX + SizeX) % SizeX;
+									int32 LocalY = (NY + SizeY) % SizeY;
+									int32 LocalZ = NZ; // 높이는 공유한다고 가정 (수직 청크 연결 시 로직 필요)
+
+									// 이웃 청크의 데이터를 확인
+									// 주의: NeighborChunk->GetBlockData는 내부 배열에 접근하므로
+									// NeighborChunk가 파괴되지 않았는지 확인해야 함.
+									FBlockData NeighborBlock = NeighborChunk->GetBlockData(LocalX, LocalY, LocalZ);
+
+									if (NeighborBlock.Type == EBlockType::None)
+									{
+										bIsVisible = true; // 옆집 블록이 투명하면 내 얼굴을 그려야 함
+										break;
+									}
+								}
+								else
+								{
+									// 이웃이 아예 없으면 (맵의 끝) -> 외벽이므로 그린다.
+									bIsVisible = true;
+									break;
+								}
 						}
 
 						// ---------------------------------------------------------
