@@ -65,6 +65,27 @@ void AEnemyBase::BeginPlay()
 	}
 }
 
+void AEnemyBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// GAS 시스템 초기화 (AI가 컨트롤러에 빙의될 때 실행)
+	if (AbilitySystemComponent)
+	{
+		// 1. Owner와 Avatar 설정 (서버/클라이언트 동기화 중요)
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		// 2. 초기 스탯 및 스킬 부여 (서버 권한이 있을 때만)
+		if (HasAuthority())
+		{
+			InitializeAttributes();
+			GiveDefaultAbilities();
+		}
+	}
+}
+
+
+
 void AEnemyBase::InitializeAttributes()
 {
 	// 에디터에 할당된 GE가 있고, ASC가 유효하다면 적용
