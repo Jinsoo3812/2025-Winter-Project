@@ -1,74 +1,91 @@
 ﻿#include "DragonAI.h"
+
+// [필수 헤더]
 #include "BehaviorTree/BlackboardComponent.h"
-#include "EnemyBase.h"
-#include "EnemyAttributeSet.h"
+#include "BehaviorTree/BehaviorTree.h" // RunBehaviorTree용
+#include "EnemyBase.h"                 // 드래곤 본체 (AEnemyBase 상속)
+#include "Enemy/Public/EnemyAttributeSet.h" // 체력 정보 조회용
 #include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerController.h" //없어도 되는 것 같음
+#include "GameFramework/PlayerController.h"
+
+// ---------------------------------------------------------------------------
+// [Static Const Definitions] 블랙보드 키 이름 상수 정의
+// ---------------------------------------------------------------------------
+const FName ADragonAI::Key_TargetActor(TEXT("TargetActor"));
+const FName ADragonAI::Key_DistanceToTarget(TEXT("DistanceToTarget"));
 
 
-// 키 이름 정의 (이제 "DistanceToTarget" 문자열을 직접 안 써도 됨)
-const FName ADragonAI::BBKey_TargetActor(TEXT("TargetActor"));
-const FName ADragonAI::BBKey_DistanceToTarget(TEXT("DistanceToTarget"));
-
-
+// ---------------------------------------------------------------------------
+// [Constructor] 생성자
+// ---------------------------------------------------------------------------
 ADragonAI::ADragonAI()
 {
-	// 필요시 초기값 설정
+	// AI 컨트롤러는 기본적으로 틱(Tick)이 켜져 있을 수 있으나,
+	// 성능 최적화를 위해 필요할 때만 켜거나 Timer를 쓰는 것이 좋습니다.
+	// AEnemyAI(부모)에서 타이머를 쓰고 있다면 그대로 둡니다.
 }
 
 
+// ---------------------------------------------------------------------------
+// [OnPossess] AI가 폰을 제어하기 시작할 때
+// ---------------------------------------------------------------------------
 void ADragonAI::OnPossess(APawn* InPawn)
 {
-	// 부모의 OnPossess 호출 (타이머 시작됨)
+	// 1. 부모 클래스(AEnemyAI)의 초기화 로직 실행 (타이머 구동 등)
 	Super::OnPossess(InPawn);
 
-	// [중요] Dragon 전용 비헤이비어 트리 실행
-	// 에디터에서 'BehaviorTreeAsset'에 'BT_BossDragon'을 꼭 넣어줘야 함!
+	// 2. 드래곤 전용 비헤이비어 트리(BT) 실행
+	// 에디터에서 AI Controller의 'BehaviorTreeAsset' 속성에 'BT_BossDragon'을 할당해야 동작합니다.
 	if (BehaviorTreeAsset)
 	{
 		RunBehaviorTree(BehaviorTreeAsset);
-		UE_LOG(LogTemp, Warning, TEXT("DragonAI.cpp : [DragonAI] Behavior Tree Started!"));
+		UE_LOG(LogTemp, Log, TEXT("[DragonAI] Possessed Pawn: %s. Behavior Tree Started!"), *InPawn->GetName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("[DragonAI] BehaviorTreeAsset is NULL! Please assign BT_BossDragon in Editor."));
 	}
 }
 
+
+// ---------------------------------------------------------------------------
+// [UpdateAIState] 주기적인 판단 로직 (타이머에 의해 호출됨)
+// ---------------------------------------------------------------------------
 void ADragonAI::UpdateAIState()
 {
-
-
-	// 폰(Pawn) 캐싱
-	// 함수 내에서 여러 번 쓰이므로 변수에 담아둡니다.
+	// 폰이나 블랙보드가 없으면 로직 수행 불가
 	APawn* MyPawn = GetPawn();
-	if (!MyPawn) return;
+	if (!MyPawn || !Blackboard) return;
 
-	// 1. 타겟 찾기 (우리가 만든 최적화 버전 사용)
-	// 이 함수 안에서 이미 BBKey_TargetActor 값은 갱신됩니다.
+	// -------------------------------------------------------
+	// 1. 타겟 탐색 및 거리 갱신
+	// -------------------------------------------------------
 	AActor* Target = UpdateTargetToNearestPlayer();
 
-	if (!Blackboard) return;
-
-	// 2. 거리 갱신 로직 (과도한 업데이트 방지)
 	if (Target)
 	{
+		// 타겟이 있다면 거리 계산 후 블랙보드 업데이트
 		float Distance = MyPawn->GetDistanceTo(Target);
 
-		// [핵심] 기존 값과 10cm 이상 차이 날 때만 블랙보드 업데이트
-		// -> Behavior Tree가 거리 변화 때문에 공격을 취소(Abort)하는 것을 방지함
-		float OldDistance = Blackboard->GetValueAsFloat(BBKey_DistanceToTarget);
-
+		// 불필요한 연산 방지: 거리가 유의미하게(10cm 이상) 변했을 때만 값 갱신
+		float OldDistance = Blackboard->GetValueAsFloat(Key_DistanceToTarget);
 		if (FMath::Abs(Distance - OldDistance) > 10.0f)
 		{
-			Blackboard->SetValueAsFloat(BBKey_DistanceToTarget, Distance);
+			Blackboard->SetValueAsFloat(Key_DistanceToTarget, Distance);
 		}
 	}
 	else
 	{
-		// 타겟이 없으면 아주 먼 거리로 설정
-		Blackboard->SetValueAsFloat(BBKey_DistanceToTarget, 99999.0f);
+		// 타겟이 없으면 거리를 무한대(매우 큰 값)로 설정하여 추격 중지 유도
+		Blackboard->SetValueAsFloat(Key_DistanceToTarget, 99999.0f);
 	}
 
-	// 3. 페이즈 판단 로직
-	// 위에서 만든 MyPawn 변수를 재사용합니다.
+	// -------------------------------------------------------
+	// 2. 체력 기반 페이즈(Phase) 전환 로직 (즉사기 발동 체크)
+	// -------------------------------------------------------
 	AEnemyBase* MyEnemy = Cast<AEnemyBase>(MyPawn);
+
+	// GAS(AttributeSet)를 통해 정확한 체력 정보를 가져옴
 	if (MyEnemy && MyEnemy->GetAttributeSet())
 	{
 		float Health = MyEnemy->GetAttributeSet()->GetHealth();
@@ -77,30 +94,49 @@ void ADragonAI::UpdateAIState()
 		if (MaxHealth > 0.f)
 		{
 			float HpRatio = Health / MaxHealth;
+
+			// 블랙보드에서 현재 페이즈 가져오기 (초기값: 0)
 			int32 CurrentPhase = Blackboard->GetValueAsInt(BBKey_Phase);
 
-			// 체력 50% 이하이고, 아직 2페이즈가 아니라면
-			if (HpRatio <= 0.5f && CurrentPhase != 2)
+			// [조건 1] 체력 66% 이하 + 아직 1페이즈 안 함 (Phase 0 -> 1)
+			if (HpRatio <= 0.66f && CurrentPhase == 0)
 			{
-				Blackboard->SetValueAsInt(BBKey_Phase, 2);
-				if (GEngine)
-					GEngine->AddOnScreenDebugMessage(3, 3.0f, FColor::Red, TEXT("!!! PHASE 2 START !!!"));
+				Blackboard->SetValueAsInt(BBKey_Phase, 1);       // 페이즈 1 진입
+				Blackboard->SetValueAsBool(BBKey_CastingWipe, true); // 즉사기(Wipe) 시전 플래그 ON
+
+				// 디버그 메시지
+				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("!!! PHASE 1 (66%) - WIPE PATTERN !!!"));
+				UE_LOG(LogTemp, Warning, TEXT("[DragonAI] HP %.1f%% -> Phase 1 Started!"), HpRatio * 100.0f);
+			}
+			// [조건 2] 체력 33% 이하 + 1페이즈는 끝남 (Phase 1 -> 2)
+			else if (HpRatio <= 0.33f && CurrentPhase == 1)
+			{
+				Blackboard->SetValueAsInt(BBKey_Phase, 2);       // 페이즈 2 진입
+				Blackboard->SetValueAsBool(BBKey_CastingWipe, true); // 즉사기(Wipe) 시전 플래그 ON
+
+				// 디버그 메시지
+				if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("!!! PHASE 2 (33%) - WIPE PATTERN !!!"));
+				UE_LOG(LogTemp, Warning, TEXT("[DragonAI] HP %.1f%% -> Phase 2 Started!"), HpRatio * 100.0f);
 			}
 		}
 	}
 }
 
 
+// ---------------------------------------------------------------------------
+// [UpdateTargetToNearestPlayer] 가장 가까운 플레이어 찾기
+// ---------------------------------------------------------------------------
 AActor* ADragonAI::UpdateTargetToNearestPlayer()
 {
 	APawn* MyPawn = GetPawn();
 	if (!MyPawn || !Blackboard) return nullptr;
 
 	AActor* NearestPlayer = nullptr;
-	float MinDistance = FLT_MAX; // float 최대값으로 초기화
+	float MinDistance = FLT_MAX; // 비교를 위해 최대값으로 초기화
 
 	// [최적화 핵심] 
-	// 맵 전체를 뒤지는 대신, '접속한 플레이어 목록'만 순회합니다. (3인 멀티면 딱 3번만 돔)
+	// GetAllActorsOfClass 대신 PlayerControllerIterator를 사용합니다.
+	// 월드에 존재하는 모든 액터가 아니라, '접속 중인 플레이어'만 순회하므로 매우 빠릅니다.
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
 		APlayerController* PC = It->Get();
@@ -108,14 +144,14 @@ AActor* ADragonAI::UpdateTargetToNearestPlayer()
 		{
 			AActor* PlayerActor = PC->GetPawn();
 
-			// 1. 나 자신(혹시 모를 오류 방지) 제외
+			// 1. 나 자신(보스)은 제외 (혹시나 플레이어 폰을 상속받았을 경우 대비)
 			if (PlayerActor == MyPawn) continue;
 
-			// 2. 죽은 플레이어 제외 (선택 사항)
-			// 만약 플레이어가 죽으면 'Dead' 태그를 붙이거나 Destroy된다면 이 체크가 중요합니다.
-			// if (PlayerActor->ActorHasTag("Dead")) continue;
+			// 2. (옵션) 죽은 플레이어 제외 로직
+			// 예: PlayerActor->ActorHasTag("Dead") 혹은 GAS Tag 확인
+			// if (IsPlayerDead(PlayerActor)) continue; 
 
-			// 3. 거리 계산
+			// 3. 거리 계산 (Squared Distance를 쓰면 sqrt 연산을 아낄 수 있지만, 여기선 직관적으로 Distance 사용)
 			float Dist = MyPawn->GetDistanceTo(PlayerActor);
 			if (Dist < MinDistance)
 			{
@@ -125,19 +161,20 @@ AActor* ADragonAI::UpdateTargetToNearestPlayer()
 		}
 	}
 
-	// 결과 처리
+	// 탐색 결과 처리
 	if (NearestPlayer)
 	{
-		// 타겟 갱신
-		Blackboard->SetValueAsObject(BBKey_TargetActor, NearestPlayer);
-		Blackboard->SetValueAsFloat(BBKey_DistanceToTarget, MinDistance);
+		// 가장 가까운 플레이어를 블랙보드 'TargetActor' 키에 저장
+		Blackboard->SetValueAsObject(Key_TargetActor, NearestPlayer);
+		Blackboard->SetValueAsFloat(Key_DistanceToTarget, MinDistance);
 
-		// 디버그 로그 (필요 없으면 주석 처리)
-		// UE_LOG(LogTemp, Log, TEXT("[DragonAI] New Target: %s (Dist: %.1f)"), *NearestPlayer->GetName(), MinDistance);
+		// 필요 시 타겟 쪽으로 시선 고정 (SetFocus)
+		// SetFocus(NearestPlayer); 
 
 		return NearestPlayer;
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[DragonAI] No Valid Player Found!"));
+	// 플레이어가 한 명도 없거나 다 죽었을 경우
+	// UE_LOG(LogTemp, Warning, TEXT("[DragonAI] No Valid Player Found!"));
 	return nullptr;
 }

@@ -1,107 +1,368 @@
 ﻿// BossDragon.cpp
-#include "BossDragon.h"
-#include "Components/BoxComponent.h"
-#include "AbilitySystemComponent.h"
-#include "AbilitySystemBlueprintLibrary.h" // GAS 라이브러리 필수
-#include "MotionWarpingComponent.h"
 
+#include "BossDragon.h"
+
+// ---------------------------------------------------------------------------
+// [1] 필수 헤더 포함
+// ---------------------------------------------------------------------------
+// 엔진 핵심 기능 및 컴포넌트
+#include "Components/BoxComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Components/PrimitiveComponent.h" // OverlapResult 및 충돌 처리용
+#include "MotionWarpingComponent.h"        // 애니메이션 워핑용
+#include "GameFramework/Character.h"
+#include "Kismet/GameplayStatics.h"
+#include "Engine/World.h"
+#include "Engine/OverlapResult.h"          // GetActor() 등의 결과 처리를 위해 필수
+
+// GAS (Gameplay Ability System) 관련 헤더
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "GameplayEffectExtension.h"       // FOnAttributeChangeData 사용을 위해 필수
+
+// 프로젝트 내부 모듈 헤더
+#include "Enemy/Public/EnemyAttributeSet.h" 
+#include "Block/BlockBase.h"          
+#include "Block/BlockManagerSubsystem.h"   // 블록 생성 관리자
+#include "BlockSpawnInterface.h"
+#include "BlockGameplayTags.h"             // 블록 태그 정의 헤더
+#include "CollisionChannels.h"
+
+// ---------------------------------------------------------------------------
+// [2] 생성자 (Constructor)
+// ---------------------------------------------------------------------------
 ABossDragon::ABossDragon()
 {
-	// 1. 박스 컴포넌트 생성
+	// 1. 돌진 공격용 히트박스(Collision) 설정
 	RushHitBox = CreateDefaultSubobject<UBoxComponent>(TEXT("RushHitBox"));
-	// 메쉬에 붙입니다 (나중에 에디터에서 소켓이나 위치 조정 가능)
-	RushHitBox->SetupAttachment(GetMesh());
-	// 평소에는 꺼둡니다 (NoCollision)
-	RushHitBox->SetCollisionProfileName(TEXT("NoCollision"));
+	RushHitBox->SetupAttachment(GetMesh());   // 캐릭터의 SkeletalMesh에 부착 (애니메이션 따라감)
+	RushHitBox->SetCollisionProfileName(TEXT("NoCollision")); // 평소에는 꺼둠 (공격 시에만 킴)
 
-	// 캐릭터가 모션 워핑 기능을 가질 수 있게 해줍니다.
+	// 2. 모션 워핑 컴포넌트 생성
+	// 스킬 사용 시 타겟 방향으로 회전하거나 이동 거리를 보정해주는 기능
 	MotionWarpingComp = CreateDefaultSubobject<UMotionWarpingComponent>(TEXT("MotionWarpingComp"));
+
+	// 3. 최적화: Tick 비활성화
+	// 보스의 로직은 비헤이비어 트리와 GAS 이벤트로 돌아가므로 매 프레임 Tick을 돌릴 필요가 없음
+	PrimaryActorTick.bCanEverTick = false;
+
+	// [수정] 패턴 플래그 초기화 (안전장치)
+	bPattern66Triggered = false;
+	bPattern33Triggered = false;
 }
 
+// ---------------------------------------------------------------------------
+// [3] BeginPlay (게임 시작 시 초기화)
+// ---------------------------------------------------------------------------
 void ABossDragon::BeginPlay()
 {
 	Super::BeginPlay();
-	// 부모(EnemyBase)의 로직(HP바 생성, GAS 초기화 등)이 실행됩니다.
+
+	// [GAS] 체력 변화 감지 시스템 등록
+	// AttributeSet의 Health 값이 변할 때마다 OnHealthChanged 함수가 자동으로 호출되도록 설정
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		// GetHealthAttribute()는 EnemyAttributeSet에 정의된 체력 변수
+		ASC->GetGameplayAttributeValueChangeDelegate(UEnemyAttributeSet::GetHealthAttribute())
+			.AddUObject(this, &ABossDragon::OnHealthChanged);
+	}
 }
 
+// ---------------------------------------------------------------------------
+// [4] PostInitializeComponents (컴포넌트 초기화 후처리)
+// ---------------------------------------------------------------------------
 void ABossDragon::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 
-	// 2. 충돌 이벤트 연결 (BeginPlay보다 안전한 위치)
+	// 히트박스 오버랩 이벤트 연결 (충돌 시 OnRushOverlapBegin 실행)
 	if (RushHitBox)
 	{
 		RushHitBox->OnComponentBeginOverlap.AddDynamic(this, &ABossDragon::OnRushOverlapBegin);
 	}
 }
 
+// ---------------------------------------------------------------------------
+// [5] OnHealthChanged - 체력 기반 패턴 트리거 (66%, 33%)
+// ---------------------------------------------------------------------------
+void ABossDragon::OnHealthChanged(const FOnAttributeChangeData& Data)
+{
+	float CurrentHealth = Data.NewValue; // 변경된 현재 체력
+	float MaxHealth = 1.0f;
+
+	// ASC에서 현재 MaxHealth 값을 가져옴 (버프/디버프 반영된 수치)
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		MaxHealth = ASC->GetNumericAttribute(UEnemyAttributeSet::GetMaxHealthAttribute());
+	}
+
+	// 0 나누기 방지
+	if (MaxHealth <= 0.0f) MaxHealth = 1.0f;
+
+	// 체력 비율 계산 (0.0 ~ 1.0)
+	float HealthRatio = CurrentHealth / MaxHealth;
+
+	// --- 1차 전멸기 패턴 (체력 66% 이하 진입 시) ---
+	if (HealthRatio <= 0.66f && !bPattern66Triggered)
+	{
+		bPattern66Triggered = true; // 중복 실행 방지 플래그 설정
+
+		// [수정] 직접 이벤트를 보내지 않고 AI(비헤이비어 트리)에게 위임합니다.
+		UE_LOG(LogTemp, Warning, TEXT("[BossDragon] HP 66%% Reached! AI will handle the rest."));
+	}
+
+	// --- 2차 전멸기 패턴 (체력 33% 이하 진입 시) ---
+	if (HealthRatio <= 0.33f && !bPattern33Triggered)
+	{
+		bPattern33Triggered = true;
+
+		// [수정] 직접 이벤트를 보내지 않고 AI(비헤이비어 트리)에게 위임합니다.
+		UE_LOG(LogTemp, Warning, TEXT("[BossDragon] HP 33%% Reached! AI will handle the rest."));
+	}
+}
+
+// ---------------------------------------------------------------------------
+// [8-1] SpawnSafetyStairs - 전멸기 회피용 계단 생성
+// ---------------------------------------------------------------------------
+void ABossDragon::SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, float LifeTime)
+{
+	// 서버 권한 확인
+	if (!HasAuthority()) return;
+
+	UWorld* World = GetWorld();
+	if (!World) return;
+
+	IBlockSpawnInterface* BlockSubsystem = IBlockSpawnInterface::GetBlockManagerSubsystem(World);
+	if (!BlockSubsystem) return;
+
+	// 기존에 혹시 남아있는 계단이 있다면 정리하고 시작 (선택사항)
+	// DestroySpawnedStairs(); 
+
+	float GridSize = 100.0f;
+
+	// 위치 스냅 및 방향 설정
+	FVector SnappedCenter;
+	SnappedCenter.X = FMath::RoundToFloat(CenterLocation.X / GridSize) * GridSize;
+	SnappedCenter.Y = FMath::RoundToFloat(CenterLocation.Y / GridSize) * GridSize;
+	SnappedCenter.Z = CenterLocation.Z;
+
+	FVector Directions[] = { FVector(1,0,0), FVector(-1,0,0), FVector(0,1,0), FVector(0,-1,0) };
+
+	for (const FVector& Dir : Directions)
+	{
+		for (int32 Step = 1; Step <= MaxHeight; ++Step)
+		{
+			FVector SpawnPos = SnappedCenter + (Dir * (Step * GridSize));
+
+			for (int32 H = 0; H < Step; ++H)
+			{
+				FVector HeightPos = SpawnPos;
+				HeightPos.Z = SnappedCenter.Z + (H * GridSize);
+
+				if (!BlockSubsystem->IsLocationOccupied(HeightPos, GridSize))
+				{
+					// 블록 생성
+					AActor* NewBlock = BlockSubsystem->SpawnBlockByTag(
+						TAG_Block_Type_Destructible,
+						HeightPos,
+						FRotator::ZeroRotator,
+						false
+					);
+
+					if (NewBlock)
+					{
+						// [중요] 안전장치 타이머 설정
+						// 우리가 직접 삭제하지 않아도 LifeTime(15초) 뒤엔 무조건 사라짐 (쓰레기 방지)
+						NewBlock->SetLifeSpan(LifeTime);
+
+						// [핵심] 리스트에 등록 -> 나중에 강제로 즉시 지우기 위해 저장함
+						SpawnedStairsList.Add(NewBlock);
+					}
+				}
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// [7] SetFloorWarningState - 바닥 장판 경고 (색상 변경 + 계단 삭제 기능 통합)
+// ---------------------------------------------------------------------------
+void ABossDragon::SetFloorWarningState(FVector CenterLocation, float Radius, bool bIsWarning)
+{
+	// 1. 태그 결정
+	// Warning이 True(경고 시작)면 빨강, False(경고 끝)면 원래 색
+	FGameplayTag TagToSend = bIsWarning ? TAG_Block_Highlight_AttackZone : TAG_Block_Highlight_AttackZone_None;
+
+	// =========================================================================
+	// [핵심 로직] 경고가 끝나는 순간(False), 계단도 같이 삭제합니다.
+	// =========================================================================
+	if (bIsWarning == false)
+	{
+		// 이 함수가 호출되면, LifeTime이 아직 남았더라도 즉시 계단들이 파괴됩니다.
+		DestroySpawnedStairs();
+	}
+
+	// 2. 주변 블록 검색
+	TArray<FOverlapResult> Overlaps;
+	FCollisionShape SphereShape = FCollisionShape::MakeSphere(Radius);
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_Block); // 블록 채널 감지
+
+	bool bHit = GetWorld()->OverlapMultiByObjectType(
+		Overlaps,
+		CenterLocation,
+		FQuat::Identity,
+		ObjectParams,
+		SphereShape,
+		Params
+	);
+
+	// 3. 색상 변경 이벤트 전송
+	if (bHit)
+	{
+		FGameplayEventData EventData;
+		EventData.Instigator = this;
+		EventData.EventTag = TagToSend;
+
+		for (const FOverlapResult& Result : Overlaps)
+		{
+			if (ABlockBase* Block = Cast<ABlockBase>(Result.GetActor()))
+			{
+				Block->HandleGameplayEvent(TagToSend, EventData);
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// [보조] DestroySpawnedStairs - 리스트에 있는 계단 강제 삭제
+// ---------------------------------------------------------------------------
+void ABossDragon::DestroySpawnedStairs()
+{
+	// 리스트에 저장된 모든 계단을 순회하며 파괴
+	for (TWeakObjectPtr<AActor> StairActor : SpawnedStairsList)
+	{
+		if (StairActor.IsValid())
+		{
+			StairActor->Destroy(); // 즉시 삭제! (LifeTime 무시됨)
+		}
+	}
+
+	SpawnedStairsList.Empty(); // 리스트 비우기
+}
+
+
+// ---------------------------------------------------------------------------
+// [8] ExecuteHeightJudgmentKill - 높이 판정 즉사기 실행
+// ---------------------------------------------------------------------------
+void ABossDragon::ExecuteHeightJudgmentKill(float SafeHeightThreshold)
+{
+	// 월드의 모든 캐릭터 검색
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), FoundActors);
+
+	float BossZ = GetActorLocation().Z; // 보스(바닥)의 높이
+
+	for (AActor* Actor : FoundActors)
+	{
+		if (Actor == this) continue; // 보스 본인은 제외
+
+		// "Player" 태그가 붙은 액터만 대상으로 함
+		if (Actor->ActorHasTag(TEXT("Player")))
+		{
+			float PlayerZ = Actor->GetActorLocation().Z;
+			float HeightDiff = PlayerZ - BossZ; // 플레이어가 보스보다 얼마나 위에 있는지
+
+			// 플레이어가 안전 높이(계단 위)보다 낮다면 즉사 처리
+			if (HeightDiff < SafeHeightThreshold)
+			{
+				// 대상의 GAS 컴포넌트 가져오기
+				UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Actor);
+
+				// 미리 설정된 즉사 GameplayEffect(WipeDamageEffect) 적용
+				if (TargetASC && WipeDamageEffect)
+				{
+					FGameplayEffectContextHandle Context = AbilitySystemComponent->MakeEffectContext();
+					Context.AddSourceObject(this);
+
+					// Spec(설계도) 생성 후 적용
+					FGameplayEffectSpecHandle Spec = AbilitySystemComponent->MakeOutgoingSpec(WipeDamageEffect, 1.0f, Context);
+
+					if (Spec.IsValid())
+					{
+						AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*Spec.Data.Get(), TargetASC);
+						UE_LOG(LogTemp, Error, TEXT("!!! WIPE KILL !!! Player %s too low (Diff: %f)."), *Actor->GetName(), HeightDiff);
+					}
+				}
+			}
+		}
+	}
+}
+
+// ---------------------------------------------------------------------------
+// [9] SetRushCollisionEnabled - 돌진 공격 히트박스 제어
+// ---------------------------------------------------------------------------
 void ABossDragon::SetRushCollisionEnabled(bool bEnable)
 {
 	if (!RushHitBox) return;
 
 	if (bEnable)
 	{
-		// 켜기: 적(Pawn)만 감지하도록 설정 (QueryOnly)
+		// 공격 시작: 충돌 활성화 (Pawn만 감지)
 		RushHitBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-		// 모든 채널 무시 후 Pawn(플레이어)만 겹침(Overlap) 허용
 		RushHitBox->SetCollisionResponseToAllChannels(ECR_Ignore);
 		RushHitBox->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
 	}
 	else
 	{
-		// 끄기: 다시 무적 상태
+		// 공격 종료: 충돌 비활성화
 		RushHitBox->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	}
 }
 
+// ---------------------------------------------------------------------------
+// [10] OnRushOverlapBegin - 돌진 히트박스 충돌 시 데미지 적용
+// ---------------------------------------------------------------------------
 void ABossDragon::OnRushOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	// 자기 자신이나 null은 무시
+	// 자기 자신이나 유효하지 않은 액터는 무시
 	if (OtherActor == this || !OtherActor) return;
 
-	// [데미지 적용 로직]
-	// 부모(EnemyBase)가 가진 AbilitySystemComponent를 사용
-	// (EnemyBase의 ASC 접근 권한이 protected 이상이어야 함. 만약 private라면 GetAbilitySystemComponent() 사용)
+	// 돌진 데미지(RushDamageEffect) 적용
 	if (AbilitySystemComponent && RushDamageEffect)
 	{
-		// 타겟(플레이어)의 ASC 가져오기
 		UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
 		if (TargetASC)
 		{
-			// 데미지 스펙 생성 (Context + Spec)
 			FGameplayEffectContextHandle ContextHandle = AbilitySystemComponent->MakeEffectContext();
 			ContextHandle.AddSourceObject(this);
 
-			// 레벨 1.0 기준으로 Effect 생성
 			FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(RushDamageEffect, 1.0f, ContextHandle);
 
 			if (SpecHandle.IsValid())
 			{
-				// 데미지 적용!
 				AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-
-				// 로그 출력
-				UE_LOG(LogTemp, Warning, TEXT("[BossDragon] Rush HIT! Damaged Actor: %s"), *OtherActor->GetName());
 			}
 		}
 	}
 }
 
-
-// 이 함수는 블루프린트(비헤이비어 트리 서비스 등)에서 호출할 예정입니다.
+// ---------------------------------------------------------------------------
+// [11] UpdateMotionWarpTarget - 모션 워핑 타겟 갱신
+// ---------------------------------------------------------------------------
 void ABossDragon::UpdateMotionWarpTarget(AActor* TargetActor)
 {
+	// 보스가 스킬 애니메이션(몽타주) 재생 중일 때, 
+	// 타겟의 위치를 실시간으로 추적하여 회전하거나 이동 거리를 맞춤
 	if (MotionWarpingComp && TargetActor)
 	{
-		// "FaceTarget": 몽타주 노티파이에서 사용할 이름입니다. (꼭 기억하세요!)
-		// 타겟의 현재 위치와 회전값을 'FaceTarget'이라는 지점으로 등록합니다.
 		MotionWarpingComp->AddOrUpdateWarpTargetFromLocationAndRotation(
-			FName("FaceTarget"),
+			FName("FaceTarget"), // 몽타주 내 NotifyState 이름과 일치해야 동작함
 			TargetActor->GetActorLocation(),
 			TargetActor->GetActorRotation()
 		);
-
-		// 로그로 확인 (디버깅용)
-		// UE_LOG(LogTemp, Log, TEXT("[BossDragon] Motion Warp Target Updated: %s"), *TargetActor->GetName());
 	}
 }
