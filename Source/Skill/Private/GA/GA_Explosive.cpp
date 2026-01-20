@@ -1,21 +1,21 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GA/GA_Explosive.h"
 #include "Object/Explosive.h"
-#include "Block/BlockBase.h"
+#include "BlockInfoInterface.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
+#include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameFramework/PlayerController.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
-#include "Components/StaticMeshComponent.h"
-#include "AbilitySystemComponent.h"
-#include "AbilitySystemInterface.h"
-#include "Engine/OverlapResult.h"
-#include "DrawDebugHelpers.h"
+#include "BlockGameplayTags.h"
+#include "InputGameplayTags.h"
+#include "Collision/CollisionChannels.h"
 
 UGA_Explosive::UGA_Explosive()
 {
+	// ì¸ìŠ¤í„´ì‹± ì •ì±… (StickyBombê³¼ ë™ì¼í•˜ê²Œ ìœ ì§€)
+	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
 }
 
 void UGA_Explosive::ActivateAbility(
@@ -26,10 +26,7 @@ void UGA_Explosive::ActivateAbility(
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// GA_StickyBomb°ú ´Ş¸® ±âÁ¸ ÆøÅºÀ» È®ÀÎÇÏ°Å³ª ±âÆøÇÏ´Â ·ÎÁ÷ÀÌ ¾øÀ½.
-	// Áï½Ã ÅõÃ´À» À§ÇÑ Á¶ÁØ(Preview) ¸ğµå·Î ÁøÀÔ.
-
-	// ÇÁ¸®ºä Å¸ÀÌ¸Ó ½ÃÀÛ
+	// í”„ë¦¬ë·° íƒ€ì´ë¨¸ ì‹œì‘
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Explosive::UpdatePreview, 0.016f, true);
@@ -41,7 +38,7 @@ void UGA_Explosive::ActivateAbility(
 		return;
 	}
 
-	// Ãë¼Ò ÀÔ·Â ´ë±â (½ºÅ³ ÀçÀÔ·Â½Ã Á¶ÁØ Ãë¼Ò)
+	// ì·¨ì†Œ ì…ë ¥ ëŒ€ê¸°
 	InputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
 	if (InputTask)
 	{
@@ -50,26 +47,27 @@ void UGA_Explosive::ActivateAbility(
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to create WaitInputTask for targeting"));
+		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to create WaitInputTask"));
 	}
 
-	// ÁÂÅ¬¸¯ ¹ÙÀÎµù (ÅõÃ´ È®Á¤)
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
+	// ì¢Œí´ë¦­ ì´ë²¤íŠ¸ ëŒ€ê¸° íƒœìŠ¤í¬ ìƒì„±
+	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+		this,
+		TAG_Input_LeftClick,
+		nullptr,
+		false,
+		false
+	);
+
+	if (WaitEventTask)
 	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			PC->InputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &UGA_Explosive::OnLeftClickPressed);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Explosive: PlayerController or InputComponent is null"));
-		}
+		WaitEventTask->EventReceived.AddDynamic(this, &UGA_Explosive::OnLeftClickEventReceived);
+		WaitEventTask->ReadyForActivation();
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: OwnerPawn is null"));
+		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to create WaitGameplayEvent task"));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
 }
 
@@ -80,51 +78,24 @@ void UGA_Explosive::EndAbility(
 	bool bReplicateEndAbility,
 	bool bWasCancelled)
 {
-	// Å¸ÀÌ¸Ó Á¤¸®
+	// íƒ€ì´ë¨¸ ì •ë¦¬
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
 	TickTimerHandle.Invalidate();
 
-	// ÇÏÀÌ¶óÀÌÆ® Á¤¸®
-	ClearHighlights();
+	// í•˜ì´ë¼ì´íŠ¸ ì •ë¦¬
+	ClearHighlights(PreviewBlocks);
 
-	// ÅÂ½ºÅ© Á¤¸®
+	// ì…ë ¥ íƒœìŠ¤í¬ ì •ë¦¬
 	if (InputTask)
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
 	}
 
-	// ÀÔ·Â ¹ÙÀÎµù ÇØÁ¦
-	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
-	{
-		APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
-		if (PC && PC->InputComponent)
-		{
-			for (int32 i = PC->InputComponent->KeyBindings.Num() - 1; i >= 0; --i)
-			{
-				if (PC->InputComponent->KeyBindings[i].KeyDelegate.GetUObject() == this)
-				{
-					PC->InputComponent->KeyBindings.RemoveAt(i);
-				}
-			}
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: PC or InputComponent null during EndAbility cleanup"));
-		}
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: OwnerPawn null during EndAbility cleanup"));
-	}
-
-	// ÀúÀåµÈ Å¸°Ù ÃÊ±âÈ­
 	SavedTargetBlock.Reset();
-
 	NotifySkillCastFinished();
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -132,36 +103,36 @@ void UGA_Explosive::EndAbility(
 
 void UGA_Explosive::UpdatePreview()
 {
-	// GA_StickyBomb°ú µ¿ÀÏÇÑ ·ÎÁ÷ »ç¿ë
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (!OwnerPawn) return;
 
 	APlayerController* PC = Cast<APlayerController>(OwnerPawn->GetController());
 	if (!PC) return;
 
-	// 1. ÀÌÀü ÇÁ·¹ÀÓÀÇ ÇÏÀÌ¶óÀÌÆ® ÃÊ±âÈ­
-	ClearHighlights();
+	// í”„ë¦¬ë·° í•˜ì´ë¼ì´íŠ¸ ì´ˆê¸°í™” ë° ì¬ìƒì„±
+	HighlightBlocks(PreviewBlocks, TAG_Block_Highlight_Preview);
 
-	// 2. »ç°Å¸® ³» ºí·Ï Å½»ö
-	TArray<ABlockBase*> BlocksInRange;
-	FindBlocksInRange(BlocksInRange);
-
-	// 3. Å½»öµÈ ºí·Ïµé¿¡ ÀÏ°ıÀûÀ¸·Î 'Preview(ÆÄ¶û)' »óÅÂ Àû¿ë
-	BatchHighlightBlocks(BlocksInRange, EBlockHighlightState::Preview);
-
-	// 4. ³ªÁß¿¡ ²ô±â À§ÇØ ¸ñ·Ï ¹é¾÷
-	PreviewedBlocks = BlocksInRange;
-
-	// 5. ¸¶¿ì½º Ä¿¼­ À§Ä¡ÀÇ ºí·Ï Å¸°ÙÆÃ Ã³¸®
+	// ë§ˆìš°ìŠ¤ ì»¤ì„œ ìœ„ì¹˜ì˜ ë¸”ë¡ íƒ€ê²ŸíŒ… ì²˜ë¦¬
 	FHitResult HitResult;
-	PC->GetHitResultUnderCursor(ECC_Visibility, true, HitResult);
-	ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
+	PC->GetHitResultUnderCursor(ECC_Block, true, HitResult);
+	AActor* HitActor = HitResult.GetActor();
 
-	// ¸¶¿ì½º ¹ØÀÇ ºí·ÏÀÌ »ç°Å¸®(ÆÄ¶õ ¿µ¿ª) ¾È¿¡ Æ÷ÇÔµÇ¾î ÀÖ´Ù¸é 'Targeted(ÃÊ·Ï)'À¸·Î µ¤¾î¾²±â
-	if (HitBlock && PreviewedBlocks.Contains(HitBlock))
+	// ë§ˆìš°ìŠ¤ ë°‘ì˜ ë¸”ë¡ì´ ì‚¬ê±°ë¦¬(íŒŒë€ ì˜ì—­) ì•ˆì— í¬í•¨ë˜ì–´ ìˆë‹¤ë©´ 'Targeted' íƒœê·¸ ì ìš©
+	bool bIsInPreviewBlocks = false;
+	for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
 	{
-		HitBlock->SetHighlightState(EBlockHighlightState::Targeted);
-		HighlightedBlock = HitBlock;
+		if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
+		{
+			bIsInPreviewBlocks = true;
+			break;
+		}
+	}
+
+	if (HitActor && bIsInPreviewBlocks)
+	{
+		TArray<TWeakObjectPtr<AActor>> TargetedActor = { HitActor };
+		BatchHighlightBlocks(TargetedActor, TAG_Block_Highlight_Target);
+		HighlightedBlock = HitActor;
 	}
 	else
 	{
@@ -169,120 +140,96 @@ void UGA_Explosive::UpdatePreview()
 	}
 }
 
-void UGA_Explosive::OnLeftClickPressed()
+void UGA_Explosive::OnLeftClickEventReceived(FGameplayEventData Payload)
 {
-	// ÇÏÀÌ¶óÀÌÆ®µÈ ºí·ÏÀÌ À¯È¿ÇÒ ¶§¸¸ ½ÃÀü
 	if (HighlightedBlock.IsValid())
 	{
-		// ½ºÅ³ ½ÃÀü ½ÃÀÛ (Busy ÅÂ±× µî Àû¿ë)
 		NotifySkillCastStarted();
-
-		// Æø¹ß¹° ÅõÃ´ ¹× ½ºÅ³ Á¾·á (´Ü¹ß¼ºÀÌ¹Ç·Î Áï½Ã Á¾·áµÊ)
 		SpawnExplosive();
 	}
 	else
 	{
-		// Å¸°ÙÀÌ À¯È¿ÇÏÁö ¾ÊÀ» ¶§´Â ¾Æ¹« µ¿ÀÛ ÇÏÁö ¾ÊÀ½ (·Î±× »ı·« °¡´É)
+		// í”„ë¦¬ë·°ê°€ ìœ íš¨í•˜ì§€ ì•Šì„ ë•Œ í´ë¦­í•˜ë©´ ë¡œê·¸ (ë””ë²„ê¹…ìš©)
+		UE_LOG(LogTemp, Verbose, TEXT("GA_Explosive: Clicked but invalid preview"));
 	}
 }
 
 void UGA_Explosive::OnCancelPressed(float TimeWaited)
 {
-	// Á¶ÁØ Ãë¼Ò ¹× Á¾·á
 	CancelAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 }
 
 void UGA_Explosive::SpawnExplosive()
 {
-	// ÄÚ½ºÆ® ÁöºÒ È®ÀÎ
 	if (!CommitAbilityCost(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo()))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit ability cost"));
+		UE_LOG(LogTemp, Warning, TEXT("GA_Explosive: Failed to commit cost"));
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
 		return;
 	}
 
 	if (!ExplosiveClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: ExplosiveClass is not set"));
+		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: ExplosiveClass is null"));
 		EndAbility(GetCurrentAbilitySpecHandle(), GetCurrentActorInfo(), GetCurrentActivationInfo(), true, true);
 		return;
 	}
 
-	// ¸ñÇ¥ ºí·Ï ¹é¾÷
+	// íƒ€ê²Ÿ ë¸”ë¡ ì •ë³´ ë°±ì—…
 	SavedTargetBlock = HighlightedBlock.Get();
 
-	// ÇÁ¸®ºä Á¾·á ¹× ÀÔ·Â ÇØÁ¦ ·ÎÁ÷ (EndAbility¿¡¼­ Ã³¸®ÇÏÁö¸¸ ¸í½ÃÀû Á¤¸®¸¦ À§ÇØ)
+	// íƒ€ì´ë¨¸ ë° í”„ë¦¬ë·° ì •ë¦¬
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
-	ClearHighlights();
+	ClearHighlights(PreviewBlocks);
 
-	// ÀÔ·Â ÅÂ½ºÅ© Á¾·á
+	// ì…ë ¥ íƒœìŠ¤í¬ ì •ë¦¬
 	if (InputTask)
 	{
 		InputTask->EndTask();
 		InputTask = nullptr;
 	}
 
-	// Æø¹ß¹° »ı¼º
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
-	if (OwnerPawn)
+
+	// í­ë°œë¬¼ ìƒì„±
+	FVector SpawnLoc = OwnerPawn ? OwnerPawn->GetActorLocation() : FVector::ZeroVector;
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	AExplosive* NewExplosive = GetWorld()->SpawnActor<AExplosive>(ExplosiveClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+
+	if (NewExplosive && SavedTargetBlock.IsValid())
 	{
-		FVector SpawnLoc = OwnerPawn->GetActorLocation();
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
-		AExplosive* NewExplosive = GetWorld()->SpawnActor<AExplosive>(ExplosiveClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+		// ì¸í„°í˜ì´ìŠ¤ë¥¼ í†µí•´ ìœ„ì¹˜ ì •ë³´ íšë“ (ê·¸ë¦¬ë“œ ì¤‘ì‹¬ ì¢Œí‘œ)
+		// SavedTargetBlockì€ ì´ì œ AActor* (WeakPtr.Get())
+		IBlockInfoInterface* BlockInfo = Cast<IBlockInfoInterface>(SavedTargetBlock.Get());
+		// ì‹¤ì œë¡œëŠ” AExplosive ë‚´ë¶€ì—ì„œ AttachParentë¡œ ì‚¬ìš©ë˜ë¯€ë¡œ Actor*ë¥¼ ë„˜ê¸°ì§€ë§Œ, 
+		// ë§Œì•½ íƒ€ê²Ÿ ìœ„ì¹˜ ë³´ì •ì´ í•„ìš”í•˜ë‹¤ë©´ BlockInfoë¥¼ í™œìš©í•  ìˆ˜ ìˆìŒ.
 
-		if (NewExplosive && SavedTargetBlock.IsValid())
-		{
-			// µ¥¹ÌÁö ½ºÆå ÇÚµé »ı¼º
-			FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
+		NewExplosive->Initialize(
+			SpawnLoc,
+			SavedTargetBlock.Get(),
+			1.5f,
+			0.01f, // StickyBombê³¼ ë‹¤ë¥´ê²Œ ì¦‰ì‹œ í­ë°œ (0.01f)
+			ExplosionRadius * GetRuneModifiedRange(),
+			1,     // MaxBombCount (1ê°œ)
+			GetAbilitySystemComponentFromActorInfo(),
+			DamageSpecHandle,
+			DestructionEffect
+		);
 
-			// Æø¹ß¹° ÃÊ±âÈ­
-			// Áß¿ä: AutoDetonateDelay¸¦ 0.0f·Î ¼³Á¤ÇÏ¿© ÂøÅº(OnLanded) ÈÄ Áï½Ã Æø¹ßÇÏµµ·Ï ÇÔ
-			NewExplosive->Initialize(
-				SpawnLoc,
-				SavedTargetBlock.Get(),
-				1.5f,			// FlightDuration
-				0.01f,			// AutoDetonateDelay (Áï½Ã Æø¹ß)
-				ExplosionRadius * GetRuneModifiedRange(),
-				1,				// MaxBombCount (ÀÌ ½ºÅ³¿¡¼± ÀÇ¹Ì ¾øÁö¸¸ 1·Î Àü´Ş)
-				GetAbilitySystemComponentFromActorInfo(),
-				DamageSpecHandle,
-				DestructionEffect
-			);
-
-			// Á¡Âø ÆøÅº°ú ´Ş¸® ¸®½ºÆ®¿¡ Ãß°¡ÇÏ°Å³ª µ¨¸®°ÔÀÌÆ®¸¦ ±â´Ù¸®Áö ¾ÊÀ½.
-			// ´øÁö´Â ÇàÀ§·Î ½ºÅ³ »ç¿ëÀº ³¡³².
-
-			// ÅõÃ´ Áï½Ã ÄğÅ¸ÀÓ Àû¿ë
-			CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
-
-			// ½ºÅ³ Á¤»ó Á¾·á
-			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to spawn bomb or invalid target"));
-			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
-		}
+		// íˆ¬ì²™ ì¦‰ì‹œ ì¿¨íƒ€ì„ ë° ì¢…ë£Œ
+		CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: OwnerPawn is null during spawn"));
+		UE_LOG(LogTemp, Error, TEXT("GA_Explosive: Failed to spawn bomb or invalid target"));
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 	}
-}
-
-void UGA_Explosive::ClearHighlights()
-{
-	// ÀúÀåµÈ ÇÁ¸®ºä ºí·ÏµéÀÇ »óÅÂ¸¦ 'None'À¸·Î º¹±¸
-	BatchHighlightBlocks(PreviewedBlocks, EBlockHighlightState::None);
-
-	// ¸ñ·Ï ÃÊ±âÈ­
-	PreviewedBlocks.Empty();
-	HighlightedBlock.Reset();
 }

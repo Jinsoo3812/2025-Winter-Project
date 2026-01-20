@@ -29,18 +29,6 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	// 생성할 블록 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "Construction")
-	TSubclassOf<ADestructibleBlock> BlockToSpawn;
-
-	// 프리뷰로 표시할 블록 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "Preview")
-	TSubclassOf<AActor> PreviewBlockClass;
-
-	// 프리뷰로 생성된 블록 인스턴스
-	UPROPERTY()
-	TObjectPtr<AActor> PreviewBlock;
-
 	// 타이머 핸들
 	FTimerHandle TickTimerHandle;
 
@@ -48,25 +36,17 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UAbilityTask_WaitInputPress> WaitInputTask;
 
-	// 프리뷰 중이거나 하이라이트 효과가 적용된 블록들을 관리하는 배열
-	TArray<ABlockBase*> PreviewedBlocks;
-
-	// 범위 내 블록들을 찾아서 하이라이트
-	void HighlightBlocksInRange();
-
-	// 하이라이트 제거
-	virtual void ClearHighlights();
-
 	// 마우스 커서 아래 블록 찾기 및 프리뷰 업데이트
 	virtual void UpdatePreview();
 
 	// 블록 생성
 	virtual void SpawnBlock();
 
-	// 좌클릭 입력 콜백
-	virtual void OnLeftClickPressed();
-
 	// W키 재입력 콜백 (스킬 취소)
 	UFUNCTION()
 	void OnCancelPressed(float TimeWaited);
+
+	// 좌클릭 이벤트 수신 콜백
+	UFUNCTION()
+	virtual void OnLeftClickEventReceived(FGameplayEventData Payload);
 };

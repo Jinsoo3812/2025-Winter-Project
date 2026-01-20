@@ -28,11 +28,11 @@ public:
 protected:
 	// N개의 프리뷰 액터를 관리하기 위한 배열
 	UPROPERTY()
-	TArray<TObjectPtr<AActor>> BarrierPreviewBlocks;
+	TArray<TWeakObjectPtr<AActor>> BarrierPreviewBlocks;
 
 	// 실제로 소환된 블록들을 관리하기 위한 배열
 	UPROPERTY()
-	TArray<TObjectPtr<ADestructibleBlock>> SpawnedBlocks;
+	TArray<TWeakObjectPtr<AActor>> SpawnedBlocks;
 
 	// 돌진 속도
 	UPROPERTY(EditDefaultsOnly, Category = "Construction|Charge")
@@ -73,8 +73,8 @@ protected:
 	// 취소 가능 여부를 판단하는 함수
 	virtual bool CanBeCanceled() const override;
 
-	// 좌클릭 입력 처리 (부모의 단일 프리뷰 확인 로직을 대체하기 위함)
-	virtual void OnLeftClickPressed() override;
+	// 좌클릭 이벤트 수신 처리 (부모의 단일 프리뷰 확인 로직을 대체하기 위함)
+	virtual void OnLeftClickEventReceived(FGameplayEventData Payload) override;
 
 private:
 	// 중심 위치와 플레이어 위치를 기반으로 소환해야 할 N개 블록의 위치 배열을 OutTransforms에 반환
@@ -83,15 +83,10 @@ private:
 	// 소환해야 할 N개 블록의 프리뷰 액터의 생성 관리 및 표시
 	void UpdateBarrierPreviewActors(const TArray<FTransform>& Transforms);
 
-	// 해당 위치에 이미 다른 블록이 존재하는지 확인
-	bool IsLocationOccupied(const FVector& Location) const;
-
 	// 돌진 시작 (두 번째 입력 시 호출)
 	UFUNCTION()
 	void StartBarrierCharge(float TimeWaited);
 
 	// 매 프레임 방벽 이동 처리
 	void TickBarrierCharge();
-
-	void ClearHighlights() override;
 };
