@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
 #include "BlockCommon.h"
+#include "GameplayTagContainer.h"
 #include "BlockConfig.generated.h"
 
 /**
@@ -19,6 +20,14 @@ struct FBlockDefinition
 	// 렌더링에 사용할 메시
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UStaticMesh* Mesh = nullptr;
+
+	// 이 블록이 HISM이 아닌 Actor로 존재해야 하는지 여부
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic")
+	bool bIsActor = false;
+
+	// Actor로 스폰될 때 사용할 태그 (Subsystem 전달용)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic", meta = (EditCondition = "bIsActor"))
+	FGameplayTag ActorTag;
 
 	// (추후 확장) 파괴 시 효과, 내구도 계수, 사운드 등
 	// UPROPERTY(EditAnywhere, BlueprintReadOnly)

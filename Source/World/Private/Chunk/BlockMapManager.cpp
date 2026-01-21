@@ -62,6 +62,8 @@ void ABlockMapManager::SpawnChunks()
 
 			if (NewChunk)
 			{
+				NewChunk->SetBlockConfig(BlockConfig);
+
 				// Config에 있는 메시 정보를 청크에 등록
 				for (const auto& Pair : BlockConfig->BlockDefinitions)
 				{
@@ -106,7 +108,7 @@ void ABlockMapManager::GenerateBasicTerrain()
 				{
 					if (z < FloorHeight)
 					{
-						Chunk->SetBlockType(x, y, z, EBlockType::Terrain);
+						Chunk->SetBlockType(x, y, z, EBlockType::Destructible);
 					}
 					else
 					{

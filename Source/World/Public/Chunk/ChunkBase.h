@@ -6,6 +6,8 @@
 #include "BlockCommon.h"
 #include "ChunkBase.generated.h"
 
+class UBlockConfig;
+
 /*
 * 스레드 처리를 위한 데이터 스냅샷 구조체
 * UObjcet 등을 포함하지 않고, 순수 데이터만 포함
@@ -81,6 +83,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Chunk Visuals")
 	TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*> BlockHISMComponents;
 
+	// [추가] BlockMapManager가 청크 생성 직후 Config를 주입해주어야 함
+	void SetBlockConfig(const UBlockConfig* InConfig) { BlockConfig = InConfig; }
+
 	// 데이터를 기반으로 HISM 인스턴스를 다시 그리는 함수
 	// 데이터 변경이 있을 때마다 호출하는 것이 아니라, 변경 사항을 모아서 한 번에 호출 권장
 	void UpdateChunkVisuals();
@@ -96,4 +101,8 @@ private:
 	// 비동기 작업의 유효성 검사를 위한 ID
 	// 메인 스레드에서만 수정되므로 Atomic 보장은 필요 없음
 	int32 LastUpdateRequestID = 0;
+
+	// 블록 속성 조회용 (EBlockType을 통해 GameplayTag를 얻을 수 있음)
+	UPROPERTY(Transient)
+	const UBlockConfig* BlockConfig = nullptr;
 };

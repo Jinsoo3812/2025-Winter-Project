@@ -4,6 +4,8 @@
 #include "ChunkBase.h"
 #include "Components/SceneComponent.h"
 #include "Async/Async.h"
+#include "BlockConfig.h"
+#include "BlockManagerSubsystem.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
 AChunkBase::AChunkBase()
@@ -126,9 +128,33 @@ void AChunkBase::UpdateChunkVisuals()
 	{
 		if (Neighbors[i].IsValid())
 		{
-			// 이웃의 전체 데이터를 복사해서 들고 들어감 (Thread-Safe 확보)
+			/*
+			* 이웃의 전체 BlockData를 복사하여 스레드 안전성 확보
+			* 이웃의 접한 면만 복사하는 방법으로 최적화 가능
+			*/
 			Snapshot.NeighborDataMap.Add((EBlockNeighbor)i, Neighbors[i]->BlockDataArray);
 		}
+	}
+
+	// 스레드 안전을 위해 Config의 핵심 정보(Actor 여부, 태그)만 맵으로 추출하여 복사
+	// UObject(BlockConfig)를 워커 스레드에서 직접 접근하는 것은 위험함
+	TMap<EBlockType, bool> IsActorMap;
+	TMap<EBlockType, FGameplayTag> ActorTagMap;
+
+	if (BlockConfig)
+	{
+		for (const auto& Pair : BlockConfig->BlockDefinitions)
+		{
+			IsActorMap.Add(Pair.Key, Pair.Value.bIsActor);
+			if (Pair.Value.bIsActor)
+			{
+				ActorTagMap.Add(Pair.Key, Pair.Value.ActorTag);
+			}
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: BlockConfig is not set!"));
+		return;
 	}
 
 	// 스레드 동작 중 this 객체가 파괴될 수 있으므로 약한 참조 생성
@@ -139,13 +165,16 @@ void AChunkBase::UpdateChunkVisuals()
 	* 스레드 내부에서는 UObject를 다루거나 엔진 관련 함수를 호출해서는 안됨 (ex. GetWorld(), AddInstance 등)
 	* 순수 데이터를 다루는 수학 계산 등에만 사용
 	*/
-	Async(EAsyncExecution::ThreadPool, [WeakThis, Snapshot, GridSize, MyRequestID]()
+	Async(EAsyncExecution::ThreadPool, [WeakThis, Snapshot, GridSize, MyRequestID, IsActorMap, ActorTagMap]()
 		{
 			// [Worker Thread] 여기서부터는 별도의 스레드에서 수행됨
 
 			// 배칭 데이터를 담을 임시 맵
 			// 매 번 AddInstance를 호출하는 것은 렌더 스레드에게 부담을 줌
 			TMap<EBlockType, TArray<FTransform>> LocalBatchData;
+
+			// 이번 청크 갱신에서 발생한 액터 스폰 요청들
+			TArray<FBlockSpawnRequest> LocalSpawnRequests;
 
 			// 많이 사용될 것 같은 블록은 미리 TArray에 메모리 공간을 예약하여 잦은 할당을 방지할 수 있음.
 			// LocalBatchData.FindOrAdd(EBlockType::Terrain).Reserve(DataCopy.Num() / 2);
@@ -176,6 +205,26 @@ void AChunkBase::UpdateChunkVisuals()
 						// 그리지 않아도 되는 블록은 건너뜀
 						if (CurrentBlock.Type == EBlockType::None) continue;
 
+						FVector Location(x * GridSize, y * GridSize, z * GridSize);
+
+						// 이번 좌표의 블록이 Actor로 처리되어야 하는지 검사
+						if (const bool* bIsActor = IsActorMap.Find(CurrentBlock.Type))
+						{
+							if (*bIsActor)
+							{
+								// Actor Tag 찾기
+								if (const FGameplayTag* Tag = ActorTagMap.Find(CurrentBlock.Type))
+								{
+									// 스폰 요청 리스트에 추가 (로컬 좌표)
+									LocalSpawnRequests.Add({ Location, *Tag });
+								}
+
+								// HISM 배칭은 하지 않음. Actor로 직접 소환할거니까
+								// 하지만 EBlockType::None이 아니므로 이웃 블록의 Culling 검사에서는 '막힌 블록'으로 인식됨
+								continue;
+							}
+						}
+
 						// 6면 검사
 						bool bIsVisible = false;
 						FIntVector Offsets[] = {
@@ -203,8 +252,8 @@ void AChunkBase::UpdateChunkVisuals()
 
 						if (bIsVisible)
 						{
-							FVector Location(x * GridSize, y * GridSize, z * GridSize);
-							FTransform Transform(FRotator::ZeroRotator, Location);
+							FVector SpawnLocation(x * GridSize, y * GridSize, z * GridSize);
+							FTransform Transform(FRotator::ZeroRotator, SpawnLocation);
 							LocalBatchData.FindOrAdd(CurrentBlock.Type).Add(Transform);
 						}
 					}
@@ -213,9 +262,9 @@ void AChunkBase::UpdateChunkVisuals()
 
 			// 계산 완료 후 메인 스레드(Game Thread)로 복귀
 			// HISM 컴포넌트 조작은 반드시 게임 스레드에서 해야 함
-			AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, MyRequestID]()
+			AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID]()
 				{
-					// [Game Thread] 계산된 데이터를 HISM에 적용
+					// [Game Thread] 계산된 데이터를 HISM에 적용 및 Actor 스폰 요청 전달
 
 					// 이 시점에서 청크가 파괴되었을 수도 있으므로 유효성 검사 (IsValid)
 					if (!WeakThis.IsValid()) {
@@ -253,6 +302,34 @@ void AChunkBase::UpdateChunkVisuals()
 							// 여기서 한 번에 GPU로 전송!
 							WeakThis->BlockHISMComponents[Type]->AddInstances(Transforms, false);
 						}
+					}
+
+					if (LocalSpawnRequests.Num() > 0)
+					{
+						// 로컬 좌표 -> 월드 좌표 변환을 위해 현재 청크 위치 가져오기
+						FVector ChunkOrigin = WeakThis->GetActorLocation();
+
+						TArray<FBlockSpawnRequest> WorldRequests;
+						// 메모리 공간은 한 번에 예약합시다.
+						WorldRequests.Reserve(LocalSpawnRequests.Num());
+
+						for (const auto& Req : LocalSpawnRequests)
+						{
+							FBlockSpawnRequest NewReq;
+							NewReq.BlockTag = Req.BlockTag;
+							NewReq.WorldLocation = ChunkOrigin + Req.WorldLocation; // 월드 좌표로 변환
+							WorldRequests.Add(NewReq);
+						}
+
+						
+						if (UWorld* World = WeakThis->GetWorld())
+						{
+							if (UBlockManagerSubsystem* Subsystem = World->GetSubsystem<UBlockManagerSubsystem>())
+							{
+								Subsystem->EnqueueBlockSpawns(WorldRequests);
+							}
+						}
+						UE_LOG(LogTemp, Log, TEXT("ChunkBase: Enqueued %d actor spawns."), WorldRequests.Num());
 					}
 				});
 			});

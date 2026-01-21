@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "BlockSpawnInterface.h"
+#include "BlockCommon.h"
 #include "BlockManagerSubsystem.generated.h"
 
 class ABlockBase;
@@ -13,11 +14,17 @@ class ABlockBase;
  * 
  */
 UCLASS()
-class WORLD_API UBlockManagerSubsystem : public UWorldSubsystem, public IBlockSpawnInterface
+class WORLD_API UBlockManagerSubsystem : public UTickableWorldSubsystem, public IBlockSpawnInterface
 {
 	GENERATED_BODY()
 	
 public:
+	// UTickableWorldSubsystem 인터페이스 구현
+	virtual void Tick(float DeltaTime) override;
+
+	// 어떤 객체가 Tick을 얼마나 사용하였는지 통계를 수집하는데 사용되는 고유 식별자를 반환
+	virtual TStatId GetStatId() const override;
+
 	// 서브시스템 초기화 함수 (엔진에 의해 호출)
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
@@ -40,8 +47,24 @@ public:
 	*/
 	AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) override;
 
+	/*
+	* ChunkBase로부터 블록 Actor 소환 요청을 받아 Queue에 추가하는 함수
+	* @param Requests: 소환 요청 배열
+	*/
+	void EnqueueBlockSpawns(const TArray<FBlockSpawnRequest>& Requests);
+
 protected:
 	// Gameplay Tag와 블록 클래스의 매핑
 	UPROPERTY(EditDefaultsOnly)
 	TMap<FGameplayTag, TSubclassOf<ABlockBase>> BlockClassMap;
+
+	/*
+	* TQueue는 Thread-Safe를 지원
+	* 대기 중인 스폰 요청 Queue
+	*/
+	TQueue<FBlockSpawnRequest> SpawnQueue;
+
+	// 한 프레임에 처리할 최대 스폰 개수
+	UPROPERTY(EditDefaultsOnly)
+	int32 MaxSpawnsPerFrame = 10;
 };

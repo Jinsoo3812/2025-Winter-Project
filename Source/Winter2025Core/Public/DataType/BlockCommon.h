@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
 #include "BlockCommon.generated.h"
 
 /**
@@ -53,4 +54,13 @@ enum class EBlockNeighbor : uint8
 	Up,         // Z + 1
 	Down,       // Z - 1
 	Count
+};
+
+/*
+* BlockManangerSubsystem에 전달할 SpawnBlock 요청 데이터 구조체
+*/
+struct FBlockSpawnRequest
+{
+	FVector WorldLocation;
+	FGameplayTag BlockTag;
 };

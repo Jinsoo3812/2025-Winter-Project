@@ -53,6 +53,46 @@ void UBlockManagerSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
+void UBlockManagerSubsystem::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	// 큐가 비어있으면 조기 리턴
+	if (SpawnQueue.IsEmpty())
+	{
+		return;
+	}
+
+	int32 ProcessCount = 0;
+	FBlockSpawnRequest Request;
+
+	// 정해진 예산(MaxSpawnsPerFrame)만큼만 반복 처리
+	while (ProcessCount < MaxSpawnsPerFrame && SpawnQueue.Dequeue(Request))
+	{
+		// 이미 해당 위치에 블록이 있는지 등은 SpawnBlockByTag 내부의 IsLocationOccupied에서 체크함
+		// 하지만 청크 생성 시점이라 비어있을 확률이 높음
+
+		// Actor 스폰 실행 (중력은 끄고 시작하는 것이 일반적, 필요시 true)
+		SpawnBlockByTag(Request.BlockTag, Request.WorldLocation, FRotator::ZeroRotator, false);
+
+		ProcessCount++;
+	}
+}
+
+// 필수 오버라이드 (Stat ID 반환)
+TStatId UBlockManagerSubsystem::GetStatId() const
+{
+	RETURN_QUICK_DECLARE_CYCLE_STAT(UBlockManagerSubsystem, STATGROUP_Tickables);
+}
+
+void UBlockManagerSubsystem::EnqueueBlockSpawns(const TArray<FBlockSpawnRequest>& Requests)
+{
+	for (const FBlockSpawnRequest& Req : Requests)
+	{
+		SpawnQueue.Enqueue(Req);
+	}
+}
+
 AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity)
 {
 	// 태그에 맞는 블록 클래스 찾기
@@ -107,7 +147,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 			NewBlock->SetCanFall(false);
 			NewBlock->SetActorTickEnabled(false);
 		}
-
+		UE_LOG(LogTemp, Log, TEXT("BlockManagerSubsystem: Spawned block of type %s at %s"), *BlockTypeTag.ToString(), *Location.ToString());
 		return NewBlock;
 	}
 	else
