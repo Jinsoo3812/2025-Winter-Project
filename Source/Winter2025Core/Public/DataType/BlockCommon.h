@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BlockCommon.generated.h"
 
 /**
  * 블록의 종류를 정의하는 Enum (기존 GameplayTag 대체)

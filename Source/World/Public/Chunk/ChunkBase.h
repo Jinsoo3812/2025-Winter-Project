@@ -6,6 +6,25 @@
 #include "BlockCommon.h"
 #include "ChunkBase.generated.h"
 
+/*
+* 스레드 처리를 위한 데이터 스냅샷 구조체
+* UObjcet 등을 포함하지 않고, 순수 데이터만 포함
+*/
+struct FChunkSnapshot
+{
+	// 내 청크 데이터
+	TArray<FBlockData> MyData;
+	int32 SizeX, SizeY, SizeZ;
+
+	// 이웃 청크들의 데이터 복사본 (Key: 방향, Value: 블록 데이터 배열)
+	// *최적화 주석: 실제 상용 수준에서는 배열 전체가 아니라 '경계면 한 줄'만 복사하는 것이 성능상 좋습니다.
+	// 여기서는 이해를 돕기 위해 전체를 복사합니다.
+	TMap<EBlockNeighbor, TArray<FBlockData>> NeighborDataMap;
+
+	// 스냅샷 내부에서 좌표를 통해 블록을 조회하는 헬퍼 함수
+	FBlockData GetBlockData(int32 X, int32 Y, int32 Z) const;
+};
+
 UCLASS()
 class WORLD_API AChunkBase : public AActor
 {

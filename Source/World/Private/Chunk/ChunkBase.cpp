@@ -114,13 +114,22 @@ void AChunkBase::UpdateChunkVisuals()
 	// 이번 작업의 고유 ID 캡처
 	int32 MyRequestID = LastUpdateRequestID;
 
-	// Race Condition 방지를 위한 데이터 복사
-	// BlockData가 아주 크지 않다면 이 방법이 가장 간단함
-	TArray<FBlockData> DataCopy = BlockDataArray;
-	int32 SizeX = ChunkSizeX;
-	int32 SizeY = ChunkSizeY;
-	int32 SizeZ = ChunkSizeZ;
+	FChunkSnapshot Snapshot;
+	Snapshot.MyData = BlockDataArray; // 내 데이터 복사
+	Snapshot.SizeX = ChunkSizeX;
+	Snapshot.SizeY = ChunkSizeY;
+	Snapshot.SizeZ = ChunkSizeZ;
 	int32 GridSize = BlockGridSize;
+
+	// 이웃 데이터 복사 (존재하는 경우에만)
+	for (int32 i = 0; i < (int32)EBlockNeighbor::Count; i++)
+	{
+		if (Neighbors[i].IsValid())
+		{
+			// 이웃의 전체 데이터를 복사해서 들고 들어감 (Thread-Safe 확보)
+			Snapshot.NeighborDataMap.Add((EBlockNeighbor)i, Neighbors[i]->BlockDataArray);
+		}
+	}
 
 	// 스레드 동작 중 this 객체가 파괴될 수 있으므로 약한 참조 생성
 	TWeakObjectPtr<AChunkBase> WeakThis(this);
@@ -130,7 +139,7 @@ void AChunkBase::UpdateChunkVisuals()
 	* 스레드 내부에서는 UObject를 다루거나 엔진 관련 함수를 호출해서는 안됨 (ex. GetWorld(), AddInstance 등)
 	* 순수 데이터를 다루는 수학 계산 등에만 사용
 	*/
-	Async(EAsyncExecution::ThreadPool, [WeakThis, DataCopy, SizeX, SizeY, SizeZ, GridSize, MyRequestID]()
+	Async(EAsyncExecution::ThreadPool, [WeakThis, Snapshot, GridSize, MyRequestID]()
 		{
 			// [Worker Thread] 여기서부터는 별도의 스레드에서 수행됨
 
@@ -146,131 +155,58 @@ void AChunkBase::UpdateChunkVisuals()
 				// 청크가 파괴되었으므로 작업 중단
 				return;
 			}
+			if (WeakThis->LastUpdateRequestID != MyRequestID)
+			{
+				return; // 퇴근~
+			}
 			/*
 			* 캐시 적중률을 높이기 위한 3중 반복문
 			* 가장 안쪽 루프에 x를 두는 것이 메모리를 순서대로 읽는 방법
 			* Index = X + (Y * SizeX) + (Z * SizeX * SizeY)
 			*/
-			int32 Index = 0;
-			for (int32 z = 0; z < SizeZ; z++)
+			for (int32 z = 0; z < Snapshot.SizeZ; z++)
 			{
-				if (!WeakThis.IsValid())
+				for (int32 y = 0; y < Snapshot.SizeY; y++)
 				{
-					// 언제든지 청크가 파괴되었을 수 있으므로 작업 중단
-					return;
-				}
-				// 작업 도중이더라도 자신이 구작업이라는걸 알아채면 즉시 종료
-				if (WeakThis->LastUpdateRequestID != MyRequestID)
-				{
-					return; // 퇴근~
-				}
-
-				for (int32 y = 0; y < SizeY; y++)
-				{
-					for (int32 x = 0; x < SizeX; x++)
+					for (int32 x = 0; x < Snapshot.SizeX; x++)
 					{
-						FBlockData CurrentBlock = DataCopy[Index];
+						// 스냅샷을 통해 데이터 가져오기 (안전함)
+						FBlockData CurrentBlock = Snapshot.GetBlockData(x, y, z);
 
-						// 공기(None)면 건너뜀
-						if (CurrentBlock.Type == EBlockType::None)
-						{
-							Index++;
-							continue;
-						}
+						// 그리지 않아도 되는 블록은 건너뜀
+						if (CurrentBlock.Type == EBlockType::None) continue;
 
-						// ---------------------------------------------------------
-						// Face Culling (숨겨진 블록은 렌더링을 하지 않기 위해)
-						// ---------------------------------------------------------
+						// 6면 검사
 						bool bIsVisible = false;
-
-						// 검사할 6방향 이웃 좌표와 해당 면의 방향(Direction)
-						struct FNeighborCheck {
-							FIntVector Offset;
-							EBlockNeighbor Dir;
+						FIntVector Offsets[] = {
+							FIntVector(0, 0, 1), FIntVector(0, 0, -1),
+							FIntVector(0, 1, 0), FIntVector(0, -1, 0),
+							FIntVector(1, 0, 0), FIntVector(-1, 0, 0)
 						};
 
-						FNeighborCheck Checks[] = {
-							{ FIntVector(0, 0, 1),  EBlockNeighbor::Up },
-							{ FIntVector(0, 0, -1), EBlockNeighbor::Down },
-							{ FIntVector(0, 1, 0),  EBlockNeighbor::Right },
-							{ FIntVector(0, -1, 0), EBlockNeighbor::Left },
-							{ FIntVector(1, 0, 0),  EBlockNeighbor::Front },
-							{ FIntVector(-1, 0, 0), EBlockNeighbor::Back }
-						};
-
-						for (const auto& Check : Checks)
+						for (const FIntVector& Offset : Offsets)
 						{
-							int32 NX = x + Check.Offset.X;
-							int32 NY = y + Check.Offset.Y;
-							int32 NZ = z + Check.Offset.Z;
+							int32 NX = x + Offset.X;
+							int32 NY = y + Offset.Y;
+							int32 NZ = z + Offset.Z;
 
-							// 내 청크 범위 안인 경우 
-							if (NX >= 0 && NX < SizeX && NY >= 0 && NY < SizeY && NZ >= 0 && NZ < SizeZ)
+							// 스냅샷에게 이웃 블록이 그려져 있냐고 물어봄
+							FBlockData NeighborBlock = Snapshot.GetBlockData(NX, NY, NZ);
+
+							// 안그려져 있으면 자신을 그림
+							if (NeighborBlock.Type == EBlockType::None)
 							{
-								// 이웃 블록이 유효하며 None(투명)인지 확인
-								int32 NeighborIndex = NX + (NY * SizeX) + (NZ * SizeX * SizeY);
-								if (DataCopy.IsValidIndex(NeighborIndex) && DataCopy[NeighborIndex].Type == EBlockType::None)
-								{
-									bIsVisible = true;
-									break;
-								}
+								bIsVisible = true;
+								break;
 							}
-							// 내 청크 범위를 벗어난 경우 (이웃 블록이 옆 청크인 경우)
-							else
-							{
-								// 해당 방향의 이웃 청크 가져오기
-								// (스레드 안전을 위해 WeakThis 체크 필수)
-								if (!WeakThis.IsValid()) {
-									UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Chunk destroyed during neighbor check."));
-									return;
-								}
-
-								AChunkBase* NeighborChunk = WeakThis->Neighbors[(int32)Check.Dir].Get();
-
-								if (NeighborChunk)
-								{
-									// 이웃 청크 기준에서의 좌표로 변환
-									// 예: 내 X가 -1이면 -> 이웃의 X는 (SizeX - 1)
-									int32 LocalX = (NX + SizeX) % SizeX;
-									int32 LocalY = (NY + SizeY) % SizeY;
-									int32 LocalZ = NZ; // 높이는 공유한다고 가정 (수직 청크 연결 시 로직 필요)
-
-									// 이웃 청크의 데이터를 확인
-									// 주의: NeighborChunk->GetBlockData는 내부 배열에 접근하므로
-									// NeighborChunk가 파괴되지 않았는지 확인해야 함.
-									FBlockData NeighborBlock = NeighborChunk->GetBlockData(LocalX, LocalY, LocalZ);
-
-									if (NeighborBlock.Type == EBlockType::None)
-									{
-										bIsVisible = true; // 옆집 블록이 투명하면 내 얼굴을 그려야 함
-										break;
-									}
-								}
-								else
-								{
-									// 이웃이 아예 없으면 (맵의 끝) -> 외벽이므로 그린다.
-									bIsVisible = true;
-									break;
-								}
 						}
 
-						// ---------------------------------------------------------
-						// 렌더링 대상이면 Transform 계산 후 수집
-						// ---------------------------------------------------------
 						if (bIsVisible)
 						{
 							FVector Location(x * GridSize, y * GridSize, z * GridSize);
 							FTransform Transform(FRotator::ZeroRotator, Location);
-
-							/*
-							* CurrentBlock.Type(Key)를 찾고 연결된 TArray(Value)를 반환
-							* Key가 없다면 새로 추가 후 반환
-							* 이후 .Add() 로 Transform을 추가
-							*/
 							LocalBatchData.FindOrAdd(CurrentBlock.Type).Add(Transform);
 						}
-
-						Index++;
 					}
 				}
 			}
@@ -319,5 +255,65 @@ void AChunkBase::UpdateChunkVisuals()
 						}
 					}
 				});
-		});
+			});
+}
+
+FBlockData FChunkSnapshot::GetBlockData(int32 X, int32 Y, int32 Z) const
+{
+	// 내 청크 범위 내일 경우의 처리
+	if (X >= 0 && X < SizeX && Y >= 0 && Y < SizeY && Z >= 0 && Z < SizeZ)
+	{
+		int32 Index = X + (Y * SizeX) + (Z * SizeX * SizeY);
+		if (MyData.IsValidIndex(Index))
+		{
+			return MyData[Index];
+		}
+		return FBlockData{ EBlockType::None };
+	}
+
+	// 2. 범위를 벗어났다면 어느 이웃인지 판별
+	EBlockNeighbor TargetDir = EBlockNeighbor::Count;
+	int32 LocalX = X;
+	int32 LocalY = Y;
+	int32 LocalZ = Z;
+
+	// X축 검사
+	if (X < 0)
+	{
+		TargetDir = EBlockNeighbor::Back;
+		LocalX = (X + SizeX) % SizeX; // -1 -> 15
+	}
+	else if (X >= SizeX)
+	{
+		TargetDir = EBlockNeighbor::Front;
+		LocalX = (X + SizeX) % SizeX; // 16 -> 0
+	}
+
+	// Y축 검사 (X축이 범위 안일 때만 체크)
+	else if (Y < 0)
+	{
+		TargetDir = EBlockNeighbor::Left;
+		LocalY = (Y + SizeY) % SizeY;
+	}
+	else if (Y >= SizeY)
+	{
+		TargetDir = EBlockNeighbor::Right;
+		LocalY = (Y + SizeY) % SizeY;
+	}
+	// Z축 검사 생략 (단층 맵이므로)
+
+	// 이웃 데이터가 스냅샷에 존재하는지 확인
+	if (TargetDir != EBlockNeighbor::Count && NeighborDataMap.Contains(TargetDir))
+	{
+		const TArray<FBlockData>& NeighborArr = NeighborDataMap[TargetDir];
+		int32 Index = LocalX + (LocalY * SizeX) + (LocalZ * SizeX * SizeY);
+
+		if (NeighborArr.IsValidIndex(Index))
+		{
+			return NeighborArr[Index];
+		}
+	}
+
+	// 이웃이 없거나 데이터가 없으면 '투명(None)' 취급 -> 그래야 외벽이 그려짐
+	return FBlockData{ EBlockType::None };
 }
