@@ -40,6 +40,9 @@ struct FBlockData
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float Health = 100.0f;
 
+	UPROPERTY()
+	bool bIsActorSpawned = false;
+
 	// 회전 등 추가 가능(Bitmask) 
 	/*
 	* 메모리 패딩(4byte)을 고려하여 나머지 공간을 채울 것

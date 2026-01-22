@@ -76,7 +76,7 @@ public:
 	void RemoveBlockAtWorldLocation(FVector WorldLocation);
 
 	// -------------------------------------------------------------------------
-	// 렌더링 (HISM)
+	// 블록 소환 및 시각화
 	// -------------------------------------------------------------------------
 
 	/*
@@ -95,6 +95,9 @@ public:
 
 	// 초기 설정 시 블록 타입별 Mesh를 등록하는 함수 (DataAsset 등과 연동 필요)
 	void RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh);
+
+	// 서브시스템에서 스폰 실패 시 호출 (롤백용)
+	void OnBlockSpawnFailed(FVector WorldLocation);
 
 private:
 	// 루트 컴포넌트

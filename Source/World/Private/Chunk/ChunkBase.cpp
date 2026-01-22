@@ -210,25 +210,9 @@ void AChunkBase::UpdateChunkVisuals()
 						// 그리지 않아도 되는 블록은 건너뜀
 						if (CurrentBlock.Type == EBlockType::None) continue;
 
+						TotalSolidBlocks++;
+
 						FVector Location(x * GridSize, y * GridSize, z * GridSize);
-
-						// 이번 좌표의 블록이 Actor로 처리되어야 하는지 검사
-						if (const bool* bIsActor = IsActorMap.Find(CurrentBlock.Type))
-						{
-							if (*bIsActor)
-							{
-								// Actor Tag 찾기
-								if (const FGameplayTag* Tag = ActorTagMap.Find(CurrentBlock.Type))
-								{
-									// 스폰 요청 리스트에 추가 (로컬 좌표)
-									LocalSpawnRequests.Add({ Location, *Tag });
-								}
-
-								// HISM 배칭은 하지 않음. Actor로 직접 소환할거니까
-								// 하지만 EBlockType::None이 아니므로 이웃 블록의 Culling 검사에서는 '막힌 블록'으로 인식됨
-								continue;
-							}
-						}
 
 						// 6면 검사
 						bool bIsVisible = false;
@@ -255,10 +239,31 @@ void AChunkBase::UpdateChunkVisuals()
 							}
 						}
 
+
+
 						if (bIsVisible)
 						{
 							// 통계
 							VisibleBlocks++;
+							// Actor 블록인지 확인
+							if (const bool* bIsActor = IsActorMap.Find(CurrentBlock.Type))
+							{
+								if (*bIsActor)
+								{
+									// 이미 스폰되었으면 패스, 안 됐으면 요청
+									if (!CurrentBlock.bIsActorSpawned)
+									{
+										if (const FGameplayTag* Tag = ActorTagMap.Find(CurrentBlock.Type))
+										{
+											LocalSpawnRequests.Add({ Location, *Tag });
+										}
+									}
+
+									// Actor니까 HISM에는 넣지 않음 (여기서 루프 끝)
+									continue;
+								}
+							}
+							// Actor가 아니라면 HISM에 추가
 							FVector SpawnLocation(x * GridSize, y * GridSize, z * GridSize);
 							FTransform Transform(FRotator::ZeroRotator, SpawnLocation);
 							LocalBatchData.FindOrAdd(CurrentBlock.Type).Add(Transform);
@@ -273,7 +278,7 @@ void AChunkBase::UpdateChunkVisuals()
 
 			// 계산 완료 후 메인 스레드(Game Thread)로 복귀
 			// HISM 컴포넌트 조작은 반드시 게임 스레드에서 해야 함
-			AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID, /*통계*/TotalSolidBlocks, VisibleBlocks, CulledBlocks]()
+			AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID, GridSize, /*통계*/TotalSolidBlocks, VisibleBlocks, CulledBlocks]()
 				{
 					// [Game Thread] 계산된 데이터를 HISM에 적용 및 Actor 스폰 요청 전달
 
@@ -318,7 +323,7 @@ void AChunkBase::UpdateChunkVisuals()
 					// 통계 출력
 					if (TotalSolidBlocks > 0)
 					{
-						UE_LOG(LogTemp, Log, TEXT("[Chunk Visual Update] Total: %d | Visible: %d (Rendered) | Culled: %d (Hidden/Optimized)"),
+						UE_LOG(LogTemp, Warning, TEXT("[Chunk Visual Update] Total: %d | Visible: %d (Rendered) | Culled: %d (Hidden/Optimized)"),
 							TotalSolidBlocks, VisibleBlocks, CulledBlocks);
 					}
 
@@ -333,6 +338,18 @@ void AChunkBase::UpdateChunkVisuals()
 
 						for (const auto& Req : LocalSpawnRequests)
 						{
+							// 스폰 요청이 처리 중임을 표시
+							// 실제 스폰이 실패할 수도 있지만, 여기서 처리하지는 않음
+							int32 X = FMath::RoundToInt(Req.WorldLocation.X / GridSize);
+							int32 Y = FMath::RoundToInt(Req.WorldLocation.Y / GridSize);
+							int32 Z = FMath::RoundToInt(Req.WorldLocation.Z / GridSize);
+							int32 Index = WeakThis->GetBlockIndex(X, Y, Z);
+							if (WeakThis->BlockDataArray.IsValidIndex(Index))
+							{
+								WeakThis->BlockDataArray[Index].bIsActorSpawned = true;
+							}
+
+							// 요청 저장
 							FBlockSpawnRequest NewReq;
 							NewReq.BlockTag = Req.BlockTag;
 							NewReq.WorldLocation = ChunkOrigin + Req.WorldLocation; // 월드 좌표로 변환
@@ -434,4 +451,23 @@ void AChunkBase::RemoveBlockAtWorldLocation(FVector WorldLocation)
 
 	// 통계
 	UE_LOG(LogTemp, Warning, TEXT("[ChunkBase] Block Data cleared! Triggering Visual Update to reveal neighbors..."));
+}
+
+void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)
+{
+	FVector LocalLoc = WorldLocation - GetActorLocation();
+	int32 X = FMath::RoundToInt(LocalLoc.X / BlockGridSize);
+	int32 Y = FMath::RoundToInt(LocalLoc.Y / BlockGridSize);
+	int32 Z = FMath::RoundToInt(LocalLoc.Z / BlockGridSize);
+
+	int32 Index = GetBlockIndex(X, Y, Z);
+	if (BlockDataArray.IsValidIndex(Index))
+	{
+		// 플래그를 다시 false로 되돌림 -> 다음 UpdateChunkVisuals 때 다시 시도하게 됨
+		BlockDataArray[Index].bIsActorSpawned = false;
+
+		// 필요하다면 다시 시각적 업데이트를 요청하거나, 
+		// 일정 시간 뒤에 재시도하도록 로직을 추가할 수 있음
+		// UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Spawn Failed Rollback at %d %d %d"), X, Y, Z);
+	}
 }

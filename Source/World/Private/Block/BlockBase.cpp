@@ -304,8 +304,6 @@ FVector ABlockBase::GetBlockAlignedLocation() const
 
 void ABlockBase::SelfDestroy()
 {	
-	UE_LOG(LogTemp, Warning, TEXT("[BlockBase] %s is self-destructing at location: %s"),
-		*GetName(), *GetActorLocation().ToString());
 	// 죽기 전에 청크에게 내 자리 비워달라고 요청
 	if (ParentChunk.IsValid())
 	{

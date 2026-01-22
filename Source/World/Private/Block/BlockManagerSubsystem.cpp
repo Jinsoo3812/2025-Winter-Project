@@ -5,6 +5,7 @@
 #include "CollisionChannels.h"
 #include "Block/BlockSettings.h"
 #include "Block/BlockBase.h"
+#include "Chunkbase.h"
 
 void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -74,20 +75,29 @@ void UBlockManagerSubsystem::Tick(float DeltaTime)
 
 		// Actor 스폰 실행 (중력은 끄고 시작하는 것이 일반적, 필요시 true)
 		AActor* SpawnedActor = SpawnBlockByTag(Request.BlockTag, Request.WorldLocation, FRotator::ZeroRotator, false);
-
-		if (ABlockBase* NewBlock = Cast<ABlockBase>(SpawnedActor))
-		{
-			// 요청서에 적힌 청크가 살아있는지 확인
-			if (Request.OwnerChunk.IsValid())
+		if (SpawnedActor) {
+			if (ABlockBase* NewBlock = Cast<ABlockBase>(SpawnedActor))
 			{
-				NewBlock->SetParentChunk(Request.OwnerChunk.Get());
-			}
-			else
-			{
-				// 청크가 그새 파괴되었거나 정보가 없다면 경고 (디버깅용)
-				// UE_LOG(LogTemp, Warning, TEXT("Spawned Block but Chunk is missing!"));
+				// 요청서에 적힌 청크가 살아있는지 확인
+				if (Request.OwnerChunk.IsValid())
+				{
+					NewBlock->SetParentChunk(Request.OwnerChunk.Get());
+				}
+				else
+				{
+					// 청크가 그새 파괴되었거나 정보가 없다면 경고 (디버깅용)
+					// UE_LOG(LogTemp, Warning, TEXT("Spawned Block but Chunk is missing!"));
+				}
 			}
 		}
+		// 스폰 실패이므로 롤백 요청
+		else {
+			if (Request.OwnerChunk.IsValid())
+			{
+				Request.OwnerChunk->OnBlockSpawnFailed(Request.WorldLocation);
+			}
+		}
+		
 
 		ProcessCount++;
 	}
