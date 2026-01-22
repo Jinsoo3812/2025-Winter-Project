@@ -3,6 +3,7 @@
 
 #include "BlockMapManager.h"
 #include "BlockConfig.h"
+#include "BlockManagerSubsystem.h"
 
 ABlockMapManager::ABlockMapManager()
 {
@@ -12,6 +13,15 @@ ABlockMapManager::ABlockMapManager()
 void ABlockMapManager::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// [추가] 서브시스템에 자신을 등록
+	if (UWorld* World = GetWorld())
+	{
+		if (UBlockManagerSubsystem* Subsystem = World->GetSubsystem<UBlockManagerSubsystem>())
+		{
+			Subsystem->RegisterMapManager(this);
+		}
+	}
 
 	// 게임 시작 시 월드 생성
 	GenerateWorld();
@@ -108,7 +118,7 @@ void ABlockMapManager::GenerateBasicTerrain()
 				{
 					if (z < FloorHeight)
 					{
-						Chunk->SetBlockType(x, y, z, EBlockType::Destructible);
+						Chunk->SetBlockType(x, y, z, EBlockType::Terrain);
 					}
 					else
 					{

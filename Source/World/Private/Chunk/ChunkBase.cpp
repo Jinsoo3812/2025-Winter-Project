@@ -471,3 +471,13 @@ void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)
 		// UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Spawn Failed Rollback at %d %d %d"), X, Y, Z);
 	}
 }
+
+void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor)
+{
+	int32 Index = GetBlockIndex(X, Y, Z);
+	if (Index != -1 && BlockDataArray.IsValidIndex(Index))
+	{
+		BlockDataArray[Index].Type = NewType;
+		BlockDataArray[Index].bIsActorSpawned = bIsActor;
+	}
+}

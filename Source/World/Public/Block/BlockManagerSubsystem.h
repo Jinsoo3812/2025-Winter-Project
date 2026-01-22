@@ -9,6 +9,8 @@
 #include "BlockManagerSubsystem.generated.h"
 
 class ABlockBase;
+class ABlockMapManager;
+class UBlockConfig;
 
 /**
  * 
@@ -29,6 +31,14 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	virtual void Deinitialize() override;
+
+	// BlockMapManager가 BeginPlay 시점에 자신을 등록
+	void RegisterMapManager(ABlockMapManager* InManager);
+
+	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
+	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests);
+
+
 
 	// 지정된 위치가 점유되어 있는지 확인하는 헬퍼 함수
 	// @param World: 체크할 월드
@@ -67,4 +77,12 @@ protected:
 	// 한 프레임에 처리할 최대 스폰 개수
 	UPROPERTY(EditDefaultsOnly)
 	int32 MaxSpawnsPerFrame = 50;
+
+	// 청크를 찾기 위한 매니저 참조
+	UPROPERTY(Transient)
+	ABlockMapManager* MapManager = nullptr;
+
+	// Config DA 캐싱
+	UPROPERTY(Transient)
+	UBlockConfig* LoadedBlockConfig = nullptr;
 };

@@ -6,6 +6,8 @@
 #include "Block/BlockSettings.h"
 #include "Block/BlockBase.h"
 #include "Chunkbase.h"
+#include "BlockMapManager.h"
+#include "BlockConfig.h"
 
 void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
@@ -43,6 +45,14 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	else
 	{
 		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to load BlockConfig asset."));
+	}
+
+	LoadedBlockConfig = Settings->ChunkBlockConfigAsset.LoadSynchronous();
+	if (LoadedBlockConfig) {
+		UE_LOG(LogTemp, Log, TEXT("BlockManagerSubsystem: Successfully loaded chunk block config from Project Settings."));
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to load Chunk BlockConfig asset."));
 	}
 }
 
@@ -117,6 +127,11 @@ void UBlockManagerSubsystem::EnqueueBlockSpawns(const TArray<FBlockSpawnRequest>
 	}
 }
 
+void UBlockManagerSubsystem::RegisterMapManager(ABlockMapManager* InManager)
+{
+	MapManager = InManager;
+}
+
 AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity)
 {
 	// 태그에 맞는 블록 클래스 찾기
@@ -171,6 +186,48 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 			NewBlock->SetCanFall(false);
 			NewBlock->SetActorTickEnabled(false);
 		}
+
+		// 디버그용
+		if (!MapManager)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SpawnBlockByTag: MapManager is NULL! Cannot link chunk."));
+			// 여기서 리턴하면 블록은 생기지만 청크 연결은 안 됨.
+			// 원인을 알았으니 BlockMapManager::BeginPlay가 호출되었는지 확인 필요.
+		}
+		else if (!LoadedBlockConfig)
+		{
+			UE_LOG(LogTemp, Error, TEXT("SpawnBlockByTag: LoadedBlockConfig is NULL!"));
+		}
+
+		/*
+		* 청크 시스템과 동기화
+		*/
+		if (MapManager && LoadedBlockConfig)
+		{
+			if (AChunkBase* TargetChunk = MapManager->GetChunkAtLocation(Location))
+			{
+				// 태그를 이용해 정확한 EBlockType 찾기
+				EBlockType TargetType = LoadedBlockConfig->GetBlockTypeByTag(BlockTypeTag);
+
+				// 만약 Config에 없는 태그라면 기본값(Destructible) 혹은 에러 처리
+				if (TargetType == EBlockType::None)
+				{
+					TargetType = EBlockType::Destructible; // Fallback
+					UE_LOG(LogTemp, Warning, TEXT("SpawnBlockByTag: Unknown Tag %s, defaulting to Destructible"), *BlockTypeTag.ToString());
+				}
+
+				FVector LocalLoc = Location - TargetChunk->GetActorLocation();
+				int32 X = FMath::RoundToInt(LocalLoc.X / GridSize);
+				int32 Y = FMath::RoundToInt(LocalLoc.Y / GridSize);
+				int32 Z = FMath::RoundToInt(LocalLoc.Z / GridSize);
+
+				// 찾은 타입으로 설정
+				TargetChunk->SetBlockData(X, Y, Z, TargetType, true);
+
+				NewBlock->SetParentChunk(TargetChunk);
+				TargetChunk->UpdateChunkVisuals();
+			}
+		}
 		return NewBlock;
 	}
 	else
@@ -178,6 +235,66 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to spawn block at %s"), *Location.ToString());
 		return nullptr;
 	}
+}
+
+void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests)
+{
+	if (!MapManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SpawnBlocksBatch: MapManager is not registered!"));
+		return;
+	}
+
+	// 청크별로 요청 분류
+	// Key: 청크 포인터, Value: 해당 청크에 속한 요청들
+	TMap<AChunkBase*, TArray<FBlockSpawnRequest>> ChunkRequestMap;
+
+	for (const FBlockSpawnRequest& Req : Requests)
+	{
+		if (AChunkBase* Chunk = MapManager->GetChunkAtLocation(Req.WorldLocation))
+		{
+			ChunkRequestMap.FindOrAdd(Chunk).Add(Req);
+		}
+	}
+
+	// 각 청크별로 데이터 일괄 업데이트 수행
+	for (auto& Pair : ChunkRequestMap)
+	{
+		AChunkBase* Chunk = Pair.Key;
+		TArray<FBlockSpawnRequest>& ChunkRequests = Pair.Value;
+
+		for (FBlockSpawnRequest& Req : ChunkRequests)
+		{
+			// 로컬 좌표 변환
+			FVector LocalLoc = Req.WorldLocation - Chunk->GetActorLocation();
+			int32 X = FMath::RoundToInt(LocalLoc.X / AChunkBase::BlockGridSize);
+			int32 Y = FMath::RoundToInt(LocalLoc.Y / AChunkBase::BlockGridSize);
+			int32 Z = FMath::RoundToInt(LocalLoc.Z / AChunkBase::BlockGridSize);
+
+			// 태그로 타입 찾기
+			EBlockType TargetType = EBlockType::Destructible; // 기본값
+			if (LoadedBlockConfig)
+			{
+				EBlockType FoundType = LoadedBlockConfig->GetBlockTypeByTag(Req.BlockTag);
+				if (FoundType != EBlockType::None)
+				{
+					TargetType = FoundType;
+				}
+			}
+
+			Chunk->SetBlockData(X, Y, Z, TargetType, true);
+			Req.OwnerChunk = Chunk;
+		}
+
+		// 시각적 업데이트 (마지막에 한 번만 호출!)
+		Chunk->UpdateChunkVisuals();
+	}
+
+	// 액터 스폰 큐에 등록 (Time Slicing)
+	// 데이터는 이미 다 바꿨고, 이제 실제 액터만 천천히 나오면 됨
+	EnqueueBlockSpawns(Requests);
+
+	UE_LOG(LogTemp, Log, TEXT("Batch Spawned %d blocks across %d chunks."), Requests.Num(), ChunkRequestMap.Num());
 }
 
 bool UBlockManagerSubsystem::IsLocationOccupied(

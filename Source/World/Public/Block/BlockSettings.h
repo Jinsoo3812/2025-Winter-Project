@@ -5,7 +5,9 @@
 #include "CoreMinimal.h"
 #include "Engine/DeveloperSettings.h"
 #include "Block/DA_BlockConfig.h"
+#include "BlockConfig.h"
 #include "BlockSettings.generated.h"
+
 
 /**
  * 프로젝트 세팅(Project Settings) 창에 'Block System' 섹션을 추가하여
@@ -23,4 +25,7 @@ public:
 	// TSoftObjectPtr을 사용하여 에셋이 필요할 때 로드되도록 유도 (메모리 관리 측면에서 유리)
 	UPROPERTY(Config, EditAnywhere, Category = "Config", meta = (AllowedClasses = "/Script/World.DA_BlockConfig"))
 	TSoftObjectPtr<UDA_BlockConfig> BlockConfigAsset;
+
+	UPROPERTY(Config, EditAnywhere, Category = "Config", meta = (AllowedClasses = "/Script/World.BlockConfig"))
+	TSoftObjectPtr<UBlockConfig> ChunkBlockConfigAsset;
 };

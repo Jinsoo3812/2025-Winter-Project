@@ -52,4 +52,18 @@ public:
 		}
 		return nullptr;
 	}
+
+	EBlockType GetBlockTypeByTag(const FGameplayTag& Tag) const
+	{
+		// 맵을 순회하며 태그가 일치하는지 확인
+		for (const auto& Pair : BlockDefinitions)
+		{
+			if (Pair.Value.bIsActor && Pair.Value.ActorTag.MatchesTag(Tag))
+			{
+				return Pair.Key;
+			}
+		}
+		// 못 찾으면 None 반환
+		return EBlockType::None;
+	}
 };

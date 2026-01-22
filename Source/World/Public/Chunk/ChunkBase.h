@@ -99,6 +99,9 @@ public:
 	// 서브시스템에서 스폰 실패 시 호출 (롤백용)
 	void OnBlockSpawnFailed(FVector WorldLocation);
 
+	// 외부에서 블록을 소환한 후, 데이터를 설정하게 해주는 헬퍼 함수
+	void SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor);
+
 private:
 	// 루트 컴포넌트
 	UPROPERTY(VisibleAnywhere)
