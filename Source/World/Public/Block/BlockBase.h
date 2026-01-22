@@ -101,6 +101,18 @@ protected:
 	// 현재 부착된 폭탄 개수 추적용
 	int32 CurrentBombCount = 0;
 
+	// -----------------------------------------------------------------------------
+	// [추가] 네트워크 색상 동기화 관련 함수
+	// -----------------------------------------------------------------------------
+
+	// [설명] 실제 색상 변경(CPD 설정) 로직을 수행하는 내부 함수입니다.
+	// 기존 HandleGameplayEvent에 있던 로직을 이쪽으로 옮겨 재사용합니다.
+	void ApplyColorChange(FGameplayTag EventTag);
+
+	// [설명] 서버에서 호출하면 연결된 모든 클라이언트에서도 실행되는 함수입니다. (색상 동기화용)
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_HandleGameplayEvent(FGameplayTag EventTag);
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;

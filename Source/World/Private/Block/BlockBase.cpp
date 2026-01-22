@@ -17,6 +17,9 @@ ABlockBase::ABlockBase()
 	// 처음에는 비활성화 상태로 시작
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
+	// [추가] 중요: 서버에서 발생한 색상 변경을 클라이언트로 전파하기 위해 리플리케이션을 켭니다.
+	bReplicates = true;
+
 	// 물리 충돌을 담당할 BoxComponent 생성 (Root)
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
 	RootComponent = CollisionComponent;
@@ -204,58 +207,81 @@ void ABlockBase::NotifyUpperBlock()
 	}
 }
 
+//void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload)
+//{
+//	// Config 유효성 체크
+//	if (!BlockConfig) {
+//		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
+//		return;
+//	}
+//
+//	// 폭탄 하이라이트 태그 처리는 중첩형이므로 특수 처리
+//	if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb))
+//	{
+//		if (MeshComponent)
+//		{   
+//			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
+//			{
+//				CurrentBombCount = 0;
+//				MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
+//				return;
+//			}
+//			// 최대 폭탄 개수에 맞춰 Clamp
+//			CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
+//
+//			// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
+//			float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
+//
+//			// 폭탄 CPD Index도 Config에 정의되어 있음
+//			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
+//		}
+//		else
+//		{
+//			UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
+//		}
+//		return;
+//	}
+//
+//	// 일반적인 On/Off 형태의 Highlight 태그 처리
+//	// Ex) Block.Highlight.Preview 같은 태그가 왔을 때,
+//	// BlockCPDIndexMap에서 해당 태그에 맞는 CPD 정보를 찾음
+//	if (const FBlockCPDInfo* FoundInfo = BlockConfig->BlockCPDIndexMap.Find(EventTag))
+//	{
+//		// 찾은 정보대로 CPD 업데이트
+//		if (MeshComponent)
+//		{
+//			MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
+//		}
+//	}
+//	else
+//	{
+//		// 맵에도 없고, 특수 처리 태그도 아님 -> 경고
+//		// UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
+//	}
+//}
+
+// -----------------------------------------------------------------------------
+// [수정] GameplayEventInterface 구현 (네트워크 대응)
+// -----------------------------------------------------------------------------
 void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload)
 {
-	// Config 유효성 체크
-	if (!BlockConfig) {
-		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
-		return;
-	}
-
-	// 폭탄 하이라이트 태그 처리는 중첩형이므로 특수 처리
-	if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb))
+	// [설명]
+	// 1. 서버(HasAuthority)인 경우:
+	//    보스 공격(GA_AttackRange)은 서버에서 실행됩니다.
+	//    서버에서 색을 바꾸면서 동시에 클라이언트들에게도 "색을 바꿔라"고 Multicast를 보냅니다.
+	if (HasAuthority())
 	{
-		if (MeshComponent)
-		{   
-			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
-			{
-				CurrentBombCount = 0;
-				MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
-				return;
-			}
-			// 최대 폭탄 개수에 맞춰 Clamp
-			CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
-
-			// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
-			float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
-
-			// 폭탄 CPD Index도 Config에 정의되어 있음
-			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
-		}
-		return;
+		Multicast_HandleGameplayEvent(EventTag);
 	}
-
-	// 일반적인 On/Off 형태의 Highlight 태그 처리
-	// Ex) Block.Highlight.Preview 같은 태그가 왔을 때,
-	// BlockCPDIndexMap에서 해당 태그에 맞는 CPD 정보를 찾음
-	if (const FBlockCPDInfo* FoundInfo = BlockConfig->BlockCPDIndexMap.Find(EventTag))
-	{
-		// 찾은 정보대로 CPD 업데이트
-		if (MeshComponent)
-		{
-			MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
-		}
-	}
+	// 2. 클라이언트인 경우:
+	//    건설 모드(GA_Construction)의 프리뷰처럼 내 컴퓨터에서만 보여야 하는 경우
+	//    즉시 색상 변경 로직을 실행합니다.
 	else
 	{
-		// 맵에도 없고, 특수 처리 태그도 아님 -> 경고
-		// UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
+		ApplyColorChange(EventTag);
 	}
 }
+
 
 void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
 {
@@ -285,6 +311,67 @@ void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
 	}
 	return;
 }
+
+// [추가] 서버에서 호출하면 모든 클라이언트에서 실행되는 함수 (현재는 색상 변경만 적용)
+void ABlockBase::Multicast_HandleGameplayEvent_Implementation(FGameplayTag EventTag)
+{
+	// 모든 클라이언트(나 포함)가 이 함수를 실행하여 색을 바꿉니다.
+	ApplyColorChange(EventTag);
+}
+
+// [추가] 실제 색상/CPD 변경 로직 (기존 코드를 여기로 이동)
+void ABlockBase::ApplyColorChange(FGameplayTag EventTag)
+{
+	// Config 유효성 체크
+	if (!BlockConfig) {
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
+		return;
+	}
+
+	// 폭탄 하이라이트 태그 처리는 중첩형이므로 특수 처리
+	if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb))
+	{
+		if (MeshComponent)
+		{
+			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
+			{
+				CurrentBombCount = 0;
+				MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
+				return;
+			}
+			// 최대 폭탄 개수에 맞춰 Clamp
+			CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
+
+			// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
+			float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
+
+			// 폭탄 CPD Index도 Config에 정의되어 있음
+			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
+		}
+		return;
+	}
+
+	// 일반적인 On/Off 형태의 Highlight 태그 처리
+	// Ex) Block.Highlight.Preview (파랑), Block.Highlight.Target (빨강)
+	if (const FBlockCPDInfo* FoundInfo = BlockConfig->BlockCPDIndexMap.Find(EventTag))
+	{
+		// 찾은 정보대로 CPD 업데이트
+		if (MeshComponent)
+		{
+			MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
+		}
+	}
+	else
+	{
+		 //맵에도 없고, 특수 처리 태그도 아님 -> 경고
+		 UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
+	}
+}
+
 
 FVector ABlockBase::GetBlockAlignedLocation() const
 {
