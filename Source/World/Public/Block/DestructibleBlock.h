@@ -27,7 +27,7 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	// 자신을 파괴하는 함수
-	virtual void SelfDestroy();
+	void SelfDestroy() override;
 
 protected:
 	virtual void BeginPlay() override;

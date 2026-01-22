@@ -72,6 +72,9 @@ public:
 
 	void SetNeighbor(EBlockNeighbor Direction, AChunkBase* Neighbor) { Neighbors[(int32)Direction] = Neighbor; }
 
+	// 월드 좌표를 받아 청크 내 블록 좌표로 변환 후 블록 제거 (None)
+	void RemoveBlockAtWorldLocation(FVector WorldLocation);
+
 	// -------------------------------------------------------------------------
 	// 렌더링 (HISM)
 	// -------------------------------------------------------------------------

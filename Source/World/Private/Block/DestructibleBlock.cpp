@@ -66,5 +66,5 @@ void ADestructibleBlock::SelfDestroy()
 {
 	// 위 블록에게 낙하하라고 알림
 	NotifyUpperBlock();
-	Destroy();
+	Super::SelfDestroy();
 }

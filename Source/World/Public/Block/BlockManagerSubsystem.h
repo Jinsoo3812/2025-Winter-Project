@@ -66,5 +66,5 @@ protected:
 
 	// 한 프레임에 처리할 최대 스폰 개수
 	UPROPERTY(EditDefaultsOnly)
-	int32 MaxSpawnsPerFrame = 10;
+	int32 MaxSpawnsPerFrame = 50;
 };

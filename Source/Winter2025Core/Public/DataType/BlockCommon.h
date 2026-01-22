@@ -6,6 +6,8 @@
 #include "GameplayTagContainer.h"
 #include "BlockCommon.generated.h"
 
+class AChunkBase;
+
 /**
  * 블록의 종류를 정의하는 Enum (기존 GameplayTag 대체)
  * 메모리 최적화를 위해 uint8 사용 (최대 255개 종류)
@@ -60,7 +62,11 @@ enum class EBlockNeighbor : uint8
 * BlockManangerSubsystem에 전달할 SpawnBlock 요청 데이터 구조체
 */
 struct FBlockSpawnRequest
-{
+{	
+	// 이 위치에
 	FVector WorldLocation;
+	// 이 블록을
 	FGameplayTag BlockTag;
+	// 이 청크 안에
+	TWeakObjectPtr<AChunkBase> OwnerChunk;
 };

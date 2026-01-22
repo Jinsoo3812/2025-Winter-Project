@@ -176,6 +176,11 @@ void AChunkBase::UpdateChunkVisuals()
 			// 이번 청크 갱신에서 발생한 액터 스폰 요청들
 			TArray<FBlockSpawnRequest> LocalSpawnRequests;
 
+			// 통계용 변수
+			int32 TotalSolidBlocks = 0;
+			int32 VisibleBlocks = 0; // 그려짐
+			int32 CulledBlocks = 0;  // 가려짐 (컬링됨)
+
 			// 많이 사용될 것 같은 블록은 미리 TArray에 메모리 공간을 예약하여 잦은 할당을 방지할 수 있음.
 			// LocalBatchData.FindOrAdd(EBlockType::Terrain).Reserve(DataCopy.Num() / 2);
 
@@ -252,9 +257,15 @@ void AChunkBase::UpdateChunkVisuals()
 
 						if (bIsVisible)
 						{
+							// 통계
+							VisibleBlocks++;
 							FVector SpawnLocation(x * GridSize, y * GridSize, z * GridSize);
 							FTransform Transform(FRotator::ZeroRotator, SpawnLocation);
 							LocalBatchData.FindOrAdd(CurrentBlock.Type).Add(Transform);
+						}
+						else {
+							// 통계
+							CulledBlocks++;
 						}
 					}
 				}
@@ -262,7 +273,7 @@ void AChunkBase::UpdateChunkVisuals()
 
 			// 계산 완료 후 메인 스레드(Game Thread)로 복귀
 			// HISM 컴포넌트 조작은 반드시 게임 스레드에서 해야 함
-			AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID]()
+			AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID, /*통계*/TotalSolidBlocks, VisibleBlocks, CulledBlocks]()
 				{
 					// [Game Thread] 계산된 데이터를 HISM에 적용 및 Actor 스폰 요청 전달
 
@@ -304,6 +315,13 @@ void AChunkBase::UpdateChunkVisuals()
 						}
 					}
 
+					// 통계 출력
+					if (TotalSolidBlocks > 0)
+					{
+						UE_LOG(LogTemp, Log, TEXT("[Chunk Visual Update] Total: %d | Visible: %d (Rendered) | Culled: %d (Hidden/Optimized)"),
+							TotalSolidBlocks, VisibleBlocks, CulledBlocks);
+					}
+
 					if (LocalSpawnRequests.Num() > 0)
 					{
 						// 로컬 좌표 -> 월드 좌표 변환을 위해 현재 청크 위치 가져오기
@@ -318,6 +336,7 @@ void AChunkBase::UpdateChunkVisuals()
 							FBlockSpawnRequest NewReq;
 							NewReq.BlockTag = Req.BlockTag;
 							NewReq.WorldLocation = ChunkOrigin + Req.WorldLocation; // 월드 좌표로 변환
+							NewReq.OwnerChunk = WeakThis;
 							WorldRequests.Add(NewReq);
 						}
 
@@ -393,4 +412,26 @@ FBlockData FChunkSnapshot::GetBlockData(int32 X, int32 Y, int32 Z) const
 
 	// 이웃이 없거나 데이터가 없으면 '투명(None)' 취급 -> 그래야 외벽이 그려짐
 	return FBlockData{ EBlockType::None };
+}
+
+void AChunkBase::RemoveBlockAtWorldLocation(FVector WorldLocation)
+{
+	// 월드 좌표를 청크 로컬 좌표로 변환 (청크의 회전이 없다고 가정 시 단순 빼기)
+	FVector LocalLoc = WorldLocation - GetActorLocation();
+
+	// 그리드 좌표로 변환
+	int32 X = FMath::RoundToInt(LocalLoc.X / BlockGridSize);
+	int32 Y = FMath::RoundToInt(LocalLoc.Y / BlockGridSize);
+	int32 Z = FMath::RoundToInt(LocalLoc.Z / BlockGridSize);
+
+	// 데이터 갱신 (None으로 변경)
+	// SetBlockType 내부에서 유효성 검사(Index Check)를 하므로 안전함
+	SetBlockType(X, Y, Z, EBlockType::None);
+
+	// 시각적 업데이트 요청 (이 블록은 Actor였으므로 HISM 갱신은 필요 없을 수 있으나, 
+	// 이웃 블록의 옆면(Culling)을 다시 그려야 하므로 호출 필수
+	UpdateChunkVisuals();
+
+	// 통계
+	UE_LOG(LogTemp, Warning, TEXT("[ChunkBase] Block Data cleared! Triggering Visual Update to reveal neighbors..."));
 }

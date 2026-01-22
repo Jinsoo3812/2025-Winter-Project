@@ -10,6 +10,7 @@
 #include "BlockInfoInterface.h"
 #include "BlockBase.generated.h"
 
+class AChunkBase;
 class UDA_BlockConfig;
 
 
@@ -21,7 +22,17 @@ class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface, publ
 public:	
 	ABlockBase();
 
+	// -----------------------------------------------------------------------------
+	// Chunk 관련
+	// -----------------------------------------------------------------------------
+
+	void SetParentChunk(AChunkBase* InChunk);
+
 protected:
+	// 나를 생성한 청크에 대한 약한 참조
+	UPROPERTY(Transient)
+	TWeakObjectPtr<AChunkBase> ParentChunk;
+
 	// -----------------------------------------------------------------------------
 	// 초기화 함수들
 	// -----------------------------------------------------------------------------

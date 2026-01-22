@@ -6,6 +6,7 @@
 #include "CollisionChannels.h"
 #include "Block/DA_BlockConfig.h"
 #include "BlockGameplayTags.h"
+#include "ChunkBase.h"
 
 
 // Sets default values
@@ -302,6 +303,27 @@ FVector ABlockBase::GetBlockAlignedLocation() const
 }
 
 void ABlockBase::SelfDestroy()
-{
+{	
+	UE_LOG(LogTemp, Warning, TEXT("[BlockBase] %s is self-destructing at location: %s"),
+		*GetName(), *GetActorLocation().ToString());
+	// 죽기 전에 청크에게 내 자리 비워달라고 요청
+	if (ParentChunk.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BlockBase] I (%s) am destroyed. Notifying Chunk to clear my spot: %s"),
+			*GetName(), *GetActorLocation().ToString());
+		// 현재 나의 월드 좌표를 넘겨줌 (청크가 알아서 로컬 좌표로 변환할 것임)
+		ParentChunk->RemoveBlockAtWorldLocation(GetActorLocation());
+	}
+	else
+	{
+		// 청크 정보가 없다면 그냥 혼자 죽음 (레거시)
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: Destroyed without ParentChunk notification."));
+	}
+
 	Destroy();
+}
+
+void ABlockBase::SetParentChunk(AChunkBase* InChunk)
+{
+	ParentChunk = InChunk;
 }
