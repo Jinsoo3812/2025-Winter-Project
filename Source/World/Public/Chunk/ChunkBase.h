@@ -126,4 +126,10 @@ private:
 	// HISM 인스턴스별 폭탄 부착 개수를 저장하는 맵
 	// Key: 컴포넌트 포인터, Value: <인스턴스 인덱스, 개수> 맵
 	TMap<UPrimitiveComponent*, TMap<int32, int32>> HISMBombCountMap;
+
+	// [신규] 더블 버퍼링용 2중 배열 (0번 버퍼, 1번 버퍼)
+	TArray<TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*>> HISM_Buffers;
+
+	// 현재 화면에 표시 중인 버퍼 인덱스 (0 or 1)
+	int32 CurrentBufferIndex = 0;
 };

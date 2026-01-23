@@ -22,6 +22,10 @@ AChunkBase::AChunkBase()
 	// 데이터 배열 초기화 (공기로 채움)
 	int32 TotalBlocks = ChunkSizeX * ChunkSizeY * ChunkSizeZ;
 	BlockDataArray.Init(FBlockData{ EBlockType::None }, TotalBlocks);
+
+	// [신규] 버퍼 2개 공간 확보
+	HISM_Buffers.AddDefaulted(2);
+	CurrentBufferIndex = 0;
 }
 
 void AChunkBase::BeginPlay()
@@ -72,36 +76,53 @@ void AChunkBase::RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh)
 		return;
 	}
 
-	// 이미 해당 타입의 HISM이 있다면 메시 교체, 없다면 생성
-	if (BlockHISMComponents.Contains(Type))
+	// [수정] 0번 버퍼와 1번 버퍼 모두에 컴포넌트 생성
+	for (int32 BufferIdx = 0; BufferIdx < 2; BufferIdx++)
 	{
-		BlockHISMComponents[Type]->SetStaticMesh(Mesh);
-	}
-	else
-	{
-		// 컴포넌트 동적 생성 이름 지정 (디버깅 용이)
-		FString CompName = FString::Printf(TEXT("HISM_%d"), (int32)Type);
-		UHierarchicalInstancedStaticMeshComponent* NewHISM = NewObject<UHierarchicalInstancedStaticMeshComponent>(this, FName(*CompName));
+		TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*>& TargetMap = HISM_Buffers[BufferIdx];
 
-		if (NewHISM)
+		// 이미 있다면 메시만 교체
+		if (TargetMap.Contains(Type))
 		{
-			// RootSceneComponent에 부착
-			// ChunkBase 액터가 이동/파괴 될 때 함께 동작하도록 설정
-			NewHISM->RegisterComponent();
-			NewHISM->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
-			NewHISM->SetStaticMesh(Mesh);
+			TargetMap[Type]->SetStaticMesh(Mesh);
+		}
+		else
+		{
+			// 컴포넌트 이름 구분 (HISM_Dirt_0, HISM_Dirt_1 등)
+			FString CompName = FString::Printf(TEXT("HISM_%d_%d"), (int32)Type, BufferIdx);
+			UHierarchicalInstancedStaticMeshComponent* NewHISM = NewObject<UHierarchicalInstancedStaticMeshComponent>(this, FName(*CompName));
 
-			// 충돌 설정 (블록 용도에 맞게 조정 필요)
-			NewHISM->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-			NewHISM->SetCollisionProfileName(TEXT("Block"));
+			if (NewHISM)
+			{
+				NewHISM->RegisterComponent();
+				NewHISM->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
+				NewHISM->SetStaticMesh(Mesh);
+				NewHISM->SetCollisionProfileName(TEXT("Block"));
+				NewHISM->bCastDynamicShadow = true;
 
-			// 동적 그림자 연산 여부 (끄면 성능 향상 가능)
-			NewHISM->bCastDynamicShadow = true;
+				// [중요] CPD 사용 개수 설정 (하이라이트 기능용)
+				// 0이면 SetCustomDataValue가 동작하지 않음
+				NewHISM->NumCustomDataFloats = 8;
 
-			// 카메라로부터 거리가 N 이상 떨어진 개별 HISM 인스턴스는 GPU 렌더링 파이프라인에서 제외
-			NewHISM->InstanceStartCullDistance = 10000.0f; // 필요시 조정
+				// [중요] 런타임 변경을 위해 Stationary 이상 권장
+				NewHISM->SetMobility(EComponentMobility::Stationary);
 
-			BlockHISMComponents.Add(Type, NewHISM);
+				// 초기 상태 설정
+				if (BufferIdx == CurrentBufferIndex)
+				{
+					// 현재 버퍼: 보임 + 충돌 켬
+					NewHISM->SetHiddenInGame(false);
+					NewHISM->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+				}
+				else
+				{
+					// 백 버퍼: 숨김 + 충돌 끔
+					NewHISM->SetHiddenInGame(true);
+					NewHISM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				}
+
+				TargetMap.Add(Type, NewHISM);
+			}
 		}
 	}
 }
@@ -239,6 +260,16 @@ void AChunkBase::UpdateChunkVisuals()
 								bIsVisible = true;
 								break;
 							}
+
+							if (Offset.Z == 1)
+							{
+								const bool* bIsNeighborActor = IsActorMap.Find(NeighborBlock.Type);
+								if (bIsNeighborActor && *bIsNeighborActor)
+								{
+									bIsVisible = true;
+									break;
+								}
+							}
 						}
 
 
@@ -299,28 +330,75 @@ void AChunkBase::UpdateChunkVisuals()
 						return;
 					}
 
-					// 기존 인스턴스 삭제
-					for (auto& Elem : WeakThis->BlockHISMComponents)
+					// 1. 버퍼 인덱스 결정
+					int32 OldBufferIndex = WeakThis->CurrentBufferIndex;
+					int32 NewBufferIndex = (OldBufferIndex + 1) % 2; // 0 <-> 1 교체
+
+					auto& FrontMap = WeakThis->HISM_Buffers[OldBufferIndex]; // 현재 보이는 것 (헌것)
+					auto& BackMap = WeakThis->HISM_Buffers[NewBufferIndex]; // 뒤에서 준비할 것 (새것)
+
+					// 2. BackBuffer 초기화 (화면에 안 보이므로 깜빡임 없음)
+					for (auto& Elem : BackMap)
 					{
-						if (Elem.Value)
-						{
-							Elem.Value->ClearInstances();
-						}
+						if (Elem.Value) Elem.Value->ClearInstances();
 					}
 
-					// LocalBatchData에 쌓인 인스턴스 데이터를 한 번에 HISM에 추가
-					// 블록 타입의 개수 만큼만 AddInstances 호출하므로 렌더 스레드 부담 감소
+					// 3. BackBuffer 채우기
 					for (const auto& BatchPair : LocalBatchData)
 					{
 						EBlockType Type = BatchPair.Key;
 						const TArray<FTransform>& Transforms = BatchPair.Value;
 
-						if (WeakThis->BlockHISMComponents.Contains(Type))
+						// BackMap에 해당 타입의 HISM이 없으면 안전하게 건너뜀 (혹은 생성 고려)
+						if (UHierarchicalInstancedStaticMeshComponent* Comp = BackMap.FindRef(Type))
 						{
-							// 여기서 한 번에 GPU로 전송!
-							WeakThis->BlockHISMComponents[Type]->AddInstances(Transforms, false);
+							// [중요] MarkRenderStateDirty = true
+							Comp->AddInstances(Transforms, false, true);
 						}
 					}
+
+					// 4. 스왑 (Swap): 새것은 즉시 켜고, 헌것은 나중에 끈다.
+
+					// 4-A. 새 버퍼(Back) 즉시 활성화
+					for (auto& Elem : BackMap)
+					{
+						if (Elem.Value)
+						{
+							Elem.Value->SetHiddenInGame(false);
+							Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+							// 렌더링 강제 업데이트 요청
+							Elem.Value->MarkRenderStateDirty();
+						}
+					}
+
+					// 4-B. 헌 버퍼(Front) 숨기기 -> [다음 프레임으로 지연]
+					// 이렇게 하면 아주 짧은 순간(1프레임) 두 지형이 겹쳐 보이지만,
+					// 빈 공간이 보이는 것보다는 훨씬 낫고, 같은 위치라 티가 안 남.
+					if (UWorld* World = WeakThis->GetWorld())
+					{
+						// 람다 캡처로 헌 맵(FrontMap) 정보를 넘기기 위해 인덱스 사용
+						World->GetTimerManager().SetTimerForNextTick([WeakThis, OldBufferIndex]()
+							{
+								if (!WeakThis.IsValid()) return;
+
+								// 헌 버퍼의 모든 컴포넌트 숨김
+								if (WeakThis->HISM_Buffers.IsValidIndex(OldBufferIndex))
+								{
+									auto& OldMap = WeakThis->HISM_Buffers[OldBufferIndex];
+									for (auto& Elem : OldMap)
+									{
+										if (Elem.Value)
+										{
+											Elem.Value->SetHiddenInGame(true);
+											Elem.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+										}
+									}
+								}
+							});
+					}
+
+					// 5. 인덱스 업데이트
+					WeakThis->CurrentBufferIndex = NewBufferIndex;
 
 					// 통계 출력
 					if (TotalSolidBlocks > 0)
@@ -331,42 +409,42 @@ void AChunkBase::UpdateChunkVisuals()
 
 					if (LocalSpawnRequests.Num() > 0)
 					{
-						// 로컬 좌표 -> 월드 좌표 변환을 위해 현재 청크 위치 가져오기
+						// 1. 여기서 변수들을 한 번만 선언합니다.
 						FVector ChunkOrigin = WeakThis->GetActorLocation();
-
 						TArray<FBlockSpawnRequest> WorldRequests;
-						// 메모리 공간은 한 번에 예약합시다.
 						WorldRequests.Reserve(LocalSpawnRequests.Num());
 
+						// 2. 요청 변환 (Local -> World)
 						for (const auto& Req : LocalSpawnRequests)
 						{
-							// 스폰 요청이 처리 중임을 표시
-							// 실제 스폰이 실패할 수도 있지만, 여기서 처리하지는 않음
+							FBlockSpawnRequest NewReq;
+							NewReq.BlockTag = Req.BlockTag;
+							NewReq.WorldLocation = ChunkOrigin + Req.WorldLocation;
+							NewReq.OwnerChunk = WeakThis;
+							WorldRequests.Add(NewReq);
+
+							// 청크 데이터 플래그 설정 (여기서 바로 갱신)
 							int32 X = FMath::RoundToInt(Req.WorldLocation.X / GridSize);
 							int32 Y = FMath::RoundToInt(Req.WorldLocation.Y / GridSize);
 							int32 Z = FMath::RoundToInt(Req.WorldLocation.Z / GridSize);
+
 							int32 Index = WeakThis->GetBlockIndex(X, Y, Z);
 							if (WeakThis->BlockDataArray.IsValidIndex(Index))
 							{
 								WeakThis->BlockDataArray[Index].bIsActorSpawned = true;
 							}
-
-							// 요청 저장
-							FBlockSpawnRequest NewReq;
-							NewReq.BlockTag = Req.BlockTag;
-							NewReq.WorldLocation = ChunkOrigin + Req.WorldLocation; // 월드 좌표로 변환
-							NewReq.OwnerChunk = WeakThis;
-							WorldRequests.Add(NewReq);
 						}
 
-						
+						// 3. 서브시스템에 전달
 						if (UWorld* World = WeakThis->GetWorld())
 						{
 							if (UBlockManagerSubsystem* Subsystem = World->GetSubsystem<UBlockManagerSubsystem>())
 							{
+								// 새로 변수를 만들지 않고, 위에서 만든 WorldRequests를 그대로 전달합니다.
 								Subsystem->EnqueueBlockSpawns(WorldRequests);
 							}
 						}
+
 						UE_LOG(LogTemp, Log, TEXT("ChunkBase: Enqueued %d actor spawns."), WorldRequests.Num());
 					}
 				});
