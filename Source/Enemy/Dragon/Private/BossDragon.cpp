@@ -107,6 +107,9 @@ void ABossDragon::OnHealthChanged(const FOnAttributeChangeData& Data)
 	{
 		bPattern66Triggered = true; // 중복 실행 방지 플래그 설정
 
+		// 1. 전투 상태 초기화 (모든 행동 취소)
+		ForceResetCombatState();
+
 		// [수정] 직접 이벤트를 보내지 않고 AI(비헤이비어 트리)에게 위임합니다.
 		UE_LOG(LogTemp, Warning, TEXT("[BossDragon] HP 66%% Reached! AI will handle the rest."));
 	}
@@ -115,6 +118,9 @@ void ABossDragon::OnHealthChanged(const FOnAttributeChangeData& Data)
 	if (HealthRatio <= 0.33f && !bPattern33Triggered)
 	{
 		bPattern33Triggered = true;
+
+		// 1. 전투 상태 초기화 (모든 행동 취소)
+		ForceResetCombatState();
 
 		// [수정] 직접 이벤트를 보내지 않고 AI(비헤이비어 트리)에게 위임합니다.
 		UE_LOG(LogTemp, Warning, TEXT("[BossDragon] HP 33%% Reached! AI will handle the rest."));

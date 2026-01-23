@@ -216,12 +216,27 @@ void AWinter2025Player::Move(const FInputActionValue& Value)
 	FVector2D MovementVector = Value.Get<FVector2D>();
 	if (Controller != nullptr)
 	{
-		const FRotator Rotation = Controller->GetControlRotation();
+		FRotator Rotation = Controller->GetControlRotation();
+		
+		// 플레이어인 경우, '카메라가 실제로 보는 방향'을 가져옵니다.
+		// 항상 "화면 기준"으로 W가 위쪽, D가 오른쪽이 됩니다.
+		if (APlayerController* PC = Cast<APlayerController>(Controller))
+		{
+			if (PC->PlayerCameraManager)
+			{
+				Rotation = PC->PlayerCameraManager->GetCameraRotation();
+			}
+		}
+
+		// Yaw(수평 회전)만 사용하고 Pitch(상하), Roll(기울기)은 무시
+		// (피치 -50도인 상태에서도 땅 위에서 평행하게 움직이게 해줍니다)
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
+		// 회전 행렬을 통해 앞/오른쪽 방향 벡터 추출
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
+		
+		// 이동 적용
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
 	}

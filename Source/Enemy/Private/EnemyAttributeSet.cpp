@@ -49,6 +49,19 @@ void UEnemyAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHea
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UEnemyAttributeSet, MaxHealth, OldMaxHealth);
 }
 
+
+void UEnemyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+    Super::PreAttributeChange(Attribute, NewValue);
+
+    // 체력 변경 전 미리 제한 (Clamping) 
+    if (Attribute == GetHealthAttribute())
+    {
+        NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+    }
+}
+
+
 /**
  * [핵심 로직: 스킬 적용 후 처리]
  * 팀원이 만든 스킬(GameplayEffect)이 이 적에게 적용된 "직후"에 호출됩니다.
@@ -58,57 +71,62 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	FGameplayAttribute ChangedAttribute = Data.EvaluatedData.Attribute;
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		// Data.Target 자체가 ASC의 레퍼런스입니다.
+		UAbilitySystemComponent* TargetASC = &Data.Target;
 
-    // 체력이 변했을 때 로직 수행
-    if (ChangedAttribute == GetHealthAttribute())
-    {
-        // 0. 타겟(맞은 애) 가져오기
-        AActor* TargetActor = nullptr;
-        if (Data.Target.AbilityActorInfo->AvatarActor.IsValid())
-        {
-            TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
-        }
+		// ASC를 통해 AvatarActor(캐릭터)를 직접 가져옵니다. 
+		AActor* TargetActor = TargetASC->GetAvatarActor();
 
-        // -----------------------------------------------------------------
-        // [허수아비 로직] 액터 태그에 "Scarecrow"가 붙어 있는지 확인
-        // -----------------------------------------------------------------
-        if (TargetActor && TargetActor->ActorHasTag(FName("Scarecrow")))
+        if (IsValid(TargetActor))
         {
-            // 1. 입은 데미지 계산 (체력이 깎인 양 = Magnitude는 음수이므로 -를 붙임)
+
+            ///////////////////////////////////////////////////////////////////
+            // 대미지 및 체력 디버깅 출력
+            // Magnitude는 변화량이며, 대미지는 체력을 깎으므로 보통 음수(-)입니다.
             float DamageReceived = -Data.EvaluatedData.Magnitude;
 
-            // 2. 데미지가 있을 때만 로그 출력 (치유나 0 데미지 제외)
             if (DamageReceived > 0.0f)
             {
-                // 화면에 붉은색 글씨로 띄우기 (디버깅용)
-                GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red,
-                    FString::Printf(TEXT("[허수아비] 아야! 데미지: %.1f"), DamageReceived));
+                FString DebugMsg = FString::Printf(TEXT("EnemyAttributeSet.cpp : [%s] Damage: %.1f | Now HP : %.1f"),
+                    *TargetActor->GetName(), DamageReceived, GetHealth());
 
-                // 출력 로그창에 남기기
-                UE_LOG(LogTemp, Warning, TEXT("[Scarecrow] Took Damage: %f | Current HP: %f"),
-                    DamageReceived, GetHealth());
+                // 화면에 2초간 붉은색으로 출력
+                if (GEngine)
+                {
+                    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, DebugMsg);
+                }
+                // 로그창에도 기록
+                UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
             }
+            //////////////////////////////////////////////////////////////////
 
-            // 3. [무한 체력 핵심] 체력을 즉시 최대치로 복구
-            SetHealth(GetMaxHealth());
-
-            // 4. 여기서 함수 종료 (아래의 사망 처리 로직으로 넘어가지 않음 -> 절대 안 죽음)
-            return;
-        }
-        // -----------------------------------------------------------------
-
-        // [일반 몬스터 로직]
-        // 체력을 0~Max 사이로 자름
-        SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
-
-        // 체력이 0 이하라면 사망 처리
-        if (GetHealth() <= 0.0f)
-        {
-            if (AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor))
+            // [개선 1] 허수아비뿐만 아니라 모든 '무적/무한체력' 상태를 포괄
+            // 태그를 State.Invincible 등으로 더 범용적으로 사용하면 보스의 페이즈 전환 무적 등에도 쓸 수 있습니다.
+            if (TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Invincible"))) ||
+                TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Scarecrow"))))
             {
-                Enemy->Die(); // 사망 함수 호출
+                SetHealth(GetMaxHealth());
+                return;
+            }
+
+            // [개선 2] 대미지 처리 전 현재 체력 제한 (Clamping)
+            // PreAttributeChange에서도 하지만, 여기서 한 번 더 보정하여 데이터 무결성 확보
+            SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+
+            // 사망 처리
+            if (GetHealth() <= 0.0f)
+            {
+                if (AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor))
+                {
+                    // [개선 3] 이미 사망 중인지(bIsDying)와 태그를 이중 확인하여 크래시 방지
+                    if (!TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead"))))
+                    {
+                        Enemy->Die();
+                    }
+                }
             }
         }
-    }
+	}
 }

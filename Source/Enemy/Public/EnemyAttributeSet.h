@@ -68,6 +68,10 @@ public:
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UEnemyAttributeSet, MaxHealth);
 
+
+	/** 값 변경 전 수치 제한(Clamp) */
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+
 protected:
 	// -------------------------------------------------------------------------
 	// OnRep 함수들 (클라이언트 동기화 처리)

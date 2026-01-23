@@ -133,48 +133,31 @@ AActor* ADragonAI::UpdateTargetToNearestPlayer()
 
 	AActor* NearestPlayer = nullptr;
 	float MinDistance = FLT_MAX; // 비교를 위해 최대값으로 초기화
+	FVector MyLoc = MyPawn->GetActorLocation();
 
 	// [최적화 핵심] 
 	// GetAllActorsOfClass 대신 PlayerControllerIterator를 사용합니다.
 	// 월드에 존재하는 모든 액터가 아니라, '접속 중인 플레이어'만 순회하므로 매우 빠릅니다.
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		APlayerController* PC = It->Get();
-		if (PC && PC->GetPawn())
+		if (APlayerController* PC = It->Get())
 		{
-			AActor* PlayerActor = PC->GetPawn();
-
-			// 1. 나 자신(보스)은 제외 (혹시나 플레이어 폰을 상속받았을 경우 대비)
-			if (PlayerActor == MyPawn) continue;
-
-			// 2. (옵션) 죽은 플레이어 제외 로직
-			// 예: PlayerActor->ActorHasTag("Dead") 혹은 GAS Tag 확인
-			// if (IsPlayerDead(PlayerActor)) continue; 
-
-			// 3. 거리 계산 (Squared Distance를 쓰면 sqrt 연산을 아낄 수 있지만, 여기선 직관적으로 Distance 사용)
-			float Dist = MyPawn->GetDistanceTo(PlayerActor);
-			if (Dist < MinDistance)
+			if (APawn* PlayerPawn = PC->GetPawn())
 			{
-				MinDistance = Dist;
-				NearestPlayer = PlayerActor;
+				// 거리 계산 공식: d^2 = (x_2-x_1)^2 + (y_2-y_1)^2 + (z_2-z_1)^2
+				float DistSq = FVector::DistSquared(MyLoc, PlayerPawn->GetActorLocation());
+				if (DistSq < MinDistance)
+				{
+					MinDistance = DistSq;
+					NearestPlayer = PlayerPawn;
+				}
 			}
 		}
 	}
 
-	// 탐색 결과 처리
-	if (NearestPlayer)
+	if (NearestPlayer && Blackboard)
 	{
-		// 가장 가까운 플레이어를 블랙보드 'TargetActor' 키에 저장
 		Blackboard->SetValueAsObject(Key_TargetActor, NearestPlayer);
-		Blackboard->SetValueAsFloat(Key_DistanceToTarget, MinDistance);
-
-		// 필요 시 타겟 쪽으로 시선 고정 (SetFocus)
-		// SetFocus(NearestPlayer); 
-
-		return NearestPlayer;
 	}
-
-	// 플레이어가 한 명도 없거나 다 죽었을 경우
-	// UE_LOG(LogTemp, Warning, TEXT("[DragonAI] No Valid Player Found!"));
-	return nullptr;
+	return NearestPlayer;
 }

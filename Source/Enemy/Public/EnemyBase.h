@@ -44,7 +44,9 @@ public:
 	// 혹시 GAS 외의 방식(ApplyDamage 등)으로 맞았을 때를 대비합니다.
 	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
-
+	// [공통] 전투 상태 강제 초기화 (이동 정지, 스킬 캔슬, 어그로 초기화 등)
+	UFUNCTION(BlueprintCallable, Category = "Combat")
+	virtual void ForceResetCombatState();
 
 protected:
 	virtual void BeginPlay() override;
@@ -62,6 +64,15 @@ protected:
 	 * 캐릭터 생성 시 'DefaultAttributeEffect'를 적용해 체력/마나 등의 초기값을 설정합니다.
 	 */
 	virtual void InitializeAttributes();
+
+	/** 초기화 플래그: 스킬 중복 부여 방지 */
+	bool bAbilitiesInitialized = false;
+
+	/** 사망 시 시각 효과(애니메이션, 파티클 등)를 블루프린트에서 구현 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat")
+	void BP_OnDie();
+
+	bool bIsDying = false; // 사망 중복 처리 방지 플래그
 
 protected:
 	// ------------------------------------------------------------------------------------------
