@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ChunkBase.h"
+#include "DA_BlockConfig.h"
 #include "BlockMapManager.generated.h"
 
 class UBlockConfig;
@@ -29,6 +30,9 @@ public:
 	// 블록 설정 데이터 에셋
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
 	UBlockConfig* BlockConfig;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
+	UDA_BlockConfig* BlockConfigDataAsset;
 
 	// 생성할 월드의 청크 개수 (예: 4x4)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")

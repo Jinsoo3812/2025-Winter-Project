@@ -73,6 +73,7 @@ void ABlockMapManager::SpawnChunks()
 			if (NewChunk)
 			{
 				NewChunk->SetBlockConfig(BlockConfig);
+				NewChunk->SetDABlockConfig(BlockConfigDataAsset);
 
 				// Config에 있는 메시 정보를 청크에 등록
 				for (const auto& Pair : BlockConfig->BlockDefinitions)

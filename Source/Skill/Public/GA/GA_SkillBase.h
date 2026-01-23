@@ -6,6 +6,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "NativeGameplayTags.h"
 #include "SkillGameplayTags.h"
+#include "BlockSystemInterface.h"
 #include "GA_SkillBase.generated.h"
 
 class USkillComponent;
@@ -49,7 +50,10 @@ protected:
 	// 프리뷰 및 범위 표시 관련
 	// -----------------------------------------------------------------------------
 
-	// 블록 스폰을 주문할 WorldSubsystem
+	// BlockManagerSubsystem 인터페이스 캐싱
+	IBlockSystemInterface* BlockSystem;
+
+	// 블록 스폰을 주문할 WorldSubsystem (레거시)
 	IBlockSpawnInterface* BlockSpawner;
 
 	/* 프리뷰로 표시할 블록 클래스 */
@@ -82,6 +86,16 @@ protected:
 	* @param EventTag 하이라이트 변경에 사용할 GameplayTag
 	*/
 	void HighlightBlocks(TArray<TWeakObjectPtr<AActor>>& Actors, FGameplayTag EventTag);
+
+	/*
+	* HISM과 Actor를 통합하여 처리할 수 있는 하이라이트 함수 (앞으로 이것만 사용해야 함)
+	*/
+	void HighlightBlocks(TArray<FBlockReference>& BlockRefs, FGameplayTag EventTag);
+
+	/*
+	* HISM과 Actor를 통합하여 처리할 수 있는 하이라이트 제거 함수 (앞으로 이것만 사용해야 함)
+	*/
+	void ClearHighlights(TArray<FBlockReference>& BlockRefs);
 
 	/*
 	* 블록들에 적용된 하이라이트를 제거하는 함수

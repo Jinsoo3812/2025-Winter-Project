@@ -7,6 +7,7 @@
 #include "ChunkBase.generated.h"
 
 class UBlockConfig;
+class UDA_BlockConfig;
 
 /*
 * 스레드 처리를 위한 데이터 스냅샷 구조체
@@ -88,6 +89,7 @@ public:
 
 	// [추가] BlockMapManager가 청크 생성 직후 Config를 주입해주어야 함
 	void SetBlockConfig(const UBlockConfig* InConfig) { BlockConfig = InConfig; }
+	void SetDABlockConfig(const UDA_BlockConfig* InConfig) { BlockConfigDataAsset = InConfig; }
 
 	// 데이터를 기반으로 HISM 인스턴스를 다시 그리는 함수
 	// 데이터 변경이 있을 때마다 호출하는 것이 아니라, 변경 사항을 모아서 한 번에 호출 권장
@@ -102,6 +104,9 @@ public:
 	// 외부에서 블록을 소환한 후, 데이터를 설정하게 해주는 헬퍼 함수
 	void SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor);
 
+	// HISM 컴포넌트 포인터를 직접 받아 하이라이트 처리
+	void HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemIndex, FGameplayTag Tag);
+
 private:
 	// 루트 컴포넌트
 	UPROPERTY(VisibleAnywhere)
@@ -114,4 +119,11 @@ private:
 	// 블록 속성 조회용 (EBlockType을 통해 GameplayTag를 얻을 수 있음)
 	UPROPERTY(Transient)
 	const UBlockConfig* BlockConfig = nullptr;
+
+	UPROPERTY(Transient)
+	const UDA_BlockConfig* BlockConfigDataAsset = nullptr;
+
+	// HISM 인스턴스별 폭탄 부착 개수를 저장하는 맵
+	// Key: 컴포넌트 포인터, Value: <인스턴스 인덱스, 개수> 맵
+	TMap<UPrimitiveComponent*, TMap<int32, int32>> HISMBombCountMap;
 };

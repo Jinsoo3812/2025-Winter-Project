@@ -14,6 +14,9 @@
 #include "BlockInfoInterface.h"
 #include "BlockSpawnInterface.h"
 #include "CollisionChannels.h"
+#include "BlockSystemInterface.h"
+#include "BlockCommon.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
 UGA_Construction::UGA_Construction() {}
 
@@ -32,22 +35,21 @@ void UGA_Construction::ActivateAbility(
 		// 자식이 재정의한 UpdatePreview 또한 호출될 수 있음.
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Construction::UpdatePreview, 0.016f, true);
 
-		if (!BlockSpawner) {
-			// BlockSpawner 캐싱
-			BlockSpawner = IBlockSpawnInterface::GetBlockManagerSubsystem(World);
+		if (!BlockSystem) {
+			BlockSystem = IBlockSystemInterface::Get(World);
 		}
 	}
 
 	// WaitInputPress 어빌리티 태스크 생성
 	WaitInputTask = UAbilityTask_WaitInputPress::WaitInputPress(this);
-    if (WaitInputTask)
-    {
-        WaitInputTask->OnPress.AddDynamic(this, &UGA_Construction::OnCancelPressed);
-        WaitInputTask->ReadyForActivation();
-    }
-    else {
-        UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create WaitInputTask"));
-    }
+	if (WaitInputTask)
+	{
+		WaitInputTask->OnPress.AddDynamic(this, &UGA_Construction::OnCancelPressed);
+		WaitInputTask->ReadyForActivation();
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to create WaitInputTask"));
+	}
 
 	UAbilityTask_WaitGameplayEvent* WaitEventTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
 		this,
@@ -132,102 +134,91 @@ void UGA_Construction::UpdatePreview()
 	// bBlockingHit은 Block 응답을 가진 충돌이 발생했는지 여부
 	if (HitResult.bBlockingHit)
 	{
-		AActor* HitActor = HitResult.GetActor();
-		IBlockInfoInterface* HitBlockInfo = Cast<IBlockInfoInterface>(HitActor);
-		
-	// 사거리 내(파란 영역)의 블록인지 확인
-	bool bIsInPreviewBlocks = false;
-	for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
-	{
-		if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
+		// [핵심 변경] HitResult를 분석하여 FBlockReference 생성
+		FBlockReference HitBlockRef;
+
+		// Case A: HISM (Terrain)
+		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(HitResult.GetComponent()))
 		{
-			bIsInPreviewBlocks = true;
-			break;
+			HitBlockRef.TargetObject = HitResult.GetActor();
+			HitBlockRef.TargetComponent = HISM;
+			HitBlockRef.ItemIndex = HitResult.Item;
 		}
-	}
-	
-	if (HitBlockInfo && bIsInPreviewBlocks)
+		// Case B: Actor (설치된 블록)
+		else if (AActor* HitActor = HitResult.GetActor())
 		{
-			// 프리뷰 블록이 없으면 생성 (BP에서 미리 디자인된 프리뷰 블록 사용)
+			HitBlockRef.TargetObject = HitActor;
+			HitBlockRef.TargetComponent = HitResult.GetComponent();
+			HitBlockRef.ItemIndex = -1;
+		}
+
+		// 3. 유효한 블록인지 확인 (범위 내에 있는지)
+		float DistSq = FVector::DistSquared(OwnerPawn->GetActorLocation(), HitResult.ImpactPoint);
+		float RangeSq = RangeXY * RangeXY;
+
+		// 범위 안이고, 유효한 블록(Terrain or Actor)일 때
+		if (HitBlockRef.IsValid() && DistSq <= RangeSq)
+		{
+			// 4. 시스템에게 "이 블록의 정렬된 위치(Center)가 어디냐"고 물어봄
+			FVector BlockLocation = BlockSystem->GetBlockLocation(HitBlockRef);
+			float GridSize = BlockSystem->GetGridSize(); // 100.0f
+
+			// 프리뷰 액터 스폰 (없으면)
 			if (!PreviewBlock.IsValid() && PreviewBlockClass)
 			{
 				FActorSpawnParameters SpawnParams;
 				SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-				
-			AActor* SpawnedPreview = GetWorld()->SpawnActor<AActor>(
-					PreviewBlockClass, 
-					FVector::ZeroVector, 
-					FRotator::ZeroRotator, 
-					SpawnParams
-				);
-				
-			if (SpawnedPreview)
-			{
-				// WeakObjectPtr에 할당
-				PreviewBlock = SpawnedPreview;
-				// 충돌 비활성화
-				SpawnedPreview->SetActorEnableCollision(false);
-			}
-				else
+
+				AActor* SpawnedPreview = GetWorld()->SpawnActor<AActor>(PreviewBlockClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+				if (SpawnedPreview)
 				{
-					UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to spawn PreviewBlock"));
+					PreviewBlock = SpawnedPreview;
+					SpawnedPreview->SetActorEnableCollision(false);
 				}
 			}
 
-		// 프리뷰 블록을 타겟 블록 위에 배치
-		if (PreviewBlock.IsValid())
-		{
-			AActor* PreviewActor = PreviewBlock.Get();
-			FVector BlockLocation = HitBlockInfo->GetBlockLocation();
-				FRotator BlockRotation = HitBlockInfo->GetBlockRotation();
-				
-				// 블록 크기만큼 위로 올림 (블록이 100x100x100이라 가정)
-				FVector PreviewLocation = BlockLocation + FVector(0, 0, 100.0f);
-				
-			FCollisionQueryParams CheckParams;
-			CheckParams.AddIgnoredActor(PreviewActor);
-			CheckParams.AddIgnoredActor(OwnerPawn); // 플레이어 충돌 제외
-
-				// 블록 크기(50)보다 약간 작게(45) 설정하여 인접 블록과의 미세한 간섭 방지
-				bool bIsOccupied = GetWorld()->OverlapBlockingTestByChannel(
-					PreviewLocation,
-					FQuat::Identity,
-					ECC_WorldStatic,
-					FCollisionShape::MakeBox(FVector(45.0f)),
-					CheckParams
-				);
-
-			if (!bIsOccupied)
+			// 프리뷰 위치 갱신
+			if (PreviewBlock.IsValid())
 			{
-				// 비어있는 공간이면 프리뷰 표시
-				PreviewActor->SetActorLocation(PreviewLocation);
-				PreviewActor->SetActorRotation(BlockRotation);
-				PreviewActor->SetActorHiddenInGame(false);
-			}
-			else
-			{
-				// 이미 자리에 블록이 있으면 숨김 처리
-				PreviewActor->SetActorHiddenInGame(true);
-			}
+				AActor* PreviewActor = PreviewBlock.Get();
+
+				// 클릭한 블록의 위쪽으로 위치 설정 (Z + GridSize)
+				FVector PreviewLocation = BlockLocation + FVector(0, 0, GridSize);
+
+				// 겹침 검사 (건설 가능 여부)
+				// 여기서 IsLocationOccupied는 시스템 인터페이스를 통해 호출
+				bool bIsOccupied = BlockSystem->IsLocationOccupied(PreviewLocation, GridSize);
+
+				if (!bIsOccupied)
+				{
+					PreviewActor->SetActorLocation(PreviewLocation);
+					PreviewActor->SetActorRotation(FRotator::ZeroRotator);
+					PreviewActor->SetActorHiddenInGame(false);
+				}
+				else
+				{
+					// 이미 뭔가 있어서 건설 불가
+					PreviewActor->SetActorHiddenInGame(true);
+				}
 			}
 		}
+		else
+		{
+			// 범위 밖
+			if (PreviewBlock.IsValid())
+			{
+				PreviewBlock.Get()->SetActorHiddenInGame(true);
+			}
+		}
+	}
 	else
 	{
-		// 마우스 포인터가 가리키는 블록이 범위 밖이면 프리뷰 숨김
+		// 허공
 		if (PreviewBlock.IsValid())
 		{
 			PreviewBlock.Get()->SetActorHiddenInGame(true);
 		}
 	}
-}
-else
-{
-	// 마우스 포인터가 가리키는 곳에서 Block 응답을 가진 충돌이 없으면 프리뷰 숨김
-	if (PreviewBlock.IsValid())
-	{
-		PreviewBlock.Get()->SetActorHiddenInGame(true);
-	}
-}
 }
 
 void UGA_Construction::SpawnBlock()
@@ -247,18 +238,16 @@ void UGA_Construction::SpawnBlock()
 	FVector SpawnLocation = PreviewBlock.Get()->GetActorLocation();
 	FRotator SpawnRotation = PreviewBlock.Get()->GetActorRotation();
 
-	AActor* NewBlock = BlockSpawner->SpawnBlockByTag(TAG_Block_Type_Destructible, SpawnLocation, SpawnRotation, true);
+	// [수정] BlockSystem을 통해 생성 요청
+	if (BlockSystem)
+	{
+		AActor* NewBlock = BlockSystem->SpawnBlockByTag(TAG_Block_Type_Destructible, SpawnLocation, SpawnRotation, true);
 
-	if (NewBlock)
-	{
-		UE_LOG(LogTemp, Log, TEXT("GA_Construction: Spawned new block %s at location %s"), *NewBlock->GetName(), *SpawnLocation.ToString());
-		
-		// 스킬 종료
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("GA_Construction: Failed to spawn block"));
+		if (NewBlock)
+		{
+			// 성공 시 스킬 종료
+			EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		}
 	}
 }
 

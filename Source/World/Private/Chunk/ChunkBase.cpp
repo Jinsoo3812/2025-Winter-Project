@@ -5,8 +5,10 @@
 #include "Components/SceneComponent.h"
 #include "Async/Async.h"
 #include "BlockConfig.h"
+#include "DA_BlockConfig.h"
 #include "BlockManagerSubsystem.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "BlockGameplayTags.h"
 
 AChunkBase::AChunkBase()
 {
@@ -479,5 +481,78 @@ void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, boo
 	{
 		BlockDataArray[Index].Type = NewType;
 		BlockDataArray[Index].bIsActorSpawned = bIsActor;
+	}
+}
+
+void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemIndex, FGameplayTag Tag)
+{
+	// 1. 컴포넌트 및 인덱스 유효성 검사
+	UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(TargetComp);
+	if (!HISM || HISM->GetOwner() != this) return;
+	if (ItemIndex < 0 || ItemIndex >= HISM->GetInstanceCount()) return;
+	if (!BlockConfigDataAsset) return;
+
+	// -------------------------------------------------------------------------
+	// Case 1: 폭탄 하이라이트 (중첩 카운팅 로직)
+	// -------------------------------------------------------------------------
+	if (Tag.MatchesTag(TAG_Block_Highlight_Bomb))
+	{
+		// 해당 컴포넌트의 카운트 맵을 가져오거나 생성
+		TMap<int32, int32>& InstanceCounts = HISMBombCountMap.FindOrAdd(HISM);
+
+		// [초기화] Bomb_None 태그가 오면 카운트 리셋 및 하이라이트 끄기
+		if (Tag.MatchesTag(TAG_Block_Highlight_Bomb_None))
+		{
+			InstanceCounts.Remove(ItemIndex); // 맵에서 데이터 삭제 (메모리 절약)
+
+			// CPD 0으로 초기화
+			HISM->SetCustomDataValue(ItemIndex, BlockConfigDataAsset->BombCPDIndex, 0.0f, true);
+
+			// 맵이 비었으면 컴포넌트 키 자체도 제거 (선택사항)
+			if (InstanceCounts.Num() == 0)
+			{
+				HISMBombCountMap.Remove(HISM);
+			}
+			return;
+		}
+
+		// [증가] 현재 개수 가져오기 (없으면 0)
+		int32 CurrentCount = InstanceCounts.FindRef(ItemIndex);
+
+		// 최대 개수 제한 (BlockBase 로직과 동일)
+		CurrentCount = FMath::Clamp(CurrentCount + 1, 0, /*임시*/3);
+
+		// 맵에 저장
+		InstanceCounts.Add(ItemIndex, CurrentCount);
+
+		// CPD 계산: 개수 * 강도
+		float NewValue = CurrentCount * BlockConfigDataAsset->BombIntensityPerCount; // Config 변수명 가정
+		HISM->SetCustomDataValue(ItemIndex, BlockConfigDataAsset->BombCPDIndex, NewValue, true);
+
+		return;
+	}
+
+	// -------------------------------------------------------------------------
+	// Case 2: 일반 하이라이트 (단순 On/Off)
+	// -------------------------------------------------------------------------
+	const FBlockCPDInfo* CPDInfo = BlockConfigDataAsset->BlockCPDIndexMap.Find(Tag);
+
+	// 태그를 찾았거나, None(해제) 태그인 경우 처리
+	if (CPDInfo || Tag == TAG_Block_Highlight_None)
+	{
+		float CPDValue = CPDInfo ? CPDInfo->CPDValue : 0.0f;
+		int32 CPDIndex = CPDInfo ? CPDInfo->CPDIndex : 0; // None일 땐 0번 인덱스(Color)를 0.0으로 끈다고 가정
+
+		// 태그가 None이면 값을 0으로 강제
+		if (Tag == TAG_Block_Highlight_None)
+		{
+			CPDValue = 0.0f;
+			// 보통 하이라이트용 CPD 인덱스를 알아야 하는데, 
+			// 여기서는 Preview나 Select 등 모든 하이라이트를 끈다고 가정하고 0번이나 특정 인덱스를 사용
+			// 정확히 하려면 '어떤 하이라이트를 끌 것인가'에 대한 정보가 더 필요하지만,
+			// 보통 단일 채널을 쓴다면 0번 인덱스를 0.0f로 미는 것으로 충분함.
+		}
+
+		HISM->SetCustomDataValue(ItemIndex, CPDIndex, CPDValue, true);
 	}
 }

@@ -417,3 +417,46 @@ void UGA_SkillBase::ClearHighlights(TArray<TWeakObjectPtr<AActor>>& Actors)
 	// 매 프레임 블록을 넣다 뺐다 하므로 Reset 사용
 	Actors.Reset();
 }
+
+void UGA_SkillBase::HighlightBlocks(TArray<FBlockReference>& BlockRefs, FGameplayTag EventTag)
+{
+	ClearHighlights(BlockRefs);
+
+	AActor* Avatar = GetAvatarActorFromActorInfo();
+	if (!Avatar) return;
+
+	if (IBlockSystemInterface* BlockSys = IBlockSystemInterface::Get(GetWorld()))
+	{
+		// 1. 범위 내 블록 수집 (HISM + Actor 자동 분류됨)
+		BlockSys->GetBlocksInRadius(Avatar->GetActorLocation(), RangeXY, BlockRefs);
+
+		// 2. 하이라이트 적용
+		for (const FBlockReference& Ref : BlockRefs)
+		{
+			BlockSys->HighlightBlock(Ref, EventTag);
+		}
+	}
+}
+
+void UGA_SkillBase::ClearHighlights(TArray<FBlockReference>& BlockRefs)
+{
+	// 성능 방어를 위한 체크
+	if (BlockRefs.IsEmpty())
+	{
+		return;
+	}
+
+	// 시스템 인터페이스 획득
+	if (IBlockSystemInterface* BlockSys = IBlockSystemInterface::Get(GetWorld()))
+	{
+		// 모든 참조된 블록에 대해 'None' 태그로 하이라이트 해제 요청
+		for (const FBlockReference& Ref : BlockRefs)
+		{
+			// 시스템이 알아서 HISM인지 Actor인지 판단하여 처리함
+			BlockSys->HighlightBlock(Ref, TAG_Block_Highlight_None);
+		}
+	}
+
+	// 배열 초기화 (메모리 유지, 개수 0)
+	BlockRefs.Reset();
+}

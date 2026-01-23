@@ -8,12 +8,14 @@
 #include "Chunkbase.h"
 #include "BlockMapManager.h"
 #include "BlockConfig.h"
+#include "Engine/OverlapResult.h"
+#include "GameplayEventInterface.h"
 
 void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
-	IBlockSpawnInterface::RegisterSpawner(GetWorld(), this);
+	IBlockSystemInterface::RegisterSystem(GetWorld(), this);
 
 	// 개발자 설정(Project Settings)에서 설정 객체 가져오기
 	// GetDefault<T>()는 CDO(Class Default Object)를 가져오므로 매우 빠름
@@ -59,7 +61,7 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 void UBlockManagerSubsystem::Deinitialize()
 {
 	// [중요] 시스템 종료 시 반드시 등록 해제 (Dangling Pointer 방지)
-	IBlockSpawnInterface::UnregisterSpawner(GetWorld());
+	IBlockSystemInterface::UnregisterSystem(GetWorld());
 
 	Super::Deinitialize();
 }
@@ -322,4 +324,149 @@ bool UBlockManagerSubsystem::IsLocationOccupied(
 
 	// 충돌한 블록들을 반환할 것이 아니므로 OverlapMulti 대신 OverlapAny 사용
 	return World->OverlapAnyTestByObjectType(CheckLocation, FQuat::Identity, ObjectQueryParams, CheckShape, QueryParams);
+}
+
+void UBlockManagerSubsystem::GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks)
+{
+	UWorld* World = GetWorld();
+	if (!World) {
+		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: World is null"));
+	}
+
+	OutBlocks.Reset();
+
+	// 1. OverlapMulti로 물리적 충돌체 검색
+	TArray<FOverlapResult> Overlaps;
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_Block); // Block 채널
+	FCollisionShape Shape = FCollisionShape::MakeSphere(Radius);
+	FCollisionQueryParams Params;
+
+	World->OverlapMultiByObjectType(Overlaps, Origin, FQuat::Identity, ObjectParams, Shape, Params);
+
+	float RadiusSq = Radius * Radius;
+	for (const FOverlapResult& Result : Overlaps)
+	{
+		// 거리 체크 (Box -> Sphere 보정)
+
+		FBlockReference Ref;
+
+		// Case A: HISM (청크 지형)
+		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Result.GetComponent()))
+		{
+			if (AChunkBase* Chunk = Cast<AChunkBase>(Result.GetActor()))
+			{
+				// HISM 컴포넌트를 이용해 즉시 위치 조회
+				FTransform InstanceTransform;
+				HISM->GetInstanceTransform(Result.ItemIndex, InstanceTransform, true);
+
+				if (FVector::DistSquared(Origin, InstanceTransform.GetLocation()) <= RadiusSq)
+				{
+					Ref.TargetObject = Chunk;
+					Ref.TargetComponent = HISM;
+					Ref.ItemIndex = Result.ItemIndex;
+					OutBlocks.AddUnique(Ref);
+				}
+			}
+		}
+		// Case B: Actor (파괴 가능 블록 등)
+		else if (AActor* Actor = Result.GetActor())
+		{
+			// [수정] GameplayEventInterface 구현 여부 확인 (상호작용 가능한 블록만)
+			if (Actor->Implements<UGameplayEventInterface>())
+			{
+				if (FVector::DistSquared(Origin, Actor->GetActorLocation()) <= RadiusSq)
+				{
+					Ref.TargetObject = Actor;
+					Ref.ItemIndex = -1;
+					OutBlocks.AddUnique(Ref);
+				}
+			}
+		}
+	}
+}
+
+FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
+{
+	if (!Ref.IsValid()) return FVector::ZeroVector;
+
+	// A. HISM 처리
+	if (Ref.ItemIndex >= 0 && Ref.TargetComponent)
+	{
+		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Ref.TargetComponent))
+		{
+			// ChunkBase를 거칠 필요도 없이 바로 Transform 획득 가능
+			// 하지만 안전을 위해 Chunk 함수를 호출하거나 직접 계산
+			FTransform Trans;
+			HISM->GetInstanceTransform(Ref.ItemIndex, Trans, true);
+			return Trans.GetLocation();
+		}
+	}
+	// B. Actor 처리
+	else if (AActor* Actor = Cast<AActor>(Ref.TargetObject))
+	{
+		return Actor->GetActorLocation();
+	}
+
+	return FVector::ZeroVector;
+}
+
+void UBlockManagerSubsystem::HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag)
+{
+	if (!BlockRef.IsValid()) {
+		UE_LOG(LogTemp, Warning, TEXT("HighlightBlock: Invalid Block Reference"));
+	}
+
+	if (BlockRef.ItemIndex >= 0) // HISM
+	{
+		if (AChunkBase* Chunk = Cast<AChunkBase>(BlockRef.TargetObject))
+		{
+			// 컴포넌트를 넘겨줌
+			Chunk->HighlightHISMBlock(BlockRef.TargetComponent, BlockRef.ItemIndex, Tag);
+		}
+	}
+	else // Actor
+	{
+		// Actor를 직접 캐스팅하는 대신, 약속된 인터페이스를 통해 메시지 전달
+		if (IGameplayEventInterface* EventInterface = Cast<IGameplayEventInterface>(BlockRef.TargetObject))
+		{
+			FGameplayEventData Payload;
+			Payload.EventTag = Tag;
+			Payload.Instigator = nullptr;
+
+			// BlockBase::HandleGameplayEvent가 호출됨 -> 내부에서 CPD 변경 로직 수행
+			EventInterface->HandleGameplayEvent(Tag, Payload);
+		}
+	}
+}
+
+void UBlockManagerSubsystem::DestroyBlocksInRadius(const FVector& Origin, float Radius)
+{
+	if (!MapManager) {
+		UE_LOG(LogTemp, Error, TEXT("DestroyBlocksInRadius: MapManager is not registered!"));
+		return;
+	}
+
+	// 그리드 순회 로직 (이전에 작성한 로직과 동일)
+	float GridSize = 100.0f;
+	int32 RangeSteps = FMath::CeilToInt(Radius / GridSize);
+
+	for (int32 x = -RangeSteps; x <= RangeSteps; x++)
+	{
+		for (int32 y = -RangeSteps; y <= RangeSteps; y++)
+		{
+			for (int32 z = -RangeSteps; z <= RangeSteps; z++)
+			{
+				FVector Offset(x * GridSize, y * GridSize, z * GridSize);
+				if (Offset.SizeSquared() <= FMath::Square(Radius + (GridSize * 0.5f)))
+				{
+					FVector CheckLocation = Origin + Offset;
+					if (AChunkBase* Chunk = MapManager->GetChunkAtLocation(CheckLocation))
+					{
+						Chunk->RemoveBlockAtWorldLocation(CheckLocation);
+					}
+				}
+			}
+		}
+	}
 }

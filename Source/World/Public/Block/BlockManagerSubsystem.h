@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "BlockSpawnInterface.h"
+#include "BlockSystemInterface.h"
 #include "BlockCommon.h"
 #include "BlockManagerSubsystem.generated.h"
 
@@ -16,7 +16,7 @@ class UBlockConfig;
  * 
  */
 UCLASS()
-class WORLD_API UBlockManagerSubsystem : public UTickableWorldSubsystem, public IBlockSpawnInterface
+class WORLD_API UBlockManagerSubsystem : public UTickableWorldSubsystem, public IBlockSystemInterface
 {
 	GENERATED_BODY()
 	
@@ -32,21 +32,42 @@ public:
 
 	virtual void Deinitialize() override;
 
+	// ---------------------------------------------------------
+	// IBlockSystemInterface 구현
+	// ---------------------------------------------------------
+	virtual AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) override;
+	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) override;
+
+	virtual FVector GetBlockLocation(const FBlockReference& Ref) override;
+	virtual float GetGridSize() const override { return 100.0f; }
+
+	virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) override;
+	virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) override;
+	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) override;
+
 	// BlockMapManager가 BeginPlay 시점에 자신을 등록
 	void RegisterMapManager(ABlockMapManager* InManager);
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
 	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests);
 
+	/*
+	* ChunkBase로부터 블록 Actor 소환 요청을 받아 Queue에 추가하는 함수
+	* @param Requests: 소환 요청 배열
+	*/
+	void EnqueueBlockSpawns(const TArray<FBlockSpawnRequest>& Requests);
 
-
+	// ---------------------------------------------------------
+	// 레거시
+	// ---------------------------------------------------------
+	
 	// 지정된 위치가 점유되어 있는지 확인하는 헬퍼 함수
 	// @param World: 체크할 월드
 	// @param CheckLocation: 체크할 위치
 	// @param CheckGridSize: 블록의 그리드 크기
 	// @return 점유되어 있으면 true, 비어있으면 false
 	// @note 프리뷰 블록(ECC_GameTraceChannel1)은 점유 판정에서 제외됨
-	bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) override;
+	// bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) override;
 
 	/*
 	* IBlockSpawnInterface 구현: 태그에 맞는 블록을 소환하는 함수
@@ -55,14 +76,7 @@ public:
 	* @param bEnableGravity: 소환된 블록에 중력 적용 여부
 	* @return 소환된 블록 액터의 포인터, 실패 시 nullptr 반환
 	*/
-	AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) override;
-
-	/*
-	* ChunkBase로부터 블록 Actor 소환 요청을 받아 Queue에 추가하는 함수
-	* @param Requests: 소환 요청 배열
-	*/
-	void EnqueueBlockSpawns(const TArray<FBlockSpawnRequest>& Requests);
-
+	// AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) override;
 protected:
 	// Gameplay Tag와 블록 클래스의 매핑
 	UPROPERTY(EditDefaultsOnly)
