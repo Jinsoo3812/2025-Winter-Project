@@ -1,9 +1,9 @@
-
+ï»¿
 
 
 #include "BlockSystemInterface.h"
 
-// Á¤Àû ¸â¹ö º¯¼ö Á¤ÀÇ
+// ì •ì  ë©¤ë²„ ë³€ìˆ˜ ì •ì˜
 TMap<TWeakObjectPtr<UWorld>, IBlockSystemInterface*> IBlockSystemInterface::GlobalSystemMap;
 
 void IBlockSystemInterface::RegisterSystem(UWorld* World, IBlockSystemInterface* System)
@@ -29,7 +29,7 @@ IBlockSystemInterface* IBlockSystemInterface::Get(const UObject* WorldContextObj
 	UWorld* World = GEngine->GetWorldFromContextObject(WorldContextObject, EGetWorldErrorMode::LogAndReturnNull);
 	if (!World) return nullptr;
 
-	// ¸Ê¿¡¼­ ÇØ´ç ¿ùµå¿¡ µî·ÏµÈ ½Ã½ºÅÛÀ» Ã£¾Æ¼­ ¹İÈ¯
+	// ë§µì—ì„œ í•´ë‹¹ ì›”ë“œì— ë“±ë¡ëœ ì‹œìŠ¤í…œì„ ì°¾ì•„ì„œ ë°˜í™˜
 	if (IBlockSystemInterface** FoundSystem = GlobalSystemMap.Find(World))
 	{
 		return *FoundSystem;

@@ -1,11 +1,11 @@
-#include "SkillGameplayTags.h"
+ï»¿#include "SkillGameplayTags.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
 
-// ÆäÀÌÁî °ü¸®¸¦ À§ÇÑ ÅÂ±× Á¤ÀÇ
+// í˜ì´ì¦ˆ ê´€ë¦¬ë¥¼ ìœ„í•œ íƒœê·¸ ì •ì˜
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_BuffBarrier_Phase1, "State.Skill.BuffBarrier.Phase1");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_BuffBarrier_Phase2, "State.Skill.BuffBarrier.Phase2");
 

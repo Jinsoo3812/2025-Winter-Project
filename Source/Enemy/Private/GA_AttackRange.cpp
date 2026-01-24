@@ -1,5 +1,5 @@
-#include "Enemy/Public/GA_AttackRange.h" // ³» Çì´õ ÆÄÀÏ
-#include "Block/BlockBase.h"             // ¹Ù´Ú ºí·Ï Å¬·¡½º (World ¸ğµâ)
+ï»¿#include "Enemy/Public/GA_AttackRange.h" // ë‚´ í—¤ë” íŒŒì¼
+#include "Block/BlockBase.h"             // ë°”ë‹¥ ë¸”ë¡ í´ë˜ìŠ¤ (World ëª¨ë“ˆ)
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
@@ -10,15 +10,15 @@
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimInstance.h"
 
-// Block »ö»ó º¯°æÀ» À§ÇØ ÇÊ¿äÇÑ Çì´õµé Ãß°¡Çß½À´Ï´Ù.
+// Block ìƒ‰ìƒ ë³€ê²½ì„ ìœ„í•´ í•„ìš”í•œ í—¤ë”ë“¤ ì¶”ê°€í–ˆìŠµë‹ˆë‹¤.
 #include "BlockGameplayTags.h"
 #include "GameplayEventInterface.h"
 
 UGA_AttackRange::UGA_AttackRange()
 {
-	// ¾îºô¸®Æ¼ ÀÎ½ºÅÏ½Ì: ¾×ÅÍ¸¶´Ù »óÅÂ¸¦ º°µµ·Î °ü¸® (º¯¼ö ÀúÀå ÇÊ¼ö)
+	// ì–´ë¹Œë¦¬í‹° ì¸ìŠ¤í„´ì‹±: ì•¡í„°ë§ˆë‹¤ ìƒíƒœë¥¼ ë³„ë„ë¡œ ê´€ë¦¬ (ë³€ìˆ˜ ì €ì¥ í•„ìˆ˜)
 	InstancingPolicy = EGameplayAbilityInstancingPolicy::InstancedPerActor;
-	// ¼­¹ö ½ÇÇà Á¤Ã¥: µ¥¹ÌÁö ÆÇÁ¤Àº ¼­¹ö ±ÇÇÑ ÇÊ¿ä
+	// ì„œë²„ ì‹¤í–‰ ì •ì±…: ë°ë¯¸ì§€ íŒì •ì€ ì„œë²„ ê¶Œí•œ í•„ìš”
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::ServerOnly;
 }
 
@@ -34,48 +34,48 @@ void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 	}
 
 	// =================================================================
-	// [ºĞ±â A] ¸ùÅ¸ÁÖ°¡ ÀÖ´Â °æ¿ì (N¿¬Å¸ ÄŞº¸ ·ÎÁ÷)
+	// [ë¶„ê¸° A] ëª½íƒ€ì£¼ê°€ ìˆëŠ” ê²½ìš° (Nì—°íƒ€ ì½¤ë³´ ë¡œì§)
 	// =================================================================
 	if (AttackMontage)
 	{
 
-		// 1. ¸ùÅ¸ÁÖ Àç»ı ½ÃÀÛ
+		// 1. ëª½íƒ€ì£¼ ì¬ìƒ ì‹œì‘
 		UAbilityTask_PlayMontageAndWait* MontageTask = UAbilityTask_PlayMontageAndWait::CreatePlayMontageAndWaitProxy(
 			this, NAME_None, AttackMontage, TelegraphPlayRate, NAME_None, false
 		);
 
-		// ¸ùÅ¸ÁÖ°¡ ³¡³ª°Å³ª Áß´ÜµÇ¸é ½ºÅ³À» ¿ÏÀüÈ÷ Á¾·á(EndAbility)
+		// ëª½íƒ€ì£¼ê°€ ëë‚˜ê±°ë‚˜ ì¤‘ë‹¨ë˜ë©´ ìŠ¤í‚¬ì„ ì™„ì „íˆ ì¢…ë£Œ(EndAbility)
 		MontageTask->OnCompleted.AddDynamic(this, &UGA_AttackRange::OnMontageFinished);
 		MontageTask->OnInterrupted.AddDynamic(this, &UGA_AttackRange::OnMontageFinished);
 		MontageTask->OnBlendOut.AddDynamic(this, &UGA_AttackRange::OnMontageFinished);
 		MontageTask->ReadyForActivation();
 
-		// 2. HitÀÌº¥Æ® ´ë±â (¹«ÇÑ ¹İº¹)
-		// OnlyTriggerOnce = false·Î ¼³Á¤ÇÏ¿© 2Å¸, 3Å¸ ½ÅÈ£µµ °è¼Ó ¹ŞÀ½
+		// 2. Hitì´ë²¤íŠ¸ ëŒ€ê¸° (ë¬´í•œ ë°˜ë³µ)
+		// OnlyTriggerOnce = falseë¡œ ì„¤ì •í•˜ì—¬ 2íƒ€, 3íƒ€ ì‹ í˜¸ë„ ê³„ì† ë°›ìŒ
 		UAbilityTask_WaitGameplayEvent* WaitHitTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
 			this,
-			HitEventTag, // ¿¹: Event.Montage.Hit
+			HitEventTag, // ì˜ˆ: Event.Montage.Hit
 			nullptr,
-			false, // OnlyTriggerOnce = false (Áß¿ä!)
+			false, // OnlyTriggerOnce = false (ì¤‘ìš”!)
 			false
 		);
 		WaitHitTask->EventReceived.AddDynamic(this, &UGA_AttackRange::OnHitEventReceived);
 		WaitHitTask->ReadyForActivation();
 
-		// 3. Telegraph ÀÌº¥Æ® ´ë±â (¹«ÇÑ ¹İº¹)
-		// 2Å¸, 3Å¸ °ø°İ ÁØºñ ½ÅÈ£¸¦ ¹ŞÀ½
+		// 3. Telegraph ì´ë²¤íŠ¸ ëŒ€ê¸° (ë¬´í•œ ë°˜ë³µ)
+		// 2íƒ€, 3íƒ€ ê³µê²© ì¤€ë¹„ ì‹ í˜¸ë¥¼ ë°›ìŒ
 		UAbilityTask_WaitGameplayEvent* WaitTelegraphTask = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
 			this,
-			TelegraphEventTag, // ¿¹: Event.Montage.Telegraph
+			TelegraphEventTag, // ì˜ˆ: Event.Montage.Telegraph
 			nullptr,
-			false, // OnlyTriggerOnce = false (Áß¿ä!)
+			false, // OnlyTriggerOnce = false (ì¤‘ìš”!)
 			false
 		);
 		WaitTelegraphTask->EventReceived.AddDynamic(this, &UGA_AttackRange::EnableTelegraph);
 		WaitTelegraphTask->ReadyForActivation();
 
-		// 4. [¿É¼Ç] Ã¹Å¸ ÀåÆÇ Áï½Ã ÄÑ±â
-		// ¸ùÅ¸ÁÖ 0.0ÃÊ¿¡ ³ëÆ¼ÆÄÀÌ°¡ ¾øÀ» ¼öµµ ÀÖÀ¸´Ï, ¾ÈÀüÇÏ°Ô 1Å¸ ÀåÆÇÀº ¹Ù·Î ÄÕ´Ï´Ù.
+		// 4. [ì˜µì…˜] ì²«íƒ€ ì¥íŒ ì¦‰ì‹œ ì¼œê¸°
+		// ëª½íƒ€ì£¼ 0.0ì´ˆì— ë…¸í‹°íŒŒì´ê°€ ì—†ì„ ìˆ˜ë„ ìˆìœ¼ë‹ˆ, ì•ˆì „í•˜ê²Œ 1íƒ€ ì¥íŒì€ ë°”ë¡œ ì¼­ë‹ˆë‹¤.
 		FGameplayEventData DummyData;
 		EnableTelegraph(DummyData);
 
@@ -83,36 +83,36 @@ void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 			TimerHandle_SpeedUp,
 			this,
 			&UGA_AttackRange::RestoreMontageSpeed,
-			TelegraphDuration, // nÃÊ µÚ ½ÇÇà
+			TelegraphDuration, // nì´ˆ ë’¤ ì‹¤í–‰
 			false
 		);
 	}
 	// =================================================================
-	// [ºĞ±â B] ¸ùÅ¸ÁÖ°¡ ¾ø´Â °æ¿ì (´Ü¼ø Å¸ÀÌ¸Ó ·ÎÁ÷ - ±¸¹öÀü È£È¯)
+	// [ë¶„ê¸° B] ëª½íƒ€ì£¼ê°€ ì—†ëŠ” ê²½ìš° (ë‹¨ìˆœ íƒ€ì´ë¨¸ ë¡œì§ - êµ¬ë²„ì „ í˜¸í™˜)
 	// =================================================================
 	else
 	{
 		FGameplayEventData DummyData;
-		EnableTelegraph(DummyData); // ÀåÆÇ ÄÑ±â
+		EnableTelegraph(DummyData); // ì¥íŒ ì¼œê¸°
 
-		// ½Ã°£ ´ë±â ÈÄ °ø°İ ½ÇÇà
+		// ì‹œê°„ ëŒ€ê¸° í›„ ê³µê²© ì‹¤í–‰
 		UAbilityTask_WaitDelay* DelayTask = UAbilityTask_WaitDelay::WaitDelay(this, TelegraphDuration);
-		DelayTask->OnFinish.AddDynamic(this, &UGA_AttackRange::ExecuteAttack); // ¿©±â¼­´Â ExecuteAttackÀÌ Á¾·á±îÁö ´ã´çÇØ¾ß ÇÔ (ÁÖÀÇ)
+		DelayTask->OnFinish.AddDynamic(this, &UGA_AttackRange::ExecuteAttack); // ì—¬ê¸°ì„œëŠ” ExecuteAttackì´ ì¢…ë£Œê¹Œì§€ ë‹´ë‹¹í•´ì•¼ í•¨ (ì£¼ì˜)
 		DelayTask->ReadyForActivation();
 	}
 }
 
-// [ÇÔ¼ö 1] ¹Ù´Ú »¡°£ ÀåÆÇ ÄÑ±â (2Å¸, 3Å¸ ¶§ ÀçÈ°¿ëµÊ)
+// [í•¨ìˆ˜ 1] ë°”ë‹¥ ë¹¨ê°„ ì¥íŒ ì¼œê¸° (2íƒ€, 3íƒ€ ë•Œ ì¬í™œìš©ë¨)
 void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 {
 	APawn* AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
 	if (!AvatarPawn) return;
 
-	// È¤½Ã ÄÑÁ®ÀÖ´Â »ö»óÀÌ ÀÖ´Ù¸é ÃÊ±âÈ­ (±ôºıÀÓ ¹æÁö)
+	// í˜¹ì‹œ ì¼œì ¸ìˆëŠ” ìƒ‰ìƒì´ ìˆë‹¤ë©´ ì´ˆê¸°í™” (ê¹œë¹¡ì„ ë°©ì§€)
 	ResetBlockColors();
 
-	// 1. ÇöÀç À§Ä¡ ±âÁØÀ¸·Î ¹üÀ§ ¹Ú½º °è»ê
-	// (Root MotionÀ¸·Î º¸½º°¡ ÀÌµ¿ÇßÀ» ¼ö ÀÖÀ¸¹Ç·Î ¸Å¹ø »õ·Î °è»êÇÕ´Ï´Ù)
+	// 1. í˜„ì¬ ìœ„ì¹˜ ê¸°ì¤€ìœ¼ë¡œ ë²”ìœ„ ë°•ìŠ¤ ê³„ì‚°
+	// (Root Motionìœ¼ë¡œ ë³´ìŠ¤ê°€ ì´ë™í–ˆì„ ìˆ˜ ìˆìœ¼ë¯€ë¡œ ë§¤ë²ˆ ìƒˆë¡œ ê³„ì‚°í•©ë‹ˆë‹¤)
 	FVector ForwardDir = AvatarPawn->GetActorForwardVector();
 	FVector Origin = AvatarPawn->GetActorLocation();
 
@@ -121,12 +121,12 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 	CachedTargetLocation = Origin + (ForwardDir * (AttackForwardOffset + HalfLength));
 	FVector BoxCenter = CachedTargetLocation;
 
-	// ¹Ù´Ú °¨Áö¿ë ³ôÀÌ º¸Á¤ (-50)
+	// ë°”ë‹¥ ê°ì§€ìš© ë†’ì´ ë³´ì • (-50)
 	BoxCenter.Z -= 50.0f;
 
 	FVector BoxExtent = FVector(HalfLength, AttackWidth * 0.5f, 50.0f);
 
-	// 2. ¿À¹ö·¦ °Ë»ç (WorldStatic = ºí·Ï)
+	// 2. ì˜¤ë²„ë© ê²€ì‚¬ (WorldStatic = ë¸”ë¡)
 	TArray<AActor*> OverlappedActors;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
@@ -136,25 +136,25 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 		{ AvatarPawn }, OverlappedActors
 	);
 
-	// 3. »ö»ó º¯°æ ¹× ÀúÀå
+	// 3. ìƒ‰ìƒ ë³€ê²½ ë° ì €ì¥
 	for (AActor* Actor : OverlappedActors)
 	{
-		// ÀÎÅÍÆäÀÌ½º ±¸Çö ¿©ºÎ °Ë»ç
+		// ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„ ì—¬ë¶€ ê²€ì‚¬
 		IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(Actor);
 		if (InterfaceObj)
 		{
-			// ÀÌº¥Æ® Àü¼Û
+			// ì´ë²¤íŠ¸ ì „ì†¡
 			InterfaceObj->HandleGameplayEvent(TAG_Block_Highlight_Target, Payload);
 			AffectedBlocks.Add(Cast<ABlockBase>(Actor));
 		}
 
 		/*
-		* ±âÁ¸ ÄÚµå
-		* ÀÌÁ¦ BlockBase°¡ IGameplayEventInterface¸¦ ±¸ÇöÇÏ¹Ç·Î Enemy ¸ğµâµµ World ¸ğµâ¿¡ ´ëÇÑ ÀÇÁ¸À» ²÷À¸¼Åµµ µË´Ï´Ù. (ÇöÀç´Â Block¿¡ ´ëÇÑ ÀÇÁ¸¼ºÀ» À¯ÁöÇÏ°í ÀÖ½À´Ï´Ù. ³ªÁß¿¡ ½Ã°£ ³ª¸é Á¦°ÅÇÏ¼¼¿ä)
-		* ÇöÀç Core ¸ğµâÀÇ BlockGameplayTag.h¿¡ TAG_Block_Highlight_Danger ¶ó´Â ÅÂ±×°¡ ¼±¾ğµÇ¾î ÀÖÁö ¾Ê½À´Ï´Ù.
-		* ÀÌ¸¦ Á÷Á¢ Á¤ÀÇÇÏ½Ã°í(BlockGameplayTags.h Âü°í), BlockGameplayTags.cpp¿¡¼­ ÇØ´ç ÅÂ±×¸¦ Á¤ÀÇÇØÁÖ¼Å¾ß ÇÕ´Ï´Ù.
-		* ¶ÇÇÑ ¿¡µğÅÍÀÇ Block Æú´õÀÇ Block Config ¶ó´Â Data AssetÀÌ ÀÖ½À´Ï´Ù. ±×°÷¿¡¼­ Block.Highlight.Danger ÅÂ±×¿¡ ´ëÇÑ CPD °ªµµ ¼³Á¤ÇØÁÖ¼Å¾ß ÇÕ´Ï´Ù.
-		* ¸¶Áö¸·À¸·Î Material ¿¡¼­µµ ÇØ´ç CPD¿¡ ¸Â´Â »ö»ó Ã³¸®°¡ µÇ¾î ÀÖ¾î¾ß ÇÕ´Ï´Ù.(¾Æ¸¶ Á¦ ¸®ÆÑÅä¸µÀÌ µé¾î°¡¸é¼­ Dange¿¡ ´ëÇÑ CPD Ã³¸®°¡ Áö¿öÁ³À»°Ì´Ï´Ù.)
+		* ê¸°ì¡´ ì½”ë“œ
+		* ì´ì œ BlockBaseê°€ IGameplayEventInterfaceë¥¼ êµ¬í˜„í•˜ë¯€ë¡œ Enemy ëª¨ë“ˆë„ World ëª¨ë“ˆì— ëŒ€í•œ ì˜ì¡´ì„ ëŠìœ¼ì…”ë„ ë©ë‹ˆë‹¤. (í˜„ì¬ëŠ” Blockì— ëŒ€í•œ ì˜ì¡´ì„±ì„ ìœ ì§€í•˜ê³  ìˆìŠµë‹ˆë‹¤. ë‚˜ì¤‘ì— ì‹œê°„ ë‚˜ë©´ ì œê±°í•˜ì„¸ìš”)
+		* í˜„ì¬ Core ëª¨ë“ˆì˜ BlockGameplayTag.hì— TAG_Block_Highlight_Danger ë¼ëŠ” íƒœê·¸ê°€ ì„ ì–¸ë˜ì–´ ìˆì§€ ì•ŠìŠµë‹ˆë‹¤.
+		* ì´ë¥¼ ì§ì ‘ ì •ì˜í•˜ì‹œê³ (BlockGameplayTags.h ì°¸ê³ ), BlockGameplayTags.cppì—ì„œ í•´ë‹¹ íƒœê·¸ë¥¼ ì •ì˜í•´ì£¼ì…”ì•¼ í•©ë‹ˆë‹¤.
+		* ë˜í•œ ì—ë””í„°ì˜ Block í´ë”ì˜ Block Config ë¼ëŠ” Data Assetì´ ìˆìŠµë‹ˆë‹¤. ê·¸ê³³ì—ì„œ Block.Highlight.Danger íƒœê·¸ì— ëŒ€í•œ CPD ê°’ë„ ì„¤ì •í•´ì£¼ì…”ì•¼ í•©ë‹ˆë‹¤.
+		* ë§ˆì§€ë§‰ìœ¼ë¡œ Material ì—ì„œë„ í•´ë‹¹ CPDì— ë§ëŠ” ìƒ‰ìƒ ì²˜ë¦¬ê°€ ë˜ì–´ ìˆì–´ì•¼ í•©ë‹ˆë‹¤.(ì•„ë§ˆ ì œ ë¦¬íŒ©í† ë§ì´ ë“¤ì–´ê°€ë©´ì„œ Dangeì— ëŒ€í•œ CPD ì²˜ë¦¬ê°€ ì§€ì›Œì¡Œì„ê²ë‹ˆë‹¤.)
 		*/
 		/*
 		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
@@ -165,7 +165,7 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 		*/
 	}
 
-	// ¸ùÅ¸ÁÖ ¼Óµµ¸¦ ´Ù½Ã ´ÊÃã (°ü¼º ´À³¦)
+	// ëª½íƒ€ì£¼ ì†ë„ë¥¼ ë‹¤ì‹œ ëŠ¦ì¶¤ (ê´€ì„± ëŠë‚Œ)
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (Character && Character->GetMesh()->GetAnimInstance())
 	{
@@ -174,7 +174,7 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 		{
 			AnimInst->Montage_SetPlayRate(AttackMontage, TelegraphPlayRate);
 
-			// ´Ù½Ã nÃÊ µÚ¿¡ »¡¶óÁöµµ·Ï Å¸ÀÌ¸Ó Àç¼³Á¤
+			// ë‹¤ì‹œ nì´ˆ ë’¤ì— ë¹¨ë¼ì§€ë„ë¡ íƒ€ì´ë¨¸ ì¬ì„¤ì •
 			GetWorld()->GetTimerManager().SetTimer(
 				TimerHandle_SpeedUp,
 				this,
@@ -186,20 +186,20 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 	}
 }
 
-// [ÇÔ¼ö 2] ¸ùÅ¸ÁÖ¿¡¼­ 'Hit' ½ÅÈ£°¡ ¿À¸é È£Ãâ
+// [í•¨ìˆ˜ 2] ëª½íƒ€ì£¼ì—ì„œ 'Hit' ì‹ í˜¸ê°€ ì˜¤ë©´ í˜¸ì¶œ
 void UGA_AttackRange::OnHitEventReceived(FGameplayEventData Payload)
 {
-	// ½ÇÁ¦ °ø°İ ¼öÇà (µ¥¹ÌÁö + ÀåÆÇ ²ô±â)
+	// ì‹¤ì œ ê³µê²© ìˆ˜í–‰ (ë°ë¯¸ì§€ + ì¥íŒ ë„ê¸°)
 	ExecuteAttack();
 
-	// [Áß¿ä] ¿©±â¼­ EndAbility¸¦ È£ÃâÇÏÁö ¾Ê½À´Ï´Ù!
-	// ¸ùÅ¸ÁÖ°¡ ³²¾Ò´Ù¸é ´ÙÀ½ °ø°İ(2Å¸)À» À§ÇØ ±â´Ù·Á¾ß ÇÏ±â ¶§¹®ÀÔ´Ï´Ù.
+	// [ì¤‘ìš”] ì—¬ê¸°ì„œ EndAbilityë¥¼ í˜¸ì¶œí•˜ì§€ ì•ŠìŠµë‹ˆë‹¤!
+	// ëª½íƒ€ì£¼ê°€ ë‚¨ì•˜ë‹¤ë©´ ë‹¤ìŒ ê³µê²©(2íƒ€)ì„ ìœ„í•´ ê¸°ë‹¤ë ¤ì•¼ í•˜ê¸° ë•Œë¬¸ì…ë‹ˆë‹¤.
 }
 
-// [ÇÔ¼ö 3] ½ÇÁ¦ µ¥¹ÌÁö Àû¿ë ¹× ÀåÆÇ ²ô±â
+// [í•¨ìˆ˜ 3] ì‹¤ì œ ë°ë¯¸ì§€ ì ìš© ë° ì¥íŒ ë„ê¸°
 void UGA_AttackRange::ExecuteAttack()
 {
-	// 1. ¹Ù´Ú ÀåÆÇ ²ô±â
+	// 1. ë°”ë‹¥ ì¥íŒ ë„ê¸°
 	ResetBlockColors();
 
 	APawn* AvatarPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
@@ -207,37 +207,37 @@ void UGA_AttackRange::ExecuteAttack()
 
 	FVector BoxCenter = CachedTargetLocation;
 	
-	// ÇÃ·¹ÀÌ¾î ¸öÅë ³ôÀÌ º¸Á¤ (+50)
+	// í”Œë ˆì´ì–´ ëª¸í†µ ë†’ì´ ë³´ì • (+50)
 	BoxCenter.Z += 50.0f;
 
-	// ³ôÀÌ(Z)¸¦ ³Ë³ËÇÏ°Ô(100) ÁÖ¾î Á¡ÇÁÇÑ ÇÃ·¹ÀÌ¾îµµ ¸Â°Ô ¼³Á¤
+	// ë†’ì´(Z)ë¥¼ ë„‰ë„‰í•˜ê²Œ(100) ì£¼ì–´ ì í”„í•œ í”Œë ˆì´ì–´ë„ ë§ê²Œ ì„¤ì •
 	float HalfLength = AttackRangeForward * 0.5f;
 	FVector BoxExtent = FVector(HalfLength, AttackWidth * 0.5f, 100.0f);
 
-	// ¡å¡å¡å [µğ¹ö±× Ãß°¡] °ø°İ ÆÇÁ¤ ¹Ú½º¸¦ È­¸é¿¡ 2ÃÊ°£ ±×¸³´Ï´Ù ¡å¡å¡å
+	// â–¼â–¼â–¼ [ë””ë²„ê·¸ ì¶”ê°€] ê³µê²© íŒì • ë°•ìŠ¤ë¥¼ í™”ë©´ì— 2ì´ˆê°„ ê·¸ë¦½ë‹ˆë‹¤ â–¼â–¼â–¼
 	DrawDebugBox(
 		GetWorld(),
 		BoxCenter,
 		BoxExtent,
-		FColor::Green, // Å¸°İ ¹Ú½º´Â ÃÊ·Ï»ö
+		FColor::Green, // íƒ€ê²© ë°•ìŠ¤ëŠ” ì´ˆë¡ìƒ‰
 		false,
 		2.0f
 	);
-	// ¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã¡ã
+	// â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²â–²
 
 
 	TArray<AActor*> OverlappedPawns;
 	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
 	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Pawn));
 
-	// 3. Àû(Pawn) °¨Áö
+	// 3. ì (Pawn) ê°ì§€
 	UKismetSystemLibrary::BoxOverlapActors(
 		this, BoxCenter, BoxExtent, ObjectTypes, APawn::StaticClass(),
 		{ AvatarPawn }, OverlappedPawns
 	);
 
 
-	// 4. µ¥¹ÌÁö(GE) Àû¿ë
+	// 4. ë°ë¯¸ì§€(GE) ì ìš©
 	if (DamageEffectClass)
 	{
 		FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(DamageEffectClass);
@@ -257,42 +257,42 @@ void UGA_AttackRange::ExecuteAttack()
 		}
 	}
 
-	// (¸ùÅ¸ÁÖ°¡ ¾ø´Â ¿¹¿ÜÀûÀÎ °æ¿ì¿¡¸¸ ¿©±â¼­ Á¾·á)
+	// (ëª½íƒ€ì£¼ê°€ ì—†ëŠ” ì˜ˆì™¸ì ì¸ ê²½ìš°ì—ë§Œ ì—¬ê¸°ì„œ ì¢…ë£Œ)
 	if (!AttackMontage)
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 	}
 }
 
-// [ÇÔ¼ö 4] ¸ùÅ¸ÁÖ°¡ ¿ÏÀüÈ÷ ³¡³ª¸é È£Ãâ (½ºÅ³ Á¾·á)
+// [í•¨ìˆ˜ 4] ëª½íƒ€ì£¼ê°€ ì™„ì „íˆ ëë‚˜ë©´ í˜¸ì¶œ (ìŠ¤í‚¬ ì¢…ë£Œ)
 void UGA_AttackRange::OnMontageFinished()
 {
-	// ÀåÆÇÀÌ ÄÑÁø Ã¤·Î ³¡³µÀ» ¼öµµ ÀÖÀ¸´Ï Á¤¸®
+	// ì¥íŒì´ ì¼œì§„ ì±„ë¡œ ëë‚¬ì„ ìˆ˜ë„ ìˆìœ¼ë‹ˆ ì •ë¦¬
 	ResetBlockColors();
 
-	// ÁøÂ¥ Á¾·á
+	// ì§„ì§œ ì¢…ë£Œ
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
-// [ÇïÆÛ] ºí·Ï »ö»ó ÃÊ±âÈ­
+// [í—¬í¼] ë¸”ë¡ ìƒ‰ìƒ ì´ˆê¸°í™”
 void UGA_AttackRange::ResetBlockColors()
 {
 	FGameplayEventData Payload;
 	Payload.EventTag = TAG_Block_Highlight_None;
 	Payload.Instigator = GetAvatarActorFromActorInfo();
-	Payload.EventMagnitude = 0.0f; // ¾È ¾¸
+	Payload.EventMagnitude = 0.0f; // ì•ˆ ì”€
 
 	for (TWeakObjectPtr<ABlockBase> BlockPtr : AffectedBlocks)
 	{
-		// ÀÎÅÍÆäÀÌ½º ±¸Çö ¿©ºÎ °Ë»ç
+		// ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„ ì—¬ë¶€ ê²€ì‚¬
 		IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(BlockPtr.Get());
 		if (InterfaceObj)
 		{
-			// ÀÌº¥Æ® Àü¼Û
+			// ì´ë²¤íŠ¸ ì „ì†¡
 			InterfaceObj->HandleGameplayEvent(Payload.EventTag, Payload);
 		}
 
-		// ±âÁ¸ ÄÚµå
+		// ê¸°ì¡´ ì½”ë“œ
 		/*
 		if (BlockPtr.IsValid())
 		{
@@ -308,7 +308,7 @@ void UGA_AttackRange::RestoreMontageSpeed()
 	ACharacter* Character = Cast<ACharacter>(GetAvatarActorFromActorInfo());
 	if (Character && Character->GetMesh()->GetAnimInstance())
 	{
-		// nÃÊ°¡ Áö³µÀ¸´Ï 1¹è¼ÓÀ¸·Î Äç!
+		// nì´ˆê°€ ì§€ë‚¬ìœ¼ë‹ˆ 1ë°°ì†ìœ¼ë¡œ ì¾…!
 		Character->GetMesh()->GetAnimInstance()->Montage_SetPlayRate(AttackMontage, 1.0f);
 	}
 }

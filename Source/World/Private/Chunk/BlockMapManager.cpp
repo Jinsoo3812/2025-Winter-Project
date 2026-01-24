@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BlockMapManager.h"
@@ -14,7 +14,7 @@ void ABlockMapManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// [Ãß°¡] ¼­ºê½Ã½ºÅÛ¿¡ ÀÚ½ÅÀ» µî·Ï
+	// [ì¶”ê°€] ì„œë¸Œì‹œìŠ¤í…œì— ìì‹ ì„ ë“±ë¡
 	if (UWorld* World = GetWorld())
 	{
 		if (UBlockManagerSubsystem* Subsystem = World->GetSubsystem<UBlockManagerSubsystem>())
@@ -23,7 +23,7 @@ void ABlockMapManager::BeginPlay()
 		}
 	}
 
-	// °ÔÀÓ ½ÃÀÛ ½Ã ¿ùµå »ı¼º
+	// ê²Œì„ ì‹œì‘ ì‹œ ì›”ë“œ ìƒì„±
 	GenerateWorld();
 }
 
@@ -35,13 +35,13 @@ void ABlockMapManager::GenerateWorld()
 		return;
 	}
 
-	// 1. Ã»Å© ¾×ÅÍ ½ºÆù (ºó ²®µ¥±â)
+	// 1. ì²­í¬ ì•¡í„° ìŠ¤í° (ë¹ˆ ê»ë°ê¸°)
 	SpawnChunks();
 
-	// 2. ÁöÇü µ¥ÀÌÅÍ »ı¼º (µ¥ÀÌÅÍ Ã¤¿ì±â)
+	// 2. ì§€í˜• ë°ì´í„° ìƒì„± (ë°ì´í„° ì±„ìš°ê¸°)
 	GenerateBasicTerrain();
 
-	// 3. ½Ã°¢Àû ¾÷µ¥ÀÌÆ® (ºñµ¿±â ·»´õ¸µ ½ÃÀÛ)
+	// 3. ì‹œê°ì  ì—…ë°ì´íŠ¸ (ë¹„ë™ê¸° ë Œë”ë§ ì‹œì‘)
 	UpdateAllChunks();
 }
 
@@ -52,13 +52,13 @@ void ABlockMapManager::SpawnChunks()
 		UE_LOG(LogTemp, Error, TEXT("WorldMapManager: Unable to get UWorld!"));
 	}
 
-	// WorldRange ¹üÀ§¸¸Å­ Ã»Å© »ı¼º
+	// WorldRange ë²”ìœ„ë§Œí¼ ì²­í¬ ìƒì„±
 	for (int32 x = 0; x < WorldRangeX; x++)
 	{
 		for (int32 y = 0; y < WorldRangeY; y++)
 		{
-			// Ã»Å©ÀÇ ¿ùµå À§Ä¡ °è»ê
-			// Ã»Å© ÇÏ³ªÀÇ ½ÇÁ¦ Å©±â = GridSize * ChunkSize
+			// ì²­í¬ì˜ ì›”ë“œ ìœ„ì¹˜ ê³„ì‚°
+			// ì²­í¬ í•˜ë‚˜ì˜ ì‹¤ì œ í¬ê¸° = GridSize * ChunkSize
 			float ChunkWorldSizeX = AChunkBase::ChunkSizeX * AChunkBase::BlockGridSize; // ex. 16 * 100
 			float ChunkWorldSizeY = AChunkBase::ChunkSizeY * AChunkBase::BlockGridSize;
 
@@ -75,18 +75,18 @@ void ABlockMapManager::SpawnChunks()
 				NewChunk->SetBlockConfig(BlockConfig);
 				NewChunk->SetDABlockConfig(BlockConfigDataAsset);
 
-				// Config¿¡ ÀÖ´Â ¸Ş½Ã Á¤º¸¸¦ Ã»Å©¿¡ µî·Ï
+				// Configì— ìˆëŠ” ë©”ì‹œ ì •ë³´ë¥¼ ì²­í¬ì— ë“±ë¡
 				for (const auto& Pair : BlockConfig->BlockDefinitions)
 				{
 					NewChunk->RegisterBlockMesh(Pair.Key, Pair.Value.Mesh);
 				}
 
-				// ¸Ê¿¡ µî·Ï
+				// ë§µì— ë“±ë¡
 				ChunkMap.Add(FIntPoint(x, y), NewChunk);
 
-// ¿¡µğÅÍ ºôµåÀÏ ¶§¸¸ Æ÷ÇÔÇÏ´Â ¸ÅÅ©·Î
+// ì—ë””í„° ë¹Œë“œì¼ ë•Œë§Œ í¬í•¨í•˜ëŠ” ë§¤í¬ë¡œ
 #if WITH_EDITOR
-				// ¿¡µğÅÍ¿¡¼­ º¸±â ÁÁ°Ô Æú´õ Á¤¸® ¹× ¶óº§¸µ
+				// ì—ë””í„°ì—ì„œ ë³´ê¸° ì¢‹ê²Œ í´ë” ì •ë¦¬ ë° ë¼ë²¨ë§
 				NewChunk->SetFolderPath(FName("Chunks"));
 				NewChunk->SetActorLabel(FString::Printf(TEXT("Chunk_%d_%d"), x, y));
 #endif
@@ -97,7 +97,7 @@ void ABlockMapManager::SpawnChunks()
 
 void ABlockMapManager::GenerateBasicTerrain()
 {
-	// ¸ğµç Ã»Å©¸¦ ¼øÈ¸ÇÏ¸ç ¹Ù´Ú ±ò±â
+	// ëª¨ë“  ì²­í¬ë¥¼ ìˆœíšŒí•˜ë©° ë°”ë‹¥ ê¹”ê¸°
 	for (auto& Pair : ChunkMap)
 	{
 		AChunkBase* Chunk = Pair.Value;
@@ -107,14 +107,14 @@ void ABlockMapManager::GenerateBasicTerrain()
 		}
 
 		/*
-		* Ã»Å© ³»ºÎÀÇ ¸ğµç ºí·ÏÀ» ¼øÈ¸.
-		* ´Ü¼ø ¿¬»êÀÌ¹Ç·Î Å« ¿À¹öÇìµå°¡ ¾Æ´ÏÁö¸¸, ¼ø°£ÀûÀ¸·Î ¸î Ã»Å©¾¿ »ı¼ºÇÏ´Â °æ¿ì ÇÁ·¹ÀÓ µå¶øÀÌ ÀÖÀ» ¼ö ÀÖÀ½.
+		* ì²­í¬ ë‚´ë¶€ì˜ ëª¨ë“  ë¸”ë¡ì„ ìˆœíšŒ.
+		* ë‹¨ìˆœ ì—°ì‚°ì´ë¯€ë¡œ í° ì˜¤ë²„í—¤ë“œê°€ ì•„ë‹ˆì§€ë§Œ, ìˆœê°„ì ìœ¼ë¡œ ëª‡ ì²­í¬ì”© ìƒì„±í•˜ëŠ” ê²½ìš° í”„ë ˆì„ ë“œëì´ ìˆì„ ìˆ˜ ìˆìŒ.
 		*/
 		for (int32 x = 0; x < AChunkBase::ChunkSizeX; x++)
 		{
 			for (int32 y = 0; y < AChunkBase::ChunkSizeY; y++)
 			{
-				// FloorHeight Ä­±îÁö´Â Terrain, ±× À§´Â °ø±â
+				// FloorHeight ì¹¸ê¹Œì§€ëŠ” Terrain, ê·¸ ìœ„ëŠ” ê³µê¸°
 				for (int32 z = 0; z < AChunkBase::ChunkSizeZ; z++)
 				{
 					if (z < FloorHeight)
@@ -144,11 +144,11 @@ void ABlockMapManager::UpdateAllChunks()
 
 AChunkBase* ABlockMapManager::GetChunkAtLocation(FVector Location) const
 {
-	// ¿ùµå ÁÂÇ¥ -> Ã»Å© ÁÂÇ¥ º¯È¯
+	// ì›”ë“œ ì¢Œí‘œ -> ì²­í¬ ì¢Œí‘œ ë³€í™˜
 	float ChunkWorldSizeX = AChunkBase::ChunkSizeX * AChunkBase::BlockGridSize;
 	float ChunkWorldSizeY = AChunkBase::ChunkSizeY * AChunkBase::BlockGridSize;
 
-	// À½¼ö ÁÂÇ¥ Ã³¸® µîÀ» À§ÇØ Floor(³»¸² ÈÄ Á¤¼ö º¯È¯) »ç¿ë ±ÇÀå
+	// ìŒìˆ˜ ì¢Œí‘œ ì²˜ë¦¬ ë“±ì„ ìœ„í•´ Floor(ë‚´ë¦¼ í›„ ì •ìˆ˜ ë³€í™˜) ì‚¬ìš© ê¶Œì¥
 	int32 ChunkX = FMath::FloorToInt(Location.X / ChunkWorldSizeX);
 	int32 ChunkY = FMath::FloorToInt(Location.Y / ChunkWorldSizeY);
 
@@ -164,31 +164,31 @@ void ABlockMapManager::LinkChunkNeighbors()
 {
 	for (auto& Pair : ChunkMap)
 	{
-		FIntPoint CurrentCoord = Pair.Key;     // ÇöÀç Ã»Å© ÁÂÇ¥ (ex: 2, 3)
+		FIntPoint CurrentCoord = Pair.Key;     // í˜„ì¬ ì²­í¬ ì¢Œí‘œ (ex: 2, 3)
 		AChunkBase* CurrentChunk = Pair.Value;
 
 		if (!CurrentChunk) {
 			UE_LOG(LogTemp, Warning, TEXT("WorldMapManager: Null chunk found in ChunkMap during LinkChunkNeighbors!"));
 		}
 
-		// X+ (Front) È®ÀÎ
+		// X+ (Front) í™•ì¸
 		if (AChunkBase** Found = ChunkMap.Find(CurrentCoord + FIntPoint(1, 0)))
 			CurrentChunk->SetNeighbor(EBlockNeighbor::Front, *Found);
 
-		// X- (Back) È®ÀÎ
+		// X- (Back) í™•ì¸
 		if (AChunkBase** Found = ChunkMap.Find(CurrentCoord + FIntPoint(-1, 0)))
 			CurrentChunk->SetNeighbor(EBlockNeighbor::Back, *Found);
 
-		// Y+ (Right) È®ÀÎ
+		// Y+ (Right) í™•ì¸
 		if (AChunkBase** Found = ChunkMap.Find(CurrentCoord + FIntPoint(0, 1)))
 			CurrentChunk->SetNeighbor(EBlockNeighbor::Right, *Found);
 
-		// Y- (Left) È®ÀÎ
+		// Y- (Left) í™•ì¸
 		if (AChunkBase** Found = ChunkMap.Find(CurrentCoord + FIntPoint(0, -1)))
 			CurrentChunk->SetNeighbor(EBlockNeighbor::Left, *Found);
 
-		// (¼±ÅÃ»çÇ×) ZÃà(Up/Down)Àº ÇöÀç 2D ±×¸®µå ¸ÊÀÌ¹Ç·Î »ı·«ÇÏ°Å³ª 
-		// 3D ChunkMapÀ» ¾´´Ù¸é ¿©±â¼­ ¿¬°á
+		// (ì„ íƒì‚¬í•­) Zì¶•(Up/Down)ì€ í˜„ì¬ 2D ê·¸ë¦¬ë“œ ë§µì´ë¯€ë¡œ ìƒëµí•˜ê±°ë‚˜ 
+		// 3D ChunkMapì„ ì“´ë‹¤ë©´ ì—¬ê¸°ì„œ ì—°ê²°
 	}
 }
 

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
@@ -10,20 +10,20 @@ class UBlockConfig;
 class UDA_BlockConfig;
 
 /*
-* ¿öÄ¿ ½º·¹µå¿¡¼­ ¾ÈÀüÇÏ°Ô ÀÛ¾÷À» Ã³¸®ÇÏ±â À§ÇÑ ÇöÀç Ã»Å© »óÅÂ ½º³À¼¦
-* ÀÚ½ÅÀÇ ¸ðµç BlockData, 6¹æÇâ ÀÌ¿ôÀÇ ¸ðµç BlockData ÀÇ "º¹»çº»"
+* ì›Œì»¤ ìŠ¤ë ˆë“œì—ì„œ ì•ˆì „í•˜ê²Œ ìž‘ì—…ì„ ì²˜ë¦¬í•˜ê¸° ìœ„í•œ í˜„ìž¬ ì²­í¬ ìƒíƒœ ìŠ¤ëƒ…ìƒ·
+* ìžì‹ ì˜ ëª¨ë“  BlockData, 6ë°©í–¥ ì´ì›ƒì˜ ëª¨ë“  BlockData ì˜ "ë³µì‚¬ë³¸"
 */
 struct FChunkSnapshot
 {
-	// ³» Ã»Å© µ¥ÀÌÅÍ
+	// ë‚´ ì²­í¬ ë°ì´í„°
 	TArray<FBlockData> MyData;
 	int32 SizeX, SizeY, SizeZ;
 
-	// 6¹æÇâ ÀÌ¿ô Ã»Å©µéÀÇ Blockdata ¹è¿­
-	// ÀÌ¿ô Ã»Å©ÀÇ BlockData´Â '°æ°è¸é'¸¸ °¡Á®¿À´Â °ÍÀ¸·Î ´õ ÃÖÀûÈ­ °¡´É
+	// 6ë°©í–¥ ì´ì›ƒ ì²­í¬ë“¤ì˜ Blockdata ë°°ì—´
+	// ì´ì›ƒ ì²­í¬ì˜ BlockDataëŠ” 'ê²½ê³„ë©´'ë§Œ ê°€ì ¸ì˜¤ëŠ” ê²ƒìœ¼ë¡œ ë” ìµœì í™” ê°€ëŠ¥
 	TMap<EBlockNeighbor, TArray<FBlockData>> NeighborDataMap;
 
-	// ½º³À¼¦ ³»ºÎ¿¡¼­ ÁÂÇ¥¸¦ ÅëÇØ ºí·ÏÀ» Á¶È¸ÇÏ´Â ÇïÆÛ ÇÔ¼ö
+	// ìŠ¤ëƒ…ìƒ· ë‚´ë¶€ì—ì„œ ì¢Œí‘œë¥¼ í†µí•´ ë¸”ë¡ì„ ì¡°íšŒí•˜ëŠ” í—¬í¼ í•¨ìˆ˜
 	FBlockData GetBlockData(int32 X, int32 Y, int32 Z) const;
 };
 
@@ -40,97 +40,97 @@ protected:
 
 public:	
 	// -------------------------------------------------------------------------
-	// »ó¼ö Á¤ÀÇ (Ã»Å© Å©±â)
+	// ìƒìˆ˜ ì •ì˜ (ì²­í¬ í¬ê¸°)
 	// -------------------------------------------------------------------------
 	static const int32 ChunkSizeX = 16;
 	static const int32 ChunkSizeY = 16;
-	static const int32 ChunkSizeZ = 32; // ³ôÀÌ´Â ÇÊ¿ä¿¡ µû¶ó Á¶Àý
-	static const int32 BlockGridSize = 100; // ºí·Ï 1°³ÀÇ ¾ð¸®¾ó À¯´Ö Å©±â
+	static const int32 ChunkSizeZ = 32; // ë†’ì´ëŠ” í•„ìš”ì— ë”°ë¼ ì¡°ì ˆ
+	static const int32 BlockGridSize = 100; // ë¸”ë¡ 1ê°œì˜ ì–¸ë¦¬ì–¼ ìœ ë‹› í¬ê¸°
 
 	// -------------------------------------------------------------------------
-	// µ¥ÀÌÅÍ °ü¸®
+	// ë°ì´í„° ê´€ë¦¬
 	// -------------------------------------------------------------------------
 
 	/*
-	* Ä³½Ã È÷Æ®À²À» ³ôÀÌ±â À§ÇØ 1Â÷¿ø ¹è¿­·Î BlockData ÀúÀå
-	* 3Â÷¿ø ÁÂÇ¥·Î µ¥ÀÌÅÍ ÀúÀå ½Ã ¸Þ¸ð¸® ÆÄÆíÈ­ ¹× °ü¸® ¿À¹öÇìµå
+	* ìºì‹œ ížˆíŠ¸ìœ¨ì„ ë†’ì´ê¸° ìœ„í•´ 1ì°¨ì› ë°°ì—´ë¡œ BlockData ì €ìž¥
+	* 3ì°¨ì› ì¢Œí‘œë¡œ ë°ì´í„° ì €ìž¥ ì‹œ ë©”ëª¨ë¦¬ íŒŒíŽ¸í™” ë° ê´€ë¦¬ ì˜¤ë²„í—¤ë“œ
 	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Chunk Data")
 	TArray<FBlockData> BlockDataArray;
 
-	// ÀÌ¿ôÇÑ Ã»Å©ÀÇ Æ÷ÀÎÅÍ ÀúÀå
+	// ì´ì›ƒí•œ ì²­í¬ì˜ í¬ì¸í„° ì €ìž¥
 	TWeakObjectPtr<AChunkBase> Neighbors[(int32)EBlockNeighbor::Count];
 
-	// Æ¯Á¤ ÁÂÇ¥ÀÇ ºí·Ï Å¸ÀÔ ¼³Á¤
+	// íŠ¹ì • ì¢Œí‘œì˜ ë¸”ë¡ íƒ€ìž… ì„¤ì •
 	void SetBlockType(int32 X, int32 Y, int32 Z, EBlockType NewType);
 
-	// Æ¯Á¤ ÁÂÇ¥ÀÇ ºí·Ï µ¥ÀÌÅÍ °¡Á®¿À±â
-	// @return ºí·Ï µ¥ÀÌÅÍ, ¹üÀ§ ¹þ¾î³ª¸é ºó ºí·Ï ¹ÝÈ¯
+	// íŠ¹ì • ì¢Œí‘œì˜ ë¸”ë¡ ë°ì´í„° ê°€ì ¸ì˜¤ê¸°
+	// @return ë¸”ë¡ ë°ì´í„°, ë²”ìœ„ ë²—ì–´ë‚˜ë©´ ë¹ˆ ë¸”ë¡ ë°˜í™˜
 	FBlockData GetBlockData(int32 X, int32 Y, int32 Z) const;
 
-	// 3D ÁÂÇ¥ -> 1D ¹è¿­ ÀÎµ¦½º º¯È¯
-	// @return ÀÎµ¦½º °ª, ¹üÀ§ ¹þ¾î³ª¸é -1 ¹ÝÈ¯
+	// 3D ì¢Œí‘œ -> 1D ë°°ì—´ ì¸ë±ìŠ¤ ë³€í™˜
+	// @return ì¸ë±ìŠ¤ ê°’, ë²”ìœ„ ë²—ì–´ë‚˜ë©´ -1 ë°˜í™˜
 	int32 GetBlockIndex(int32 X, int32 Y, int32 Z) const;
 
 	void SetNeighbor(EBlockNeighbor Direction, AChunkBase* Neighbor) { Neighbors[(int32)Direction] = Neighbor; }
 
-	// ¿ùµå ÁÂÇ¥¸¦ ¹Þ¾Æ Ã»Å© ³» ºí·Ï ÁÂÇ¥·Î º¯È¯ ÈÄ ºí·Ï Á¦°Å (None)
+	// ì›”ë“œ ì¢Œí‘œë¥¼ ë°›ì•„ ì²­í¬ ë‚´ ë¸”ë¡ ì¢Œí‘œë¡œ ë³€í™˜ í›„ ë¸”ë¡ ì œê±° (None)
 	void RemoveBlockAtWorldLocation(FVector WorldLocation);
 
 	// -------------------------------------------------------------------------
-	// ºí·Ï ¼ÒÈ¯ ¹× ½Ã°¢È­
+	// ë¸”ë¡ ì†Œí™˜ ë° ì‹œê°í™”
 	// -------------------------------------------------------------------------
 
 	/*
-	* ºí·Ï Å¸ÀÌº° HISM ÄÄÆ÷³ÍÆ® ¸ÅÇÎ
-	* EBlockType::Terrain´Â ÁöÇü mesh¸¦ ´ã´çÇÏ´Â HISM ÄÄÆ÷³ÍÆ®°¡ Ã³¸®ÇÏ´Â µî
+	* ë¸”ë¡ íƒ€ì´ë³„ HISM ì»´í¬ë„ŒíŠ¸ ë§¤í•‘
+	* EBlockType::TerrainëŠ” ì§€í˜• meshë¥¼ ë‹´ë‹¹í•˜ëŠ” HISM ì»´í¬ë„ŒíŠ¸ê°€ ì²˜ë¦¬í•˜ëŠ” ë“±
 	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Chunk Visuals")
 	TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*> BlockHISMComponents;
 
-	// [Ãß°¡] BlockMapManager°¡ Ã»Å© »ý¼º Á÷ÈÄ Config¸¦ ÁÖÀÔÇØÁÖ¾î¾ß ÇÔ
+	// [ì¶”ê°€] BlockMapManagerê°€ ì²­í¬ ìƒì„± ì§í›„ Configë¥¼ ì£¼ìž…í•´ì£¼ì–´ì•¼ í•¨
 	void SetBlockConfig(const UBlockConfig* InConfig) { BlockConfig = InConfig; }
 	void SetDABlockConfig(const UDA_BlockConfig* InConfig) { BlockConfigDataAsset = InConfig; }
 
-	// µ¥ÀÌÅÍ¸¦ ±â¹ÝÀ¸·Î HISM ÀÎ½ºÅÏ½º¸¦ ´Ù½Ã ±×¸®´Â ÇÔ¼ö
-	// µ¥ÀÌÅÍ º¯°æÀÌ ÀÖÀ» ¶§¸¶´Ù È£ÃâÇÏ´Â °ÍÀÌ ¾Æ´Ï¶ó, º¯°æ »çÇ×À» ¸ð¾Æ¼­ ÇÑ ¹ø¿¡ È£Ãâ ±ÇÀå
+	// ë°ì´í„°ë¥¼ ê¸°ë°˜ìœ¼ë¡œ HISM ì¸ìŠ¤í„´ìŠ¤ë¥¼ ë‹¤ì‹œ ê·¸ë¦¬ëŠ” í•¨ìˆ˜
+	// ë°ì´í„° ë³€ê²½ì´ ìžˆì„ ë•Œë§ˆë‹¤ í˜¸ì¶œí•˜ëŠ” ê²ƒì´ ì•„ë‹ˆë¼, ë³€ê²½ ì‚¬í•­ì„ ëª¨ì•„ì„œ í•œ ë²ˆì— í˜¸ì¶œ ê¶Œìž¥
 	void UpdateChunkVisuals();
 
-	// ÃÊ±â ¼³Á¤ ½Ã ºí·Ï Å¸ÀÔº° Mesh¸¦ µî·ÏÇÏ´Â ÇÔ¼ö (DataAsset µî°ú ¿¬µ¿ ÇÊ¿ä)
+	// ì´ˆê¸° ì„¤ì • ì‹œ ë¸”ë¡ íƒ€ìž…ë³„ Meshë¥¼ ë“±ë¡í•˜ëŠ” í•¨ìˆ˜ (DataAsset ë“±ê³¼ ì—°ë™ í•„ìš”)
 	void RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh);
 
-	// ¼­ºê½Ã½ºÅÛ¿¡¼­ ½ºÆù ½ÇÆÐ ½Ã È£Ãâ (·Ñ¹é¿ë)
+	// ì„œë¸Œì‹œìŠ¤í…œì—ì„œ ìŠ¤í° ì‹¤íŒ¨ ì‹œ í˜¸ì¶œ (ë¡¤ë°±ìš©)
 	void OnBlockSpawnFailed(FVector WorldLocation);
 
-	// ¿ÜºÎ¿¡¼­ ºí·ÏÀ» ¼ÒÈ¯ÇÑ ÈÄ, µ¥ÀÌÅÍ¸¦ ¼³Á¤ÇÏ°Ô ÇØÁÖ´Â ÇïÆÛ ÇÔ¼ö
+	// ì™¸ë¶€ì—ì„œ ë¸”ë¡ì„ ì†Œí™˜í•œ í›„, ë°ì´í„°ë¥¼ ì„¤ì •í•˜ê²Œ í•´ì£¼ëŠ” í—¬í¼ í•¨ìˆ˜
 	void SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor);
 
-	// HISM ÄÄÆ÷³ÍÆ® Æ÷ÀÎÅÍ¸¦ Á÷Á¢ ¹Þ¾Æ ÇÏÀÌ¶óÀÌÆ® Ã³¸®
+	// HISM ì»´í¬ë„ŒíŠ¸ í¬ì¸í„°ë¥¼ ì§ì ‘ ë°›ì•„ í•˜ì´ë¼ì´íŠ¸ ì²˜ë¦¬
 	void HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemIndex, FGameplayTag Tag);
 
 private:
-	// ·çÆ® ÄÄÆ÷³ÍÆ®
+	// ë£¨íŠ¸ ì»´í¬ë„ŒíŠ¸
 	UPROPERTY(VisibleAnywhere)
 	USceneComponent* RootSceneComponent;
 
-	// ºñµ¿±â ÀÛ¾÷ÀÇ À¯È¿¼º °Ë»ç¸¦ À§ÇÑ ID
-	// ¸ÞÀÎ ½º·¹µå¿¡¼­¸¸ ¼öÁ¤µÇ¹Ç·Î Atomic º¸ÀåÀº ÇÊ¿ä ¾øÀ½
+	// ë¹„ë™ê¸° ìž‘ì—…ì˜ ìœ íš¨ì„± ê²€ì‚¬ë¥¼ ìœ„í•œ ID
+	// ë©”ì¸ ìŠ¤ë ˆë“œì—ì„œë§Œ ìˆ˜ì •ë˜ë¯€ë¡œ Atomic ë³´ìž¥ì€ í•„ìš” ì—†ìŒ
 	int32 LastUpdateRequestID = 0;
 
-	// EBlockType¿¡ »óÀÀÇÏ´Â ºí·Ï º° ¸Þ½Ã¿Í GameplayTag µîÀÌ ¸ÅÇÎµÈ µ¥ÀÌÅÍ ¿¡¼Â
+	// EBlockTypeì— ìƒì‘í•˜ëŠ” ë¸”ë¡ ë³„ ë©”ì‹œì™€ GameplayTag ë“±ì´ ë§¤í•‘ëœ ë°ì´í„° ì—ì…‹
 	UPROPERTY(Transient)
 	const UBlockConfig* BlockConfig = nullptr;
 
 	UPROPERTY(Transient)
 	const UDA_BlockConfig* BlockConfigDataAsset = nullptr;
 
-	// HISM ÀÎ½ºÅÏ½ºº° ÆøÅº ºÎÂø °³¼ö¸¦ ÀúÀåÇÏ´Â ¸Ê
-	// Key: ÄÄÆ÷³ÍÆ® Æ÷ÀÎÅÍ, Value: <ÀÎ½ºÅÏ½º ÀÎµ¦½º, °³¼ö> ¸Ê
+	// HISM ì¸ìŠ¤í„´ìŠ¤ë³„ í­íƒ„ ë¶€ì°© ê°œìˆ˜ë¥¼ ì €ìž¥í•˜ëŠ” ë§µ
+	// Key: ì»´í¬ë„ŒíŠ¸ í¬ì¸í„°, Value: <ì¸ìŠ¤í„´ìŠ¤ ì¸ë±ìŠ¤, ê°œìˆ˜> ë§µ
 	TMap<UPrimitiveComponent*, TMap<int32, int32>> HISMBombCountMap;
 
-	// HISM ÄÄÆ÷³ÍÆ®¸¦ ºí·Ï Å¸ÀÔ º°·Î 2°³¾¿ °®±â À§ÇÑ ¹è¿­
+	// HISM ì»´í¬ë„ŒíŠ¸ë¥¼ ë¸”ë¡ íƒ€ìž… ë³„ë¡œ 2ê°œì”© ê°–ê¸° ìœ„í•œ ë°°ì—´
 	TArray<TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*>> HISM_Buffers;
 
-	// ÇöÀç È­¸é¿¡ Ç¥½Ã ÁßÀÎ ¹öÆÛ ÀÎµ¦½º (0 or 1)
+	// í˜„ìž¬ í™”ë©´ì— í‘œì‹œ ì¤‘ì¸ ë²„í¼ ì¸ë±ìŠ¤ (0 or 1)
 	int32 CurrentBufferIndex = 0;
 };

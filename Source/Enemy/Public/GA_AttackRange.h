@@ -1,18 +1,18 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "GA_AttackRange.generated.h"
 
-// Àü¹æ ¼±¾ğ (Çì´õ ÀÇÁ¸¼º ÃÖ¼ÒÈ­)
+// ì „ë°© ì„ ì–¸ (í—¤ë” ì˜ì¡´ì„± ìµœì†Œí™”)
 class ABlockBase;
 class UAnimMontage;
 class UAbilityTask_WaitGameplayEvent;
 
 /**
- * [¹ü¿ë ¹üÀ§ °ø°İ ¾îºô¸®Æ¼]
- * - ¸ùÅ¸ÁÖ ±â¹İÀÇ N¿¬Å¸ °ø°İÀ» Áö¿øÇÕ´Ï´Ù.
- * - AnimNotify·Î Å¸ÀÌ¹ÖÀ» Á¤¹ĞÇÏ°Ô Á¦¾îÇÕ´Ï´Ù.
+ * [ë²”ìš© ë²”ìœ„ ê³µê²© ì–´ë¹Œë¦¬í‹°]
+ * - ëª½íƒ€ì£¼ ê¸°ë°˜ì˜ Nì—°íƒ€ ê³µê²©ì„ ì§€ì›í•©ë‹ˆë‹¤.
+ * - AnimNotifyë¡œ íƒ€ì´ë°ì„ ì •ë°€í•˜ê²Œ ì œì–´í•©ë‹ˆë‹¤.
  */
 UCLASS()
 class ENEMY_API UGA_AttackRange : public UGameplayAbility
@@ -26,83 +26,83 @@ public:
 
 protected:
 	// =================================================================
-	// [¼³Á¤ º¯¼ö] ºí·çÇÁ¸°Æ®¿¡¼­ ¼öÁ¤ °¡´É
+	// [ì„¤ì • ë³€ìˆ˜] ë¸”ë£¨í”„ë¦°íŠ¸ì—ì„œ ìˆ˜ì • ê°€ëŠ¥
 	// =================================================================
 
-	// °ø°İ ¾Ö´Ï¸ŞÀÌ¼Ç ¸ùÅ¸ÁÖ
+	// ê³µê²© ì• ë‹ˆë©”ì´ì…˜ ëª½íƒ€ì£¼
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Animation")
 	TObjectPtr<UAnimMontage> AttackMontage;
 
-	// "ÀåÆÇ ÄÑ¶ó"´Â ½ÅÈ£¸¦ ¹ŞÀ» ÅÂ±× (¿¹: Event.Montage.Telegraph)
+	// "ì¥íŒ ì¼œë¼"ëŠ” ì‹ í˜¸ë¥¼ ë°›ì„ íƒœê·¸ (ì˜ˆ: Event.Montage.Telegraph)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Animation")
 	FGameplayTag TelegraphEventTag;
 
-	// "¶§·Á¶ó(µ¥¹ÌÁö)"´Â ½ÅÈ£¸¦ ¹ŞÀ» ÅÂ±× (¿¹: Event.Montage.Hit)
+	// "ë•Œë ¤ë¼(ë°ë¯¸ì§€)"ëŠ” ì‹ í˜¸ë¥¼ ë°›ì„ íƒœê·¸ (ì˜ˆ: Event.Montage.Hit)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Animation")
 	FGameplayTag HitEventTag;
 
-	// °ø°İ ¹üÀ§ (±æÀÌ)
+	// ê³µê²© ë²”ìœ„ (ê¸¸ì´)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackRangeForward = 300.0f;
 
-	// °ø°İ ¹üÀ§ (³Êºñ)
+	// ê³µê²© ë²”ìœ„ (ë„ˆë¹„)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackWidth = 300.0f;
 
-	// [¿ÀÇÁ¼Â] º¸½º ¸öÃ¼¿¡¼­ ¾ó¸¶³ª ¶³¾îÁø °÷¿¡¼­ °ø°İÀÌ ½ÃÀÛµÉÁö
-	// ¿¹: 200À¸·Î ¼³Á¤ÇÏ¸é, º¸½º ¾Õ 200 °Å¸®ºÎÅÍ °ø°İ ¹üÀ§°¡ ½ÃÀÛµÊ
+	// [ì˜¤í”„ì…‹] ë³´ìŠ¤ ëª¸ì²´ì—ì„œ ì–¼ë§ˆë‚˜ ë–¨ì–´ì§„ ê³³ì—ì„œ ê³µê²©ì´ ì‹œì‘ë ì§€
+	// ì˜ˆ: 200ìœ¼ë¡œ ì„¤ì •í•˜ë©´, ë³´ìŠ¤ ì• 200 ê±°ë¦¬ë¶€í„° ê³µê²© ë²”ìœ„ê°€ ì‹œì‘ë¨
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Range")
 	float AttackForwardOffset = 150.0f;
 
-	// Àû¿ëÇÒ µ¥¹ÌÁö ÀÌÆåÆ® (GE)
+	// ì ìš©í•  ë°ë¯¸ì§€ ì´í™íŠ¸ (GE)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Effect")
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
-	// ¸ùÅ¸ÁÖ°¡ ¾øÀ» ¶§ »ç¿ëÇÒ ´ë±â ½Ã°£ (Fallback ¿ëµµ)
+	// ëª½íƒ€ì£¼ê°€ ì—†ì„ ë•Œ ì‚¬ìš©í•  ëŒ€ê¸° ì‹œê°„ (Fallback ìš©ë„)
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Timing")
 	float TelegraphDuration = 1.5f;
 
-	// ¼Óµµ º¹±¸¸¦ À§ÇÑ Å¸ÀÌ¸Ó ÇÚµé
+	// ì†ë„ ë³µêµ¬ë¥¼ ìœ„í•œ íƒ€ì´ë¨¸ í•¸ë“¤
 	FTimerHandle TimerHandle_SpeedUp;
 
-	// ¼Óµµ¸¦ Á¤»óÀ¸·Î µ¹¸®´Â ÇÔ¼ö
+	// ì†ë„ë¥¼ ì •ìƒìœ¼ë¡œ ëŒë¦¬ëŠ” í•¨ìˆ˜
 	UFUNCTION()
 	void RestoreMontageSpeed();
 
-	// ¿¹°í(Telegraph) ½Ã°£ µ¿¾È ¸ùÅ¸ÁÖ Àç»ı ¼Óµµ
+	// ì˜ˆê³ (Telegraph) ì‹œê°„ ë™ì•ˆ ëª½íƒ€ì£¼ ì¬ìƒ ì†ë„
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Combat|Timing")
 	float TelegraphPlayRate = 0.1f;
 
 
 	// =================================================================
-	// [³»ºÎ »óÅÂ º¯¼ö]
+	// [ë‚´ë¶€ ìƒíƒœ ë³€ìˆ˜]
 	// =================================================================
 
-	// »ö»óÀÌ º¯°æµÈ ºí·ÏµéÀ» ±â¾ïÇØµÎ´Â ¹è¿­ (³ªÁß¿¡ ²ô±â À§ÇØ)
+	// ìƒ‰ìƒì´ ë³€ê²½ëœ ë¸”ë¡ë“¤ì„ ê¸°ì–µí•´ë‘ëŠ” ë°°ì—´ (ë‚˜ì¤‘ì— ë„ê¸° ìœ„í•´)
 	TArray<TWeakObjectPtr<ABlockBase>> AffectedBlocks;
 
 	// =================================================================
-	// [ÇÔ¼ö ¼±¾ğ]
+	// [í•¨ìˆ˜ ì„ ì–¸]
 	// =================================================================
 
-	// [1] ÀåÆÇ ÄÑ±â (Telegraph È°¼ºÈ­)
+	// [1] ì¥íŒ ì¼œê¸° (Telegraph í™œì„±í™”)
 	UFUNCTION()
 	void EnableTelegraph(FGameplayEventData Payload);
 
-	// [2] Å¸°İ ½ÅÈ£ ¼ö½Å (Hit ÀÌº¥Æ® ¹ß»ı ½Ã È£Ãâ)
+	// [2] íƒ€ê²© ì‹ í˜¸ ìˆ˜ì‹  (Hit ì´ë²¤íŠ¸ ë°œìƒ ì‹œ í˜¸ì¶œ)
 	UFUNCTION()
 	void OnHitEventReceived(FGameplayEventData Payload);
 
-	// [3] ½ÇÁ¦ °ø°İ ÆÇÁ¤ ¹× ÀåÆÇ ²ô±â
+	// [3] ì‹¤ì œ ê³µê²© íŒì • ë° ì¥íŒ ë„ê¸°
 	void ExecuteAttack();
 
-	// [4] ¸ùÅ¸ÁÖ Á¾·á ½Ã È£Ãâ
+	// [4] ëª½íƒ€ì£¼ ì¢…ë£Œ ì‹œ í˜¸ì¶œ
 	UFUNCTION()
 	void OnMontageFinished();
 
-	// ºí·Ï »ö»ó ÃÊ±âÈ­ ÇïÆÛ ÇÔ¼ö
+	// ë¸”ë¡ ìƒ‰ìƒ ì´ˆê¸°í™” í—¬í¼ í•¨ìˆ˜
 	void ResetBlockColors();
 
-	// ¿¹°í(Telegraph) ´ç½ÃÀÇ °ø°İ Áß½ÉÁ¡À» ±â¾ïÇÒ º¯¼ö
+	// ì˜ˆê³ (Telegraph) ë‹¹ì‹œì˜ ê³µê²© ì¤‘ì‹¬ì ì„ ê¸°ì–µí•  ë³€ìˆ˜
 	FVector CachedTargetLocation;
 };

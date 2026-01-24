@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #include "NativeGameplayTags.h"
 
 /**
- * Block°ú °ü·ÃµÈ GameplayTags¸¦ Á¤ÀÇÇÏ´Â Å¬·¡½º
+ * Blockê³¼ ê´€ë ¨ëœ GameplayTagsë¥¼ ì •ì˜í•˜ëŠ” í´ë˜ìŠ¤
  */
 
  // Block Type Tags

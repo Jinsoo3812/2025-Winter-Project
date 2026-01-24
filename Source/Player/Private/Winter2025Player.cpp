@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Winter2025Player.h"
 #include "Winter2025PlayerState.h"
@@ -23,12 +23,12 @@ UAbilitySystemComponent* AWinter2025Player::GetAbilitySystemComponent() const
 void AWinter2025Player::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
-	InitializeGAS(); // ¼­¹ö Ãø ÃÊ±âÈ­
+	InitializeGAS(); // ì„œë²„ ì¸¡ ì´ˆê¸°í™”
 
-	// ±ÇÇÑÀ» °¡Áø ¼­¹ö¿¡¼­¸¸ ÇÃ·¹ÀÌ¾î ½ºÅÈ ÃÊ±âÈ­
+	// ê¶Œí•œì„ ê°€ì§„ ì„œë²„ì—ì„œë§Œ í”Œë ˆì´ì–´ ìŠ¤íƒ¯ ì´ˆê¸°í™”
 	if (AWinter2025PlayerState* PS = GetPlayerState<AWinter2025PlayerState>())
 	{
-		// ¿¹: 1·¹º§·Î ÃÊ±âÈ­ (³ªÁß¿¡ ÀúÀåµÈ ·¹º§À» ºÒ·¯¿Ã ¼öµµ ÀÖÀ½)
+		// ì˜ˆ: 1ë ˆë²¨ë¡œ ì´ˆê¸°í™” (ë‚˜ì¤‘ì— ì €ì¥ëœ ë ˆë²¨ì„ ë¶ˆëŸ¬ì˜¬ ìˆ˜ë„ ìˆìŒ)
 		PS->InitializePlayerStats(1);
 	}
 }
@@ -36,7 +36,7 @@ void AWinter2025Player::PossessedBy(AController* NewController)
 void AWinter2025Player::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
-	InitializeGAS(); // Å¬¶óÀÌ¾ğÆ® Ãø ÃÊ±âÈ­
+	InitializeGAS(); // í´ë¼ì´ì–¸íŠ¸ ì¸¡ ì´ˆê¸°í™”
 }
 
 void AWinter2025Player::InitializeGAS()
@@ -47,21 +47,21 @@ void AWinter2025Player::InitializeGAS()
 	CachedASC = PS->GetAbilitySystemComponent();
 	if (CachedASC)
 	{
-		// ASC ÃÊ±âÈ­
+		// ASC ì´ˆê¸°í™”
 		CachedASC->InitAbilityActorInfo(PS, this);
 
-		// ±¸Ã¼ÀûÀÎ ÄÄÆ÷³ÍÆ® Å¬·¡½º(USkillComponent) ´ë½Å ÀÎÅÍÆäÀÌ½º¸¦ Ã£À½
-		// PlayerState¿¡ ºÙ¾îÀÖ´Â ÄÄÆ÷³ÍÆ®µé Áß, ½ºÅ³ ÀÎÅÍÆäÀÌ½º¸¦ ±¸ÇöÇÑ ³ğÀ» Ã£¾Æ¼­ ÃÊ±âÈ­
+		// êµ¬ì²´ì ì¸ ì»´í¬ë„ŒíŠ¸ í´ë˜ìŠ¤(USkillComponent) ëŒ€ì‹  ì¸í„°í˜ì´ìŠ¤ë¥¼ ì°¾ìŒ
+		// PlayerStateì— ë¶™ì–´ìˆëŠ” ì»´í¬ë„ŒíŠ¸ë“¤ ì¤‘, ìŠ¤í‚¬ ì¸í„°í˜ì´ìŠ¤ë¥¼ êµ¬í˜„í•œ ë†ˆì„ ì°¾ì•„ì„œ ì´ˆê¸°í™”
 		TArray<UActorComponent*> Components;
 		PS->GetComponents(Components);
 
 		for (UActorComponent* Comp : Components)
 		{
-			// SkillComponent ÃÊ±âÈ­
+			// SkillComponent ì´ˆê¸°í™”
 			if (ISkillSystemInterface* SkillInterface = Cast<ISkillSystemInterface>(Comp))
 			{
 				SkillInterface->InitializeSkillSystem(CachedASC);
-				break; // ÇÏ³ª¸¸ ÀÖ´Ù°í °¡Á¤
+				break; // í•˜ë‚˜ë§Œ ìˆë‹¤ê³  ê°€ì •
 			}
 		}
 
@@ -85,13 +85,13 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		return;
 	}
 
-	// ·ÎÄÃ ÇÃ·¹ÀÌ¾îÀÎ °æ¿ì¿¡¸¸ Input Mapping Context(IMC) Ãß°¡
-	// (AI³ª ¼­¹ö Ãø Ä³¸¯ÅÍ´Â ÀÔ·Â ¸ÅÇÎÀÌ ÇÊ¿ä ¾øÀ¸¹Ç·Î)
+	// ë¡œì»¬ í”Œë ˆì´ì–´ì¸ ê²½ìš°ì—ë§Œ Input Mapping Context(IMC) ì¶”ê°€
+	// (AIë‚˜ ì„œë²„ ì¸¡ ìºë¦­í„°ëŠ” ì…ë ¥ ë§¤í•‘ì´ í•„ìš” ì—†ìœ¼ë¯€ë¡œ)
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PC->GetLocalPlayer()))
 		{
-			// (1) ±âº» ÀÌµ¿/Á¡ÇÁ¿ë IMC (¿ì¼±¼øÀ§ 0)
+			// (1) ê¸°ë³¸ ì´ë™/ì í”„ìš© IMC (ìš°ì„ ìˆœìœ„ 0)
 			if (BasicMappingContext)
 			{
 				Subsystem->AddMappingContext(BasicMappingContext, 0);
@@ -100,8 +100,8 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 				UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: Basic Mapping Context is null"));
 			}
 
-			// (2) ½ºÅ³¿ë IMC (¿ì¼±¼øÀ§ 1)
-			// ½ºÅ³ ÀÔ·ÂÀÌ µé¾î¿À¸é ¿ì¼± Ã³¸®µÇµµ·Ï Priority¸¦ 1·Î ¼³Á¤ÇÕ´Ï´Ù.
+			// (2) ìŠ¤í‚¬ìš© IMC (ìš°ì„ ìˆœìœ„ 1)
+			// ìŠ¤í‚¬ ì…ë ¥ì´ ë“¤ì–´ì˜¤ë©´ ìš°ì„  ì²˜ë¦¬ë˜ë„ë¡ Priorityë¥¼ 1ë¡œ ì„¤ì •í•©ë‹ˆë‹¤.
 			if (SkillMappingContext)
 			{
 				Subsystem->AddMappingContext(SkillMappingContext, 1);
@@ -119,7 +119,7 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: Controller is not a PlayerController."));
 	}
 
-	// DataAsset¿¡ Á¤ÀÇµÈ ¸ğµç ÀÔ·ÂÀ» ¼øÈ¸ÇÏ¸ç ¹ÙÀÎµù
+	// DataAssetì— ì •ì˜ëœ ëª¨ë“  ì…ë ¥ì„ ìˆœíšŒí•˜ë©° ë°”ì¸ë”©
 	UE_LOG(LogTemp, Warning, TEXT("[Setup] Binding %d Ability Input Actions"), InputConfig->AbilityInputActions.Num());
 	for (const FPlayerInputAction& Action : InputConfig->AbilityInputActions)
 	{
@@ -128,11 +128,11 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 			UE_LOG(LogTemp, Warning, TEXT("[Setup] Binding InputAction: %s to Tag: %s"), 
 				*Action.InputAction->GetName(), *Action.InputTag.ToString());
 
-			// ´­·¶À» ¶§
+			// ëˆŒë €ì„ ë•Œ
 			EnhancedInput->BindAction(Action.InputAction, ETriggerEvent::Started, this,
 				&AWinter2025Player::Input_AbilityTagPressed, Action.InputTag);
 
-			// ¶ÃÀ» ¶§
+			// ë—ì„ ë•Œ
 			EnhancedInput->BindAction(Action.InputAction, ETriggerEvent::Completed, this,
 				&AWinter2025Player::Input_AbilityTagReleased, Action.InputTag);
 		}
@@ -142,24 +142,24 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		}
 	}
 
-	// ÀÌµ¿ (Move) ¹ÙÀÎµù
+	// ì´ë™ (Move) ë°”ì¸ë”©
 	if (MoveAction.Get())
 	{
 		EnhancedInput->BindAction(MoveAction.Get(), ETriggerEvent::Triggered, this, &AWinter2025Player::Move);
 	}
 
-	// Á¡ÇÁ (Jump) ¹ÙÀÎµù
+	// ì í”„ (Jump) ë°”ì¸ë”©
 	if (JumpAction.Get())
 	{
-		// ACharacter::Jump´Â Á¸ÀçÇÏÁö¸¸, StopJump´Â ¾ø½À´Ï´Ù. StopJumpingÀ» ½á¾ß ÇÕ´Ï´Ù.
+		// ACharacter::JumpëŠ” ì¡´ì¬í•˜ì§€ë§Œ, StopJumpëŠ” ì—†ìŠµë‹ˆë‹¤. StopJumpingì„ ì¨ì•¼ í•©ë‹ˆë‹¤.
 		EnhancedInput->BindAction(JumpAction.Get(), ETriggerEvent::Started, this, &AWinter2025Player::Jump);
 		EnhancedInput->BindAction(JumpAction.Get(), ETriggerEvent::Completed, this, &AWinter2025Player::StopJumping);
 	}
 
-	// ÁÂÅ¬¸¯ ¹ÙÀÎµù
+	// ì¢Œí´ë¦­ ë°”ì¸ë”©
 	if (LeftClickAction.Get())
 	{
-		// ÀÓ½Ã; ºôµå¸¸ µÇµµ·Ï ÇØ³ùÀ½
+		// ì„ì‹œ; ë¹Œë“œë§Œ ë˜ë„ë¡ í•´ë†¨ìŒ
 		EnhancedInput->BindAction(LeftClickAction.Get(), ETriggerEvent::Started, this, &AWinter2025Player::OnLeftClick);
 	}
 }
@@ -172,14 +172,14 @@ void AWinter2025Player::Input_AbilityTagPressed(FGameplayTag InputTag)
 		return;
 	}
 
-	// ÅÂ±×¿¡ ÇØ´çÇÏ´Â SpecÀ» Ã£¾Æ¼­ InputID¸¦ ÅëÇØ ÀÔ·Â ÀÌº¥Æ®·Î È°¼ºÈ­
+	// íƒœê·¸ì— í•´ë‹¹í•˜ëŠ” Specì„ ì°¾ì•„ì„œ InputIDë¥¼ í†µí•´ ì…ë ¥ ì´ë²¤íŠ¸ë¡œ í™œì„±í™”
 	TArray<FGameplayAbilitySpec>& AllSpecs = CachedASC->GetActivatableAbilities();
 
 	for (FGameplayAbilitySpec& Spec : AllSpecs)
 	{
 		if (Spec.DynamicAbilityTags.HasTag(InputTag))
 		{
-			// Ã£¾Ò´Ù¸é InputID¸¦ ÅëÇØ ÀÔ·Â ÀÌº¥Æ®·Î È°¼ºÈ­
+			// ì°¾ì•˜ë‹¤ë©´ InputIDë¥¼ í†µí•´ ì…ë ¥ ì´ë²¤íŠ¸ë¡œ í™œì„±í™”
 			if (Spec.InputID >= 0)
 			{
 				CachedASC->AbilityLocalInputPressed(Spec.InputID);
@@ -242,16 +242,16 @@ void AWinter2025Player::OnLeftClick(const FInputActionValue& Value)
 		return;
 	}
 
-	// ÀÌº¥Æ® µ¥ÀÌÅÍ »ı¼º (´©°¡ º¸³Â´ÂÁö, Å¸°ÙÀº ´©±¸ÀÎÁö µî)
+	// ì´ë²¤íŠ¸ ë°ì´í„° ìƒì„± (ëˆ„ê°€ ë³´ëƒˆëŠ”ì§€, íƒ€ê²Ÿì€ ëˆ„êµ¬ì¸ì§€ ë“±)
 	FGameplayEventData EventData;
 	EventData.Instigator = this;
 	EventData.Target = this;
 
-	// "Input.Action.Confirm" ÅÂ±×¿Í ÇÔ²² ÀÌº¥Æ® ¹ßÇà
-	// ÀÌ ÅÂ±×´Â GA_Construction¿¡¼­ ±â´Ù¸®°í ÀÖ´Â ÅÂ±×¿Í Á¤È®È÷ ÀÏÄ¡ÇØ¾ß ÇÕ´Ï´Ù.
+	// "Input.Action.Confirm" íƒœê·¸ì™€ í•¨ê»˜ ì´ë²¤íŠ¸ ë°œí–‰
+	// ì´ íƒœê·¸ëŠ” GA_Constructionì—ì„œ ê¸°ë‹¤ë¦¬ê³  ìˆëŠ” íƒœê·¸ì™€ ì •í™•íˆ ì¼ì¹˜í•´ì•¼ í•©ë‹ˆë‹¤.
 	FGameplayTag ConfirmTag = TAG_Input_LeftClick;
 
-	// ASC¸¦ ÅëÇØ ÀÌº¥Æ® Àü¼Û
-	// È°¼ºÈ­µÈ ¸ğµç ¾îºô¸®Æ¼ Áß, ÀÌ ÅÂ±×¸¦ ±â´Ù¸®´Â(WaitGameplayEvent) ¾îºô¸®Æ¼¿¡°Ô ½ÅÈ£°¡ °©´Ï´Ù.
+	// ASCë¥¼ í†µí•´ ì´ë²¤íŠ¸ ì „ì†¡
+	// í™œì„±í™”ëœ ëª¨ë“  ì–´ë¹Œë¦¬í‹° ì¤‘, ì´ íƒœê·¸ë¥¼ ê¸°ë‹¤ë¦¬ëŠ”(WaitGameplayEvent) ì–´ë¹Œë¦¬í‹°ì—ê²Œ ì‹ í˜¸ê°€ ê°‘ë‹ˆë‹¤.
 	CachedASC->HandleGameplayEvent(ConfirmTag, &EventData);
 }

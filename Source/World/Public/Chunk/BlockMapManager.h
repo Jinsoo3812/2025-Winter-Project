@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -24,17 +24,17 @@ protected:
 
 public:
 	// -------------------------------------------------------------------------
-	// ¼³Á¤ (Blueprint¿¡¼­ ÇÒ´ç)
+	// ì„¤ì • (Blueprintì—ì„œ í• ë‹¹)
 	// -------------------------------------------------------------------------
 
-	// ºí·Ï ¼³Á¤ µ¥ÀÌÅÍ ¿¡¼Â
+	// ë¸”ë¡ ì„¤ì • ë°ì´í„° ì—ì…‹
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
 	UBlockConfig* BlockConfig;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
 	UDA_BlockConfig* BlockConfigDataAsset;
 
-	// »ı¼ºÇÒ ¿ùµåÀÇ Ã»Å© °³¼ö (¿¹: 4x4)
+	// ìƒì„±í•  ì›”ë“œì˜ ì²­í¬ ê°œìˆ˜ (ì˜ˆ: 4x4)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
 	int32 WorldRangeX = 4;
 
@@ -45,30 +45,30 @@ public:
 	int32 FloorHeight = 3;
 
 	// -------------------------------------------------------------------------
-	// Ã»Å© °ü¸®
+	// ì²­í¬ ê´€ë¦¬
 	// -------------------------------------------------------------------------
 
-	// Ã»Å© ¾×ÅÍ ¸Ê (ex. Ã¹ ¹øÂ°(0,0) Ã»Å©, ±× ¿À¸¥ÂÊÀÇ µÎ ¹øÂ°(0,1) Ã»Å© µî)
-	// Z´Â º¸Åë Ã»Å© ÇÏ³ª·Î ³ôÀÌ¸¦ Ä¿¹öÇÏ°Å³ª ÇÊ¿äÇÏ¸é 3D Å°·Î È®Àå
+	// ì²­í¬ ì•¡í„° ë§µ (ex. ì²« ë²ˆì§¸(0,0) ì²­í¬, ê·¸ ì˜¤ë¥¸ìª½ì˜ ë‘ ë²ˆì§¸(0,1) ì²­í¬ ë“±)
+	// ZëŠ” ë³´í†µ ì²­í¬ í•˜ë‚˜ë¡œ ë†’ì´ë¥¼ ì»¤ë²„í•˜ê±°ë‚˜ í•„ìš”í•˜ë©´ 3D í‚¤ë¡œ í™•ì¥
 	UPROPERTY(VisibleInstanceOnly, Category = "Map Manager")
 	TMap<FIntPoint, AChunkBase*> ChunkMap;
 
-	// ¿ùµå »ı¼º ÁøÀÔÁ¡
+	// ì›”ë“œ ìƒì„± ì§„ì…ì 
 	void GenerateWorld();
 
-	// Ã»Å© °£ ÀÌ¿ô ¼³Á¤
+	// ì²­í¬ ê°„ ì´ì›ƒ ì„¤ì •
 	void LinkChunkNeighbors();
 
-	// Æ¯Á¤ ¿ùµå ÁÂÇ¥(Vector)°¡ ¼ÓÇÑ Ã»Å© Ã£±â
+	// íŠ¹ì • ì›”ë“œ ì¢Œí‘œ(Vector)ê°€ ì†í•œ ì²­í¬ ì°¾ê¸°
 	AChunkBase* GetChunkAtLocation(FVector Location) const;
 
 private:
-	// Ã»Å© ½ºÆù ¹× ÃÊ±âÈ­
+	// ì²­í¬ ìŠ¤í° ë° ì´ˆê¸°í™”
 	void SpawnChunks();
 
-	// Å×½ºÆ®¿ë: °£´ÜÇÑ ÁöÇü µ¥ÀÌÅÍ »ı¼º (ÆòÁö)
+	// í…ŒìŠ¤íŠ¸ìš©: ê°„ë‹¨í•œ ì§€í˜• ë°ì´í„° ìƒì„± (í‰ì§€)
 	void GenerateBasicTerrain();
 
-	// ¸ğµç Ã»Å©¿¡ ºñÁÖ¾ó ¾÷µ¥ÀÌÆ® ¿äÃ»
+	// ëª¨ë“  ì²­í¬ì— ë¹„ì£¼ì–¼ ì—…ë°ì´íŠ¸ ìš”ì²­
 	void UpdateAllChunks();
 };

@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
@@ -7,9 +7,9 @@
 #include "PlayerInputConfig.generated.h"
 
 /*
-* IA¿Í GameplayTag¸¦ ¸ÅÇÎÇÏ´Â ±¸Á¶Ã¼
-* IA°¡ ½ÇÇàµÇ¸é ÇØ´çÇÏ´Â Tag ½ÅÈ£¸¦ º¸³»±â À§ÇÔ
-* ÃÊ±âÈ­ ½Ã ÇÑ ¹ø¸¸ ¼³Á¤µÇ¹Ç·Î TArray·Î ±¸Çö
+* IAì™€ GameplayTagë¥¼ ë§¤í•‘í•˜ëŠ” êµ¬ì¡°ì²´
+* IAê°€ ì‹¤í–‰ë˜ë©´ í•´ë‹¹í•˜ëŠ” Tag ì‹ í˜¸ë¥¼ ë³´ë‚´ê¸° ìœ„í•¨
+* ì´ˆê¸°í™” ì‹œ í•œ ë²ˆë§Œ ì„¤ì •ë˜ë¯€ë¡œ TArrayë¡œ êµ¬í˜„
 */
 USTRUCT(BlueprintType)
 struct FPlayerInputAction
@@ -20,7 +20,7 @@ struct FPlayerInputAction
 	const UInputAction* InputAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
-	FGameplayTag InputTag; // ¿¹: Input.Ability.Slot1
+	FGameplayTag InputTag; // ì˜ˆ: Input.Ability.Slot1
 };
 
 UCLASS()
@@ -28,7 +28,7 @@ class UPlayerInputConfig : public UDataAsset
 {
 	GENERATED_BODY()
 public:
-	// Q, E, R Å° µîÀ» ÅÂ±×¿Í ¸ÅÇÎÇÑ ¸ñ·Ï
+	// Q, E, R í‚¤ ë“±ì„ íƒœê·¸ì™€ ë§¤í•‘í•œ ëª©ë¡
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TArray<FPlayerInputAction> AbilityInputActions;
 };

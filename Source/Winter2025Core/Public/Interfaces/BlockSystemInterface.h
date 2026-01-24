@@ -1,4 +1,4 @@
-
+ï»¿
 
 #pragma once
 
@@ -7,27 +7,27 @@
 #include "GameplayTagContainer.h"
 #include "BlockSystemInterface.generated.h"
 
-// ActorÀÏ ¼öµµ ÀÖ°í, Chunk ³»ÀÇ HISM ÀÎ½ºÅÏ½ºÀÏ ¼öµµ ÀÖÀ½
+// Actorì¼ ìˆ˜ë„ ìˆê³ , Chunk ë‚´ì˜ HISM ì¸ìŠ¤í„´ìŠ¤ì¼ ìˆ˜ë„ ìˆìŒ
 USTRUCT(BlueprintType)
 struct FBlockReference
 {
 	GENERATED_BODY()
 
-	// Ã»Å© ¾×ÅÍ È¤Àº °³º° ºí·Ï ¾×ÅÍ
+	// ì²­í¬ ì•¡í„° í˜¹ì€ ê°œë³„ ë¸”ë¡ ì•¡í„°
 	UPROPERTY()
 	UObject* TargetObject = nullptr;
 
-	// Ãæµ¹ °Ë»ç¿¡¼­ °É¸° ÄÄÆ÷³ÍÆ® (HISM Component)
+	// ì¶©ëŒ ê²€ì‚¬ì—ì„œ ê±¸ë¦° ì»´í¬ë„ŒíŠ¸ (HISM Component)
 	UPROPERTY()
 	UPrimitiveComponent* TargetComponent = nullptr;
 
-	// HISM ÀÎµ¦½º (°³º° ¾×ÅÍÀÎ °æ¿ì -1)
+	// HISM ì¸ë±ìŠ¤ (ê°œë³„ ì•¡í„°ì¸ ê²½ìš° -1)
 	UPROPERTY()
 	int32 ItemIndex = -1;
 
 	bool IsValid() const { return TargetObject != nullptr; }
 
-	// == ¿¬»êÀÚ ¿À¹ö·Îµù (TArray.Find µî¿¡¼­ »ç¿ë)
+	// == ì—°ì‚°ì ì˜¤ë²„ë¡œë”© (TArray.Find ë“±ì—ì„œ ì‚¬ìš©)
 	bool operator==(const FBlockReference& Other) const
 	{
 		return TargetObject == Other.TargetObject && ItemIndex == Other.ItemIndex;
@@ -42,7 +42,7 @@ class UBlockSystemInterface : public UInterface
 };
 
 /**
- * World ¸ğµâÀÇ ±â´ÉÀ» ¿ÜºÎ(Skill µî)¿¡¼­ È£ÃâÇÏ±â À§ÇÑ ÅëÇÕ ÀÎÅÍÆäÀÌ½º
+ * World ëª¨ë“ˆì˜ ê¸°ëŠ¥ì„ ì™¸ë¶€(Skill ë“±)ì—ì„œ í˜¸ì¶œí•˜ê¸° ìœ„í•œ í†µí•© ì¸í„°í˜ì´ìŠ¤
  */
 class WINTER2025CORE_API IBlockSystemInterface
 {
@@ -50,33 +50,33 @@ class WINTER2025CORE_API IBlockSystemInterface
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
 public:
-	// ºí·Ï ¼ÒÈ¯
+	// ë¸”ë¡ ì†Œí™˜
 	virtual AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) = 0;
 	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) = 0;
 
-	// ½Ã½ºÅÛÀÌ Ref¸¦ ÇØ¼®ÇØ¼­ À§Ä¡¸¦ ¹İÈ¯ (HISMÀÌ¸é Transform °è»ê, Actor¸é ActorLocation)
+	// ì‹œìŠ¤í…œì´ Refë¥¼ í•´ì„í•´ì„œ ìœ„ì¹˜ë¥¼ ë°˜í™˜ (HISMì´ë©´ Transform ê³„ì‚°, Actorë©´ ActorLocation)
 	virtual FVector GetBlockLocation(const FBlockReference& Ref) = 0;
 	virtual float GetGridSize() const = 0;
 
-	// ¹İ°æ ³»ÀÇ ¸ğµç ºí·Ï(Actor + HISM) µ¥ÀÌÅÍ¸¦ »èÁ¦ (ºí·Ï ÆÄ±«)
+	// ë°˜ê²½ ë‚´ì˜ ëª¨ë“  ë¸”ë¡(Actor + HISM) ë°ì´í„°ë¥¼ ì‚­ì œ (ë¸”ë¡ íŒŒê´´)
 	virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) = 0;
 
-	// ¹İ°æ ³»ÀÇ ºí·Ï ÂüÁ¶µéÀ» ¼öÁı (½ºÅ³ ¹üÀ§ Ç¥½Ã ¹× Å¸°ÔÆÃ)
+	// ë°˜ê²½ ë‚´ì˜ ë¸”ë¡ ì°¸ì¡°ë“¤ì„ ìˆ˜ì§‘ (ìŠ¤í‚¬ ë²”ìœ„ í‘œì‹œ ë° íƒ€ê²ŒíŒ…)
 	virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) = 0;
 
-	// Æ¯Á¤ ºí·Ï¿¡ ÇÏÀÌ¶óÀÌÆ® Àû¿ë (HISM ÀÎµ¦½º Ã³¸® Æ÷ÇÔ)
+	// íŠ¹ì • ë¸”ë¡ì— í•˜ì´ë¼ì´íŠ¸ ì ìš© (HISM ì¸ë±ìŠ¤ ì²˜ë¦¬ í¬í•¨)
 	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) = 0;
 
-	// ¼­ºê½Ã½ºÅÛÀÌ »ı¼ºµÉ ¶§(Initialize) ÀÚ½ÅÀ» µî·Ï
+	// ì„œë¸Œì‹œìŠ¤í…œì´ ìƒì„±ë  ë•Œ(Initialize) ìì‹ ì„ ë“±ë¡
 	static void RegisterSystem(UWorld* World, IBlockSystemInterface* System);
 
-	// ¼­ºê½Ã½ºÅÛÀÌ ÆÄ±«µÉ ¶§(Deinitialize) µî·Ï ÇØÁ¦
+	// ì„œë¸Œì‹œìŠ¤í…œì´ íŒŒê´´ë  ë•Œ(Deinitialize) ë“±ë¡ í•´ì œ
 	static void UnregisterSystem(UWorld* World);
 
 	static IBlockSystemInterface* Get(const UObject* WorldContextObject);
 
 private:
-	// ¿ùµåº°·Î ÀÎÅÍÆäÀÌ½º ±¸ÇöÃ¼¸¦ ÀúÀåÇÏ´Â ¸Ê
-	// Core ¸ğµâÀÇ cpp ÆÄÀÏ¿¡ Á¤ÀÇµÉ ¿¹Á¤
+	// ì›”ë“œë³„ë¡œ ì¸í„°í˜ì´ìŠ¤ êµ¬í˜„ì²´ë¥¼ ì €ì¥í•˜ëŠ” ë§µ
+	// Core ëª¨ë“ˆì˜ cpp íŒŒì¼ì— ì •ì˜ë  ì˜ˆì •
 	static TMap<TWeakObjectPtr<UWorld>, IBlockSystemInterface*> GlobalSystemMap;
 };

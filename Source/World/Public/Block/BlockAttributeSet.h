@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -7,15 +7,15 @@
 #include "AbilitySystemComponent.h"
 #include "BlockAttributeSet.generated.h"
 
-// °ÔÅÍ, ¼¼ÅÍ, ÃÊ±âÈ­ ÇÔ¼ö¸¦ ÀÚµ¿À¸·Î »ı¼ºÇÏ´Â ¸ÅÅ©·Î
+// ê²Œí„°, ì„¸í„°, ì´ˆê¸°í™” í•¨ìˆ˜ë¥¼ ìë™ìœ¼ë¡œ ìƒì„±í•˜ëŠ” ë§¤í¬ë¡œ
 #define ATTRIBUTE_ACCESSORS(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_PROPERTY_GETTER(ClassName, PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_GETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
-// ÆÄ±« ½Ã È£ÃâÇÒµ¨¸®°ÔÀÌÆ® ¼±¾ğ
-// ÆÄ¶ó¹ÌÅÍ·Î ´©°¡ Á×¿´´ÂÁö Àü´Ş
+// íŒŒê´´ ì‹œ í˜¸ì¶œí• ë¸ë¦¬ê²Œì´íŠ¸ ì„ ì–¸
+// íŒŒë¼ë¯¸í„°ë¡œ ëˆ„ê°€ ì£½ì˜€ëŠ”ì§€ ì „ë‹¬
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDestroyed, AActor*);
 
 /**
@@ -29,31 +29,31 @@ class WORLD_API UBlockAttributeSet : public UAttributeSet
 public:
 	UBlockAttributeSet();
 
-	// ³×Æ®¿öÅ© º¹Á¦¸¦ À§ÇÑ ÇÔ¼ö (¼­¹ö¿¡¼­ °ªÀÌ º¯°æµÇ¾úÀ» ¶§, Å¬¶óÀÌ¾ğÆ®¿¡ µ¿±âÈ­)
+	// ë„¤íŠ¸ì›Œí¬ ë³µì œë¥¼ ìœ„í•œ í•¨ìˆ˜ (ì„œë²„ì—ì„œ ê°’ì´ ë³€ê²½ë˜ì—ˆì„ ë•Œ, í´ë¼ì´ì–¸íŠ¸ì— ë™ê¸°í™”)
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// ¼Ó¼º º¯°æ Àü È£Ãâ
+	// ì†ì„± ë³€ê²½ ì „ í˜¸ì¶œ
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 
-	// GE¸¦ Àû¿ë ¹ŞÀº ÈÄ È£Ãâ (PreAttributeChange ÀÌÈÄ)
+	// GEë¥¼ ì ìš© ë°›ì€ í›„ í˜¸ì¶œ (PreAttributeChange ì´í›„)
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
-	// ÆÄ±«µÇ¾úÀ» ¶§ ¹æ¼ÛÇÒ µ¨¸®°ÔÀÌÆ®
+	// íŒŒê´´ë˜ì—ˆì„ ë•Œ ë°©ì†¡í•  ë¸ë¦¬ê²Œì´íŠ¸
 	mutable FOnDestroyed OnDestroyed;
 
 public:
-	// Ã¼·Â
+	// ì²´ë ¥
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_Health)
 	FGameplayAttributeData Health;
 	ATTRIBUTE_ACCESSORS(UBlockAttributeSet, Health);
 
-	// ÃÖ´ë Ã¼·Â
+	// ìµœëŒ€ ì²´ë ¥
 	UPROPERTY(BlueprintReadOnly, Category = "Attributes", ReplicatedUsing = OnRep_MaxHealth)
 	FGameplayAttributeData MaxHealth;
 	ATTRIBUTE_ACCESSORS(UBlockAttributeSet, MaxHealth);
 
 protected:
-	// OnRep ÇÔ¼öµé (¼­¹ö¿¡¼­ º¯°æµÈ °ªÀÌ Å¬¶óÀÌ¾ğÆ®¿¡ µµÂøÇßÀ» ¶§ È£ÃâµÇ´Â Äİ¹é ÇÔ¼ö)
+	// OnRep í•¨ìˆ˜ë“¤ (ì„œë²„ì—ì„œ ë³€ê²½ëœ ê°’ì´ í´ë¼ì´ì–¸íŠ¸ì— ë„ì°©í–ˆì„ ë•Œ í˜¸ì¶œë˜ëŠ” ì½œë°± í•¨ìˆ˜)
 	UFUNCTION()
 	virtual void OnRep_Health(const FGameplayAttributeData& OldHealth);
 

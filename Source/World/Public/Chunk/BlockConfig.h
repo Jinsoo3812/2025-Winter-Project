@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -9,27 +9,27 @@
 #include "BlockConfig.generated.h"
 
 /**
- * ´ÜÀÏ ºí·ÏÀÇ Á¤ÀÇ
- * ¸ğµç ºí·ÏÀÌ °øÅëÀ¸·Î °¡ÁöµÇ, ±× Å¸ÀÔº°·Î ´Ù¸£°Ô °¡Áö´Â ¼Ó¼ºµé
+ * ë‹¨ì¼ ë¸”ë¡ì˜ ì •ì˜
+ * ëª¨ë“  ë¸”ë¡ì´ ê³µí†µìœ¼ë¡œ ê°€ì§€ë˜, ê·¸ íƒ€ì…ë³„ë¡œ ë‹¤ë¥´ê²Œ ê°€ì§€ëŠ” ì†ì„±ë“¤
  */
 USTRUCT(BlueprintType)
 struct FBlockDefinition
 {
 	GENERATED_BODY()
 
-	// ·»´õ¸µ¿¡ »ç¿ëÇÒ ¸Ş½Ã
+	// ë Œë”ë§ì— ì‚¬ìš©í•  ë©”ì‹œ
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	UStaticMesh* Mesh = nullptr;
 
-	// ÀÌ ºí·ÏÀÌ HISMÀÌ ¾Æ´Ñ Actor·Î Á¸ÀçÇØ¾ß ÇÏ´ÂÁö ¿©ºÎ
+	// ì´ ë¸”ë¡ì´ HISMì´ ì•„ë‹Œ Actorë¡œ ì¡´ì¬í•´ì•¼ í•˜ëŠ”ì§€ ì—¬ë¶€
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic")
 	bool bIsActor = false;
 
-	// Actor·Î ½ºÆùµÉ ¶§ »ç¿ëÇÒ ÅÂ±× (Subsystem Àü´Ş¿ë)
+	// Actorë¡œ ìŠ¤í°ë  ë•Œ ì‚¬ìš©í•  íƒœê·¸ (Subsystem ì „ë‹¬ìš©)
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic", meta = (EditCondition = "bIsActor"))
 	FGameplayTag ActorTag;
 
-	// (ÃßÈÄ È®Àå) ÆÄ±« ½Ã È¿°ú, ³»±¸µµ °è¼ö, »ç¿îµå µî
+	// (ì¶”í›„ í™•ì¥) íŒŒê´´ ì‹œ íš¨ê³¼, ë‚´êµ¬ë„ ê³„ìˆ˜, ì‚¬ìš´ë“œ ë“±
 	// UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	// USoundBase* BreakSound;
 };
@@ -39,11 +39,11 @@ class WORLD_API UBlockConfig : public UDataAsset
 {
 	GENERATED_BODY()
 public:
-	// Enum Å°¸¦ ±â¹İÀ¸·Î ºí·Ï Á¤ÀÇ¸¦ Ã£±â À§ÇÑ ¸Ê
+	// Enum í‚¤ë¥¼ ê¸°ë°˜ìœ¼ë¡œ ë¸”ë¡ ì •ì˜ë¥¼ ì°¾ê¸° ìœ„í•œ ë§µ
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
 	TMap<EBlockType, FBlockDefinition> BlockDefinitions;
 
-	// ÇïÆÛ ÇÔ¼ö: ¸Ş½Ã °¡Á®¿À±â
+	// í—¬í¼ í•¨ìˆ˜: ë©”ì‹œ ê°€ì ¸ì˜¤ê¸°
 	UStaticMesh* GetMeshForType(EBlockType Type) const
 	{
 		if (const FBlockDefinition* Def = BlockDefinitions.Find(Type))
@@ -55,7 +55,7 @@ public:
 
 	EBlockType GetBlockTypeByTag(const FGameplayTag& Tag) const
 	{
-		// ¸ÊÀ» ¼øÈ¸ÇÏ¸ç ÅÂ±×°¡ ÀÏÄ¡ÇÏ´ÂÁö È®ÀÎ
+		// ë§µì„ ìˆœíšŒí•˜ë©° íƒœê·¸ê°€ ì¼ì¹˜í•˜ëŠ”ì§€ í™•ì¸
 		for (const auto& Pair : BlockDefinitions)
 		{
 			if (Pair.Value.bIsActor && Pair.Value.ActorTag.MatchesTag(Tag))
@@ -63,7 +63,7 @@ public:
 				return Pair.Key;
 			}
 		}
-		// ¸ø Ã£À¸¸é None ¹İÈ¯
+		// ëª» ì°¾ìœ¼ë©´ None ë°˜í™˜
 		return EBlockType::None;
 	}
 };

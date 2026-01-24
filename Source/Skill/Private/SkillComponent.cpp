@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "SkillComponent.h"
 #include "AbilitySystemComponent.h"
@@ -11,7 +11,7 @@ USkillComponent::USkillComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 	bWantsInitializeComponent = true;
 
-	// ÄÄÆ÷³ÍÆ® ÀÚÃ¼ÀÇ ¸®ÇÃ¸®ÄÉÀÌ¼Ç È°¼ºÈ­
+	// ì»´í¬ë„ŒíŠ¸ ìì²´ì˜ ë¦¬í”Œë¦¬ì¼€ì´ì…˜ í™œì„±í™”
 	SetIsReplicatedByDefault(true);
 }
 
@@ -24,9 +24,9 @@ void USkillComponent::InitializeSkillSystem(UAbilitySystemComponent* InASC)
 	}
 
 	/*
-	* BP¿¡¼­ ¼³Á¤ÇÑ ½ºÅ³ ¹× ·é ¼¼Æ®¸¦ ÀåÂø
-	* DefaultSkillSets¸¦ Ç×»ó SkillSlots·Î º¹»çÇÏ¿© »ç¿ë
-	* (·±Å¸ÀÓ¿¡ SkillSlots¸¦ ¼öÁ¤ÇÏ¸é¼­ »ç¿ë, DefaultSkillSets´Â ¿øº» À¯Áö)
+	* BPì—ì„œ ì„¤ì •í•œ ìŠ¤í‚¬ ë° ë£¬ ì„¸íŠ¸ë¥¼ ì¥ì°©
+	* DefaultSkillSetsë¥¼ í•­ìƒ SkillSlotsë¡œ ë³µì‚¬í•˜ì—¬ ì‚¬ìš©
+	* (ëŸ°íƒ€ì„ì— SkillSlotsë¥¼ ìˆ˜ì •í•˜ë©´ì„œ ì‚¬ìš©, DefaultSkillSetsëŠ” ì›ë³¸ ìœ ì§€)
 	*/
 	if (DefaultSkillSets.Num() > 0)
 	{
@@ -38,47 +38,47 @@ void USkillComponent::InitializeSkillSystem(UAbilitySystemComponent* InASC)
 		return;
 	}
 
-	// 2. ¼­¹ö ±ÇÇÑÀÌ ÀÖÀ» ¶§¸¸ ·ÎÁ÷ ¼öÇà (GAS ºÎ¿© ¹× µ¥ÀÌÅÍ °»½Å)
+	// 2. ì„œë²„ ê¶Œí•œì´ ìˆì„ ë•Œë§Œ ë¡œì§ ìˆ˜í–‰ (GAS ë¶€ì—¬ ë° ë°ì´í„° ê°±ì‹ )
 	if (GetOwner()->HasAuthority())
 	{
-		// SkillSlots ¹è¿­ ÇÏ³ª¸¸ ¼øÈ¸ÇÏ¸é µË´Ï´Ù. (ÀÌÁß ·çÇÁ X)
+		// SkillSlots ë°°ì—´ í•˜ë‚˜ë§Œ ìˆœíšŒí•˜ë©´ ë©ë‹ˆë‹¤. (ì´ì¤‘ ë£¨í”„ X)
 		for (int32 i = 0; i < SkillSlots.Num(); ++i)
 		{
-			FSkillSlot& SkillSlot = SkillSlots[i]; // ÂüÁ¶·Î °¡Á®¿Í¾ß ¿øº» ¼öÁ¤ °¡´É
+			FSkillSlot& SkillSlot = SkillSlots[i]; // ì°¸ì¡°ë¡œ ê°€ì ¸ì™€ì•¼ ì›ë³¸ ìˆ˜ì • ê°€ëŠ¥
 
-			// Tag À¯È¿¼º °Ë»ç
+			// Tag ìœ íš¨ì„± ê²€ì‚¬
 			if (!SkillSlot.SlotTag.IsValid())
 			{
 				UE_LOG(LogTemp, Warning, TEXT("SkillComponent: SkillSlot %d has invalid SlotTag!"), i);
 				continue;
 			}
 
-			// ·é Ä³½Ã ¾÷µ¥ÀÌÆ®
+			// ë£¬ ìºì‹œ ì—…ë°ì´íŠ¸
 			SkillSlot.UpdateGreenRuneCache();
 
-			// ÀåÂøÇÒ ½ºÅ³ °áÁ¤ (±âº»°ª)
+			// ì¥ì°©í•  ìŠ¤í‚¬ ê²°ì • (ê¸°ë³¸ê°’)
 			TSubclassOf<UGameplayAbility> FinalSkillClass = SkillSlot.EquippedSkill;
 
-			// 3. ÃÊ·Ï ·é(½ºÅ³ ±³Ã¼) Àû¿ë ·ÎÁ÷
+			// 3. ì´ˆë¡ ë£¬(ìŠ¤í‚¬ êµì²´) ì ìš© ë¡œì§
 			if (SkillSlot.EquippedGreenRune)
 			{
 				UDA_Rune* GreenRune = SkillSlot.EquippedGreenRune;
 
-				// »ó¼Ó °ü°è È®ÀÎ (¾ÈÀüÀåÄ¡)
+				// ìƒì† ê´€ê³„ í™•ì¸ (ì•ˆì „ì¥ì¹˜)
 				if (GreenRune->OriginalSkillClass && FinalSkillClass && FinalSkillClass->IsChildOf(GreenRune->OriginalSkillClass))
 				{
 					if (GreenRune->ReplacementSkillClass)
 					{
-						// ±³Ã¼ÇÒ ½ºÅ³·Î º¯°æ
+						// êµì²´í•  ìŠ¤í‚¬ë¡œ ë³€ê²½
 						FinalSkillClass = GreenRune->ReplacementSkillClass;
 
-						// [Áß¿ä] ½ÇÁ¦ µ¥ÀÌÅÍ(±¸Á¶Ã¼)µµ º¯°æÇØÁà¾ß ¸®ÇÃ¸®ÄÉÀÌ¼ÇÀ» ÅëÇØ Å¬¶óÀÌ¾ğÆ® UI°¡ ¹Ù²ñ
+						// [ì¤‘ìš”] ì‹¤ì œ ë°ì´í„°(êµ¬ì¡°ì²´)ë„ ë³€ê²½í•´ì¤˜ì•¼ ë¦¬í”Œë¦¬ì¼€ì´ì…˜ì„ í†µí•´ í´ë¼ì´ì–¸íŠ¸ UIê°€ ë°”ë€œ
 						SkillSlot.EquippedSkill = FinalSkillClass;
 					}
 				}
 			}
 
-			// 4. ÃÖÁ¾ °áÁ¤µÈ ½ºÅ³À» GAS¿¡ µî·Ï
+			// 4. ìµœì¢… ê²°ì •ëœ ìŠ¤í‚¬ì„ GASì— ë“±ë¡
 			if (FinalSkillClass)
 			{
 				EquipSkill(SkillSlot.SlotTag, FinalSkillClass);
@@ -96,8 +96,8 @@ void USkillComponent::EquipSkill(FGameplayTag SlotTag, TSubclassOf<UGameplayAbil
 	if (!CachedASC) return;
 	if (!SlotTag.IsValid()) return;
 
-	// 1. ±âÁ¸ ½ºÅ³ ÇØÁ¦ (ActiveSkillHandles Map »ç¿ë)
-	// ÇØ´ç ÅÂ±×(¿¹: Slot1) ÀÚ¸®¿¡ ÀÌ¹Ì ÇÚµéÀÌ ÀÖ´Ù¸é Á¦°Å
+	// 1. ê¸°ì¡´ ìŠ¤í‚¬ í•´ì œ (ActiveSkillHandles Map ì‚¬ìš©)
+	// í•´ë‹¹ íƒœê·¸(ì˜ˆ: Slot1) ìë¦¬ì— ì´ë¯¸ í•¸ë“¤ì´ ìˆë‹¤ë©´ ì œê±°
 	if (ActiveSkillHandles.Contains(SlotTag))
 	{
 		FGameplayAbilitySpecHandle OldHandle = ActiveSkillHandles[SlotTag];
@@ -108,7 +108,7 @@ void USkillComponent::EquipSkill(FGameplayTag SlotTag, TSubclassOf<UGameplayAbil
 		ActiveSkillHandles.Remove(SlotTag);
 	}
 
-	// 2. »õ ½ºÅ³ ºÎ¿©
+	// 2. ìƒˆ ìŠ¤í‚¬ ë¶€ì—¬
 	if (AbilityClass)
 	{
 		GiveAbility(SlotTag, AbilityClass);
@@ -119,10 +119,10 @@ void USkillComponent::GiveAbility(FGameplayTag SlotTag, TSubclassOf<UGameplayAbi
 {
 	if (!CachedASC || !AbilityClass) return;
 
-	// SlotTag¸¦ InputID·Î º¯È¯ (Slot1 -> 0, Slot2 -> 1, Slot3 -> 2)
+	// SlotTagë¥¼ InputIDë¡œ ë³€í™˜ (Slot1 -> 0, Slot2 -> 1, Slot3 -> 2)
 	int32 InputID = INDEX_NONE;
 	
-	// SkillSlots ¹è¿­¿¡¼­ ÀÌ SlotTagÀÇ ÀÎµ¦½º Ã£±â
+	// SkillSlots ë°°ì—´ì—ì„œ ì´ SlotTagì˜ ì¸ë±ìŠ¤ ì°¾ê¸°
 	for (int32 i = 0; i < SkillSlots.Num(); ++i)
 	{
 		if (SkillSlots[i].SlotTag == SlotTag)
@@ -138,16 +138,16 @@ void USkillComponent::GiveAbility(FGameplayTag SlotTag, TSubclassOf<UGameplayAbi
 		return;
 	}
 
-	// AbilitySpec »ı¼º (InputID ¼³Á¤!)
+	// AbilitySpec ìƒì„± (InputID ì„¤ì •!)
 	FGameplayAbilitySpec Spec(AbilityClass, 1, InputID, this);
 
-	// DynamicTagµµ Ãß°¡ (ÅÂ±× ±â¹İ °Ë»ö¿ë)
+	// DynamicTagë„ ì¶”ê°€ (íƒœê·¸ ê¸°ë°˜ ê²€ìƒ‰ìš©)
 	Spec.DynamicAbilityTags.AddTag(SlotTag);
 
-	// ASC¿¡ µî·ÏÇÏ°í ¿µ¼öÁõ(Handle) ¹Ş±â
+	// ASCì— ë“±ë¡í•˜ê³  ì˜ìˆ˜ì¦(Handle) ë°›ê¸°
 	FGameplayAbilitySpecHandle Handle = CachedASC->GiveAbility(Spec);
 
-	// Map¿¡ ÀúÀå (³ªÁß¿¡ ±³Ã¼/ÇØÁ¦¸¦ À§ÇØ)
+	// Mapì— ì €ì¥ (ë‚˜ì¤‘ì— êµì²´/í•´ì œë¥¼ ìœ„í•´)
 	ActiveSkillHandles.Add(SlotTag, Handle);
 }
 
@@ -155,19 +155,19 @@ float USkillComponent::GetTotalDamageMultiplier(int32 SlotIndex) const
 {
 	if (!IsValidSlotIndex(SlotIndex)) {
 		UE_LOG(LogTemp, Warning, TEXT("GetTotalDamageMultiplier: Invalid SlotIndex %d"), SlotIndex);
-		return 1.0f; // ±âº»°ª ¹İÈ¯
+		return 1.0f; // ê¸°ë³¸ê°’ ë°˜í™˜
 	}
 
-	// ±âº» ¹èÀ²Àº 1.0 (100%)
+	// ê¸°ë³¸ ë°°ìœ¨ì€ 1.0 (100%)
 	float TotalMultiplier = 1.0f;
 
-	// ÇØ´ç ½ºÅ³ ½½·Ô¿¡ ÀåÂøµÈ 3°³ÀÇ ·éÀ» ¼øÈ¸
+	// í•´ë‹¹ ìŠ¤í‚¬ ìŠ¬ë¡¯ì— ì¥ì°©ëœ 3ê°œì˜ ë£¬ì„ ìˆœíšŒ
 	for (const FRuneSlot& Slot : SkillSlots[SlotIndex].RuneSlots)
 	{
 		const UDA_Rune* Rune = Slot.RuneAsset;
 		if (Rune && Rune->RuneTag == TAG_Rune_Red)
 		{
-			// °ö¼À ¹æ½ÄÀ¸·Î º¯°æ: RuneValue°¡ 2.0ÀÌ¸é 2¹è°¡ µÊ
+			// ê³±ì…ˆ ë°©ì‹ìœ¼ë¡œ ë³€ê²½: RuneValueê°€ 2.0ì´ë©´ 2ë°°ê°€ ë¨
 			TotalMultiplier *= Rune->RuneValue;
 		}
 	}
@@ -178,10 +178,10 @@ float USkillComponent::GetTotalCooldownReduction(int32 SlotIndex) const
 {
 	if (!IsValidSlotIndex(SlotIndex)) {
 		UE_LOG(LogTemp, Warning, TEXT("GetTotalCooldownReduction: Invalid SlotIndex %d"), SlotIndex);
-		return 0.0f; // ±âº»°ª ¹İÈ¯
+		return 0.0f; // ê¸°ë³¸ê°’ ë°˜í™˜
 	}
 
-	// ÄğÅ¸ÀÓ °¨¼Ò·® ÇÕ°è (0.0¿¡¼­ ½ÃÀÛ)
+	// ì¿¨íƒ€ì„ ê°ì†ŒëŸ‰ í•©ê³„ (0.0ì—ì„œ ì‹œì‘)
 	float TotalReduction = 0.0f;
 
 	for (const FRuneSlot& Slot : SkillSlots[SlotIndex].RuneSlots)
@@ -193,7 +193,7 @@ float USkillComponent::GetTotalCooldownReduction(int32 SlotIndex) const
 		}
 	}
 
-	// ÃÖ´ë Äğ°¨ Á¦ÇÑ (¿¹: 99% ÀÌ»ó Äğ°¨ ¹æÁö)
+	// ìµœëŒ€ ì¿¨ê° ì œí•œ (ì˜ˆ: 99% ì´ìƒ ì¿¨ê° ë°©ì§€)
 	return FMath::Clamp(TotalReduction, 0.0f, 0.99f);
 }
 
@@ -201,10 +201,10 @@ float USkillComponent::GetTotalRangeMultiplier(int32 SlotIndex) const
 {
 	if (!IsValidSlotIndex(SlotIndex)) {
 		UE_LOG(LogTemp, Warning, TEXT("GetTotalRangeMultiplier: Invalid SlotIndex %d"), SlotIndex);
-		return 1.0f; // ±âº»°ª ¹İÈ¯
+		return 1.0f; // ê¸°ë³¸ê°’ ë°˜í™˜
 	}
 
-	// ±âº» ¹èÀ² 1.0¹è
+	// ê¸°ë³¸ ë°°ìœ¨ 1.0ë°°
 	float TotalMultiplier = 1.0f;
 
 	for (const FRuneSlot& Slot : SkillSlots[SlotIndex].RuneSlots)
@@ -212,7 +212,7 @@ float USkillComponent::GetTotalRangeMultiplier(int32 SlotIndex) const
 		const UDA_Rune* Rune = Slot.RuneAsset;
 		if (Rune && Rune->RuneTag == TAG_Rune_Blue)
 		{
-			// °ö¼À ¹æ½ÄÀ¸·Î º¯°æ: RuneValue°¡ 2.0ÀÌ¸é 2¹è°¡ µÊ
+			// ê³±ì…ˆ ë°©ì‹ìœ¼ë¡œ ë³€ê²½: RuneValueê°€ 2.0ì´ë©´ 2ë°°ê°€ ë¨
 			TotalMultiplier *= Rune->RuneValue;
 		}
 	}
@@ -222,30 +222,30 @@ float USkillComponent::GetTotalRangeMultiplier(int32 SlotIndex) const
 
 bool USkillComponent::IsValidSlotIndex(int32 SlotIndex) const
 {
-	// ½½·Ô ÀÎµ¦½º°¡ ¹è¿­ ¹üÀ§ ³»¿¡ ÀÖ´ÂÁö È®ÀÎ
+	// ìŠ¬ë¡¯ ì¸ë±ìŠ¤ê°€ ë°°ì—´ ë²”ìœ„ ë‚´ì— ìˆëŠ”ì§€ í™•ì¸
 	return SkillSlots.IsValidIndex(SlotIndex);
 }
 
 bool USkillComponent::EquipRuneByID(int32 SlotIndex, int32 RuneSlotIndex, FName RuneID)
 {
-	// µ¥ÀÌÅÍ Å×ÀÌºí À¯È¿¼º °Ë»ç
+	// ë°ì´í„° í…Œì´ë¸” ìœ íš¨ì„± ê²€ì‚¬
 	if (!RuneDataTable)
 	{
 		UE_LOG(LogTemp, Error, TEXT("SkillManagerComponent: RuneDataTable is null.Please assign it in the blueprint."));
 		return false;
 	}
 
-	// µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ Çà(Row) Ã£±â
-	// ContextString: ¿À·ù ¸Ş½ÃÁö¿¡ »ç¿ëµÇ´Â ¹®ÀÚ¿­
+	// ë°ì´í„° í…Œì´ë¸”ì—ì„œ í–‰(Row) ì°¾ê¸°
+	// ContextString: ì˜¤ë¥˜ ë©”ì‹œì§€ì— ì‚¬ìš©ë˜ëŠ” ë¬¸ìì—´
 	static const FString ContextString(TEXT("Rune Lookup"));
 	FRuneDataRow* Row = RuneDataTable->FindRow<FRuneDataRow>(RuneID, ContextString);
 
 	if (Row)
 	{
-		// ·é ¿¡¼Â À¯È¿¼º °Ë»ç
+		// ë£¬ ì—ì…‹ ìœ íš¨ì„± ê²€ì‚¬
 		if (Row->RuneAsset)
 		{
-			// ±âÁ¸ EquipRune ÇÔ¼ö Àç»ç¿ë
+			// ê¸°ì¡´ EquipRune í•¨ìˆ˜ ì¬ì‚¬ìš©
 			return EquipRune(SlotIndex, RuneSlotIndex, Row->RuneAsset);
 		}
 		else
@@ -263,34 +263,34 @@ bool USkillComponent::EquipRuneByID(int32 SlotIndex, int32 RuneSlotIndex, FName 
 
 bool USkillComponent::EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* RuneData)
 {
-	// 1. ½ºÅ³ ½½·Ô À¯È¿¼º °Ë»ç
+	// 1. ìŠ¤í‚¬ ìŠ¬ë¡¯ ìœ íš¨ì„± ê²€ì‚¬
 	if (!IsValidSlotIndex(SlotIndex))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipRune: Invalid SlotIndex %d"), SlotIndex);
 		return false;
 	}
 
-	// 2. ·é ½½·Ô ÀÎµ¦½º À¯È¿¼º °Ë»ç (0~2)
+	// 2. ë£¬ ìŠ¬ë¡¯ ì¸ë±ìŠ¤ ìœ íš¨ì„± ê²€ì‚¬ (0~2)
 	if (!SkillSlots[SlotIndex].RuneSlots.IsValidIndex(RuneSlotIndex))
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipRune: Invalid RuneSlotIndex %d"), RuneSlotIndex);
 		return false;
 	}
 
-	// 3. ·é µ¥ÀÌÅÍ À¯È¿¼º °Ë»ç
+	// 3. ë£¬ ë°ì´í„° ìœ íš¨ì„± ê²€ì‚¬
 	if (!RuneData)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("EquipRune: RuneData is null"));
 		return false;
 	}
 
-	// 4. ÃÊ·Ï ·é Áßº¹ °Ë»ç ¹× Á¦°Å
+	// 4. ì´ˆë¡ ë£¬ ì¤‘ë³µ ê²€ì‚¬ ë° ì œê±°
 	if (RuneData->RuneTag == TAG_Rune_Green)
 	{
-		// ÇØ´ç ½ºÅ³ ½½·ÔÀÇ ¸ğµç ·é ½½·ÔÀ» ¼øÈ¸ÇÏ¸ç ±âÁ¸ ÃÊ·Ï ·é Á¦°Å
+		// í•´ë‹¹ ìŠ¤í‚¬ ìŠ¬ë¡¯ì˜ ëª¨ë“  ë£¬ ìŠ¬ë¡¯ì„ ìˆœíšŒí•˜ë©° ê¸°ì¡´ ì´ˆë¡ ë£¬ ì œê±°
 		for (int32 i = 0; i < SkillSlots[SlotIndex].RuneSlots.Num(); ++i)
 		{
-			// ÇöÀç ÀåÂøÇÏ·Á´Â ½½·ÔÀº Á¦¿Ü
+			// í˜„ì¬ ì¥ì°©í•˜ë ¤ëŠ” ìŠ¬ë¡¯ì€ ì œì™¸
 			if (i != RuneSlotIndex)
 			{
 				UDA_Rune* ExistingRune = SkillSlots[SlotIndex].RuneSlots[i].RuneAsset;
@@ -302,10 +302,10 @@ bool USkillComponent::EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* 
 		}
 	}
 
-	// 5. ·é ÀåÂø (¹è¿­ÀÇ ÇØ´ç ÀÎµ¦½º¸¦ µ¤¾î¾¸)
+	// 5. ë£¬ ì¥ì°© (ë°°ì—´ì˜ í•´ë‹¹ ì¸ë±ìŠ¤ë¥¼ ë®ì–´ì”€)
 	SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex].RuneAsset = RuneData;
 
-	// ÃÊ·Ï ·é Ä³½Ã ¾÷µ¥ÀÌÆ®
+	// ì´ˆë¡ ë£¬ ìºì‹œ ì—…ë°ì´íŠ¸
 	SkillSlots[SlotIndex].UpdateGreenRuneCache();
 
 	return true;
@@ -319,30 +319,30 @@ bool USkillComponent::UnequipRune(int32 SlotIndex, int32 RuneSlotIndex)
 		return false;
 	}
 
-	// ÇØ´ç Ä­À» ºñ¿ò (nullptr)
+	// í•´ë‹¹ ì¹¸ì„ ë¹„ì›€ (nullptr)
 	SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex].RuneAsset = nullptr;
 
-	// ÃÊ·Ï ·é Ä³½Ã ¾÷µ¥ÀÌÆ®
+	// ì´ˆë¡ ë£¬ ìºì‹œ ì—…ë°ì´íŠ¸
 	SkillSlots[SlotIndex].UpdateGreenRuneCache();
 
 	return true;
 }
 
-// FSkillSlotÀÇ UpdateGreenRuneCache ±¸Çö
+// FSkillSlotì˜ UpdateGreenRuneCache êµ¬í˜„
 void FSkillSlot::UpdateGreenRuneCache()
 {
 	EquippedGreenRune = nullptr;
 
-	// ÃÊ·Ï ·é ÅÂ±×
+	// ì´ˆë¡ ë£¬ íƒœê·¸
 	FGameplayTag GreenRuneTag = FGameplayTag::RequestGameplayTag(FName("Rune.Green"));
 
-	// ¸ğµç ·é ½½·ÔÀ» È®ÀÎÇÏ¿© ÃÊ·Ï ·é Ã£±â
+	// ëª¨ë“  ë£¬ ìŠ¬ë¡¯ì„ í™•ì¸í•˜ì—¬ ì´ˆë¡ ë£¬ ì°¾ê¸°
 	for (const FRuneSlot& Slot : RuneSlots)
 	{
 		if (Slot.RuneAsset && Slot.RuneAsset->RuneTag.MatchesTagExact(GreenRuneTag))
 		{
 			EquippedGreenRune = Slot.RuneAsset;
-			break; // ÃÊ·Ï ·éÀº ÇÏ³ª¸¸ °¡´ÉÇÏ¹Ç·Î Ã£À¸¸é Áß´Ü
+			break; // ì´ˆë¡ ë£¬ì€ í•˜ë‚˜ë§Œ ê°€ëŠ¥í•˜ë¯€ë¡œ ì°¾ìœ¼ë©´ ì¤‘ë‹¨
 		}
 	}
 }
@@ -351,6 +351,6 @@ void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// SkillSlots ¹è¿­À» ¼­¹ö -> Å¬¶óÀÌ¾ğÆ®·Î º¹Á¦
+	// SkillSlots ë°°ì—´ì„ ì„œë²„ -> í´ë¼ì´ì–¸íŠ¸ë¡œ ë³µì œ
 	DOREPLIFETIME(USkillComponent, SkillSlots);
 }
