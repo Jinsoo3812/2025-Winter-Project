@@ -14,7 +14,7 @@ void ABlockMapManager::BeginPlay()
 {
 	Super::BeginPlay();
 
-	// [추가] 서브시스템에 자신을 등록
+	// 서브시스템에 자신을 등록
 	if (UWorld* World = GetWorld())
 	{
 		if (UBlockManagerSubsystem* Subsystem = World->GetSubsystem<UBlockManagerSubsystem>())
@@ -35,13 +35,16 @@ void ABlockMapManager::GenerateWorld()
 		return;
 	}
 
-	// 1. 청크 액터 스폰 (빈 껍데기)
+	// 청크 액터 스폰 (빈 껍데기)
 	SpawnChunks();
 
-	// 2. 지형 데이터 생성 (데이터 채우기)
+	// 청크 간 이웃 설정
+	LinkChunkNeighbors();
+
+	// 지형 데이터 생성 (데이터 채우기)
 	GenerateBasicTerrain();
 
-	// 3. 시각적 업데이트 (비동기 렌더링 시작)
+	// 시각적 업데이트 (비동기 렌더링 시작)
 	UpdateAllChunks();
 }
 

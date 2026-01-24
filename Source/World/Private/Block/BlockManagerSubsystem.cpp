@@ -36,31 +36,18 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 	// Soft Pointer를 동기 로드(Synchronous Load)하여 실제 객체 가져오기
 	// 초기화 단계이므로 동기 로드가 허용됨. 
-	UDA_BlockConfig* BlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
+	CachedBlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
 
-	if (BlockConfig)
+	if(!CachedBlockConfig)
 	{
-		// 맵 데이터 캐싱
-		BlockClassMap = BlockConfig->BlockClassMap;
-		UE_LOG(LogTemp, Log, TEXT("BlockManagerSubsystem: Successfully loaded block config from Project Settings."));
-	}
-	else
-	{
-		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to load BlockConfig asset."));
-	}
-
-	LoadedBlockConfig = Settings->ChunkBlockConfigAsset.LoadSynchronous();
-	if (LoadedBlockConfig) {
-		UE_LOG(LogTemp, Log, TEXT("BlockManagerSubsystem: Successfully loaded chunk block config from Project Settings."));
-	}
-	else {
-		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to load Chunk BlockConfig asset."));
+		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to load BlockConfig from Asset."));
+		return;
 	}
 }
 
 void UBlockManagerSubsystem::Deinitialize()
 {
-	// [중요] 시스템 종료 시 반드시 등록 해제 (Dangling Pointer 방지)
+	// 시스템 종료 시 반드시 등록 해제 (Dangling Pointer 방지)
 	IBlockSystemInterface::UnregisterSystem(GetWorld());
 
 	Super::Deinitialize();
@@ -109,8 +96,6 @@ void UBlockManagerSubsystem::Tick(float DeltaTime)
 				Request.OwnerChunk->OnBlockSpawnFailed(Request.WorldLocation);
 			}
 		}
-		
-
 		ProcessCount++;
 	}
 }
@@ -136,25 +121,27 @@ void UBlockManagerSubsystem::RegisterMapManager(ABlockMapManager* InManager)
 
 AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity)
 {
-	// 태그에 맞는 블록 클래스 찾기
-	TSubclassOf<ABlockBase>* FoundClass = BlockClassMap.Find(BlockTypeTag);
+	if (!CachedBlockConfig)
+	{
+		UE_LOG(LogTemp, Error, TEXT("SpawnBlockByTag: MainConfig is not loaded!"));
+		return nullptr;
+	}
 
-	// 유효성 검사: 클래스를 찾지 못한 경우
-	if (!FoundClass || !(*FoundClass))
+	// Config의 헬퍼 함수를 통해 클래스 조회 (GetBlockClassByTag)
+	TSubclassOf<AActor> FoundActorClass = CachedBlockConfig->GetBlockClassByTag(BlockTypeTag);
+
+	if (!FoundActorClass)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("BlockManagerSubsystem: No block class found for tag %s"), *BlockTypeTag.ToString());
 		return nullptr;
 	}
-	// 클래스는 찾았으나 내부 포인터가 유효하지 않은 경우
-	else if (!FoundClass->Get())
-	{
-		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Found class is invalid for tag %s"), *BlockTypeTag.ToString());
-		return nullptr;
-	}
 
-	// CDO(Class Default Object)를 가져와서 생성될 블록의 기본 GridSize를 확인
-	ABlockBase* CDO = FoundClass->Get()->GetDefaultObject<ABlockBase>();
-	float GridSize = CDO ? CDO->GetBlockGridSize() : 100.0f;
+	// GridSize 가져오기
+	float GridSize = 100.0f;
+	if (ABlockBase* CDO = Cast<ABlockBase>(FoundActorClass->GetDefaultObject()))
+	{
+		GridSize = CDO->GetBlockGridSize();
+	}
 
 	// 위치 점유 확인
 	if (IsLocationOccupied(Location, GridSize))
@@ -168,7 +155,8 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	ABlockBase* NewBlock = GetWorld()->SpawnActor<ABlockBase>(*FoundClass, Location, Rotation, SpawnParams);
+	AActor* NewActor = GetWorld()->SpawnActor<AActor>(FoundActorClass, Location, Rotation, SpawnParams);
+	ABlockBase* NewBlock = Cast<ABlockBase>(NewActor);
 
 	// 생성 후 설정 (중력, 위치 보정 등)
 	if (NewBlock)
@@ -193,10 +181,8 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 		if (!MapManager)
 		{
 			UE_LOG(LogTemp, Error, TEXT("SpawnBlockByTag: MapManager is NULL! Cannot link chunk."));
-			// 여기서 리턴하면 블록은 생기지만 청크 연결은 안 됨.
-			// 원인을 알았으니 BlockMapManager::BeginPlay가 호출되었는지 확인 필요.
 		}
-		else if (!LoadedBlockConfig)
+		else if (!CachedBlockConfig)
 		{
 			UE_LOG(LogTemp, Error, TEXT("SpawnBlockByTag: LoadedBlockConfig is NULL!"));
 		}
@@ -204,12 +190,12 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 		/*
 		* 청크 시스템과 동기화
 		*/
-		if (MapManager && LoadedBlockConfig)
+		if (MapManager && CachedBlockConfig)
 		{
 			if (AChunkBase* TargetChunk = MapManager->GetChunkAtLocation(Location))
 			{
 				// 태그를 이용해 정확한 EBlockType 찾기
-				EBlockType TargetType = LoadedBlockConfig->GetBlockTypeByTag(BlockTypeTag);
+				EBlockType TargetType = CachedBlockConfig->GetBlockTypeByTag(BlockTypeTag);
 
 				// 만약 Config에 없는 태그라면 기본값(Destructible) 혹은 에러 처리
 				if (TargetType == EBlockType::None)
@@ -275,9 +261,9 @@ void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& 
 
 			// 태그로 타입 찾기
 			EBlockType TargetType = EBlockType::Destructible; // 기본값
-			if (LoadedBlockConfig)
+			if (CachedBlockConfig)
 			{
-				EBlockType FoundType = LoadedBlockConfig->GetBlockTypeByTag(Req.BlockTag);
+				EBlockType FoundType = CachedBlockConfig->GetBlockTypeByTag(Req.BlockTag);
 				if (FoundType != EBlockType::None)
 				{
 					TargetType = FoundType;
@@ -319,6 +305,7 @@ bool UBlockManagerSubsystem::IsLocationOccupied(
 	// 다른 블록이 있는 곳에는 스폰 불가
 	FCollisionObjectQueryParams ObjectQueryParams;
 	ObjectQueryParams.AddObjectTypesToQuery(ECC_Block);
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn); // 플레이어 등도 방해물이 될 수 있음
 
 	FCollisionQueryParams QueryParams;
 
@@ -347,8 +334,6 @@ void UBlockManagerSubsystem::GetBlocksInRadius(const FVector& Origin, float Radi
 	float RadiusSq = Radius * Radius;
 	for (const FOverlapResult& Result : Overlaps)
 	{
-		// 거리 체크 (Box -> Sphere 보정)
-
 		FBlockReference Ref;
 
 		// Case A: HISM (청크 지형)
@@ -360,6 +345,7 @@ void UBlockManagerSubsystem::GetBlocksInRadius(const FVector& Origin, float Radi
 				FTransform InstanceTransform;
 				HISM->GetInstanceTransform(Result.ItemIndex, InstanceTransform, true);
 
+				// 반경 내에 있는지 재확인
 				if (FVector::DistSquared(Origin, InstanceTransform.GetLocation()) <= RadiusSq)
 				{
 					Ref.TargetObject = Chunk;
@@ -372,7 +358,7 @@ void UBlockManagerSubsystem::GetBlocksInRadius(const FVector& Origin, float Radi
 		// Case B: Actor (파괴 가능 블록 등)
 		else if (AActor* Actor = Result.GetActor())
 		{
-			// [수정] GameplayEventInterface 구현 여부 확인 (상호작용 가능한 블록만)
+			// GameplayEventInterface 구현 여부 확인 (상호작용 가능한 블록만)
 			if (Actor->Implements<UGameplayEventInterface>())
 			{
 				if (FVector::DistSquared(Origin, Actor->GetActorLocation()) <= RadiusSq)
@@ -395,8 +381,6 @@ FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 	{
 		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Ref.TargetComponent))
 		{
-			// ChunkBase를 거칠 필요도 없이 바로 Transform 획득 가능
-			// 하지만 안전을 위해 Chunk 함수를 호출하거나 직접 계산
 			FTransform Trans;
 			HISM->GetInstanceTransform(Ref.ItemIndex, Trans, true);
 			return Trans.GetLocation();
@@ -413,15 +397,17 @@ FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 
 void UBlockManagerSubsystem::HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag)
 {
+	UE_LOG(LogTemp, Log, TEXT("HighlightBlock called with Tag: %s"), *Tag.ToString());
 	if (!BlockRef.IsValid()) {
 		UE_LOG(LogTemp, Warning, TEXT("HighlightBlock: Invalid Block Reference"));
 	}
+
+	FBlockCPDInfo CPDInfo = CachedBlockConfig->GetHighlightInfoByTag(Tag);
 
 	if (BlockRef.ItemIndex >= 0) // HISM
 	{
 		if (AChunkBase* Chunk = Cast<AChunkBase>(BlockRef.TargetObject))
 		{
-			// 컴포넌트를 넘겨줌
 			Chunk->HighlightHISMBlock(BlockRef.TargetComponent, BlockRef.ItemIndex, Tag);
 		}
 	}

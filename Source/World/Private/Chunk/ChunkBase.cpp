@@ -23,7 +23,7 @@ AChunkBase::AChunkBase()
 	int32 TotalBlocks = ChunkSizeX * ChunkSizeY * ChunkSizeZ;
 	BlockDataArray.Init(FBlockData{ EBlockType::None }, TotalBlocks);
 
-	// [신규] 버퍼 2개 공간 확보
+	// 버퍼 2개 공간 확보
 	HISM_Buffers.AddDefaulted(2);
 	CurrentBufferIndex = 0;
 }
@@ -170,9 +170,9 @@ void AChunkBase::UpdateChunkVisuals()
 	TMap<EBlockType, bool> IsActorMap;
 	TMap<EBlockType, FGameplayTag> ActorTagMap;
 
-	if (BlockConfig)
+	if (CachedBlockConfig)
 	{
-		for (const auto& Pair : BlockConfig->BlockDefinitions)
+		for (const auto& Pair : CachedBlockConfig->BlockDefinitions)
 		{
 			IsActorMap.Add(Pair.Key, Pair.Value.bIsActor);
 			if (Pair.Value.bIsActor)
@@ -589,11 +589,19 @@ void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, boo
 
 void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemIndex, FGameplayTag Tag)
 {
+	UE_LOG(LogTemp, Log, TEXT("ChunkBase: HighlightHISMBlock called with Tag %s on ItemIndex %d."), *Tag.ToString(), ItemIndex);
 	// 1. 컴포넌트 및 인덱스 유효성 검사
 	UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(TargetComp);
-	if (!HISM || HISM->GetOwner() != this) return;
-	if (ItemIndex < 0 || ItemIndex >= HISM->GetInstanceCount()) return;
-	if (!BlockConfigDataAsset) return;
+	if (!HISM || HISM->GetOwner() != this) {
+		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HighlightHISMBlock called with invalid component or wrong owner."));
+		return;
+	}
+	if (ItemIndex < 0 || ItemIndex >= HISM->GetInstanceCount()) {
+		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HighlightHISMBlock called with invalid ItemIndex %d."), ItemIndex);
+	}
+	if (!CachedBlockConfig) {
+		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HighlightHISMBlock called but CachedBlockConfig is null."));
+	}
 
 	// -------------------------------------------------------------------------
 	// Case 1: 폭탄 하이라이트 (중첩 카운팅 로직)
@@ -609,7 +617,7 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 			InstanceCounts.Remove(ItemIndex); // 맵에서 데이터 삭제 (메모리 절약)
 
 			// CPD 0으로 초기화
-			HISM->SetCustomDataValue(ItemIndex, BlockConfigDataAsset->BombCPDIndex, 0.0f, true);
+			HISM->SetCustomDataValue(ItemIndex, CachedBlockConfig->BombCPDIndex, 0.0f, true);
 
 			// 맵이 비었으면 컴포넌트 키 자체도 제거 (선택사항)
 			if (InstanceCounts.Num() == 0)
@@ -629,8 +637,8 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 		InstanceCounts.Add(ItemIndex, CurrentCount);
 
 		// CPD 계산: 개수 * 강도
-		float NewValue = CurrentCount * BlockConfigDataAsset->BombIntensityPerCount; // Config 변수명 가정
-		HISM->SetCustomDataValue(ItemIndex, BlockConfigDataAsset->BombCPDIndex, NewValue, true);
+		float NewValue = CurrentCount * CachedBlockConfig->BombIntensityPerCount; // Config 변수명 가정
+		HISM->SetCustomDataValue(ItemIndex, CachedBlockConfig->BombCPDIndex, NewValue, true);
 
 		return;
 	}
@@ -638,24 +646,16 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 	// -------------------------------------------------------------------------
 	// Case 2: 일반 하이라이트 (단순 On/Off)
 	// -------------------------------------------------------------------------
-	const FBlockCPDInfo* CPDInfo = BlockConfigDataAsset->BlockCPDIndexMap.Find(Tag);
+	const FBlockCPDInfo* CPDInfo = CachedBlockConfig->HighlightSettings.Find(Tag);
 
-	// 태그를 찾았거나, None(해제) 태그인 경우 처리
 	if (CPDInfo || Tag == TAG_Block_Highlight_None)
 	{
 		float CPDValue = CPDInfo ? CPDInfo->CPDValue : 0.0f;
-		int32 CPDIndex = CPDInfo ? CPDInfo->CPDIndex : 0; // None일 땐 0번 인덱스(Color)를 0.0으로 끈다고 가정
-
-		// 태그가 None이면 값을 0으로 강제
-		if (Tag == TAG_Block_Highlight_None)
-		{
-			CPDValue = 0.0f;
-			// 보통 하이라이트용 CPD 인덱스를 알아야 하는데, 
-			// 여기서는 Preview나 Select 등 모든 하이라이트를 끈다고 가정하고 0번이나 특정 인덱스를 사용
-			// 정확히 하려면 '어떤 하이라이트를 끌 것인가'에 대한 정보가 더 필요하지만,
-			// 보통 단일 채널을 쓴다면 0번 인덱스를 0.0f로 미는 것으로 충분함.
-		}
+		int32 CPDIndex = CPDInfo ? CPDInfo->CPDIndex : 0;
 
 		HISM->SetCustomDataValue(ItemIndex, CPDIndex, CPDValue, true);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HighlightHISMBlock called with unknown Tag %s."), *Tag.ToString());
 	}
 }

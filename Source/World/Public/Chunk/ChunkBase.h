@@ -89,7 +89,7 @@ public:
 	TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*> BlockHISMComponents;
 
 	// [추가] BlockMapManager가 청크 생성 직후 Config를 주입해주어야 함
-	void SetBlockConfig(const UBlockConfig* InConfig) { BlockConfig = InConfig; }
+	void SetBlockConfig(const UBlockConfig* InConfig) { CachedBlockConfig = InConfig; }
 	void SetDABlockConfig(const UDA_BlockConfig* InConfig) { BlockConfigDataAsset = InConfig; }
 
 	// 데이터를 기반으로 HISM 인스턴스를 다시 그리는 함수
@@ -119,7 +119,7 @@ private:
 
 	// EBlockType에 상응하는 블록 별 메시와 GameplayTag 등이 매핑된 데이터 에셋
 	UPROPERTY(Transient)
-	const UBlockConfig* BlockConfig = nullptr;
+	const UBlockConfig* CachedBlockConfig = nullptr;
 
 	UPROPERTY(Transient)
 	const UDA_BlockConfig* BlockConfigDataAsset = nullptr;

@@ -5,34 +5,8 @@
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
 #include "GameplayTagContainer.h"
+#include "BlockCommonTypes.h"
 #include "BlockSystemInterface.generated.h"
-
-// Actor일 수도 있고, Chunk 내의 HISM 인스턴스일 수도 있음
-USTRUCT(BlueprintType)
-struct FBlockReference
-{
-	GENERATED_BODY()
-
-	// 청크 액터 혹은 개별 블록 액터
-	UPROPERTY()
-	UObject* TargetObject = nullptr;
-
-	// 충돌 검사에서 걸린 컴포넌트 (HISM Component)
-	UPROPERTY()
-	UPrimitiveComponent* TargetComponent = nullptr;
-
-	// HISM 인덱스 (개별 액터인 경우 -1)
-	UPROPERTY()
-	int32 ItemIndex = -1;
-
-	bool IsValid() const { return TargetObject != nullptr; }
-
-	// == 연산자 오버로딩 (TArray.Find 등에서 사용)
-	bool operator==(const FBlockReference& Other) const
-	{
-		return TargetObject == Other.TargetObject && ItemIndex == Other.ItemIndex;
-	}
-};
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -76,7 +50,6 @@ public:
 	static IBlockSystemInterface* Get(const UObject* WorldContextObject);
 
 private:
-	// 월드별로 인터페이스 구현체를 저장하는 맵
-	// Core 모듈의 cpp 파일에 정의될 예정
+	// 월드별로 인터페이스 구현체(BlockManagerSubsystem)를 저장하는 맵
 	static TMap<TWeakObjectPtr<UWorld>, IBlockSystemInterface*> GlobalSystemMap;
 };

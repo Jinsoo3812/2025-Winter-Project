@@ -12,6 +12,17 @@ class ABlockBase;
 class ABlockMapManager;
 class UBlockConfig;
 
+// Actor 블록 소환을 요청하기 위한 구조체
+struct FBlockSpawnRequest
+{
+	// 이 위치에
+	FVector WorldLocation;
+	// 이 블록을
+	FGameplayTag BlockTag;
+	// 이 청크에
+	TWeakObjectPtr<AChunkBase> OwnerChunk;
+};
+
 /**
  * 
  */
@@ -98,5 +109,5 @@ protected:
 
 	// Config DA 캐싱
 	UPROPERTY(Transient)
-	UBlockConfig* LoadedBlockConfig = nullptr;
+	UBlockConfig* CachedBlockConfig = nullptr;
 };

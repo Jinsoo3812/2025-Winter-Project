@@ -4,35 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
-#include "BlockCommon.h"
 #include "GameplayTagContainer.h"
+#include "BlockCommonTypes.h"
 #include "BlockConfig.generated.h"
-
-/**
- * 단일 블록의 정의
- * 모든 블록이 공통으로 가지되, 그 타입별로 다르게 가지는 속성들
- */
-USTRUCT(BlueprintType)
-struct FBlockDefinition
-{
-	GENERATED_BODY()
-
-	// 렌더링에 사용할 메시
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	UStaticMesh* Mesh = nullptr;
-
-	// 이 블록이 HISM이 아닌 Actor로 존재해야 하는지 여부
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic")
-	bool bIsActor = false;
-
-	// Actor로 스폰될 때 사용할 태그 (Subsystem 전달용)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic", meta = (EditCondition = "bIsActor"))
-	FGameplayTag ActorTag;
-
-	// (추후 확장) 파괴 시 효과, 내구도 계수, 사운드 등
-	// UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	// USoundBase* BreakSound;
-};
 
 UCLASS()
 class WORLD_API UBlockConfig : public UDataAsset
@@ -43,7 +17,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
 	TMap<EBlockType, FBlockDefinition> BlockDefinitions;
 
-	// 헬퍼 함수: 메시 가져오기
+	// GameplayTag를 기반으로 CPD 값을 연결하기 위한 맵
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Highlight Config")
+	TMap<FGameplayTag, FBlockCPDInfo> HighlightSettings;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
+	int32 BombCPDIndex = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
+	float BombIntensityPerCount = 0.33f;
+
+	// EBlockType으로 메시를 가져오는 헬퍼 함수
 	UStaticMesh* GetMeshForType(EBlockType Type) const
 	{
 		if (const FBlockDefinition* Def = BlockDefinitions.Find(Type))
@@ -53,6 +37,7 @@ public:
 		return nullptr;
 	}
 
+	// GameplayTag로 EBlockType을 찾는 헬퍼 함수
 	EBlockType GetBlockTypeByTag(const FGameplayTag& Tag) const
 	{
 		// 맵을 순회하며 태그가 일치하는지 확인
@@ -65,5 +50,34 @@ public:
 		}
 		// 못 찾으면 None 반환
 		return EBlockType::None;
+	}
+
+	// ------------------------------------------------------------
+	// 이주용 임시 함수들
+	// ------------------------------------------------------------
+
+	// Tag로 ActorClass 찾기 (DA_BlockConfig 대체용)
+	TSubclassOf<AActor> GetBlockClassByTag(const FGameplayTag& Tag) const
+	{
+		for (const auto& Pair : BlockDefinitions)
+		{
+			if (Pair.Value.bIsActor && Pair.Value.ActorTag.MatchesTag(Tag))
+			{
+				return Pair.Value.ActorClass;
+			}
+		}
+		return nullptr;
+	}
+
+	// Tag로 CPDInfo 찾기 (DA_BlockConfig 대체용)
+	FBlockCPDInfo GetHighlightInfoByTag(const FGameplayTag& Tag) const
+	{
+		if (const FBlockCPDInfo* Info = HighlightSettings.Find(Tag))
+		{
+			return *Info;
+		}
+
+		// 못 찾으면 기본값(0,0) 반환
+		return FBlockCPDInfo();
 	}
 };

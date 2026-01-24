@@ -6,27 +6,8 @@
 #include "Engine/DataAsset.h"
 #include "GameplayTagContainer.h"
 #include "Block/BlockBase.h"
+#include "BlockCommonTypes.h"
 #include "DA_BlockConfig.generated.h"
-
-
-/*
-* 블록의 CPD 인덱스와 변경 값을 담는 구조체
-* CPDIndex: 수정할 CPD 인덱스
-* CPDValue: CPD 인덱스의 변경 값
-*/
-USTRUCT(BlueprintType)
-struct FBlockCPDInfo
-{
-	GENERATED_BODY()
-
-	// 수정할 CPD 인덱스
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	int32 CPDIndex = 0;
-
-	// CPD 인덱스의 변경 값
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-	float CPDValue = 0.0f;
-};
 
 /**
  * 

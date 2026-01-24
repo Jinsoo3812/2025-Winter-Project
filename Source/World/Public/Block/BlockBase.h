@@ -11,7 +11,7 @@
 #include "BlockBase.generated.h"
 
 class AChunkBase;
-class UDA_BlockConfig;
+class UBlockConfig;
 
 
 UCLASS()
@@ -63,7 +63,7 @@ protected:
 
 	// 이 블록이 참조할 설정 파일 (블루프린트 디폴트에서 설정하거나, 스폰 시 주입)
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
-	TObjectPtr<UDA_BlockConfig> BlockConfig;
+	TObjectPtr<UBlockConfig> BlockConfig;
 
 	// 이 블록이 참조할 설정 파일 (블루프린트 디폴트에서 설정하거나, 스폰 시 주입)
 	UPROPERTY(EditDefaultsOnly, Category = "Config")

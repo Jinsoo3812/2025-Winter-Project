@@ -4,8 +4,9 @@
 #include "Block/BlockBase.h"
 #include "Engine/World.h"
 #include "CollisionChannels.h"
-#include "Block/DA_BlockConfig.h"
+#include "BlockConfig.h"
 #include "BlockGameplayTags.h"
+#include "BlockSettings.h"
 #include "ChunkBase.h"
 
 
@@ -34,6 +35,18 @@ ABlockBase::ABlockBase()
 void ABlockBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// BlockConfig 캐시
+	if (!BlockConfig)
+	{
+		if (const UBlockSettings* Settings = GetDefault<UBlockSettings>())
+		{
+			if (!Settings->BlockConfigAsset.IsNull())
+			{
+				BlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
+			}
+		}
+	}
 }
 
 void ABlockBase::PostInitializeComponents()
@@ -243,7 +256,7 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 	// 일반적인 On/Off 형태의 Highlight 태그 처리
 	// Ex) Block.Highlight.Preview 같은 태그가 왔을 때,
 	// BlockCPDIndexMap에서 해당 태그에 맞는 CPD 정보를 찾음
-	if (const FBlockCPDInfo* FoundInfo = BlockConfig->BlockCPDIndexMap.Find(EventTag))
+	if (const FBlockCPDInfo* FoundInfo = BlockConfig->HighlightSettings.Find(EventTag))
 	{
 		// 찾은 정보대로 CPD 업데이트
 		if (MeshComponent)
@@ -260,6 +273,11 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 
 void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
 {
+	if (!BlockConfig) {
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
+		return;
+	}
+
 	if (MeshComponent)
 	{	
 		// 폭탄이 모두 터져서 하이라이트를 제거해야 하는 경우
