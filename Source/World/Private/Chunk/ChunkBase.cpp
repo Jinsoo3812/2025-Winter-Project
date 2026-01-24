@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "ChunkBase.h"
@@ -12,18 +12,18 @@
 
 AChunkBase::AChunkBase()
 {
-	// Ã»Å© ÀÚÃ¼´Â Æ½À» µ¹ ÇÊ¿ä°¡ ¾øÀ½ (ÃÖÀûÈ­)
+	// ì²­í¬ ìì²´ëŠ” í‹±ì„ ëŒ í•„ìš”ê°€ ì—†ìŒ (ìµœì í™”)
 	PrimaryActorTick.bCanEverTick = false;
 
-	// TransformÀ» °®´Â ±âº» ÄÄÆ÷³ÍÆ®
+	// Transformì„ ê°–ëŠ” ê¸°ë³¸ ì»´í¬ë„ŒíŠ¸
 	RootSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 	RootComponent = RootSceneComponent;
 
-	// µ¥ÀÌÅÍ ¹è¿­ ÃÊ±âÈ­ (°ø±â·Î Ã¤¿ò)
+	// ë°ì´í„° ë°°ì—´ ì´ˆê¸°í™” (ê³µê¸°ë¡œ ì±„ì›€)
 	int32 TotalBlocks = ChunkSizeX * ChunkSizeY * ChunkSizeZ;
 	BlockDataArray.Init(FBlockData{ EBlockType::None }, TotalBlocks);
 
-	// [½Å±Ô] ¹öÆÛ 2°³ °ø°£ È®º¸
+	// [ì‹ ê·œ] ë²„í¼ 2ê°œ ê³µê°„ í™•ë³´
 	HISM_Buffers.AddDefaulted(2);
 	CurrentBufferIndex = 0;
 }
@@ -35,7 +35,7 @@ void AChunkBase::BeginPlay()
 
 int32 AChunkBase::GetBlockIndex(int32 X, int32 Y, int32 Z) const
 {
-	// ¹üÀ§ °Ë»ç
+	// ë²”ìœ„ ê²€ì‚¬
 	if (X < 0 || X >= ChunkSizeX || Y < 0 || Y >= ChunkSizeY || Z < 0 || Z >= ChunkSizeZ)
 	{
 		return -1;
@@ -65,7 +65,7 @@ FBlockData AChunkBase::GetBlockData(int32 X, int32 Y, int32 Z) const
 		return BlockDataArray[Index];
 	}
 
-	// À¯È¿ÇÏÁö ¾ÊÀº ¹üÀ§´Â ºó ºí·Ï(Air) ¹İÈ¯
+	// ìœ íš¨í•˜ì§€ ì•Šì€ ë²”ìœ„ëŠ” ë¹ˆ ë¸”ë¡(Air) ë°˜í™˜
 	return FBlockData{ EBlockType::None };
 }
 
@@ -76,47 +76,50 @@ void AChunkBase::RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh)
 		return;
 	}
 
-	// [¼öÁ¤] 0¹ø ¹öÆÛ¿Í 1¹ø ¹öÆÛ ¸ğµÎ¿¡ ÄÄÆ÷³ÍÆ® »ı¼º
+	// ë™ì¼í•œ ì†ì„±ì„ ê°€ì§„ HISM ì»´í¬ë„ŒíŠ¸ 2ê°œ ìƒì„± (ë”ë¸” ë²„í¼ë§ìš©)
 	for (int32 BufferIdx = 0; BufferIdx < 2; BufferIdx++)
 	{
+		// ì´ë²ˆì— ë§Œë“¤ ë¸”ë¡ íƒ€ì… ë³„ HISM ë§µ
 		TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*>& TargetMap = HISM_Buffers[BufferIdx];
 
-		// ÀÌ¹Ì ÀÖ´Ù¸é ¸Ş½Ã¸¸ ±³Ã¼
+		// ì´ë¯¸ í•´ë‹¹ íƒ€ì…ìœ¼ë¡œ HISMì´ ë“±ë¡ë˜ì–´ ìˆìœ¼ë©´ ë©”ì‰¬ë§Œ êµì²´
 		if (TargetMap.Contains(Type))
 		{
 			TargetMap[Type]->SetStaticMesh(Mesh);
 		}
+		// ì´ë²ˆì— ì²˜ìŒ ë§Œë“œëŠ” ë¸”ë¡ íƒ€ì…ì˜ HISM ì»´í¬ë„ŒíŠ¸
 		else
 		{
-			// ÄÄÆ÷³ÍÆ® ÀÌ¸§ ±¸ºĞ (HISM_Dirt_0, HISM_Dirt_1 µî)
+			// ì»´í¬ë„ŒíŠ¸ ì´ë¦„ êµ¬ë¶„ (HISM_Terrain_0, HISM_Terrain_1 ë“±)
 			FString CompName = FString::Printf(TEXT("HISM_%d_%d"), (int32)Type, BufferIdx);
 			UHierarchicalInstancedStaticMeshComponent* NewHISM = NewObject<UHierarchicalInstancedStaticMeshComponent>(this, FName(*CompName));
 
 			if (NewHISM)
 			{
+				// ì»´í¬ë„ŒíŠ¸ë¥¼ Worldì— ë“±ë¡
 				NewHISM->RegisterComponent();
+				// RootComponent(Chunkì˜ ìœ„ì¹˜)ì— ë¶™ì—¬ ìœ„ì¹˜ ë™ê¸°í™”
 				NewHISM->AttachToComponent(GetRootComponent(), FAttachmentTransformRules::KeepRelativeTransform);
 				NewHISM->SetStaticMesh(Mesh);
 				NewHISM->SetCollisionProfileName(TEXT("Block"));
 				NewHISM->bCastDynamicShadow = true;
 
-				// [Áß¿ä] CPD »ç¿ë °³¼ö ¼³Á¤ (ÇÏÀÌ¶óÀÌÆ® ±â´É¿ë)
-				// 0ÀÌ¸é SetCustomDataValue°¡ µ¿ÀÛÇÏÁö ¾ÊÀ½
+				// CPD ì‚¬ìš©ì„ ìœ„í•œ CPD ìŠ¬ë¡¯ ì„¤ì •(ë„‰ë„‰í•˜ê²Œ)
 				NewHISM->NumCustomDataFloats = 8;
 
-				// [Áß¿ä] ·±Å¸ÀÓ º¯°æÀ» À§ÇØ Stationary ÀÌ»ó ±ÇÀå
+				// Stationary: ìœ„ì¹˜ ê³ ì • & ëŸ°íƒ€ì„ ì¸ìŠ¤í„´ìŠ¤ ë³€ê²½ ë“± ê°€ëŠ¥
 				NewHISM->SetMobility(EComponentMobility::Stationary);
 
-				// ÃÊ±â »óÅÂ ¼³Á¤
+				// ì´ˆê¸° ìƒíƒœ ì„¤ì •
 				if (BufferIdx == CurrentBufferIndex)
 				{
-					// ÇöÀç ¹öÆÛ: º¸ÀÓ + Ãæµ¹ ÄÔ
+					// í˜„ì¬ ë²„í¼: ë³´ì„ + ì¶©ëŒ ì¼¬
 					NewHISM->SetHiddenInGame(false);
 					NewHISM->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 				}
 				else
 				{
-					// ¹é ¹öÆÛ: ¼û±è + Ãæµ¹ ²û
+					// ë°± ë²„í¼: ìˆ¨ê¹€ + ì¶©ëŒ ë”
 					NewHISM->SetHiddenInGame(true);
 					NewHISM->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				}
@@ -130,37 +133,40 @@ void AChunkBase::RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh)
 void AChunkBase::UpdateChunkVisuals()
 {
 	/*
-	* »õ·Î¿î ÀÛ¾÷ ¿äÃ»ÀÌ µé¾î¿ÔÀ¸¹Ç·Î ID Áõ°¡
-	* ÀÌÀü¿¡ ½ÇÇàµÇ¾ú´ø ºñµ¿±â ÀÛ¾÷ÀÌ ¿Ï·áµÇ¾î µ¹¾Æ¿ÔÀ» ¶§
-	* ÀÌ ID¿Í ºñ±³ÇÏ¿© ÀÚ½ÅÀÌ ÃÖ½Å ÀÛ¾÷ÀÎÁö È®ÀÎÇÒ ¼ö ÀÖÀ½
+	* ìƒˆë¡œìš´ ì‘ì—… ìš”ì²­ì´ ë“¤ì–´ì™”ìœ¼ë¯€ë¡œ ID ì¦ê°€
+	* ì´ì „ì— ì‹¤í–‰ë˜ì—ˆë˜ ë¹„ë™ê¸° ì‘ì—…ì´ ì™„ë£Œë˜ì–´ ëŒì•„ì™”ì„ ë•Œ
+	* ì´ IDì™€ ë¹„êµí•˜ì—¬ ìì‹ ì´ ìµœì‹  ì‘ì—…ì¸ì§€ í™•ì¸í•  ìˆ˜ ìˆìŒ
 	*/
 	LastUpdateRequestID++;
 
-	// ÀÌ¹ø ÀÛ¾÷ÀÇ °íÀ¯ ID Ä¸Ã³
+	// ì´ë²ˆ ì‘ì—…ì˜ ê³ ìœ  ID ìº¡ì²˜
 	int32 MyRequestID = LastUpdateRequestID;
 
 	FChunkSnapshot Snapshot;
-	Snapshot.MyData = BlockDataArray; // ³» µ¥ÀÌÅÍ º¹»ç
+	Snapshot.MyData = BlockDataArray; // ë‚´ ë°ì´í„° ë³µì‚¬
 	Snapshot.SizeX = ChunkSizeX;
 	Snapshot.SizeY = ChunkSizeY;
 	Snapshot.SizeZ = ChunkSizeZ;
 	int32 GridSize = BlockGridSize;
 
-	// ÀÌ¿ô µ¥ÀÌÅÍ º¹»ç (Á¸ÀçÇÏ´Â °æ¿ì¿¡¸¸)
+	// ì´ì›ƒ ë°ì´í„° ë³µì‚¬ (ì¡´ì¬í•˜ëŠ” ê²½ìš°ì—ë§Œ)
 	for (int32 i = 0; i < (int32)EBlockNeighbor::Count; i++)
 	{
 		if (Neighbors[i].IsValid())
 		{
 			/*
-			* ÀÌ¿ôÀÇ ÀüÃ¼ BlockData¸¦ º¹»çÇÏ¿© ½º·¹µå ¾ÈÀü¼º È®º¸
-			* ÀÌ¿ôÀÇ Á¢ÇÑ ¸é¸¸ º¹»çÇÏ´Â ¹æ¹ıÀ¸·Î ÃÖÀûÈ­ °¡´É
+			* ì´ì›ƒì˜ ì „ì²´ BlockDataë¥¼ ë³µì‚¬í•˜ì—¬ ìŠ¤ë ˆë“œ ì•ˆì „ì„± í™•ë³´
+			* ì´ì›ƒì˜ ì ‘í•œ ë©´ë§Œ ë³µì‚¬í•˜ëŠ” ë°©ë²•ìœ¼ë¡œ ìµœì í™” ê°€ëŠ¥
 			*/
 			Snapshot.NeighborDataMap.Add((EBlockNeighbor)i, Neighbors[i]->BlockDataArray);
 		}
 	}
 
-	// ½º·¹µå ¾ÈÀüÀ» À§ÇØ ConfigÀÇ ÇÙ½É Á¤º¸(Actor ¿©ºÎ, ÅÂ±×)¸¸ ¸ÊÀ¸·Î ÃßÃâÇÏ¿© º¹»ç
-	// UObject(BlockConfig)¸¦ ¿öÄ¿ ½º·¹µå¿¡¼­ Á÷Á¢ Á¢±ÙÇÏ´Â °ÍÀº À§ÇèÇÔ
+	/*
+	* BlockConfigëŠ” UObject(DataAsset)ì´ë¯€ë¡œ ì›Œì»¤ ìŠ¤ë ˆë“œì—ì„œ ì ‘ê·¼í•´ì„œëŠ” ì•ˆë¨
+	* ë˜í•œ BlockConfigë¥¼ ì‚¬ìš©í•˜ë©´ ë§¤ë²ˆ ì—¬ëŸ¬ ë²ˆì˜ í¬ì¸í„°ë¥¼ ê±°ì³ì•¼í•¨ (Config -> BlockDefinitions -> Tag ë“±)
+	* ëŒë‹¤ í•¨ìˆ˜ ë‚´ë¶€ì— ìº¡ì²˜í•´ë‘ë©´ ìºì‹œ ì ì¤‘ë¥ ì´ ì˜¬ë¼ê°
+	*/
 	TMap<EBlockType, bool> IsActorMap;
 	TMap<EBlockType, FGameplayTag> ActorTagMap;
 
@@ -180,280 +186,299 @@ void AChunkBase::UpdateChunkVisuals()
 		return;
 	}
 
-	// ½º·¹µå µ¿ÀÛ Áß this °´Ã¼°¡ ÆÄ±«µÉ ¼ö ÀÖÀ¸¹Ç·Î ¾àÇÑ ÂüÁ¶ »ı¼º
+	// ìŠ¤ë ˆë“œ ë™ì‘ ì¤‘ this ê°ì²´ê°€ íŒŒê´´ë  ìˆ˜ ìˆìœ¼ë¯€ë¡œ ì•½í•œ ì°¸ì¡° ìƒì„±
 	TWeakObjectPtr<AChunkBase> WeakThis(this);
 
 	/*
-	* ¿£ÁøÀÌ °ü¸®ÇÏ´Â ½º·¹µå Ç®¿¡¼­ ³²´Â ½º·¹µå¸¦ ÇÏ³ª Àâ¾Æ ¶÷´Ù ÇÔ¼ö¸¦ ½ÇÇàÇÏµµ·Ï ½ÃÅ´
-	* ½º·¹µå ³»ºÎ¿¡¼­´Â UObject¸¦ ´Ù·ç°Å³ª ¿£Áø °ü·Ã ÇÔ¼ö¸¦ È£ÃâÇØ¼­´Â ¾ÈµÊ (ex. GetWorld(), AddInstance µî)
-	* ¼ø¼ö µ¥ÀÌÅÍ¸¦ ´Ù·ç´Â ¼öÇĞ °è»ê µî¿¡¸¸ »ç¿ë
+	* ì—”ì§„ì´ ê´€ë¦¬í•˜ëŠ” ìŠ¤ë ˆë“œ í’€ì—ì„œ ë‚¨ëŠ” ìŠ¤ë ˆë“œë¥¼ í•˜ë‚˜ ì¡ì•„ ëŒë‹¤ í•¨ìˆ˜ë¥¼ ì‹¤í–‰í•˜ë„ë¡ ì‹œí‚´
+	* ìŠ¤ë ˆë“œ ë‚´ë¶€ì—ì„œëŠ” UObjectë¥¼ ë‹¤ë¤„ì„œëŠ” ì•ˆë˜ë©° ë‹¨ìˆœ ê³„ì‚° ì‘ì—…ë§Œ ìˆ˜í–‰í•´ì•¼ í•¨
+	* ì²­í¬ ë‚´ì˜ ëª¨ë“  ë¸”ë¡ì„ ìˆœíšŒí•˜ë©° ê·¸ë ¤ì•¼ í•  ë¸”ë¡ ì„ ë³„
 	*/
 	Async(EAsyncExecution::ThreadPool, [WeakThis, Snapshot, GridSize, MyRequestID, IsActorMap, ActorTagMap]()
+	{
+		// ë°°ì¹­ ë°ì´í„°ë¥¼ ë‹´ì„ ì„ì‹œ ë§µ
+		// ë§¤ ë²ˆ AddInstanceë¥¼ í˜¸ì¶œí•˜ëŠ” ê²ƒì€ ë Œë” ìŠ¤ë ˆë“œì—ê²Œ ë¶€ë‹´ì„ ì¤Œ
+		TMap<EBlockType, TArray<FTransform>> LocalBatchData;
+
+		// ì´ë²ˆ ì²­í¬ ê°±ì‹ ì—ì„œ ë°œìƒí•œ ì•¡í„° ìŠ¤í° ìš”ì²­ë“¤
+		TArray<FBlockSpawnRequest> LocalSpawnRequests;
+
+		// í†µê³„ìš© ë³€ìˆ˜
+		int32 TotalSolidBlocks = 0;
+		int32 VisibleBlocks = 0; // ê·¸ë ¤ì§
+		int32 CulledBlocks = 0;  // ê°€ë ¤ì§ (ì»¬ë§ë¨)
+
+		// ë§ì´ ì‚¬ìš©ë  ê²ƒ ê°™ì€ ë¸”ë¡ì€ ë¯¸ë¦¬ TArrayì— ë©”ëª¨ë¦¬ ê³µê°„ì„ ì˜ˆì•½í•˜ì—¬ ì¦ì€ í• ë‹¹ì„ ë°©ì§€í•  ìˆ˜ ìˆìŒ.
+		// LocalBatchData.FindOrAdd(EBlockType::Terrain).Reserve(DataCopy.Num() / 2);
+
+		if(!WeakThis.IsValid())
 		{
-			// [Worker Thread] ¿©±â¼­ºÎÅÍ´Â º°µµÀÇ ½º·¹µå¿¡¼­ ¼öÇàµÊ
+			// ì²­í¬ê°€ íŒŒê´´ë˜ì—ˆìœ¼ë¯€ë¡œ ì‘ì—… ì¤‘ë‹¨
+			return;
+		}
+		if (WeakThis->LastUpdateRequestID != MyRequestID)
+		{
+			// í•´ë‹¹ ì‘ì—…ì´ ìµœì‹ ì´ ì•„ë‹ˆë¯€ë¡œ ì¤‘ë‹¨
+			return;
+		}
 
-			// ¹èÄª µ¥ÀÌÅÍ¸¦ ´ãÀ» ÀÓ½Ã ¸Ê
-			// ¸Å ¹ø AddInstance¸¦ È£ÃâÇÏ´Â °ÍÀº ·»´õ ½º·¹µå¿¡°Ô ºÎ´ãÀ» ÁÜ
-			TMap<EBlockType, TArray<FTransform>> LocalBatchData;
-
-			// ÀÌ¹ø Ã»Å© °»½Å¿¡¼­ ¹ß»ıÇÑ ¾×ÅÍ ½ºÆù ¿äÃ»µé
-			TArray<FBlockSpawnRequest> LocalSpawnRequests;
-
-			// Åë°è¿ë º¯¼ö
-			int32 TotalSolidBlocks = 0;
-			int32 VisibleBlocks = 0; // ±×·ÁÁü
-			int32 CulledBlocks = 0;  // °¡·ÁÁü (ÄÃ¸µµÊ)
-
-			// ¸¹ÀÌ »ç¿ëµÉ °Í °°Àº ºí·ÏÀº ¹Ì¸® TArray¿¡ ¸Ş¸ğ¸® °ø°£À» ¿¹¾àÇÏ¿© ÀæÀº ÇÒ´çÀ» ¹æÁöÇÒ ¼ö ÀÖÀ½.
-			// LocalBatchData.FindOrAdd(EBlockType::Terrain).Reserve(DataCopy.Num() / 2);
-
-			if(!WeakThis.IsValid())
+		/*
+		* ìºì‹œ ì ì¤‘ë¥ ì„ ë†’ì´ê¸° ìœ„í•œ 3ì¤‘ ë°˜ë³µë¬¸
+		* ê°€ì¥ ì•ˆìª½ ë£¨í”„ì— xë¥¼ ë‘ëŠ” ê²ƒì´ ë©”ëª¨ë¦¬ë¥¼ ìˆœì„œëŒ€ë¡œ ì½ëŠ” ë°©ë²•
+		* Index = X + (Y * SizeX) + (Z * SizeX * SizeY)
+		*/
+		for (int32 z = 0; z < Snapshot.SizeZ; z++)
+		{
+			for (int32 y = 0; y < Snapshot.SizeY; y++)
 			{
-				// Ã»Å©°¡ ÆÄ±«µÇ¾úÀ¸¹Ç·Î ÀÛ¾÷ Áß´Ü
-				return;
-			}
-			if (WeakThis->LastUpdateRequestID != MyRequestID)
-			{
-				return; // Åğ±Ù~
-			}
-			/*
-			* Ä³½Ã ÀûÁß·üÀ» ³ôÀÌ±â À§ÇÑ 3Áß ¹İº¹¹®
-			* °¡Àå ¾ÈÂÊ ·çÇÁ¿¡ x¸¦ µÎ´Â °ÍÀÌ ¸Ş¸ğ¸®¸¦ ¼ø¼­´ë·Î ÀĞ´Â ¹æ¹ı
-			* Index = X + (Y * SizeX) + (Z * SizeX * SizeY)
-			*/
-			for (int32 z = 0; z < Snapshot.SizeZ; z++)
-			{
-				for (int32 y = 0; y < Snapshot.SizeY; y++)
+				for (int32 x = 0; x < Snapshot.SizeX; x++)
 				{
-					for (int32 x = 0; x < Snapshot.SizeX; x++)
+					// ìŠ¤ëƒ…ìƒ·ì„ í†µí•´ ë°ì´í„° ê°€ì ¸ì˜¤ê¸° (ì•ˆì „í•¨)
+					FBlockData CurrentBlock = Snapshot.GetBlockData(x, y, z);
+
+					// ê·¸ë¦¬ì§€ ì•Šì•„ë„ ë˜ëŠ” ë¸”ë¡ì€ ê±´ë„ˆëœ€
+					if (CurrentBlock.Type == EBlockType::None) continue;
+
+					TotalSolidBlocks++;
+
+					// ì²­í¬ ê¸°ì¤€ì˜ ë¡œì»¬ ì¢Œí‘œ
+					FVector Location(x * GridSize, y * GridSize, z * GridSize);
+
+					// 6ë©´ ê²€ì‚¬ë¡œ í˜„ì¬ ë¸”ë¡ì„ ê·¸ë ¤ì•¼í•˜ëŠ”ì§€ ê²€ì‚¬
+					bool bIsVisible = false;
+					FIntVector Offsets[] = {
+						FIntVector(0, 0, 1), FIntVector(0, 0, -1),
+						FIntVector(0, 1, 0), FIntVector(0, -1, 0),
+						FIntVector(1, 0, 0), FIntVector(-1, 0, 0)
+					};
+
+					for (const FIntVector& Offset : Offsets)
 					{
-						// ½º³À¼¦À» ÅëÇØ µ¥ÀÌÅÍ °¡Á®¿À±â (¾ÈÀüÇÔ)
-						FBlockData CurrentBlock = Snapshot.GetBlockData(x, y, z);
+						int32 NX = x + Offset.X;
+						int32 NY = y + Offset.Y;
+						int32 NZ = z + Offset.Z;
 
-						// ±×¸®Áö ¾Ê¾Æµµ µÇ´Â ºí·ÏÀº °Ç³Ê¶Ü
-						if (CurrentBlock.Type == EBlockType::None) continue;
+						/*
+						* í˜„ì¬ ë¸”ë¡ìœ¼ë¡œë¶€í„° í•œ ì¹¸ ë–¨ì–´ì§„ ì´ì›ƒ ë¸”ë¡ì˜ ë°ì´í„° ê°€ì ¸ì˜¤ê¸°
+						* ì´ì›ƒ ì²­í¬ì— ê±¸ì³ìˆëŠ” ê²½ìš° ì´ì›ƒì— ì ‘ê·¼í•˜ì—¬ ì•Œì•„ì„œ ê°€ì ¸ì˜´
+						* ì•„ì˜ˆ ë¹ˆ ê³µê°„ì´ê±°ë‚˜ ìœ íš¨í•˜ì§€ ì•Šì„ ê²½ìš° None ë¸”ë¡ ë°˜í™˜
+						*/
+						FBlockData NeighborBlock = Snapshot.GetBlockData(NX, NY, NZ);
 
-						TotalSolidBlocks++;
-
-						FVector Location(x * GridSize, y * GridSize, z * GridSize);
-
-						// 6¸é °Ë»ç
-						bool bIsVisible = false;
-						FIntVector Offsets[] = {
-							FIntVector(0, 0, 1), FIntVector(0, 0, -1),
-							FIntVector(0, 1, 0), FIntVector(0, -1, 0),
-							FIntVector(1, 0, 0), FIntVector(-1, 0, 0)
-						};
-
-						for (const FIntVector& Offset : Offsets)
+						// ì•ˆê·¸ë ¤ì ¸ ìˆìœ¼ë©´ ìì‹ ì„ ê·¸ë¦¼
+						if (NeighborBlock.Type == EBlockType::None)
 						{
-							int32 NX = x + Offset.X;
-							int32 NY = y + Offset.Y;
-							int32 NZ = z + Offset.Z;
+							bIsVisible = true;
+							break;
+						}
 
-							// ½º³À¼¦¿¡°Ô ÀÌ¿ô ºí·ÏÀÌ ±×·ÁÁ® ÀÖ³Ä°í ¹°¾îº½
-							FBlockData NeighborBlock = Snapshot.GetBlockData(NX, NY, NZ);
-
-							// ¾È±×·ÁÁ® ÀÖÀ¸¸é ÀÚ½ÅÀ» ±×¸²
-							if (NeighborBlock.Type == EBlockType::None)
+						// ìœ—ë©´ì— í•œí•´ì„œ, ì´ì›ƒì´ Actor ë¸”ë¡ì´ë©´ ë°”ë‹¥ì´ ë˜ì–´ì£¼ê¸° ìœ„í•´ ìì‹ ì„ ê·¸ë¦¼
+						if (Offset.Z == 1)
+						{
+							const bool* bIsNeighborActor = IsActorMap.Find(NeighborBlock.Type);
+							if (bIsNeighborActor && *bIsNeighborActor)
 							{
 								bIsVisible = true;
 								break;
 							}
-
-							if (Offset.Z == 1)
-							{
-								const bool* bIsNeighborActor = IsActorMap.Find(NeighborBlock.Type);
-								if (bIsNeighborActor && *bIsNeighborActor)
-								{
-									bIsVisible = true;
-									break;
-								}
-							}
 						}
+					}
 
+					// ê·¸ë ¤ì•¼ í•œë‹¤ë©´ HISM/Actor ë¶„ê¸°í•˜ì—¬ ìŠ¤í° ì²˜ë¦¬
+					if (bIsVisible)
+					{
+						// í†µê³„
+						VisibleBlocks++;
 
-
-						if (bIsVisible)
+						// Actor ë¸”ë¡ì¸ì§€ í™•ì¸
+						if (const bool* bIsActor = IsActorMap.Find(CurrentBlock.Type))
 						{
-							// Åë°è
-							VisibleBlocks++;
-							// Actor ºí·ÏÀÎÁö È®ÀÎ
-							if (const bool* bIsActor = IsActorMap.Find(CurrentBlock.Type))
+							if (*bIsActor)
 							{
-								if (*bIsActor)
+								// ì´ë¯¸ ìŠ¤í°ë˜ì—ˆìœ¼ë©´ íŒ¨ìŠ¤, ì•ˆ ëìœ¼ë©´ ìš”ì²­ ë°°ì—´ì— ì¶”ê°€
+								if (!CurrentBlock.bIsActorSpawned)
 								{
-									// ÀÌ¹Ì ½ºÆùµÇ¾úÀ¸¸é ÆĞ½º, ¾È µÆÀ¸¸é ¿äÃ»
-									if (!CurrentBlock.bIsActorSpawned)
+									if (const FGameplayTag* Tag = ActorTagMap.Find(CurrentBlock.Type))
 									{
-										if (const FGameplayTag* Tag = ActorTagMap.Find(CurrentBlock.Type))
-										{
-											LocalSpawnRequests.Add({ Location, *Tag });
-										}
+										LocalSpawnRequests.Add({ Location, *Tag });
 									}
-
-									// Actor´Ï±î HISM¿¡´Â ³ÖÁö ¾ÊÀ½ (¿©±â¼­ ·çÇÁ ³¡)
-									continue;
 								}
+
+								// Actorë‹ˆê¹Œ HISMì—ëŠ” ë„£ì§€ ì•ŠìŒ (ì—¬ê¸°ì„œ ë£¨í”„ ë)
+								continue;
 							}
-							// Actor°¡ ¾Æ´Ï¶ó¸é HISM¿¡ Ãß°¡
-							FVector SpawnLocation(x * GridSize, y * GridSize, z * GridSize);
-							FTransform Transform(FRotator::ZeroRotator, SpawnLocation);
-							LocalBatchData.FindOrAdd(CurrentBlock.Type).Add(Transform);
 						}
-						else {
-							// Åë°è
-							CulledBlocks++;
-						}
+						// Actorê°€ ì•„ë‹ˆë¼ë©´ HISMì— ì¶”ê°€
+						FTransform Transform(FRotator::ZeroRotator, Location);
+						LocalBatchData.FindOrAdd(CurrentBlock.Type).Add(Transform);
+					}
+					else {
+						// í†µê³„
+						CulledBlocks++;
 					}
 				}
 			}
+		}
 
-			// °è»ê ¿Ï·á ÈÄ ¸ŞÀÎ ½º·¹µå(Game Thread)·Î º¹±Í
-			// HISM ÄÄÆ÷³ÍÆ® Á¶ÀÛÀº ¹İµå½Ã °ÔÀÓ ½º·¹µå¿¡¼­ ÇØ¾ß ÇÔ
-			AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID, GridSize, /*Åë°è*/TotalSolidBlocks, VisibleBlocks, CulledBlocks]()
+		// ì–´ë–¤ ë¸”ë¡ë“¤ì„ ê·¸ë ¤ì•¼ í•˜ëŠ”ì§€ ê³„ì‚° ì™„ë£Œ í›„ ë©”ì¸ ìŠ¤ë ˆë“œ(Game Thread)ë¡œ ë³µê·€
+		// HISM ì»´í¬ë„ŒíŠ¸ ì¡°ì‘ì€ ë°˜ë“œì‹œ ê²Œì„ ìŠ¤ë ˆë“œì—ì„œ í•´ì•¼ í•¨
+		AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID, GridSize, /*í†µê³„*/TotalSolidBlocks, VisibleBlocks, CulledBlocks]()
+		{
+			// [Game Thread] ê³„ì‚°ëœ ë°ì´í„°ë¥¼ HISMì— ì ìš© ë° Actor ìŠ¤í° ìš”ì²­ ì „ë‹¬
+
+			// ì´ ì‹œì ì—ì„œ ì²­í¬ê°€ íŒŒê´´ë˜ì—ˆì„ ìˆ˜ë„ ìˆìœ¼ë¯€ë¡œ ìœ íš¨ì„± ê²€ì‚¬ (IsValid)
+			if (!WeakThis.IsValid()) {
+				UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Chunk destroyed before UpdateChunkVisuals could complete."));
+			}
+			
+			/*
+			* ìì‹ ì´ ìµœì‹  ì‘ì—…ì¸ì§€ í™•ì¸
+			* ìì‹ ì´ ì‘ì—…í•˜ëŠ” ë™ì•ˆ ëˆ„êµ°ê°€ ìƒˆë¡œìš´ ì‘ì—…ì„ ì‹œì‘í–ˆë‹¤ë©´, ì´ ì‘ì—…ì€ ì“¸ëª¨ ì—†ìŒ
+			*/
+			if (WeakThis->LastUpdateRequestID != MyRequestID)
+			{
+				return;
+			}
+
+			// ë²„í¼ ì¸ë±ìŠ¤ êµì²´
+			int32 OldBufferIndex = WeakThis->CurrentBufferIndex;
+			int32 NewBufferIndex = (OldBufferIndex + 1) % 2;
+
+			auto& FrontMap = WeakThis->HISM_Buffers[OldBufferIndex]; // í˜„ì¬ ë³´ì´ëŠ” ê²ƒ (Old)
+			auto& BackMap = WeakThis->HISM_Buffers[NewBufferIndex]; // ë’¤ì—ì„œ ì¤€ë¹„í•  ê²ƒ (New)
+
+			// BackBuffer ì¤€ë¹„
+			for (auto& Elem : BackMap)
+			{
+				// ë²„í¼ì˜ HISM ì»´í¬ë„ŒíŠ¸ ìœ íš¨ì„± ê²€ì‚¬ ë° ì´ˆê¸°í™”
+				if (Elem.Value) {
+					Elem.Value->ClearInstances();
+				}
+				else {
+					UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HISM component missing in BackBuffer for BlockType %d"), (int32)Elem.Key);
+				}
+			}
+
+			// BackBuffer ì±„ìš°ê¸°
+			for (const auto& BatchPair : LocalBatchData)
+			{
+				EBlockType Type = BatchPair.Key;
+				const TArray<FTransform>& Transforms = BatchPair.Value;
+
+				// BackMapì— í•´ë‹¹ íƒ€ì…ì˜ HISMì´ ì—†ìœ¼ë©´ ì•ˆì „í•˜ê²Œ ê±´ë„ˆëœ€ (í˜¹ì€ ìƒì„± ê³ ë ¤)
+				if (UHierarchicalInstancedStaticMeshComponent* Comp = BackMap.FindRef(Type))
 				{
-					// [Game Thread] °è»êµÈ µ¥ÀÌÅÍ¸¦ HISM¿¡ Àû¿ë ¹× Actor ½ºÆù ¿äÃ» Àü´Ş
-
-					// ÀÌ ½ÃÁ¡¿¡¼­ Ã»Å©°¡ ÆÄ±«µÇ¾úÀ» ¼öµµ ÀÖÀ¸¹Ç·Î À¯È¿¼º °Ë»ç (IsValid)
-					if (!WeakThis.IsValid()) {
-						UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Chunk destroyed before UpdateChunkVisuals could complete."));
-					}
-					
 					/*
-					* ÀÚ½ÅÀÌ ÃÖ½Å ÀÛ¾÷ÀÎÁö È®ÀÎ
-					* ÀÚ½ÅÀÌ ÀÛ¾÷ÇÏ´Â µ¿¾È ´©±º°¡ »õ·Î¿î ÀÛ¾÷À» ½ÃÀÛÇß´Ù¸é, ÀÌ ÀÛ¾÷Àº ¾µ¸ğ ¾øÀ½
+					* @param Transforms: ì¶”ê°€í•  ì¸ìŠ¤í„´ìŠ¤ë“¤ì˜ Transform ë°°ì—´
+					* @param bShouldReturnIndices: ì¶”ê°€ëœ ì¸ìŠ¤í„´ìŠ¤ì˜ ì¸ë±ìŠ¤ ë°°ì—´(TArray<int32>)ì„ ë°˜í™˜í• ì§€ ì—¬ë¶€
+					* @param bWorldSpace: Transformì´ ì›”ë“œ ì¢Œí‘œê³„ì¸ì§€ ì—¬ë¶€ (ì•„ë‹˜!!!!)
+					* ë§ˆì§€ë§‰ì— falseë¥¼ ë„£ìœ¼ë©´ ì•Œì•„ì„œ HISM ì»´í¬ë„ŒíŠ¸ì˜ Transformì„ ë”í•´ì¤Œ
 					*/
-					if (WeakThis->LastUpdateRequestID != MyRequestID)
-					{
-						UE_LOG(LogTemp, Verbose, TEXT("Discarded old chunk update (ID: %d vs Current: %d)"), MyRequestID, WeakThis->LastUpdateRequestID);
-						return;
+					Comp->AddInstances(Transforms, false, false);
+				}
+				else {
+					UE_LOG(LogTemp, Warning, TEXT("ChunkBase: No HISM component found in BackBuffer for BlockType %d"), (int32)Type);
+				}
+			}
+
+			// ìƒˆ ë²„í¼(BackBuffer) í™œì„±í™”
+			for (auto& Elem : BackMap)
+			{
+				if (Elem.Value)
+				{
+					Elem.Value->SetHiddenInGame(false);
+					Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					// ë Œë”ë§ ê°•ì œ ì—…ë°ì´íŠ¸ ìš”ì²­
+					Elem.Value->MarkRenderStateDirty();
+				}
+			}
+
+			// í—Œ ë²„í¼(Front) ìˆ¨ê¸°ê¸° -> [ë‹¤ìŒ í”„ë ˆì„ìœ¼ë¡œ ì§€ì—°]
+			// ì´ë ‡ê²Œ í•˜ë©´ ì•„ì£¼ ì§§ì€ ìˆœê°„(1í”„ë ˆì„) ë‘ ì§€í˜•ì´ ê²¹ì³ ë³´ì´ì§€ë§Œ,
+			// ë¹ˆ ê³µê°„ì´ ë³´ì´ëŠ” ê²ƒë³´ë‹¤ëŠ” í›¨ì”¬ ë‚«ê³ , ê°™ì€ ìœ„ì¹˜ë¼ í‹°ê°€ ì•ˆ ë‚¨.
+			if (UWorld* World = WeakThis->GetWorld())
+			{
+				// ëŒë‹¤ ìº¡ì²˜ë¡œ í—Œ ë§µ(FrontMap) ì •ë³´ë¥¼ ë„˜ê¸°ê¸° ìœ„í•´ ì¸ë±ìŠ¤ ì‚¬ìš©
+				World->GetTimerManager().SetTimerForNextTick([WeakThis, OldBufferIndex]()
+				{
+					if (!WeakThis.IsValid()) {
+						UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Chunk destroyed before hiding old buffer."));
 					}
 
-					// 1. ¹öÆÛ ÀÎµ¦½º °áÁ¤
-					int32 OldBufferIndex = WeakThis->CurrentBufferIndex;
-					int32 NewBufferIndex = (OldBufferIndex + 1) % 2; // 0 <-> 1 ±³Ã¼
-
-					auto& FrontMap = WeakThis->HISM_Buffers[OldBufferIndex]; // ÇöÀç º¸ÀÌ´Â °Í (Çå°Í)
-					auto& BackMap = WeakThis->HISM_Buffers[NewBufferIndex]; // µÚ¿¡¼­ ÁØºñÇÒ °Í (»õ°Í)
-
-					// 2. BackBuffer ÃÊ±âÈ­ (È­¸é¿¡ ¾È º¸ÀÌ¹Ç·Î ±ôºıÀÓ ¾øÀ½)
-					for (auto& Elem : BackMap)
+					// í—Œ ë²„í¼ì˜ ëª¨ë“  ì»´í¬ë„ŒíŠ¸ ìˆ¨ê¹€
+					if (WeakThis->HISM_Buffers.IsValidIndex(OldBufferIndex))
 					{
-						if (Elem.Value) Elem.Value->ClearInstances();
-					}
-
-					// 3. BackBuffer Ã¤¿ì±â
-					for (const auto& BatchPair : LocalBatchData)
-					{
-						EBlockType Type = BatchPair.Key;
-						const TArray<FTransform>& Transforms = BatchPair.Value;
-
-						// BackMap¿¡ ÇØ´ç Å¸ÀÔÀÇ HISMÀÌ ¾øÀ¸¸é ¾ÈÀüÇÏ°Ô °Ç³Ê¶Ü (È¤Àº »ı¼º °í·Á)
-						if (UHierarchicalInstancedStaticMeshComponent* Comp = BackMap.FindRef(Type))
+						auto& OldMap = WeakThis->HISM_Buffers[OldBufferIndex];
+						for (auto& Elem : OldMap)
 						{
-							// [Áß¿ä] MarkRenderStateDirty = true
-							Comp->AddInstances(Transforms, false, true);
-						}
-					}
-
-					// 4. ½º¿Ò (Swap): »õ°ÍÀº Áï½Ã ÄÑ°í, Çå°ÍÀº ³ªÁß¿¡ ²ö´Ù.
-
-					// 4-A. »õ ¹öÆÛ(Back) Áï½Ã È°¼ºÈ­
-					for (auto& Elem : BackMap)
-					{
-						if (Elem.Value)
-						{
-							Elem.Value->SetHiddenInGame(false);
-							Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-							// ·»´õ¸µ °­Á¦ ¾÷µ¥ÀÌÆ® ¿äÃ»
-							Elem.Value->MarkRenderStateDirty();
-						}
-					}
-
-					// 4-B. Çå ¹öÆÛ(Front) ¼û±â±â -> [´ÙÀ½ ÇÁ·¹ÀÓÀ¸·Î Áö¿¬]
-					// ÀÌ·¸°Ô ÇÏ¸é ¾ÆÁÖ ÂªÀº ¼ø°£(1ÇÁ·¹ÀÓ) µÎ ÁöÇüÀÌ °ãÃÄ º¸ÀÌÁö¸¸,
-					// ºó °ø°£ÀÌ º¸ÀÌ´Â °Íº¸´Ù´Â ÈÎ¾À ³´°í, °°Àº À§Ä¡¶ó Æ¼°¡ ¾È ³².
-					if (UWorld* World = WeakThis->GetWorld())
-					{
-						// ¶÷´Ù Ä¸Ã³·Î Çå ¸Ê(FrontMap) Á¤º¸¸¦ ³Ñ±â±â À§ÇØ ÀÎµ¦½º »ç¿ë
-						World->GetTimerManager().SetTimerForNextTick([WeakThis, OldBufferIndex]()
+							if (Elem.Value)
 							{
-								if (!WeakThis.IsValid()) return;
-
-								// Çå ¹öÆÛÀÇ ¸ğµç ÄÄÆ÷³ÍÆ® ¼û±è
-								if (WeakThis->HISM_Buffers.IsValidIndex(OldBufferIndex))
-								{
-									auto& OldMap = WeakThis->HISM_Buffers[OldBufferIndex];
-									for (auto& Elem : OldMap)
-									{
-										if (Elem.Value)
-										{
-											Elem.Value->SetHiddenInGame(true);
-											Elem.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-										}
-									}
-								}
-							});
-					}
-
-					// 5. ÀÎµ¦½º ¾÷µ¥ÀÌÆ®
-					WeakThis->CurrentBufferIndex = NewBufferIndex;
-
-					// Åë°è Ãâ·Â
-					if (TotalSolidBlocks > 0)
-					{
-						UE_LOG(LogTemp, Warning, TEXT("[Chunk Visual Update] Total: %d | Visible: %d (Rendered) | Culled: %d (Hidden/Optimized)"),
-							TotalSolidBlocks, VisibleBlocks, CulledBlocks);
-					}
-
-					if (LocalSpawnRequests.Num() > 0)
-					{
-						// 1. ¿©±â¼­ º¯¼öµéÀ» ÇÑ ¹ø¸¸ ¼±¾ğÇÕ´Ï´Ù.
-						FVector ChunkOrigin = WeakThis->GetActorLocation();
-						TArray<FBlockSpawnRequest> WorldRequests;
-						WorldRequests.Reserve(LocalSpawnRequests.Num());
-
-						// 2. ¿äÃ» º¯È¯ (Local -> World)
-						for (const auto& Req : LocalSpawnRequests)
-						{
-							FBlockSpawnRequest NewReq;
-							NewReq.BlockTag = Req.BlockTag;
-							NewReq.WorldLocation = ChunkOrigin + Req.WorldLocation;
-							NewReq.OwnerChunk = WeakThis;
-							WorldRequests.Add(NewReq);
-
-							// Ã»Å© µ¥ÀÌÅÍ ÇÃ·¡±× ¼³Á¤ (¿©±â¼­ ¹Ù·Î °»½Å)
-							int32 X = FMath::RoundToInt(Req.WorldLocation.X / GridSize);
-							int32 Y = FMath::RoundToInt(Req.WorldLocation.Y / GridSize);
-							int32 Z = FMath::RoundToInt(Req.WorldLocation.Z / GridSize);
-
-							int32 Index = WeakThis->GetBlockIndex(X, Y, Z);
-							if (WeakThis->BlockDataArray.IsValidIndex(Index))
-							{
-								WeakThis->BlockDataArray[Index].bIsActorSpawned = true;
+								Elem.Value->SetHiddenInGame(true);
+								Elem.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 							}
 						}
-
-						// 3. ¼­ºê½Ã½ºÅÛ¿¡ Àü´Ş
-						if (UWorld* World = WeakThis->GetWorld())
-						{
-							if (UBlockManagerSubsystem* Subsystem = World->GetSubsystem<UBlockManagerSubsystem>())
-							{
-								// »õ·Î º¯¼ö¸¦ ¸¸µéÁö ¾Ê°í, À§¿¡¼­ ¸¸µç WorldRequests¸¦ ±×´ë·Î Àü´ŞÇÕ´Ï´Ù.
-								Subsystem->EnqueueBlockSpawns(WorldRequests);
-							}
-						}
-
-						UE_LOG(LogTemp, Log, TEXT("ChunkBase: Enqueued %d actor spawns."), WorldRequests.Num());
 					}
 				});
-			});
+			}
+
+			// í˜„ì¬ ë²„í¼ê°€ ëˆ„êµ¬ì¸ì§€ ì¸ë±ìŠ¤ ì—…ë°ì´íŠ¸
+			WeakThis->CurrentBufferIndex = NewBufferIndex;
+
+			// í†µê³„ ì¶œë ¥
+			if (TotalSolidBlocks > 0)
+			{
+				UE_LOG(LogTemp, Warning, TEXT("[Chunk Visual Update] Total: %d | Visible: %d (Rendered) | Culled: %d (Hidden/Optimized)"),
+					TotalSolidBlocks, VisibleBlocks, CulledBlocks);
+			}
+
+			// HISM ì²˜ë¦¬ê°€ ëë‚¬ìœ¼ë¯€ë¡œ ì•¡í„° ìŠ¤í° ìš”ì²­ ì²˜ë¦¬
+			if (LocalSpawnRequests.Num() > 0)
+			{
+				FVector ChunkOrigin = WeakThis->GetActorLocation();
+				TArray<FBlockSpawnRequest> WorldRequests;
+				// ë©”ëª¨ë¦¬ ì˜ˆì•½ì€ ë©”ëª¨ë¦¬ í• ë‹¹ ì˜¤ë²„í—¤ë“œë¥¼ ì¤„ì—¬ì¤˜ìš”~
+				WorldRequests.Reserve(LocalSpawnRequests.Num());
+
+				// ìš”ì²­ ë³€í™˜ (Local -> World)
+				for (const auto& Req : LocalSpawnRequests)
+				{
+					FBlockSpawnRequest NewReq;
+					NewReq.BlockTag = Req.BlockTag;
+
+					// ì›”ë“œ ì¢Œí‘œë¡œ ë³€í™˜
+					NewReq.WorldLocation = ChunkOrigin + Req.WorldLocation;
+					NewReq.OwnerChunk = WeakThis;
+					WorldRequests.Add(NewReq);
+
+					// ChunkBaseì˜ ê´€ë¦¬ ëª©ë¡(BlockDataArray)ì—ì„œ ì´ ë¸”ë¡ì˜ ìœ„ì¹˜ë¥¼ ì°¾ê¸°
+					int32 X = FMath::RoundToInt(Req.WorldLocation.X / GridSize);
+					int32 Y = FMath::RoundToInt(Req.WorldLocation.Y / GridSize);
+					int32 Z = FMath::RoundToInt(Req.WorldLocation.Z / GridSize);
+
+					int32 Index = WeakThis->GetBlockIndex(X, Y, Z);
+					if (WeakThis->BlockDataArray.IsValidIndex(Index))
+					{
+						WeakThis->BlockDataArray[Index].bIsActorSpawned = true;
+					}
+				}
+
+				// ì„œë¸Œì‹œìŠ¤í…œì— ì•¡í„° ìƒì„± ìš”ì²­ì„ ëª¨ì•„ì„œ ì „ë‹¬
+				if (UWorld* World = WeakThis->GetWorld())
+				{
+					if (UBlockManagerSubsystem* Subsystem = World->GetSubsystem<UBlockManagerSubsystem>())
+					{
+						Subsystem->EnqueueBlockSpawns(WorldRequests);
+					}
+				}
+				UE_LOG(LogTemp, Log, TEXT("ChunkBase: Enqueued %d actor spawns."), WorldRequests.Num());
+			}
+		});
+	});
 }
 
 FBlockData FChunkSnapshot::GetBlockData(int32 X, int32 Y, int32 Z) const
 {
-	// ³» Ã»Å© ¹üÀ§ ³»ÀÏ °æ¿ìÀÇ Ã³¸®
+	// ë‚´ ì²­í¬ ë²”ìœ„ ë‚´ì¼ ê²½ìš°ì˜ ì²˜ë¦¬
 	if (X >= 0 && X < SizeX && Y >= 0 && Y < SizeY && Z >= 0 && Z < SizeZ)
 	{
 		int32 Index = X + (Y * SizeX) + (Z * SizeX * SizeY);
@@ -464,13 +489,13 @@ FBlockData FChunkSnapshot::GetBlockData(int32 X, int32 Y, int32 Z) const
 		return FBlockData{ EBlockType::None };
 	}
 
-	// 2. ¹üÀ§¸¦ ¹ş¾î³µ´Ù¸é ¾î´À ÀÌ¿ôÀÎÁö ÆÇº°
+	// 2. ë²”ìœ„ë¥¼ ë²—ì–´ë‚¬ë‹¤ë©´ ì–´ëŠ ì´ì›ƒì¸ì§€ íŒë³„
 	EBlockNeighbor TargetDir = EBlockNeighbor::Count;
 	int32 LocalX = X;
 	int32 LocalY = Y;
 	int32 LocalZ = Z;
 
-	// XÃà °Ë»ç
+	// Xì¶• ê²€ì‚¬
 	if (X < 0)
 	{
 		TargetDir = EBlockNeighbor::Back;
@@ -482,7 +507,7 @@ FBlockData FChunkSnapshot::GetBlockData(int32 X, int32 Y, int32 Z) const
 		LocalX = (X + SizeX) % SizeX; // 16 -> 0
 	}
 
-	// YÃà °Ë»ç (XÃàÀÌ ¹üÀ§ ¾ÈÀÏ ¶§¸¸ Ã¼Å©)
+	// Yì¶• ê²€ì‚¬ (Xì¶•ì´ ë²”ìœ„ ì•ˆì¼ ë•Œë§Œ ì²´í¬)
 	else if (Y < 0)
 	{
 		TargetDir = EBlockNeighbor::Left;
@@ -493,9 +518,9 @@ FBlockData FChunkSnapshot::GetBlockData(int32 X, int32 Y, int32 Z) const
 		TargetDir = EBlockNeighbor::Right;
 		LocalY = (Y + SizeY) % SizeY;
 	}
-	// ZÃà °Ë»ç »ı·« (´ÜÃş ¸ÊÀÌ¹Ç·Î)
+	// Zì¶• ê²€ì‚¬ ìƒëµ (ë‹¨ì¸µ ë§µì´ë¯€ë¡œ)
 
-	// ÀÌ¿ô µ¥ÀÌÅÍ°¡ ½º³À¼¦¿¡ Á¸ÀçÇÏ´ÂÁö È®ÀÎ
+	// ì´ì›ƒ ë°ì´í„°ê°€ ìŠ¤ëƒ…ìƒ·ì— ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸
 	if (TargetDir != EBlockNeighbor::Count && NeighborDataMap.Contains(TargetDir))
 	{
 		const TArray<FBlockData>& NeighborArr = NeighborDataMap[TargetDir];
@@ -507,29 +532,29 @@ FBlockData FChunkSnapshot::GetBlockData(int32 X, int32 Y, int32 Z) const
 		}
 	}
 
-	// ÀÌ¿ôÀÌ ¾ø°Å³ª µ¥ÀÌÅÍ°¡ ¾øÀ¸¸é 'Åõ¸í(None)' Ãë±Ş -> ±×·¡¾ß ¿Üº®ÀÌ ±×·ÁÁü
+	// ì´ì›ƒì´ ì—†ê±°ë‚˜ ë°ì´í„°ê°€ ì—†ìœ¼ë©´ 'íˆ¬ëª…(None)' ì·¨ê¸‰ -> ê·¸ë˜ì•¼ ì™¸ë²½ì´ ê·¸ë ¤ì§
 	return FBlockData{ EBlockType::None };
 }
 
 void AChunkBase::RemoveBlockAtWorldLocation(FVector WorldLocation)
 {
-	// ¿ùµå ÁÂÇ¥¸¦ Ã»Å© ·ÎÄÃ ÁÂÇ¥·Î º¯È¯ (Ã»Å©ÀÇ È¸ÀüÀÌ ¾ø´Ù°í °¡Á¤ ½Ã ´Ü¼ø »©±â)
+	// ì›”ë“œ ì¢Œí‘œë¥¼ ì²­í¬ ë¡œì»¬ ì¢Œí‘œë¡œ ë³€í™˜ (ì²­í¬ì˜ íšŒì „ì´ ì—†ë‹¤ê³  ê°€ì • ì‹œ ë‹¨ìˆœ ë¹¼ê¸°)
 	FVector LocalLoc = WorldLocation - GetActorLocation();
 
-	// ±×¸®µå ÁÂÇ¥·Î º¯È¯
+	// ê·¸ë¦¬ë“œ ì¢Œí‘œë¡œ ë³€í™˜
 	int32 X = FMath::RoundToInt(LocalLoc.X / BlockGridSize);
 	int32 Y = FMath::RoundToInt(LocalLoc.Y / BlockGridSize);
 	int32 Z = FMath::RoundToInt(LocalLoc.Z / BlockGridSize);
 
-	// µ¥ÀÌÅÍ °»½Å (NoneÀ¸·Î º¯°æ)
-	// SetBlockType ³»ºÎ¿¡¼­ À¯È¿¼º °Ë»ç(Index Check)¸¦ ÇÏ¹Ç·Î ¾ÈÀüÇÔ
+	// ë°ì´í„° ê°±ì‹  (Noneìœ¼ë¡œ ë³€ê²½)
+	// SetBlockType ë‚´ë¶€ì—ì„œ ìœ íš¨ì„± ê²€ì‚¬(Index Check)ë¥¼ í•˜ë¯€ë¡œ ì•ˆì „í•¨
 	SetBlockType(X, Y, Z, EBlockType::None);
 
-	// ½Ã°¢Àû ¾÷µ¥ÀÌÆ® ¿äÃ» (ÀÌ ºí·ÏÀº Actor¿´À¸¹Ç·Î HISM °»½ÅÀº ÇÊ¿ä ¾øÀ» ¼ö ÀÖÀ¸³ª, 
-	// ÀÌ¿ô ºí·ÏÀÇ ¿·¸é(Culling)À» ´Ù½Ã ±×·Á¾ß ÇÏ¹Ç·Î È£Ãâ ÇÊ¼ö
+	// ì‹œê°ì  ì—…ë°ì´íŠ¸ ìš”ì²­ (ì´ ë¸”ë¡ì€ Actorì˜€ìœ¼ë¯€ë¡œ HISM ê°±ì‹ ì€ í•„ìš” ì—†ì„ ìˆ˜ ìˆìœ¼ë‚˜, 
+	// ì´ì›ƒ ë¸”ë¡ì˜ ì˜†ë©´(Culling)ì„ ë‹¤ì‹œ ê·¸ë ¤ì•¼ í•˜ë¯€ë¡œ í˜¸ì¶œ í•„ìˆ˜
 	UpdateChunkVisuals();
 
-	// Åë°è
+	// í†µê³„
 	UE_LOG(LogTemp, Warning, TEXT("[ChunkBase] Block Data cleared! Triggering Visual Update to reveal neighbors..."));
 }
 
@@ -543,11 +568,11 @@ void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)
 	int32 Index = GetBlockIndex(X, Y, Z);
 	if (BlockDataArray.IsValidIndex(Index))
 	{
-		// ÇÃ·¡±×¸¦ ´Ù½Ã false·Î µÇµ¹¸² -> ´ÙÀ½ UpdateChunkVisuals ¶§ ´Ù½Ã ½ÃµµÇÏ°Ô µÊ
+		// í”Œë˜ê·¸ë¥¼ ë‹¤ì‹œ falseë¡œ ë˜ëŒë¦¼ -> ë‹¤ìŒ UpdateChunkVisuals ë•Œ ë‹¤ì‹œ ì‹œë„í•˜ê²Œ ë¨
 		BlockDataArray[Index].bIsActorSpawned = false;
 
-		// ÇÊ¿äÇÏ´Ù¸é ´Ù½Ã ½Ã°¢Àû ¾÷µ¥ÀÌÆ®¸¦ ¿äÃ»ÇÏ°Å³ª, 
-		// ÀÏÁ¤ ½Ã°£ µÚ¿¡ Àç½ÃµµÇÏµµ·Ï ·ÎÁ÷À» Ãß°¡ÇÒ ¼ö ÀÖÀ½
+		// í•„ìš”í•˜ë‹¤ë©´ ë‹¤ì‹œ ì‹œê°ì  ì—…ë°ì´íŠ¸ë¥¼ ìš”ì²­í•˜ê±°ë‚˜, 
+		// ì¼ì • ì‹œê°„ ë’¤ì— ì¬ì‹œë„í•˜ë„ë¡ ë¡œì§ì„ ì¶”ê°€í•  ìˆ˜ ìˆìŒ
 		// UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Spawn Failed Rollback at %d %d %d"), X, Y, Z);
 	}
 }
@@ -564,29 +589,29 @@ void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, boo
 
 void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemIndex, FGameplayTag Tag)
 {
-	// 1. ÄÄÆ÷³ÍÆ® ¹× ÀÎµ¦½º À¯È¿¼º °Ë»ç
+	// 1. ì»´í¬ë„ŒíŠ¸ ë° ì¸ë±ìŠ¤ ìœ íš¨ì„± ê²€ì‚¬
 	UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(TargetComp);
 	if (!HISM || HISM->GetOwner() != this) return;
 	if (ItemIndex < 0 || ItemIndex >= HISM->GetInstanceCount()) return;
 	if (!BlockConfigDataAsset) return;
 
 	// -------------------------------------------------------------------------
-	// Case 1: ÆøÅº ÇÏÀÌ¶óÀÌÆ® (ÁßÃ¸ Ä«¿îÆÃ ·ÎÁ÷)
+	// Case 1: í­íƒ„ í•˜ì´ë¼ì´íŠ¸ (ì¤‘ì²© ì¹´ìš´íŒ… ë¡œì§)
 	// -------------------------------------------------------------------------
 	if (Tag.MatchesTag(TAG_Block_Highlight_Bomb))
 	{
-		// ÇØ´ç ÄÄÆ÷³ÍÆ®ÀÇ Ä«¿îÆ® ¸ÊÀ» °¡Á®¿À°Å³ª »ı¼º
+		// í•´ë‹¹ ì»´í¬ë„ŒíŠ¸ì˜ ì¹´ìš´íŠ¸ ë§µì„ ê°€ì ¸ì˜¤ê±°ë‚˜ ìƒì„±
 		TMap<int32, int32>& InstanceCounts = HISMBombCountMap.FindOrAdd(HISM);
 
-		// [ÃÊ±âÈ­] Bomb_None ÅÂ±×°¡ ¿À¸é Ä«¿îÆ® ¸®¼Â ¹× ÇÏÀÌ¶óÀÌÆ® ²ô±â
+		// [ì´ˆê¸°í™”] Bomb_None íƒœê·¸ê°€ ì˜¤ë©´ ì¹´ìš´íŠ¸ ë¦¬ì…‹ ë° í•˜ì´ë¼ì´íŠ¸ ë„ê¸°
 		if (Tag.MatchesTag(TAG_Block_Highlight_Bomb_None))
 		{
-			InstanceCounts.Remove(ItemIndex); // ¸Ê¿¡¼­ µ¥ÀÌÅÍ »èÁ¦ (¸Ş¸ğ¸® Àı¾à)
+			InstanceCounts.Remove(ItemIndex); // ë§µì—ì„œ ë°ì´í„° ì‚­ì œ (ë©”ëª¨ë¦¬ ì ˆì•½)
 
-			// CPD 0À¸·Î ÃÊ±âÈ­
+			// CPD 0ìœ¼ë¡œ ì´ˆê¸°í™”
 			HISM->SetCustomDataValue(ItemIndex, BlockConfigDataAsset->BombCPDIndex, 0.0f, true);
 
-			// ¸ÊÀÌ ºñ¾úÀ¸¸é ÄÄÆ÷³ÍÆ® Å° ÀÚÃ¼µµ Á¦°Å (¼±ÅÃ»çÇ×)
+			// ë§µì´ ë¹„ì—ˆìœ¼ë©´ ì»´í¬ë„ŒíŠ¸ í‚¤ ìì²´ë„ ì œê±° (ì„ íƒì‚¬í•­)
 			if (InstanceCounts.Num() == 0)
 			{
 				HISMBombCountMap.Remove(HISM);
@@ -594,41 +619,41 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 			return;
 		}
 
-		// [Áõ°¡] ÇöÀç °³¼ö °¡Á®¿À±â (¾øÀ¸¸é 0)
+		// [ì¦ê°€] í˜„ì¬ ê°œìˆ˜ ê°€ì ¸ì˜¤ê¸° (ì—†ìœ¼ë©´ 0)
 		int32 CurrentCount = InstanceCounts.FindRef(ItemIndex);
 
-		// ÃÖ´ë °³¼ö Á¦ÇÑ (BlockBase ·ÎÁ÷°ú µ¿ÀÏ)
-		CurrentCount = FMath::Clamp(CurrentCount + 1, 0, /*ÀÓ½Ã*/3);
+		// ìµœëŒ€ ê°œìˆ˜ ì œí•œ (BlockBase ë¡œì§ê³¼ ë™ì¼)
+		CurrentCount = FMath::Clamp(CurrentCount + 1, 0, /*ì„ì‹œ*/3);
 
-		// ¸Ê¿¡ ÀúÀå
+		// ë§µì— ì €ì¥
 		InstanceCounts.Add(ItemIndex, CurrentCount);
 
-		// CPD °è»ê: °³¼ö * °­µµ
-		float NewValue = CurrentCount * BlockConfigDataAsset->BombIntensityPerCount; // Config º¯¼ö¸í °¡Á¤
+		// CPD ê³„ì‚°: ê°œìˆ˜ * ê°•ë„
+		float NewValue = CurrentCount * BlockConfigDataAsset->BombIntensityPerCount; // Config ë³€ìˆ˜ëª… ê°€ì •
 		HISM->SetCustomDataValue(ItemIndex, BlockConfigDataAsset->BombCPDIndex, NewValue, true);
 
 		return;
 	}
 
 	// -------------------------------------------------------------------------
-	// Case 2: ÀÏ¹İ ÇÏÀÌ¶óÀÌÆ® (´Ü¼ø On/Off)
+	// Case 2: ì¼ë°˜ í•˜ì´ë¼ì´íŠ¸ (ë‹¨ìˆœ On/Off)
 	// -------------------------------------------------------------------------
 	const FBlockCPDInfo* CPDInfo = BlockConfigDataAsset->BlockCPDIndexMap.Find(Tag);
 
-	// ÅÂ±×¸¦ Ã£¾Ò°Å³ª, None(ÇØÁ¦) ÅÂ±×ÀÎ °æ¿ì Ã³¸®
+	// íƒœê·¸ë¥¼ ì°¾ì•˜ê±°ë‚˜, None(í•´ì œ) íƒœê·¸ì¸ ê²½ìš° ì²˜ë¦¬
 	if (CPDInfo || Tag == TAG_Block_Highlight_None)
 	{
 		float CPDValue = CPDInfo ? CPDInfo->CPDValue : 0.0f;
-		int32 CPDIndex = CPDInfo ? CPDInfo->CPDIndex : 0; // NoneÀÏ ¶© 0¹ø ÀÎµ¦½º(Color)¸¦ 0.0À¸·Î ²ö´Ù°í °¡Á¤
+		int32 CPDIndex = CPDInfo ? CPDInfo->CPDIndex : 0; // Noneì¼ ë• 0ë²ˆ ì¸ë±ìŠ¤(Color)ë¥¼ 0.0ìœ¼ë¡œ ëˆë‹¤ê³  ê°€ì •
 
-		// ÅÂ±×°¡ NoneÀÌ¸é °ªÀ» 0À¸·Î °­Á¦
+		// íƒœê·¸ê°€ Noneì´ë©´ ê°’ì„ 0ìœ¼ë¡œ ê°•ì œ
 		if (Tag == TAG_Block_Highlight_None)
 		{
 			CPDValue = 0.0f;
-			// º¸Åë ÇÏÀÌ¶óÀÌÆ®¿ë CPD ÀÎµ¦½º¸¦ ¾Ë¾Æ¾ß ÇÏ´Âµ¥, 
-			// ¿©±â¼­´Â Preview³ª Select µî ¸ğµç ÇÏÀÌ¶óÀÌÆ®¸¦ ²ö´Ù°í °¡Á¤ÇÏ°í 0¹øÀÌ³ª Æ¯Á¤ ÀÎµ¦½º¸¦ »ç¿ë
-			// Á¤È®È÷ ÇÏ·Á¸é '¾î¶² ÇÏÀÌ¶óÀÌÆ®¸¦ ²ø °ÍÀÎ°¡'¿¡ ´ëÇÑ Á¤º¸°¡ ´õ ÇÊ¿äÇÏÁö¸¸,
-			// º¸Åë ´ÜÀÏ Ã¤³ÎÀ» ¾´´Ù¸é 0¹ø ÀÎµ¦½º¸¦ 0.0f·Î ¹Ì´Â °ÍÀ¸·Î ÃæºĞÇÔ.
+			// ë³´í†µ í•˜ì´ë¼ì´íŠ¸ìš© CPD ì¸ë±ìŠ¤ë¥¼ ì•Œì•„ì•¼ í•˜ëŠ”ë°, 
+			// ì—¬ê¸°ì„œëŠ” Previewë‚˜ Select ë“± ëª¨ë“  í•˜ì´ë¼ì´íŠ¸ë¥¼ ëˆë‹¤ê³  ê°€ì •í•˜ê³  0ë²ˆì´ë‚˜ íŠ¹ì • ì¸ë±ìŠ¤ë¥¼ ì‚¬ìš©
+			// ì •í™•íˆ í•˜ë ¤ë©´ 'ì–´ë–¤ í•˜ì´ë¼ì´íŠ¸ë¥¼ ëŒ ê²ƒì¸ê°€'ì— ëŒ€í•œ ì •ë³´ê°€ ë” í•„ìš”í•˜ì§€ë§Œ,
+			// ë³´í†µ ë‹¨ì¼ ì±„ë„ì„ ì“´ë‹¤ë©´ 0ë²ˆ ì¸ë±ìŠ¤ë¥¼ 0.0fë¡œ ë¯¸ëŠ” ê²ƒìœ¼ë¡œ ì¶©ë¶„í•¨.
 		}
 
 		HISM->SetCustomDataValue(ItemIndex, CPDIndex, CPDValue, true);

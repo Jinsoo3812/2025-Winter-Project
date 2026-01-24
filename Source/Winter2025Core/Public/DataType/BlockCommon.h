@@ -22,7 +22,7 @@ enum class EBlockType : uint8
 };
 
 /**
- * 청크 내의 개별 블록들이 가지는 속성
+ * 청크 내의 개별 블록들이 가지는 상태
  * 수많은 블록들이 BlockData가 런타임에 활용될 수 있으므로 가벼운 자료형만 사용
  */
 USTRUCT(BlueprintType)

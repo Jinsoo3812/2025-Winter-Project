@@ -10,8 +10,8 @@ class UBlockConfig;
 class UDA_BlockConfig;
 
 /*
-* 스레드 처리를 위한 데이터 스냅샷 구조체
-* UObjcet 등을 포함하지 않고, 순수 데이터만 포함
+* 워커 스레드에서 안전하게 작업을 처리하기 위한 현재 청크 상태 스냅샷
+* 자신의 모든 BlockData, 6방향 이웃의 모든 BlockData 의 "복사본"
 */
 struct FChunkSnapshot
 {
@@ -19,9 +19,8 @@ struct FChunkSnapshot
 	TArray<FBlockData> MyData;
 	int32 SizeX, SizeY, SizeZ;
 
-	// 이웃 청크들의 데이터 복사본 (Key: 방향, Value: 블록 데이터 배열)
-	// *최적화 주석: 실제 상용 수준에서는 배열 전체가 아니라 '경계면 한 줄'만 복사하는 것이 성능상 좋습니다.
-	// 여기서는 이해를 돕기 위해 전체를 복사합니다.
+	// 6방향 이웃 청크들의 Blockdata 배열
+	// 이웃 청크의 BlockData는 '경계면'만 가져오는 것으로 더 최적화 가능
 	TMap<EBlockNeighbor, TArray<FBlockData>> NeighborDataMap;
 
 	// 스냅샷 내부에서 좌표를 통해 블록을 조회하는 헬퍼 함수
@@ -52,8 +51,10 @@ public:
 	// 데이터 관리
 	// -------------------------------------------------------------------------
 
-	// 청크 내부의 블록 데이터 (1차원 배열로 평탄화하여 관리)
-	// 인덱스 = x + (y * SizeX) + (z * SizeX * SizeY)
+	/*
+	* 캐시 히트율을 높이기 위해 1차원 배열로 BlockData 저장
+	* 3차원 좌표로 데이터 저장 시 메모리 파편화 및 관리 오버헤드
+	*/
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Chunk Data")
 	TArray<FBlockData> BlockDataArray;
 
@@ -116,7 +117,7 @@ private:
 	// 메인 스레드에서만 수정되므로 Atomic 보장은 필요 없음
 	int32 LastUpdateRequestID = 0;
 
-	// 블록 속성 조회용 (EBlockType을 통해 GameplayTag를 얻을 수 있음)
+	// EBlockType에 상응하는 블록 별 메시와 GameplayTag 등이 매핑된 데이터 에셋
 	UPROPERTY(Transient)
 	const UBlockConfig* BlockConfig = nullptr;
 
@@ -127,7 +128,7 @@ private:
 	// Key: 컴포넌트 포인터, Value: <인스턴스 인덱스, 개수> 맵
 	TMap<UPrimitiveComponent*, TMap<int32, int32>> HISMBombCountMap;
 
-	// [신규] 더블 버퍼링용 2중 배열 (0번 버퍼, 1번 버퍼)
+	// HISM 컴포넌트를 블록 타입 별로 2개씩 갖기 위한 배열
 	TArray<TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*>> HISM_Buffers;
 
 	// 현재 화면에 표시 중인 버퍼 인덱스 (0 or 1)
