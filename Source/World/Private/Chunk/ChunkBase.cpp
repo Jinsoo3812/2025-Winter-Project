@@ -589,7 +589,6 @@ void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, boo
 
 void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemIndex, FGameplayTag Tag)
 {
-	UE_LOG(LogTemp, Log, TEXT("ChunkBase: HighlightHISMBlock called with Tag %s on ItemIndex %d."), *Tag.ToString(), ItemIndex);
 	// 1. 컴포넌트 및 인덱스 유효성 검사
 	UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(TargetComp);
 	if (!HISM || HISM->GetOwner() != this) {

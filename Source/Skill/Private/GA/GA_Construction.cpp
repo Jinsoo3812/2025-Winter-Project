@@ -90,6 +90,9 @@ void UGA_Construction::EndAbility(
 	// 바닥 프리뷰 하이라이트 제거
 	ClearHighlights(PreviewBlocks);
 
+	// HISM 통합 프리뷰 배열 제거
+	ClearHighlights(PreviewBlockRefs); 
+
 	// 프리뷰 블록 제거
 	if (PreviewBlock.IsValid())
 	{
@@ -125,7 +128,7 @@ void UGA_Construction::UpdatePreview()
 	}
 
 	// 범위 내 블록들을 찾아서 파란색 하이라이트
-	HighlightBlocks(PreviewBlocks, TAG_Block_Highlight_Preview);
+	HighlightBlocks(PreviewBlockRefs, TAG_Block_Highlight_Preview);
 
 	// 마우스 커서 아래 블록 찾기
 	FHitResult HitResult;
@@ -134,7 +137,7 @@ void UGA_Construction::UpdatePreview()
 	// bBlockingHit은 Block 응답을 가진 충돌이 발생했는지 여부
 	if (HitResult.bBlockingHit)
 	{
-		// [핵심 변경] HitResult를 분석하여 FBlockReference 생성
+		// HitResult를 분석하여 FBlockReference 생성
 		FBlockReference HitBlockRef;
 
 		// Case A: HISM (Terrain)

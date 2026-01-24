@@ -1,7 +1,6 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "GA/GA_SkillBase.h"
-#include "Interface/ISkillManagerProvider.h"
 #include "Interface/IAttributeSetProvider.h"
 #include "AbilitySystemComponent.h"
 #include "AttributeSet.h"

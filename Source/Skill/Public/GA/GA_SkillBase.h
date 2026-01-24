@@ -67,6 +67,9 @@ protected:
 	/* 프리뷰 중이거나 하이라이트 효과가 적용된 블록들을 관리하는 배열 */
 	TArray<TWeakObjectPtr<AActor>> PreviewBlocks;
 
+	// HISM과 Actor를 통합하여 처리할 수 있는 프리뷰 블록 배열
+	TArray<FBlockReference> PreviewBlockRefs;
+
 	/*
 	* 스킬 사용 범위 표시에 들어오는 블록들을 찾아내는 헬퍼 함수
 	* 스킬 사용 범위를 찾는 로직이 다른 스킬들을 위한 가상함수

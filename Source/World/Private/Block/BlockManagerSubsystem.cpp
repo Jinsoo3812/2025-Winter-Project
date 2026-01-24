@@ -397,7 +397,6 @@ FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 
 void UBlockManagerSubsystem::HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag)
 {
-	UE_LOG(LogTemp, Log, TEXT("HighlightBlock called with Tag: %s"), *Tag.ToString());
 	if (!BlockRef.IsValid()) {
 		UE_LOG(LogTemp, Warning, TEXT("HighlightBlock: Invalid Block Reference"));
 	}
