@@ -393,32 +393,22 @@ void AChunkBase::UpdateChunkVisuals()
 				}
 			}
 
-			// 헌 버퍼(Front) 숨기기 -> [다음 프레임으로 지연]
-			// 이렇게 하면 아주 짧은 순간(1프레임) 두 지형이 겹쳐 보이지만,
-			// 빈 공간이 보이는 것보다는 훨씬 낫고, 같은 위치라 티가 안 남.
+			// 지금까지 내린 렌더링 명령(ex. AddInstances, SetHiddenInGame 등)이 모두 처리될 때까지
+			// 렌더 스레드를 붙잡아두는 펜스 시작
+			WeakThis->RenderFence.BeginFence();
+
+			// 타이머를 돌며 주기적으로 렌더링 명령을 다 마쳤는지 검사
 			if (UWorld* World = WeakThis->GetWorld())
 			{
-				// 람다 캡처로 헌 맵(FrontMap) 정보를 넘기기 위해 인덱스 사용
-				World->GetTimerManager().SetTimerForNextTick([WeakThis, OldBufferIndex]()
-				{
-					if (!WeakThis.IsValid()) {
-						UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Chunk destroyed before hiding old buffer."));
-					}
+				// 기존 타이머가 돌고 있다면 제거 (안전장치)
+				World->GetTimerManager().ClearTimer(WeakThis->RenderFenceTimerHandle);
 
-					// 헌 버퍼의 모든 컴포넌트 숨김
-					if (WeakThis->HISM_Buffers.IsValidIndex(OldBufferIndex))
-					{
-						auto& OldMap = WeakThis->HISM_Buffers[OldBufferIndex];
-						for (auto& Elem : OldMap)
-						{
-							if (Elem.Value)
-							{
-								Elem.Value->SetHiddenInGame(true);
-								Elem.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-							}
-						}
-					}
-				});
+				// 타이머에 렌더 펜스 검사 함수 바인딩
+				FTimerDelegate TimerDel;
+				TimerDel.BindUObject(WeakThis.Get(), &AChunkBase::CheckRenderFence, OldBufferIndex);
+
+				// 0,01초마다 검사
+				World->GetTimerManager().SetTimer(WeakThis->RenderFenceTimerHandle, TimerDel, 0.01f, true);
 			}
 
 			// 현재 버퍼가 누구인지 인덱스 업데이트
@@ -656,5 +646,46 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 	}
 	else {
 		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HighlightHISMBlock called with unknown Tag %s."), *Tag.ToString());
+	}
+}
+
+void AChunkBase::CheckRenderFence(int32 OldBufferIndex)
+{
+	// IsFenceComplete: BeginFence 시점의 렌더링 명령이 모두 처리 되었는가?
+	if (RenderFence.IsFenceComplete())
+	{
+		// 렌더링 명령이 처리됨 -> 새 버퍼가 화면에 나올 준비가 됨
+
+		// 헌 버퍼(Old) 숨기기
+		if (HISM_Buffers.IsValidIndex(OldBufferIndex))
+		{
+			auto& OldMap = HISM_Buffers[OldBufferIndex];
+			for (auto& Elem : OldMap)
+			{
+				if (Elem.Value)
+				{
+					Elem.Value->SetHiddenInGame(true);
+					Elem.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Invalid HISM in OldBuffer during Fence Callback."));
+				}
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("ChunkBase: Invalid OldBufferIndex in Fence Callback."));
+		}
+
+		// 타이머 종료
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().ClearTimer(RenderFenceTimerHandle);
+		}
+	}
+	else
+	{
+		// 아직 렌더링 명령 처리중. 다음 타이머 틱에서 다시 검사
 	}
 }

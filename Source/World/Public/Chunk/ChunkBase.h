@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "BlockCommon.h"
+#include "RenderCommandFence.h"
 #include "ChunkBase.generated.h"
 
 class UBlockConfig;
@@ -133,4 +134,17 @@ private:
 
 	// 현재 화면에 표시 중인 버퍼 인덱스 (0 or 1)
 	int32 CurrentBufferIndex = 0;
+
+	// ---------------------------------------------------------
+	// 비동기 청크 업데이트 관련
+	// ---------------------------------------------------------
+
+	/** 렌더링 스레드가 작업을 마쳤는지 추적하기 위한 펜스 */
+	FRenderCommandFence RenderFence;
+
+	/** 펜스 완료 여부를 주기적으로 검사하기 위한 타이머 */
+	FTimerHandle RenderFenceTimerHandle;
+
+	/** 펜스 검사 함수 (타이머에 의해 호출) */
+	void CheckRenderFence(int32 OldBufferIndex);
 };

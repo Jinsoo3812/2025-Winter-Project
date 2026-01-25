@@ -13,7 +13,8 @@ public class World: ModuleRules
             "GameplayTasks",
             "GameplayTags",
             "NavigationSystem",
-            "Winter2025Core"
+            "Winter2025Core",
+            "RenderCore"
         });
 
         PublicIncludePaths.AddRange(new string[] {
