@@ -99,4 +99,7 @@ protected:
 
 	// 투척 확정 시 타겟팅된 블록을 저장 (착탄 후 빨간색 표시를 위해 필요)
 	TWeakObjectPtr<AActor> SavedTargetBlock;
+
+	FBlockReference SavedTargetRef;
+	FBlockReference HighlightedRef;
 };

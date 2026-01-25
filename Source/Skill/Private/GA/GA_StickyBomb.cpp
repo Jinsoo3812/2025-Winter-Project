@@ -2,7 +2,6 @@
 
 #include "GA/GA_StickyBomb.h"
 #include "Object/Explosive.h"
-#include "BlockInfoInterface.h"
 #include "Abilities/Tasks/AbilityTask_WaitInputPress.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameFramework/PlayerController.h"
@@ -11,6 +10,7 @@
 #include "BlockGameplayTags.h"
 #include "InputGameplayTags.h"
 #include "Collision/CollisionChannels.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
 UGA_StickyBomb::UGA_StickyBomb()
 {
@@ -111,7 +111,7 @@ void UGA_StickyBomb::EndAbility(
 	}
 	TickTimerHandle.Invalidate();
 
-	ClearHighlights(PreviewBlocks);
+	ClearHighlights(PreviewBlockRefs);
 
 	// 입력 태스크 정리
 	if (InputTask)
@@ -120,7 +120,7 @@ void UGA_StickyBomb::EndAbility(
 		InputTask = nullptr;
 	}
 
-	SavedTargetBlock.Reset();
+	SavedTargetRef.Reset();
 	NotifySkillCastFinished();
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -129,46 +129,54 @@ void UGA_StickyBomb::EndAbility(
 void UGA_StickyBomb::UpdatePreview()
 {
 	APawn* OwnerPawn = Cast<APawn>(GetAvatarActorFromActorInfo());
+	if (!OwnerPawn) return;
 	APlayerController* PC = (OwnerPawn) ? Cast<APlayerController>(OwnerPawn->GetController()) : nullptr;
+	if (!PC) return;
 
-	if (!PC)
-	{
-		return; // 로깅 생략 (매 프레임 호출됨)
-	}
-
-	HighlightBlocks(PreviewBlocks, TAG_Block_Highlight_Preview);
+	HighlightBlocks(PreviewBlockRefs, TAG_Block_Highlight_Preview);
 
 	// 4. 마우스 커서 타겟팅 처리
 	FHitResult HitResult;
 	PC->GetHitResultUnderCursor(ECC_Block, true, HitResult);
-	AActor* HitActor = HitResult.GetActor();
+	FBlockReference HitRef;
 
-	bool bIsInPreviewBlocks = false;
-	for (const TWeakObjectPtr<AActor>& WeakBlock : PreviewBlocks)
+	if (HitResult.bBlockingHit)
 	{
-		if (WeakBlock.IsValid() && WeakBlock.Get() == HitActor)
+		// Case A: HISM (청크 내부 블록)
+		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(HitResult.GetComponent()))
 		{
-			bIsInPreviewBlocks = true;
-			break;
+			HitRef.TargetObject = HitResult.GetActor(); // Chunk
+			HitRef.TargetComponent = HISM;
+			HitRef.ItemIndex = HitResult.Item;
+		}
+		// Case B: Actor (독립 블록)
+		else if (AActor* HitActor = HitResult.GetActor())
+		{
+			HitRef.TargetObject = HitActor;
+			HitRef.TargetComponent = nullptr;
+			HitRef.ItemIndex = -1;
 		}
 	}
 
-	if (HitActor && bIsInPreviewBlocks)
+	// 타겟이 유효하고, 파란색 범위(PreviewBlockRefs) 안에 포함되어 있는지 확인
+	// FBlockReference의 operator== 가 구조체 기본 동작으로 비교됨
+	if (HitRef.IsValid() && PreviewBlockRefs.Contains(HitRef))
 	{
-		// 타겟 하이라이트 적용
-		TArray<TWeakObjectPtr<AActor>> TargetedActor = { HitActor };
-		BatchHighlightBlocks(TargetedActor, TAG_Block_Highlight_Target);
-		HighlightedBlock = HitActor;
+		if (BlockSystem)
+		{
+			BlockSystem->HighlightBlock(HitRef, TAG_Block_Highlight_Target);
+		}
+		HighlightedRef = HitRef;
 	}
 	else
 	{
-		HighlightedBlock.Reset();
+		HighlightedRef.Reset();
 	}
 }
 
 void UGA_StickyBomb::OnLeftClickEventReceived(FGameplayEventData Payload)
 {
-	if (HighlightedBlock.IsValid())
+	if (HighlightedRef.IsValid())
 	{
 		NotifySkillCastStarted();
 		SpawnExplosive();
@@ -202,14 +210,14 @@ void UGA_StickyBomb::SpawnExplosive()
 	}
 
 	// 타겟 블록 정보 백업
-	SavedTargetBlock = HighlightedBlock.Get();
+	SavedTargetRef = HighlightedRef;
 
 	// 타이머 및 프리뷰 즉시 정리
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().ClearTimer(TickTimerHandle);
 	}
-	ClearHighlights(PreviewBlocks);
+	ClearHighlights(PreviewBlockRefs);
 
 	// 입력 태스크 정리
 	if (InputTask)
@@ -227,11 +235,11 @@ void UGA_StickyBomb::SpawnExplosive()
 
 	AExplosive* NewExplosive = GetWorld()->SpawnActor<AExplosive>(ExplosiveClass, SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 
-	if (NewExplosive && SavedTargetBlock.IsValid())
+	if (NewExplosive && SavedTargetRef.IsValid())
 	{
 		ExplosivesList.Add(NewExplosive);
 
-		if (ExplosivesList.Num() >= 3)
+		if (ExplosivesList.Num() >= MaxBombCount)
 		{
 			bIsDetonationReady = true;
 		}
@@ -241,22 +249,36 @@ void UGA_StickyBomb::SpawnExplosive()
 		// 데미지 스펙 생성
 		FGameplayEffectSpecHandle DamageSpecHandle = MakeRuneDamageEffectSpec(CurrentSpecHandle, CurrentActorInfo);
 
-		// 인터페이스를 통해 위치 정보 획득 (SavedTargetBlock은 이제 AActor*)
-		IBlockInfoInterface* BlockInfo = Cast<IBlockInfoInterface>(SavedTargetBlock.Get());
-		FVector TargetLoc = BlockInfo ? BlockInfo->GetBlockLocation() : SavedTargetBlock.Get()->GetActorLocation();
+		// 시스템을 통해 정확한 목표 지점(HISM 인스턴스 위치 등) 계산
+		FVector TargetWorldLocation = FVector::ZeroVector;
+		AActor* TargetActor = Cast<AActor>(SavedTargetRef.TargetObject.Get());
+
+		if (BlockSystem)
+		{
+			// 시스템이 HISM 인덱스 혹은 Actor 위치를 계산해서 반환
+			TargetWorldLocation = BlockSystem->GetBlockLocation(SavedTargetRef);
+			UE_LOG(LogTemp, Verbose, TEXT("GA_Explosive: Calculated TargetWorldLocation %s"), *TargetWorldLocation.ToString());
+		}
+		else if (TargetActor)
+		{
+			// 시스템이 없을 경우(거의 없겠지만) 예외 처리
+			TargetWorldLocation = TargetActor->GetActorLocation();
+		}
 
 		NewExplosive->Initialize(
 			SpawnLoc,
-			SavedTargetBlock.Get(),
-			1.5f,
-			AutoDetonateDelay,
+			SavedTargetRef,       // FBlockReference
+			TargetWorldLocation,  // 정확한 도착 좌표
+			1.5f,                 // 투사체 속도 계수 등
+			AutoDetonateDelay,    // 자동 기폭 지연 시간
 			ExplosionRadius * GetRuneModifiedRange(),
-			MaxBombCount,
+			MaxBombCount,         // 혹은 StackCount
 			GetAbilitySystemComponentFromActorInfo(),
 			DamageSpecHandle,
 			DestructionEffect
 		);
 
+		// 투척만 수행하고 능력 종료 (기폭은 나중에 다시 활성화하여 수행)
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 	}
 	else
