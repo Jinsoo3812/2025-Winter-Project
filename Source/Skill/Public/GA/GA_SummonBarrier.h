@@ -6,13 +6,9 @@
 #include "GA/GA_Construction.h"
 #include "GA_SummonBarrier.generated.h"
 
-class ADestructibleBlock;
-
 /**
  * 방벽 소환 스킬 (돌진 기능 추가)
- * 1. 클릭 시 3x2 방벽 생성 (생성 후 스킬 유지)
- * 2. 다시 스킬 키 입력 시 방벽이 전방으로 돌진
- * 3. 각 블록은 개별적으로 장애물과 충돌 시 소멸
+ * HISM 기반 청크 시스템 호환 리팩토링 완료
  */
 UCLASS()
 class SKILL_API UGA_SummonBarrier : public UGA_Construction
@@ -26,11 +22,11 @@ public:
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
 protected:
-	// N개의 프리뷰 액터를 관리하기 위한 배열
+	// 프리뷰 액터 (유령 방벽) 관리 배열
 	UPROPERTY()
 	TArray<TWeakObjectPtr<AActor>> BarrierPreviewBlocks;
 
-	// 실제로 소환된 블록들을 관리하기 위한 배열
+	// 실제 소환된 방벽 액터 관리 배열
 	UPROPERTY()
 	TArray<TWeakObjectPtr<AActor>> SpawnedBlocks;
 
@@ -54,7 +50,7 @@ protected:
 	// 돌진 타이머 핸들
 	FTimerHandle ChargeTimerHandle;
 
-	// 블록 사이즈
+	// 블록 사이즈 (BlockSystem에서 가져옴)
 	float GridSize = 100.0f;
 
 	// --- 오버라이드 함수들 ---
@@ -68,25 +64,23 @@ protected:
 	// 입력 취소/재입력 처리
 	virtual void OnCancelPressed(float TimeWaited);
 
-	// CancelAbility가 호출되면 취소당하는 함수의 CanBeCanceled로 결정함
-	// '방벽 생성 && 아직 발사 안함' 상태에서는 취소되면 안되므로 이를 재정의
-	// 취소 가능 여부를 판단하는 함수
+	// 방벽 생성 후 돌진 전에는 취소 불가하도록 설정
 	virtual bool CanBeCanceled() const override;
 
-	// 좌클릭 이벤트 수신 처리 (부모의 단일 프리뷰 확인 로직을 대체하기 위함)
+	// 좌클릭 이벤트 수신 처리
 	virtual void OnLeftClickEventReceived(FGameplayEventData Payload) override;
 
 private:
-	// 중심 위치와 플레이어 위치를 기반으로 소환해야 할 N개 블록의 위치 배열을 OutTransforms에 반환
+	// 중심 위치와 플레이어 위치를 기반으로 소환해야 할 방벽 위치(Transform) 배열 계산
 	void CalculateBarrierTransforms(const FVector& CenterLocation, const FVector& PlayerLocation, TArray<FTransform>& OutTransforms);
 
-	// 소환해야 할 N개 블록의 프리뷰 액터의 생성 관리 및 표시
+	// 계산된 위치에 프리뷰 액터 배치 및 점유 확인
 	void UpdateBarrierPreviewActors(const TArray<FTransform>& Transforms);
 
 	// 돌진 시작 (두 번째 입력 시 호출)
 	UFUNCTION()
 	void StartBarrierCharge(float TimeWaited);
 
-	// 매 프레임 방벽 이동 처리
+	// 매 프레임 방벽 이동 및 충돌 체크
 	void TickBarrierCharge();
 };

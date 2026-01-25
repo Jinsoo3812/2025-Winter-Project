@@ -10,6 +10,7 @@
 #include "Engine/OverlapResult.h"
 #include "BlockGameplayTags.h"
 #include "SkillGameplayTags.h"
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
 UGA_BuffBarrier::UGA_BuffBarrier()
 {

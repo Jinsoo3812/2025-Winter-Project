@@ -89,4 +89,6 @@ private:
 
 	// 범위 내 아군에게 버프 적용
 	void ApplyBuffToTargets();
+
+	TArray<FBlockReference> HighlightedBlockRefs;
 };
