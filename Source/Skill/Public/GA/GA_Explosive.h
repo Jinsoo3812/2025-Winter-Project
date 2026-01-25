@@ -76,7 +76,13 @@ protected:
 
 
 	// --- 상태 저장용 ---
+	/* 확정된 타겟 블록 정보 (Actor 또는 HISM 인스턴스) */
+	FBlockReference SavedTargetRef;
 
+	/* 현재 하이라이트 된 타겟 (매 틱 갱신용) */
+	FBlockReference HighlightedRef;
+
+	// --- 레거시 ---
 	// 현재 마우스 오버된(초록색/타겟) 블록
 	UPROPERTY()
 	TWeakObjectPtr<AActor> HighlightedBlock;

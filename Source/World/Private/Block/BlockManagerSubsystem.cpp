@@ -377,9 +377,9 @@ FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 	if (!Ref.IsValid()) return FVector::ZeroVector;
 
 	// A. HISM 처리
-	if (Ref.ItemIndex >= 0 && Ref.TargetComponent)
+	if (Ref.ItemIndex >= 0 && Ref.TargetComponent.IsValid())
 	{
-		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Ref.TargetComponent))
+		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Ref.TargetComponent.Get()))
 		{
 			FTransform Trans;
 			HISM->GetInstanceTransform(Ref.ItemIndex, Trans, true);
@@ -387,7 +387,7 @@ FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 		}
 	}
 	// B. Actor 처리
-	else if (AActor* Actor = Cast<AActor>(Ref.TargetObject))
+	else if (AActor* Actor = Cast<AActor>(Ref.TargetObject.Get()))
 	{
 		return Actor->GetActorLocation();
 	}
@@ -405,15 +405,15 @@ void UBlockManagerSubsystem::HighlightBlock(const FBlockReference& BlockRef, con
 
 	if (BlockRef.ItemIndex >= 0) // HISM
 	{
-		if (AChunkBase* Chunk = Cast<AChunkBase>(BlockRef.TargetObject))
+		if (AChunkBase* Chunk = Cast<AChunkBase>(BlockRef.TargetObject.Get()))
 		{
-			Chunk->HighlightHISMBlock(BlockRef.TargetComponent, BlockRef.ItemIndex, Tag);
+			Chunk->HighlightHISMBlock(BlockRef.TargetComponent.Get(), BlockRef.ItemIndex, Tag);
 		}
 	}
 	else // Actor
 	{
 		// Actor를 직접 캐스팅하는 대신, 약속된 인터페이스를 통해 메시지 전달
-		if (IGameplayEventInterface* EventInterface = Cast<IGameplayEventInterface>(BlockRef.TargetObject))
+		if (IGameplayEventInterface* EventInterface = Cast<IGameplayEventInterface>(BlockRef.TargetObject.Get()))
 		{
 			FGameplayEventData Payload;
 			Payload.EventTag = Tag;

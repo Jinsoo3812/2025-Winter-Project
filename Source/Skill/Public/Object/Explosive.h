@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "UObject/ObjectMacros.h"
 #include "GameplayEffectTypes.h"
+#include "BlockCommon.h"
 #include "Explosive.generated.h"
 
 class ABlockBase;
@@ -56,6 +57,18 @@ public:
 		TSubclassOf<UGameplayEffect> InDestructionEffectClass
 	);
 
+	void Initialize(
+		FVector StartLoc,
+		FBlockReference InTargetRef,    // [변경] 타겟 참조
+		FVector InTargetLocation,       // [추가] 정확한 도착 좌표 (HISM 위치 계산은 GA가 함)
+		float FlightDuration,
+		float InAutoDetonateDelay,
+		float InExplosionRadius,
+		int32 InMaxBombCount,
+		UAbilitySystemComponent* InSourceASC,
+		FGameplayEffectSpecHandle InDamageSpecHandle,
+		TSubclassOf<UGameplayEffect> InDestructionEffectClass);
+
 	// 폭발 로직 실행 (외부에서 호출)
 	void Detonate();
 
@@ -100,6 +113,10 @@ protected:
 	// 목표 블록 포인터
 	UPROPERTY()
 	TWeakObjectPtr<AActor> TargetBlock;
+
+	// 목표 블록 참조 (HISM 포함)
+	UPROPERTY(BlueprintReadOnly, Category = "Combat")
+	FBlockReference TargetRef;
 
 	float TotalFlightTime = 1.0f;
 	float CurrentFlightTime = 0.0f;

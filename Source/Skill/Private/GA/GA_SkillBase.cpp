@@ -9,6 +9,7 @@
 #include "BlockGameplayTags.h"
 #include "CollisionChannels.h"
 #include "SkillComponent.h"
+#include "SkillGameplayTags.h"
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Player, "Player");
 
@@ -33,6 +34,23 @@ UGA_SkillBase::UGA_SkillBase()
 	// ActivationBlockedTags는 "시전자의 ASC에 붙은 Tag"를 검사
 	// 시전자가 다른 GA를 시전 중일 때는 시전되지 않도록 설정
 	ActivationBlockedTags.AddTag(TAG_Skill_Casting);
+}
+
+void UGA_SkillBase::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+	if (UWorld* World = GetWorld())
+	{
+		if (!BlockSystem)
+		{
+			BlockSystem = IBlockSystemInterface::Get(World);
+		}
+	}
+	else {
+		UE_LOG(LogTemp, Error, TEXT("GA_SkillBase: World is null in ActivateAbility"));
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
 }
 
 USkillComponent* UGA_SkillBase::GetSkillManagerFromAvatar() const

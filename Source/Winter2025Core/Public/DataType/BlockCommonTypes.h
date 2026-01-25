@@ -57,23 +57,41 @@ struct FBlockReference
 	GENERATED_BODY()
 
 	// 청크 액터 혹은 개별 블록 액터
-	UPROPERTY()
-	UObject* TargetObject = nullptr;
+	TWeakObjectPtr<UObject> TargetObject = nullptr;
 
 	// 충돌 검사에서 걸린 컴포넌트 (HISM Component)
-	UPROPERTY()
-	UPrimitiveComponent* TargetComponent = nullptr;
+	TWeakObjectPtr<UPrimitiveComponent> TargetComponent = nullptr;
 
 	// HISM 인덱스 (개별 액터인 경우 -1)
-	UPROPERTY()
 	int32 ItemIndex = -1;
 
-	bool IsValid() const { return TargetObject != nullptr; }
+	FBlockReference()
+		: TargetObject(nullptr), TargetComponent(nullptr), ItemIndex(-1) {
+	}
+
+	void Reset()
+	{
+		TargetObject = nullptr;
+		TargetComponent = nullptr;
+		ItemIndex = -1;
+	}
+
+	bool IsValid() const { return TargetObject.IsValid(); }
 
 	// == 연산자 오버로딩 (TArray.Find 등에서 사용)
 	bool operator==(const FBlockReference& Other) const
 	{
-		return TargetObject == Other.TargetObject && ItemIndex == Other.ItemIndex;
+		return TargetObject.Get() == Other.TargetObject.Get() &&
+			TargetComponent.Get() == Other.TargetComponent.Get() &&
+			ItemIndex == Other.ItemIndex;
+	}
+
+	friend uint32 GetTypeHash(const FBlockReference& Ref)
+	{
+		uint32 Hash = GetTypeHash(Ref.TargetObject.Get());
+		Hash = HashCombine(Hash, GetTypeHash(Ref.TargetComponent.Get()));
+		Hash = HashCombine(Hash, GetTypeHash(Ref.ItemIndex));
+		return Hash;
 	}
 };
 

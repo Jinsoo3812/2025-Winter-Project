@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "NativeGameplayTags.h"
-#include "SkillGameplayTags.h"
 #include "BlockSystemInterface.h"
 #include "GA_SkillBase.generated.h"
 
@@ -150,6 +149,11 @@ protected:
 	// -----------------------------------------------------------------------------
 	// Gameplay Effect 및 쿨타임 관련
 	// -----------------------------------------------------------------------------
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData) override;
 
 	/*
 	* GA 종료 시 호출되는 함수

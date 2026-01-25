@@ -34,10 +34,6 @@ void UGA_Construction::ActivateAbility(
 		// 60FPS 간격으로 UpdatePreview 함수 호출
 		// 자식이 재정의한 UpdatePreview 또한 호출될 수 있음.
 		World->GetTimerManager().SetTimer(TickTimerHandle, this, &UGA_Construction::UpdatePreview, 0.016f, true);
-
-		if (!BlockSystem) {
-			BlockSystem = IBlockSystemInterface::Get(World);
-		}
 	}
 
 	// WaitInputPress 어빌리티 태스크 생성

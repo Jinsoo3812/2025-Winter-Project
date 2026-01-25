@@ -10,6 +10,7 @@
 #include "AbilitySystemInterface.h" 
 #include "Engine/OverlapResult.h"   
 #include "DrawDebugHelpers.h"
+#include "BlockSystemInterface.h"
 
 // Sets default values
 AExplosive::AExplosive()
@@ -85,6 +86,51 @@ void AExplosive::Initialize(
 	}
 }
 
+void AExplosive::Initialize(
+	FVector StartLoc,
+	FBlockReference InTargetRef,   // [변경]
+	FVector InTargetLocation,      // [변경] 외부에서 계산된 정확한 위치
+	float FlightDuration,
+	float InAutoDetonateDelay,
+	float InExplosionRadius,
+	int32 InMaxBombCount,
+	UAbilitySystemComponent* InSourceASC,
+	FGameplayEffectSpecHandle InDamageSpecHandle,
+	TSubclassOf<UGameplayEffect> InDestructionEffectClass)
+{
+	StartLocation = StartLoc;
+	TargetRef = InTargetRef;       // [변경]
+	TargetLocation = InTargetLocation; // [변경]
+
+	TotalFlightTime = FlightDuration;
+	CurrentFlightTime = 0.0f;
+
+	AutoDetonateDelay = InAutoDetonateDelay;
+	ExplosionRadius = InExplosionRadius;
+	MaxBombCount = InMaxBombCount;
+	SourceASC = InSourceASC;
+	DamageSpecHandle = InDamageSpecHandle;
+	DestructionEffectClass = InDestructionEffectClass;
+
+	// TargetRef가 유효한지 확인
+	if (TargetRef.IsValid())
+	{
+		SetActorLocation(StartLocation);
+		SetActorTickEnabled(true);
+
+		// 블록(혹은 청크)이 파괴되는지 감시
+		if (AActor* TargetActor = Cast<AActor>(TargetRef.TargetObject.Get()))
+		{
+			TargetActor->OnDestroyed.AddDynamic(this, &AExplosive::OnBlockDestroyed);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("AExplosive::Initialize: TargetRef is invalid"));
+		Destroy();
+	}
+}
+
 void AExplosive::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -123,26 +169,19 @@ void AExplosive::OnLanded()
 	SetActorLocation(TargetLocation);
 
 	// 타겟 액터에 부착
-	if (TargetBlock.IsValid())
+	if (TargetRef.IsValid())
 	{
-		// 목표 위치로 이동 (이미 위에서 보정했지만 안전장치)
-		SetActorLocation(TargetLocation);
-
-		// 블록에 부착 (위치 고정)
-		FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
-		AttachToActor(TargetBlock.Get(), AttachmentRules);
-
-		// 블록 색상 변경 요청 (인터페이스 & 태그 사용)
-		// GA_StickyBomb의 Highlight Logic과 통일 (빨간색 = Attached)
-		// 기존 코드의 "UpdateBombCount" 대신 태그 이벤트를 통해 상태 전달
-		if (IGameplayEventInterface* EventInterface = Cast<IGameplayEventInterface>(TargetBlock.Get()))
+		// 액터 블록 본인 또는 HISM 인스턴스의 청크 액터
+		if (AActor* TargetActor = Cast<AActor>(TargetRef.TargetObject.Get()))
 		{
-			FGameplayEventData Payload;
-			Payload.EventTag = TAG_Block_Highlight_Target; // 혹은 폭탄 부착 전용 태그 사용 가능
-			Payload.Instigator = this;
-			// 폭탄 개수는 Payload의 Magnitude 등으로 전달하거나, 블록이 알아서 처리하도록 규약 필요
-			// 여기서는 단순히 하이라이트 이벤트만 전송 (단순화)
-			EventInterface->HandleGameplayEvent(TAG_Block_Highlight_Bomb, Payload);
+			FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepWorld, true);
+			AttachToActor(TargetActor, AttachmentRules);
+		}
+
+		// BlockSystem을 통해 하이라이트 요청
+		if (IBlockSystemInterface* BlockSys = IBlockSystemInterface::Get(GetWorld()))
+		{
+			BlockSys->HighlightBlock(TargetRef, TAG_Block_Highlight_Bomb);
 		}
 	}
 	else
@@ -165,16 +204,17 @@ void AExplosive::OnLanded()
 void AExplosive::Detonate()
 {
 	// 블록 파괴 델리게이트 해제
-	if (TargetBlock.IsValid())
+	if (TargetRef.IsValid())
 	{
-		TargetBlock->OnDestroyed.RemoveDynamic(this, &AExplosive::OnBlockDestroyed);
-
-		// 블록 색상 복구 (이벤트 전송)
-		if (IGameplayEventInterface* EventInterface = Cast<IGameplayEventInterface>(TargetBlock.Get()))
+		if (AActor* TargetActor = Cast<AActor>(TargetRef.TargetObject.Get()))
 		{
-			FGameplayEventData Payload;
-			Payload.EventTag = TAG_Block_Highlight_None;
-			EventInterface->HandleGameplayEvent(TAG_Block_Highlight_Bomb_None, Payload);
+			TargetActor->OnDestroyed.RemoveDynamic(this, &AExplosive::OnBlockDestroyed);
+		}
+
+		// 시스템을 통해 하이라이트 해제
+		if (IBlockSystemInterface* BlockSys = IBlockSystemInterface::Get(GetWorld()))
+		{
+			BlockSys->HighlightBlock(TargetRef, TAG_Block_Highlight_Bomb_None);
 		}
 	}
 
