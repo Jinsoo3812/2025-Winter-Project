@@ -55,6 +55,16 @@
 				"Engine",
 				"GameplayAbilities"
 			]
+		},
+		{
+			"Name": "UI",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine",
+				"UMG",
+                		"GameplayAbilities"
+			]
 		}
 	],
 	"Plugins": [
