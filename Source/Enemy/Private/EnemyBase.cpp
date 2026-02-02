@@ -163,6 +163,7 @@ void AEnemyBase::ForceResetCombatState()
 
 void AEnemyBase::OnAttackHit(AActor* TargetActor)
 {
+
 	if (!TargetActor || !AttackDamageEffect) return;
 
 	// 1. 타겟도 GAS 시스템(ASC)을 가지고 있는지 확인

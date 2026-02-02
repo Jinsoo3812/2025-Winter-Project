@@ -48,6 +48,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	virtual void ForceResetCombatState();
 
+	/**
+	 * 데미지 폰트 출력을 위한 이벤트
+	 * C++에서는 호출만 하고, 실제 구현(위젯 스폰)은 블루프린트에서 합니다.
+	 * 그래서 BlueprintImplementableEvent.
+	 */
+	UFUNCTION(BlueprintImplementableEvent, Category = "Combat")
+	void ShowDamageNumber(float DamageAmount);
+
 protected:
 	virtual void BeginPlay() override;
 

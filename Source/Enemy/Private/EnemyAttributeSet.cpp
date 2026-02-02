@@ -79,54 +79,71 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 		// ASC를 통해 AvatarActor(캐릭터)를 직접 가져옵니다. 
 		AActor* TargetActor = TargetASC->GetAvatarActor();
 
-        if (IsValid(TargetActor))
-        {
+		// [중요] 최적화 및 변수 충돌 방지
+		// AEnemyBase로의 캐스팅을 여기서 딱 한 번만 수행하여 재사용합니다.
+		AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor);
 
-            ///////////////////////////////////////////////////////////////////
-            // 대미지 및 체력 디버깅 출력
-            // Magnitude는 변화량이며, 대미지는 체력을 깎으므로 보통 음수(-)입니다.
-            float DamageReceived = -Data.EvaluatedData.Magnitude;
+		if (IsValid(TargetActor))
+		{
+			// 1. 대미지 수치 확인 및 UI 출력 요청
+			// Magnitude는 변화량이며, 대미지는 체력을 깎으므로 보통 음수(-)입니다.
+			// 이를 양수로 변환하여 UI에 전달합니다.
+			float DamageReceived = -Data.EvaluatedData.Magnitude;
 
-            if (DamageReceived > 0.0f)
-            {
-                FString DebugMsg = FString::Printf(TEXT("EnemyAttributeSet.cpp : [%s] Damage: %.1f | Now HP : %.1f"),
-                    *TargetActor->GetName(), DamageReceived, GetHealth());
+			if (DamageReceived > 0.0f)
+			{
 
-                // 화면에 2초간 붉은색으로 출력
-                if (GEngine)
-                {
-                    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, DebugMsg);
-                }
-                // 로그창에도 기록
-                UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
-            }
-            //////////////////////////////////////////////////////////////////
+				// ----------------------------------------------------------------
+				// [디버깅] 대미지가 들어왔을 때 로그와 화면에 출력합니다.
+				FString DebugMsg = FString::Printf(TEXT("EnemyAttributeSet : [%s] Took Damage: %.1f | Current HP : %.1f"),
+					*TargetActor->GetName(), DamageReceived, GetHealth());
 
-            // [개선 1] 허수아비뿐만 아니라 모든 '무적/무한체력' 상태를 포괄
-            // 태그를 State.Invincible 등으로 더 범용적으로 사용하면 보스의 페이즈 전환 무적 등에도 쓸 수 있습니다.
-            if (TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Invincible"))) ||
-                TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Scarecrow"))))
-            {
-                SetHealth(GetMaxHealth());
-                return;
-            }
+				// (1) 화면에 2초간 붉은색 글씨로 출력
+				if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, DebugMsg);
+				}
 
-            // [개선 2] 대미지 처리 전 현재 체력 제한 (Clamping)
-            // PreAttributeChange에서도 하지만, 여기서 한 번 더 보정하여 데이터 무결성 확보
-            SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+				// (2) 출력 로그(Output Log) 창에도 기록
+				UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
+				// ----------------------------------------------------------------
+				
 
-            // 사망 처리
-            if (GetHealth() <= 0.0f)
-            {
-                if (AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor))
-                {
-                    // [개선 3] 이미 사망 중인지(bIsDying)와 태그를 이중 확인하여 크래시 방지
-                    if (!TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead"))))
-                    {
-                        Enemy->Die();
-                    }
-                }
-            }
-        }
+				// EnemyBase를 상속받은 모든 몬스터(보스, 쫄몹, 허수아비 등)에게 작동합니다.
+				if (Enemy)
+				{
+					// BlueprintImplementableEvent 호출 -> BP에서 위젯 스폰 로직 실행
+					Enemy->ShowDamageNumber(DamageReceived);
+				}
+			}
+
+			// [특수 상태 처리] 무적(Invincible) 또는 허수아비(Scarecrow) 상태 확인
+			// 이 상태에서는 체력이 줄어들지 않고 즉시 회복됩니다.
+			// (대미지 폰트는 위에서 이미 출력되었으므로 타격감은 유지됩니다.)
+			if (TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Invincible"))) ||
+				TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Scarecrow"))))
+			{
+				SetHealth(GetMaxHealth());
+				return;
+			}
+
+			// 2. 체력 값 보정 (Clamping)
+			// 체력이 0 미만으로 떨어지거나 최대 체력을 초과하지 않도록 보정합니다.
+			SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+
+			// 3. 사망 처리
+			// 체력이 0 이하가 되었을 때 사망 로직을 수행합니다.
+			if (GetHealth() <= 0.0f)
+			{
+				if (Enemy)
+				{
+					// 이미 사망 상태(State.Dead)가 아닐 때만 사망 함수 호출 (중복 사망 방지)
+					if (!TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead"))))
+					{
+						Enemy->Die();
+					}
+				}
+			}
+		}
 	}
 }
