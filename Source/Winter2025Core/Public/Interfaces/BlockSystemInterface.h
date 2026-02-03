@@ -35,11 +35,20 @@ public:
 	// 반경 내의 모든 블록(Actor + HISM) 데이터를 삭제 (블록 파괴)
 	virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) = 0;
 
+	// FOverlapResult를 받아 BlockReference를 추출
+	virtual void GetBlocksFromOverlaps(const TArray<struct FOverlapResult>& Overlaps, TArray<FBlockReference>& OutBlocks) = 0;
+
 	// 반경 내의 블록 참조들을 수집 (스킬 범위 표시 및 타게팅)
 	virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) = 0;
 
 	// 특정 블록에 하이라이트 적용 (HISM 인덱스 처리 포함)
 	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) = 0;
+
+	/* 마우스 위치의 블록 정보를 반환하는 함수 */
+	virtual bool GetBlockUnderCursor(const APlayerController* PlayerController, FBlockReference& OutBlockRef) = 0;
+
+	/* 이미 HitResult가 있다면 그것을 분석하는 함수 */
+	virtual bool GetBlockFromHitResult(const FHitResult& HitResult, FBlockReference& OutBlockRef) = 0;
 
 	// 서브시스템이 생성될 때(Initialize) 자신을 등록
 	static void RegisterSystem(UWorld* World, IBlockSystemInterface* System);

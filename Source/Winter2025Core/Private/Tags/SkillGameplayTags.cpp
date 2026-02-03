@@ -2,6 +2,7 @@
 
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Preview, "Player.State.Preview");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Skill.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
 

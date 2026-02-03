@@ -455,3 +455,98 @@ void UBlockManagerSubsystem::DestroyBlocksInRadius(const FVector& Origin, float 
 		}
 	}
 }
+
+bool UBlockManagerSubsystem::GetBlockUnderCursor(const APlayerController* PlayerController, FBlockReference& OutBlockRef) {
+	if (!PlayerController) return false;
+
+	FHitResult HitResult;
+	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
+
+	// ECC_Block 타입만 검사 대상으로 추가
+	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_Block));
+
+	bool bHit = PlayerController->GetHitResultUnderCursorForObjects(
+		ObjectTypes,
+		true, // bTraceComplex (HISM 인덱스 얻으려면 필수)
+		HitResult
+	);
+
+	if (bHit)
+	{
+		return GetBlockFromHitResult(HitResult, OutBlockRef);
+	}
+
+	return false;
+}
+
+bool UBlockManagerSubsystem::GetBlockFromHitResult(const FHitResult& HitResult, FBlockReference& OutBlockRef)
+{
+	AActor* HitActor = HitResult.GetActor();
+	UPrimitiveComponent* HitComp = HitResult.GetComponent();
+
+	if (!HitActor || !HitComp) return false;
+
+	// Case A: HISM
+	if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(HitComp))
+	{
+		// ChunkBase인지 확인
+		if (AChunkBase* Chunk = Cast<AChunkBase>(HitActor))
+		{
+			// HISM은 HitResult.Item에 인스턴스 인덱스가 들어옴
+			if (HitResult.Item != INDEX_NONE)
+			{
+				OutBlockRef.TargetObject = Chunk;
+				OutBlockRef.TargetComponent = HISM;
+				OutBlockRef.ItemIndex = HitResult.Item;
+				return true;
+			}
+			else UE_LOG(LogTemp, Warning, TEXT("GetBlockFromHitResult: HitResult.Item is INDEX_NONE for HISM component."));
+		}
+		else UE_LOG(LogTemp, Warning, TEXT("GetBlockFromHitResult: Hit Actor is not a ChunkBase for HISM component."));
+	}
+	// Case B: Actor
+	else if (ABlockBase* BlockActor = Cast<ABlockBase>(HitActor))
+	{
+		OutBlockRef.TargetObject = BlockActor;
+		OutBlockRef.TargetComponent = nullptr;
+		OutBlockRef.ItemIndex = -1;
+		return true;
+	}
+
+	return false;
+}
+
+void UBlockManagerSubsystem::GetBlocksFromOverlaps(const TArray<FOverlapResult>& Overlaps, TArray<FBlockReference>& OutBlocks)
+{
+	OutBlocks.Reset();
+
+	for (const FOverlapResult& Result : Overlaps)
+	{
+		// Case A: HISM (청크 지형)
+		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Result.GetComponent()))
+		{
+			if (AChunkBase* Chunk = Cast<AChunkBase>(Result.GetActor()))
+			{
+				FBlockReference Ref;
+				Ref.TargetObject = Chunk;
+				Ref.TargetComponent = HISM;
+				Ref.ItemIndex = Result.ItemIndex;
+
+				// 중복 방지 (HISM은 여러 번 겹칠 수 있음)
+				OutBlocks.AddUnique(Ref);
+			}
+		}
+		// Case B: Actor (파괴 가능 블록 등)
+		else if (AActor* Actor = Result.GetActor())
+		{
+			// 인터페이스 구현 여부 확인
+			if (Actor->Implements<UGameplayEventInterface>())
+			{
+				FBlockReference Ref;
+				Ref.TargetObject = Actor;
+				Ref.ItemIndex = -1;
+				OutBlocks.AddUnique(Ref);
+			}
+		}
+	}
+}
