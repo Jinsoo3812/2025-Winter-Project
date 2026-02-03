@@ -8,12 +8,22 @@
 #include "CollisionChannels.h"
 #include "Engine/OverlapResult.h"
 
-UPreviewTask* UPreviewTask::CreatePreviewTask(USkillBase* OwningAbility, FSkillPreviewRange InRange, FGameplayTag InPreviewTag, FGameplayTag InCursorTag)
+UPreviewTask* UPreviewTask::CreatePreviewTask(
+	USkillBase* OwningAbility,
+	FSkillPreviewRange InRange,
+	FGameplayTag InPreviewTag,
+	FGameplayTag InCursorTag,
+	TSubclassOf<AActor> InVisualizerClass,
+	bool InbHighlightCursorBlock
+)
 {
 	UPreviewTask* NewTask = NewAbilityTask<UPreviewTask>(OwningAbility);
 	NewTask->Range = InRange;
 	NewTask->PreviewTag = InPreviewTag;
 	NewTask->CursorTag = InCursorTag;
+	NewTask->VisualizerClass = InVisualizerClass;
+	NewTask->bHighlightCursorBlock = InbHighlightCursorBlock;
+
 	NewTask->bTickingTask = true;
 	return NewTask;
 }
@@ -23,6 +33,21 @@ void UPreviewTask::Activate()
 	Super::Activate();
 
 	BlockSystem = Cast<USkillBase>(Ability)->GetBlockSystem();
+
+	if (VisualizerClass && GetWorld())
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+		// 스폰만 해둠 (위치/크기는 Tick에서 갱신)
+		SpawnedVisualizer = GetWorld()->SpawnActor<AActor>(VisualizerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+		if (SpawnedVisualizer)
+		{
+			// 시각화 전용이므로 충돌 꺼두기 (안전장치)
+			SpawnedVisualizer->SetActorEnableCollision(false);
+		}
+	}
 }
 
 void UPreviewTask::TickTask(float DeltaTime)
@@ -35,57 +60,30 @@ void UPreviewTask::TickTask(float DeltaTime)
 		return;
 	}
 
+	AActor* Avatar = Ability->GetCurrentActorInfo()->AvatarActor.Get();
+	if (!Avatar) {
+		UE_LOG(LogTemp, Warning, TEXT("PreviewTask: Missing Avatar Actor"));
+		return;
+	}
+
 	// 1. 이전 프레임 하이라이트 제거
-	for (const FBlockReference& Ref : PreviousHighlights)
+	for (const FBlockReference& Ref : HighlightedBlocks)
 	{
 		BlockSystem->HighlightBlock(Ref, TAG_Block_Highlight_None);
 	}
-	PreviousHighlights.Reset();
+	HighlightedBlocks.Reset();
 
 
-	// Range 세팅
-	FCollisionShape CheckShape;
-	AActor* Avatar = Ability->GetCurrentActorInfo()->AvatarActor.Get();
-	if (!Avatar) {
-		UE_LOG(LogTemp, Warning, TEXT("PreviewTask: AvatarActor is null"));
-		return;
-	}
-	FVector Origin = Ability->GetCurrentActorInfo()->AvatarActor->GetActorLocation();
-	FQuat Rotation = FQuat::Identity;
-
-	// 오프셋 적용 (캐릭터가 바라보는 방향 기준)
-	FVector Center = Origin + Avatar->GetActorRotation().RotateVector(Range.RelativeOffset);
-
-	if (Range.ShapeType == EPreviewShapeType::Box)
-	{
-		CheckShape = FCollisionShape::MakeBox(Range.Dimensions);
-		Rotation = Avatar->GetActorRotation().Quaternion(); // 박스는 회전 필요
-	}
-	else if (Range.ShapeType == EPreviewShapeType::Cylinder)
-	{
-		// 캡슐 생성 (Radius: X, HalfHeight: Z)
-		CheckShape = FCollisionShape::MakeCapsule(Range.Dimensions.X, Range.Dimensions.Z);
-		Rotation = FQuat::Identity; // 캡슐은 기본적으로 Z축으로 서 있음
-	}
-
-	// 물리 충돌 감지 (공통 로직)
+	// 2. 범위 계산 및 시각화, 오버랩 수행
 	TArray<FOverlapResult> Overlaps;
-	FCollisionObjectQueryParams ObjectParams;
-	ObjectParams.AddObjectTypesToQuery(ECC_Block);
-	FCollisionQueryParams QueryParams;
-	QueryParams.AddIgnoredActor(Avatar);
+	UpdatePreviewShapeAndOverlap(Overlaps, Avatar);
 
-	UWorld* World = GetWorld();
-	if (!World) {
-		UE_LOG(LogTemp, Warning, TEXT("PreviewTask: World is null"));
-		return;
-	}
-	World->OverlapMultiByObjectType(Overlaps, Center, Rotation, ObjectParams, CheckShape, QueryParams);
-
-	// 변환 및 하이라이트
+	// 3. 오버랩 결과 중 BlockReference 추출
 	TArray<FBlockReference> TargetBlocks;
 	BlockSystem->GetBlocksFromOverlaps(Overlaps, TargetBlocks);
 
+	// 4. 하이라이트 적용
+	FVector Center = Avatar->GetActorLocation() + Avatar->GetActorRotation().RotateVector(Range.RelativeOffset);
 	for (const FBlockReference& Ref : TargetBlocks)
 	{
 		// Capsule로 필터링 하였으므로, 높이 검사를 추가 하여 원기둥 검사가 되도록
@@ -99,25 +97,112 @@ void UPreviewTask::TickTask(float DeltaTime)
 				continue;
 			}
 		}
-
 		BlockSystem->HighlightBlock(Ref, PreviewTag);
-		PreviousHighlights.Add(Ref);
+		HighlightedBlocks.Add(Ref);
 	}
 
 
-	// 3. 마우스 커서 아래 블록 감지 (Cursor Highlight)
-	APlayerController* PC = Ability->GetCurrentActorInfo()->PlayerController.Get();
-	FBlockReference CursorBlock;
+	// 5. 마우스 커서 아래 블록 감지
+	if (bHighlightCursorBlock) {
+		APlayerController* PC = Ability->GetCurrentActorInfo()->PlayerController.Get();
+		FBlockReference CursorBlock;
 
-	// Subsystem 기능 활용: 마우스 아래 블록 조회 (User가 추가 요청한 함수)
-	if (BlockSystem->GetBlockUnderCursor(PC, CursorBlock))
-	{
-		if (PreviousHighlights.Contains(CursorBlock))
+		// Subsystem 기능 활용: 마우스 아래 블록 조회 (User가 추가 요청한 함수)
+		if (BlockSystem->GetBlockUnderCursor(PC, CursorBlock))
 		{
-			// 커서 타겟 하이라이트
-			BlockSystem->HighlightBlock(CursorBlock, CursorTag);
+			if (HighlightedBlocks.Contains(CursorBlock))
+			{
+				// 커서 타겟 하이라이트
+				BlockSystem->HighlightBlock(CursorBlock, CursorTag);
+				CurrentCursorBlock = CursorBlock;
+			}
+			else {
+				CurrentCursorBlock.Reset();
+			}
 		}
 	}
+}
+
+void UPreviewTask::UpdatePreviewShapeAndOverlap(TArray<FOverlapResult>& OutOverlaps, AActor* Avatar)
+{
+	if (!Avatar || !GetWorld()) return;
+
+
+	APlayerController* PC = Ability->GetCurrentActorInfo()->PlayerController.Get();
+	if (!PC) return;
+
+	// 1. 마우스 위치 계산
+	FVector Origin = Avatar->GetActorLocation();
+	FVector MouseLocationOnPlane;
+
+	FVector WorldLoc, WorldDir;
+	// 마우스 화면 좌표 -> 월드 Ray 변환
+	if (PC->DeprojectMousePositionToWorld(WorldLoc, WorldDir))
+	{
+		// FMath::RayPlaneIntersection : 엔진 기본 제공 함수 (Ray와 평면의 교차점)
+		// 평면(Plane) 정의: (원점: 캐릭터 위치, 법선: 위쪽)
+		FPlane GroundPlane(Origin, FVector::UpVector);
+
+		MouseLocationOnPlane = FMath::RayPlaneIntersection(WorldLoc, WorldDir, GroundPlane);
+	}
+	else
+	{
+		MouseLocationOnPlane = Origin + Avatar->GetActorForwardVector() * 100.0f;
+	}
+
+
+	// 2. 방향 및 회전 계산
+
+	FVector Direction = MouseLocationOnPlane - Origin;
+	FRotator LookAtRotation = Direction.Rotation();
+
+	FVector Center = Origin + LookAtRotation.RotateVector(Range.RelativeOffset);
+
+	// 2. 모양에 따른 쉐이프 및 스케일 결정
+	// 시각화용 BP 액터의 기본 메시는 100x100x100 사이즈라고 가정
+	FQuat ShapeRotation = FQuat::Identity;
+	FCollisionShape CheckShape;
+	FVector NewScale = FVector::OneVector;
+
+	if (Range.ShapeType == EPreviewShapeType::Box)
+	{
+		CheckShape = FCollisionShape::MakeBox(Range.Dimensions);
+
+		// 박스는 마우스 방향을 바라봐야 함 (LookAtRotation 적용)
+		ShapeRotation = LookAtRotation.Quaternion();
+
+		// Box Dimensions는 Extent(반지름)이므로 * 2, 기본 크기 100으로 나눔
+		NewScale = (Range.Dimensions * 2.0f) / 100.0f;
+	}
+	else if (Range.ShapeType == EPreviewShapeType::Cylinder)
+	{
+		CheckShape = FCollisionShape::MakeCapsule(Range.Dimensions.X, Range.Dimensions.Z);
+
+		// 원기둥은 회전해도 모양이 같으므로 Identity여도 되지만, 
+		// 만약 타원형 등을 고려한다면 ShapeRotation을 적용하는 것이 좋음.
+		// 보통은 그냥 둠.
+		ShapeRotation = FQuat::Identity;
+
+		// X: 반지름, Z: 반높이
+		float ScaleXY = (Range.Dimensions.X * 2.0f) / 100.0f;
+		float ScaleZ = (Range.Dimensions.Z * 2.0f) / 100.0f;
+		NewScale = FVector(ScaleXY, ScaleXY, ScaleZ);
+	}
+
+	// 3. 시각화 액터 동기화
+	if (SpawnedVisualizer)
+	{
+		SpawnedVisualizer->SetActorLocationAndRotation(Center, ShapeRotation);
+		SpawnedVisualizer->SetActorScale3D(NewScale);
+	}
+
+	// 4. 물리 충돌 감지
+	FCollisionObjectQueryParams ObjectParams;
+	ObjectParams.AddObjectTypesToQuery(ECC_Block);
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(Avatar);
+
+	GetWorld()->OverlapMultiByObjectType(OutOverlaps, Center, ShapeRotation, ObjectParams, CheckShape, QueryParams);
 }
 
 void UPreviewTask::OnDestroy(bool bInOwnerFinished)
@@ -125,17 +210,24 @@ void UPreviewTask::OnDestroy(bool bInOwnerFinished)
 	// 태스크 종료 시(스킬 취소/완료) 모든 하이라이트 끄기
 	if (BlockSystem)
 	{
-		for (const FBlockReference& Ref : PreviousHighlights)
+		for (const FBlockReference& Ref : HighlightedBlocks)
 		{
 			BlockSystem->HighlightBlock(Ref, TAG_Block_Highlight_None);
 		}
 	}
-	PreviousHighlights.Empty();
+	HighlightedBlocks.Empty();
+
+	// 시각화 액터 파괴
+	if (SpawnedVisualizer)
+	{
+		SpawnedVisualizer->Destroy();
+		SpawnedVisualizer = nullptr;
+	}
 
 	Super::OnDestroy(bInOwnerFinished);
 }
 
 bool UPreviewTask::IsBlockInPreview(const FBlockReference& BlockRef) const
 {
-	return PreviousHighlights.Contains(BlockRef);
+	return HighlightedBlocks.Contains(BlockRef);
 }

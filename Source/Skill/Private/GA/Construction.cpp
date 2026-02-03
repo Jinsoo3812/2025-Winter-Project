@@ -43,36 +43,27 @@ void UConstruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 
 void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 {
-	// 프리뷰 상태 종료
-	// 현재는 애니메이션이 없으므로 일단 보류
-	// RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
-
-	// 소환 로직 수행
-	UWorld* World = GetWorld();
-	APlayerController* PC = GetActorInfo().PlayerController.Get();
-
-	if (BlockSystem && PC)
+	if (!PreviewTask || !BlockSystem)
 	{
-		FBlockReference TargetBlock;
-		// 마우스 커서 아래 블록 가져오기
-		if (BlockSystem->GetBlockUnderCursor(PC, TargetBlock))
-		{
-			// Task를 통해 프리뷰 블록 내부인지 검증
-			if (PreviewTask->IsBlockInPreview(TargetBlock))
-			{
-				FVector TargetLoc = BlockSystem->GetBlockLocation(TargetBlock);
-				FVector SpawnLoc = TargetLoc + FVector(0, 0, BlockSystem->GetGridSize());
-
-				BlockSystem->SpawnBlockByTag(BlockTagToSpawn, SpawnLoc, FRotator::ZeroRotator, true);
-			}
-			else
-			{
-				// 범위 밖 클릭 등 무시
-				UE_LOG(LogTemp, Log, TEXT("Click ignored: Block is out of range."));
-			}
-		}
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+		return;
 	}
-	else UE_LOG(LogTemp, Warning, TEXT("GA_Construction: Missing BlockSystem or PlayerController"));
+
+	// PreviewTask가 Tick에서 이미 찾아둔 '마우스 아래 블록' 가져오기
+	FBlockReference TargetBlock = PreviewTask->GetCurrentCursorBlock();
+
+	// 블록이 유효하고 && 프리뷰 범위 내에 있는지 확인
+	if (TargetBlock.IsValid() && PreviewTask->IsBlockInPreview(TargetBlock))
+	{
+		FVector TargetLoc = BlockSystem->GetBlockLocation(TargetBlock);
+		FVector SpawnLoc = TargetLoc + FVector(0, 0, BlockSystem->GetGridSize());
+
+		BlockSystem->SpawnBlockByTag(BlockTagToSpawn, SpawnLoc, FRotator::ZeroRotator, true);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("Construction: Invalid target or out of range."));
+	}
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

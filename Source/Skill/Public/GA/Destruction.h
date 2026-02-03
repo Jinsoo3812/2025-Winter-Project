@@ -42,6 +42,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Destruction")
 	FGameplayTag TargetRequiredTag;
 
+	// 프리뷰 시각화용 액터 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "Destruction")
+	TSubclassOf<AActor> PreviewVisualizerClass;
+
 	// -------------------------------------------------------------------
 	// Gameplay Tags
 	// -------------------------------------------------------------------
