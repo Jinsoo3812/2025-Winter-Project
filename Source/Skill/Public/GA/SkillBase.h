@@ -47,6 +47,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Skill Stats")
 	FSkillPreviewRange PreviewRange;
 
+	// -----------------------------------------------------------------------------
+	// 스킬 GA의 시전, 취소 등 생명주기
+	// -----------------------------------------------------------------------------
+
 	/*
 	* Gameplay Ability가 활성화될 때 호출되는 함수
 	*/
@@ -55,6 +59,17 @@ protected:
 		const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		const FGameplayEventData* TriggerEventData) override;
+
+	/*
+	* 스킬이 시전된 후 다시 눌렸을 때 호출되는 함수
+	*/
+	virtual void InputPressed(const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo) override;
+
+	// -----------------------------------------------------------------------------
+	// 시전자, GA 본인에게 태그 부착되는 태그 관리
+	// -----------------------------------------------------------------------------
 
 	/*
 	* 시전자(Owner)에게 Gameplay Tag를 추가
@@ -69,6 +84,19 @@ protected:
 	* @param TagToRemove 제거할 Gameplay Tag
 	*/
 	void RemoveGameplayTagFromOwner(const FGameplayTag& TagToRemove);
+
+	// 내 어빌리티 스펙(Spec)에 동적으로 태그를 추가하는 함수
+	void AddAbilityTag(const FGameplayTag& Tag);
+
+	// 내 어빌리티 스펙(Spec)에서 동적 태그를 제거하는 함수
+	void RemoveAbilityTag(const FGameplayTag& Tag);
+
+	// 현재 나에게 특정 태그가 있는지 확인
+	bool HasAbilityTag(const FGameplayTag& Tag) const;
+
+	// -----------------------------------------------------------------------------
+	// 캐싱 데이터
+	// -----------------------------------------------------------------------------
 
 	/* BlockManagerSubsystem 캐싱 */
 	IBlockSystemInterface* BlockSystem;

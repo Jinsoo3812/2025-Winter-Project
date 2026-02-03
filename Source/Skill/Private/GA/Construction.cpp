@@ -10,8 +10,9 @@ void UConstruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// 1. 프리뷰 모드 진입: 태그 부착 (SkillBase 기능)
-	AddGameplayTagToOwner(Tag_State_Preview);
+	// 1. 프리뷰 모드 진입: 태그 부착
+	AddGameplayTagToOwner(Tag_Player_State_Preview);
+	AddAbilityTag(Tag_Skill_State_Preview);
 
 	// 2. 프리뷰 태스크 시작 (매 프레임 하이라이트 갱신)
 	PreviewTask = UPreviewTask::CreatePreviewTask(
@@ -44,7 +45,7 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 {
 	// 프리뷰 상태 종료
 	// 현재는 애니메이션이 없으므로 일단 보류
-	// RemoveGameplayTagFromOwner(Tag_State_Preview);
+	// RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
 
 	// 소환 로직 수행
 	UWorld* World = GetWorld();
@@ -79,7 +80,8 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 void UConstruction::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	// 종료 처리: 태그 제거
-	RemoveGameplayTagFromOwner(Tag_State_Preview);
+	RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
+	RemoveAbilityTag(Tag_Skill_State_Preview);
 
 	// 태스크 정리
 	if (PreviewTask)

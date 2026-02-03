@@ -10,6 +10,9 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Skill.Cooldown");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_BuffBarrier_Phase1, "State.Skill.BuffBarrier.Phase1");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_BuffBarrier_Phase2, "State.Skill.BuffBarrier.Phase2");
 
+UE_DEFINE_GAMEPLAY_TAG(TAG_Player_State_Preview, "Player.State.Preview");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_State_Preview, "Skill.State.Preview");
+
 SkillGameplayTags::SkillGameplayTags()
 {
 }

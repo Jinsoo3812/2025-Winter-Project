@@ -40,7 +40,11 @@ protected:
 	// -------------------------------------------------------------------
 	// 시전자에게 붙을 상태 태그
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_State_Preview;
+	FGameplayTag Tag_Player_State_Preview;
+
+	// 스킬 인스턴스에 붙을 상태 태그
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag Tag_Skill_State_Preview;
 
 	// 블록 하이라이트용 태그 (범위 표시)
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
