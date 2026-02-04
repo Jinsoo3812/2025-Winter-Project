@@ -7,7 +7,6 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameplayEventInterface.h"
-#include "BlockInfoInterface.h"
 #include "BlockBase.generated.h"
 
 class AChunkBase;

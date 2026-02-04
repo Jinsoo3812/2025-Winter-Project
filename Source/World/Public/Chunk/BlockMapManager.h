@@ -70,6 +70,9 @@ protected:
 	// 청크 초기화
 	// -------------------------------------------------------------------------
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
+	TSubclassOf<AChunkBase> ChunkClass;
+
 	// 월드 생성 진입점
 	void GenerateWorld();
 

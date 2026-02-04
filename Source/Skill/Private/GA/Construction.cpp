@@ -58,7 +58,8 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 		FVector TargetLoc = BlockSystem->GetBlockLocation(TargetBlock);
 		FVector SpawnLoc = TargetLoc + FVector(0, 0, BlockSystem->GetGridSize());
 
-		BlockSystem->SpawnBlockByTag(BlockTagToSpawn, SpawnLoc, FRotator::ZeroRotator, true);
+		FBlockSpawnRequest Request(BlockTagToSpawn, SpawnLoc, true);
+		BlockSystem->SpawnBlocksBatch({ Request });
 	}
 	else
 	{

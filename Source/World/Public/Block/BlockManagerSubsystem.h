@@ -11,17 +11,6 @@ class ABlockBase;
 class ABlockMapManager;
 class UBlockConfig;
 
-// Actor 블록 소환을 요청하기 위한 구조체
-struct FBlockSpawnRequest
-{
-	// 이 위치에
-	FVector WorldLocation;
-	// 이 블록을
-	FGameplayTag BlockTag;
-	// 이 청크에
-	TWeakObjectPtr<AChunkBase> OwnerChunk;
-};
-
 /*
  * 외부 모듈이 요청한 블록 소환, 파괴, 조작 등을 대신 처리해주는 서브시스템
  */
@@ -56,10 +45,16 @@ protected:
 	// ---------------------------------------------------------
 	// 블록 소환, 파괴, 조작
 	// ---------------------------------------------------------
-public:
+protected:
 	// GameplayTag를 이용해 블록 Actor를 소환하는 함수
-	AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) override;
-	
+	AActor* SpawnBlockByTag(
+		FGameplayTag BlockTypeTag,
+		FVector Location,
+		FRotator Rotation,
+		bool bEnableGravity
+	) override;
+
+public:
 	// 해당 위치에 블록을 소환할 수 있는지 검사하는 함수
 	bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) override;
 
@@ -67,7 +62,7 @@ public:
 	FVector GetBlockLocation(const FBlockReference& Ref) override;
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
-	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests);
+	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests) override;
 
 	// Actor 블록 소환 요청을 한 번에 받아 Queue에 등록하는 함수
 	// @param Requests: 소환 요청 배열

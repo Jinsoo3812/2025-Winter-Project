@@ -71,7 +71,11 @@ void ABlockMapManager::SpawnChunks()
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = this;
 
-			AChunkBase* NewChunk = World->SpawnActor<AChunkBase>(StaticClass(), SpawnLoc, SpawnRot, SpawnParams);
+			AChunkBase* NewChunk = nullptr;
+			if (ChunkClass) {
+				NewChunk = World->SpawnActor<AChunkBase>(ChunkClass, SpawnLoc, SpawnRot, SpawnParams);
+			}
+			else UE_LOG(LogTemp, Error, TEXT("WorldMapManager: ChunkClass is not set!"));
 
 			if (NewChunk)
 			{

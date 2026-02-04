@@ -292,7 +292,8 @@ void AChunkBase::UpdateChunkVisuals()
 								{
 									if (const FGameplayTag* Tag = ActorTagMap.Find(CurrentBlock.Type))
 									{
-										LocalSpawnRequests.Add({ Location, *Tag });
+										FBlockSpawnRequest NewRequest(*Tag, Location, true);
+										LocalSpawnRequests.Add(NewRequest);
 									}
 								}
 								continue;
@@ -416,7 +417,6 @@ void AChunkBase::UpdateChunkVisuals()
 
 					// 월드 좌표로 변환
 					NewReq.WorldLocation = ChunkOrigin + Req.WorldLocation;
-					NewReq.OwnerChunk = WeakThis;
 					WorldRequests.Add(NewReq);
 
 					// ChunkBase의 관리 목록(BlockDataArray)에서 이 블록의 위치를 찾기

@@ -71,14 +71,18 @@ void UBlockManagerSubsystem::Tick(float DeltaTime)
 	while (ProcessCount < MaxSpawnsPerFrame && SpawnQueue.Dequeue(Request))
 	{
 		// Actor 스폰 실행 (중력은 끄고 시작하는 것이 일반적, 필요시 true)
-		AActor* SpawnedActor = SpawnBlockByTag(Request.BlockTag, Request.WorldLocation, FRotator::ZeroRotator, false);
+		AActor* SpawnedActor = SpawnBlockByTag(Request.BlockTag,
+			Request.WorldLocation, FRotator::ZeroRotator, Request.bEnableGravity);
+
+		AChunkBase* OwnerChunk = MapManager ? MapManager->GetChunkAtLocation(Request.WorldLocation) : nullptr;
+
 		if (SpawnedActor) {
 			if (ABlockBase* NewBlock = Cast<ABlockBase>(SpawnedActor))
 			{
 				// 요청서에 적힌 청크가 살아있는지 확인
-				if (Request.OwnerChunk.IsValid())
+				if (OwnerChunk)
 				{
-					NewBlock->SetParentChunk(Request.OwnerChunk.Get());
+					NewBlock->SetParentChunk(OwnerChunk);
 				}
 				else
 				{
@@ -88,9 +92,9 @@ void UBlockManagerSubsystem::Tick(float DeltaTime)
 		}
 		// 스폰 실패이므로 롤백 요청
 		else {
-			if (Request.OwnerChunk.IsValid())
+			if (OwnerChunk)
 			{
-				Request.OwnerChunk->OnBlockSpawnFailed(Request.WorldLocation);
+				OwnerChunk->OnBlockSpawnFailed(Request.WorldLocation);
 			}
 		}
 		ProcessCount++;
@@ -116,7 +120,10 @@ void UBlockManagerSubsystem::RegisterMapManager(ABlockMapManager* InManager)
 	MapManager = InManager;
 }
 
-AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity)
+AActor* UBlockManagerSubsystem::SpawnBlockByTag(
+	FGameplayTag BlockTypeTag,
+	FVector Location, FRotator
+	Rotation, bool bEnableGravity)
 {
 	if (!CachedBlockConfig)
 	{
@@ -191,7 +198,6 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 				TargetChunk->SetBlockData(X, Y, Z, TargetType, true);
 
 				NewBlock->SetParentChunk(TargetChunk);
-				TargetChunk->UpdateChunkVisuals();
 			}
 		}
 		return NewBlock;
@@ -249,10 +255,9 @@ void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& 
 			}
 
 			Chunk->SetBlockData(X, Y, Z, TargetType, true);
-			Req.OwnerChunk = Chunk;
 		}
 
-		// 시각적 업데이트 (마지막에 한 번만 호출!)
+		// 청크 별로 한 번만 시각 업데이트 호출
 		Chunk->UpdateChunkVisuals();
 	}
 

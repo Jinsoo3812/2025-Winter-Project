@@ -8,6 +8,24 @@
 #include "BlockCommonTypes.h"
 #include "BlockSystemInterface.generated.h"
 
+// Actor 블록 소환을 요청하기 위한 구조체
+struct FBlockSpawnRequest
+{
+	// 소환할 블록 태그
+	FGameplayTag BlockTag;
+
+	// 소환 위치
+	FVector WorldLocation;
+
+	// 소환 후 중력 활성화 여부
+	bool bEnableGravity = false;
+
+	FBlockSpawnRequest() = default;
+
+	FBlockSpawnRequest(FGameplayTag InTag, FVector InLocation, bool bInEnableGravity = false)
+		: BlockTag(InTag), WorldLocation(InLocation), bEnableGravity(bInEnableGravity) {}
+};
+
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
 class UBlockSystemInterface : public UInterface
@@ -43,8 +61,15 @@ private:
 	// ---------------------------------------------------------
 public:
 	// GameplayTag를 이용해 블록 Actor를 소환하는 함수
-	virtual AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) = 0;
+	virtual AActor* SpawnBlockByTag(
+		FGameplayTag BlockTypeTag,
+		FVector Location,
+		FRotator Rotation,
+		bool bEnableGravity
+	) = 0;
 	
+	virtual void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests) = 0;
+
 	// 해당 위치에 블록을 소환할 수 있는지 검사하는 함수
 	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) = 0;
 
