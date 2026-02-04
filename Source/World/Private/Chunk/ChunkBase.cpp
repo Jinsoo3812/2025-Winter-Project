@@ -30,6 +30,11 @@ AChunkBase::AChunkBase()
 void AChunkBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if(CachedBlockConfig)
+	{
+		GridSize = CachedBlockConfig->GridSize;
+	}
 }
 
 int32 AChunkBase::GetBlockIndex(int32 X, int32 Y, int32 Z) const
@@ -143,7 +148,6 @@ void AChunkBase::UpdateChunkVisuals()
 
 	// 현재 청크의 상태 스냅샷
 	FChunkSnapshot Snapshot(BlockDataArray, ChunkSizeX, ChunkSizeY, ChunkSizeZ);
-	int32 GridSize = BlockGridSize;
 
 	// 이웃 데이터 복사
 	for (int32 i = 0; i < (int32)EBlockNeighbor::Count; i++)
@@ -183,12 +187,13 @@ void AChunkBase::UpdateChunkVisuals()
 	// 스레드 동작 중 this 객체가 파괴될 수 있으므로 약한 참조 생성
 	TWeakObjectPtr<AChunkBase> WeakThis(this);
 
+	float LocalGridSize = GridSize;
 	/*
 	* 엔진이 관리하는 스레드 풀에서 남는 스레드를 하나 잡아 람다 함수를 실행하도록 시킴
 	* 스레드 내부에서는 UObject를 다뤄서는 안되며 단순 계산 작업만 수행해야 함
 	* 청크 내의 모든 블록을 순회하며 그려야 할 블록 선별
 	*/
-	Async(EAsyncExecution::ThreadPool, [WeakThis, Snapshot, GridSize, MyRequestID, IsActorMap, ActorTagMap]()
+	Async(EAsyncExecution::ThreadPool, [WeakThis, Snapshot, MyRequestID, LocalGridSize, IsActorMap, ActorTagMap]()
 	{
 		// 블록 타입별로 한 번에 AddInstances 호출을 하기 위한 배치 데이터
 		TMap<EBlockType, TArray<FTransform>> LocalBatchData;
@@ -222,7 +227,7 @@ void AChunkBase::UpdateChunkVisuals()
 					TotalSolidBlocks++;
 
 					// 청크 기준의 로컬 좌표
-					FVector Location(x * GridSize, y * GridSize, z * GridSize);
+					FVector Location(x * LocalGridSize, y * LocalGridSize, z * LocalGridSize);
 
 					// 6면 검사로 현재 블록을 그려야하는지 검사
 					bool bIsVisible = false;
@@ -299,7 +304,7 @@ void AChunkBase::UpdateChunkVisuals()
 
 		// 어떤 블록들을 그려야 하는지 계산 완료 후 메인 스레드(Game Thread)로 복귀
 		// HISM 컴포넌트 조작은 반드시 게임 스레드에서 해야 함
-		AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID, GridSize, /*통계*/TotalSolidBlocks, VisibleBlocks, CulledBlocks]()
+		AsyncTask(ENamedThreads::GameThread, [WeakThis, LocalBatchData, LocalSpawnRequests, MyRequestID, LocalGridSize, /*통계*/TotalSolidBlocks, VisibleBlocks, CulledBlocks]()
 		{
 			// [Game Thread] 계산된 데이터를 HISM에 적용 및 Actor 스폰 요청 전달
 
@@ -408,9 +413,9 @@ void AChunkBase::UpdateChunkVisuals()
 					WorldRequests.Add(NewReq);
 
 					// ChunkBase의 관리 목록(BlockDataArray)에서 이 블록의 위치를 찾기
-					int32 X = FMath::RoundToInt(Req.WorldLocation.X / GridSize);
-					int32 Y = FMath::RoundToInt(Req.WorldLocation.Y / GridSize);
-					int32 Z = FMath::RoundToInt(Req.WorldLocation.Z / GridSize);
+					int32 X = FMath::RoundToInt(Req.WorldLocation.X / LocalGridSize);
+					int32 Y = FMath::RoundToInt(Req.WorldLocation.Y / LocalGridSize);
+					int32 Z = FMath::RoundToInt(Req.WorldLocation.Z / LocalGridSize);
 
 					// 소환이 확정되지 않았는데 플래그를 미리 세우고 있음
 					int32 Index = WeakThis->GetBlockIndex(X, Y, Z);
@@ -500,9 +505,9 @@ void AChunkBase::RemoveBlockAtWorldLocation(FVector WorldLocation)
 	FVector LocalLoc = WorldLocation - GetActorLocation();
 
 	// 그리드 좌표로 변환
-	int32 X = FMath::RoundToInt(LocalLoc.X / BlockGridSize);
-	int32 Y = FMath::RoundToInt(LocalLoc.Y / BlockGridSize);
-	int32 Z = FMath::RoundToInt(LocalLoc.Z / BlockGridSize);
+	int32 X = FMath::RoundToInt(LocalLoc.X / GridSize);
+	int32 Y = FMath::RoundToInt(LocalLoc.Y / GridSize);
+	int32 Z = FMath::RoundToInt(LocalLoc.Z / GridSize);
 
 	// 데이터 갱신 (None으로 변경)
 	// SetBlockType 내부에서 유효성 검사(Index Check)를 하므로 안전함
@@ -519,9 +524,9 @@ void AChunkBase::RemoveBlockAtWorldLocation(FVector WorldLocation)
 void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)
 {
 	FVector LocalLoc = WorldLocation - GetActorLocation();
-	int32 X = FMath::RoundToInt(LocalLoc.X / BlockGridSize);
-	int32 Y = FMath::RoundToInt(LocalLoc.Y / BlockGridSize);
-	int32 Z = FMath::RoundToInt(LocalLoc.Z / BlockGridSize);
+	int32 X = FMath::RoundToInt(LocalLoc.X / GridSize);
+	int32 Y = FMath::RoundToInt(LocalLoc.Y / GridSize);
+	int32 Z = FMath::RoundToInt(LocalLoc.Z / GridSize);
 
 	int32 Index = GetBlockIndex(X, Y, Z);
 	if (BlockDataArray.IsValidIndex(Index))

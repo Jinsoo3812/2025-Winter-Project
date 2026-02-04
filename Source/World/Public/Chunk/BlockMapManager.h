@@ -41,7 +41,6 @@ public:
 	int32 WorldRangeY = 4;
 
 	// 블록의 한 변의 길이
-	UPROPERTY(EditAnywhere, Category = "Config")
 	int32 GridSize = 100;
 protected:
 	// 블록 설정 데이터 에셋

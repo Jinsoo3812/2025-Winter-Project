@@ -48,7 +48,6 @@ protected:
 	// -----------------------------------------------------------------------------
 protected:
 	// 블록(정육면체)의 한 변의 길이
-	UPROPERTY(EditDefaultsOnly, Category = "Grid")
 	float GridSize = 100.0f;
 
 	// 블록의 외형 및 물리 충돌을 담당할 Mesh Component

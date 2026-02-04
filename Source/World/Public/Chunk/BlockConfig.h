@@ -18,12 +18,17 @@ public:
 	// ----------------------------------------------------------------------------
 
 	// 블록 타입별 정의 배열
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
+	UPROPERTY(EditAnywhere, Category = "Block Config")
 	TArray<FBlockDefinition> BlockDefinitions;
 
+	UPROPERTY(EditAnywhere, Category = "Block Config")
+	float GridSize = 100.0f;
+
 	// 하이라이트 태그 <-> FBlockCPDInfo 매핑
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Highlight Config")
+	UPROPERTY(EditAnywhere, Category = "Block Highlight Config")
 	TMap<FGameplayTag, FBlockCPDInfo> HighlightSettings;
+
+
 
 protected:
 	// GameplayTag로 FBlockDefinition을 매핑한 맵

@@ -47,6 +47,11 @@ public:
 
 	// BlockMapManager가 BeginPlay 시점에 자신을 등록
 	void RegisterMapManager(ABlockMapManager* InManager);
+
+	float GetGridSize() const override { return GridSize; }
+
+protected:
+	float GridSize = 100.0f;
 	
 	// ---------------------------------------------------------
 	// 블록 소환, 파괴, 조작
@@ -60,8 +65,6 @@ public:
 
 	// BlockReference로부터 블록의 월드 좌표를 얻는 함수
 	FVector GetBlockLocation(const FBlockReference& Ref) override;
-	
-	float GetGridSize() const override { return 100.0f; }
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
 	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests);

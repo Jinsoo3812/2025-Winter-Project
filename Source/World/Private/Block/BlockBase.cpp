@@ -54,6 +54,8 @@ void ABlockBase::BeginPlay()
 
 	if (BlockConfig)
 	{
+		GridSize = BlockConfig->GridSize;
+
 		// 1. 현재 내 클래스(this->GetClass())에 해당하는 태그를 Config에서 조회
 		FGameplayTag MyBlockTag = BlockConfig->GetBlockDef(this->GetClass())->Tag;
 

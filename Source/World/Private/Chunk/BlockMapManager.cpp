@@ -35,6 +35,8 @@ void ABlockMapManager::GenerateWorld()
 		return;
 	}
 
+	GridSize = BlockConfig->GridSize;
+
 	// 청크 액터 스폰 (빈 껍데기)
 	SpawnChunks();
 
@@ -60,8 +62,8 @@ void ABlockMapManager::SpawnChunks()
 		{
 			// 청크의 월드 위치 계산
 			// 청크 하나의 실제 크기 = GridSize * ChunkSize
-			float ChunkWorldSizeX = AChunkBase::ChunkSizeX * AChunkBase::BlockGridSize; // ex. 16 * 100
-			float ChunkWorldSizeY = AChunkBase::ChunkSizeY * AChunkBase::BlockGridSize;
+			float ChunkWorldSizeX = AChunkBase::ChunkSizeX * GridSize; // ex. 16 * 100
+			float ChunkWorldSizeY = AChunkBase::ChunkSizeY * GridSize;
 
 			FVector SpawnLoc(x * ChunkWorldSizeX, y * ChunkWorldSizeY, 0.0f);
 			FRotator SpawnRot = FRotator::ZeroRotator;
@@ -146,8 +148,8 @@ void ABlockMapManager::UpdateAllChunks()
 AChunkBase* ABlockMapManager::GetChunkAtLocation(FVector Location) const
 {
 	// 월드 좌표 -> 청크 좌표 변환
-	float ChunkWorldSizeX = AChunkBase::ChunkSizeX * AChunkBase::BlockGridSize;
-	float ChunkWorldSizeY = AChunkBase::ChunkSizeY * AChunkBase::BlockGridSize;
+	float ChunkWorldSizeX = AChunkBase::ChunkSizeX * GridSize;
+	float ChunkWorldSizeY = AChunkBase::ChunkSizeY * GridSize;
 
 	// 음수 좌표 처리 등을 위해 Floor(내림 후 정수 변환) 사용 권장
 	int32 ChunkX = FMath::FloorToInt(Location.X / ChunkWorldSizeX);

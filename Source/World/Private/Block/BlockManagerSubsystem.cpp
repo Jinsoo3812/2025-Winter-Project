@@ -42,6 +42,8 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: Failed to load BlockConfig from Asset."));
 		return;
 	}
+
+	GridSize = CachedBlockConfig->GridSize;
 }
 
 void UBlockManagerSubsystem::Deinitialize()
@@ -131,11 +133,6 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 		return nullptr;
 	}
 
-	// GridSize 가져오기
-	float GridSize = 100.0f;
-	if (MapManager) {
-		GridSize = MapManager->GridSize;
-	}
 
 	// 위치 점유 확인
 	if (IsLocationOccupied(Location, GridSize))
@@ -236,9 +233,9 @@ void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& 
 		{
 			// 로컬 좌표 변환
 			FVector LocalLoc = Req.WorldLocation - Chunk->GetActorLocation();
-			int32 X = FMath::RoundToInt(LocalLoc.X / AChunkBase::BlockGridSize);
-			int32 Y = FMath::RoundToInt(LocalLoc.Y / AChunkBase::BlockGridSize);
-			int32 Z = FMath::RoundToInt(LocalLoc.Z / AChunkBase::BlockGridSize);
+			int32 X = FMath::RoundToInt(LocalLoc.X / GridSize);
+			int32 Y = FMath::RoundToInt(LocalLoc.Y / GridSize);
+			int32 Z = FMath::RoundToInt(LocalLoc.Z / GridSize);
 
 			// 태그로 타입 찾기
 			EBlockType TargetType = EBlockType::Destructible; // 기본값

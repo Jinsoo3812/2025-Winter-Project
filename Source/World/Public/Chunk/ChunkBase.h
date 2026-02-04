@@ -55,7 +55,7 @@ public:
 	static const int32 ChunkSizeX = 16;
 	static const int32 ChunkSizeY = 16;
 	static const int32 ChunkSizeZ = 32; // 높이는 필요에 따라 조절
-	static const int32 BlockGridSize = 100; // 블록 1개의 언리얼 유닛 크기
+	float GridSize = 100; // 블록 1개의 언리얼 유닛 크기
 
 	// -------------------------------------------------------------------------
 	// 청크가 갖는 데이터 관리
