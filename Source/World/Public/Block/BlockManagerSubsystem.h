@@ -71,7 +71,7 @@ public:
 	void EnqueueBlockSpawns(const TArray<FBlockSpawnRequest>& Requests);
 
 	// 대상 블록 하나를 하이라이트하는 함수
-	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) override;
+	void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) override;
 
 protected:
 	// TQueue는 Thread-Safe를 지원
@@ -99,10 +99,6 @@ public:
 	// 참조 캐싱
 	// ---------------------------------------------------------
 protected:
-	// Gameplay Tag와 블록 클래스의 매핑
-	UPROPERTY(EditDefaultsOnly)
-	TMap<FGameplayTag, TSubclassOf<ABlockBase>> BlockClassMap;
-
 	// 청크를 찾기 위한 매니저 참조
 	UPROPERTY(Transient)
 	ABlockMapManager* MapManager = nullptr;

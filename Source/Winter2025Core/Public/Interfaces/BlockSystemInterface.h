@@ -35,7 +35,7 @@ public:
 	static IBlockSystemInterface* Get(const UObject* WorldContextObject);
 
 private:
-	// 월드별로 인터페이스 구현체(BlockManagerSubsystem)를 저장하는 맵
+	// 월드별로 BlockManagerSubsystem을 저장하는 맵
 	static TMap<TWeakObjectPtr<UWorld>, IBlockSystemInterface*> GlobalSystemMap;
 
 	// ---------------------------------------------------------

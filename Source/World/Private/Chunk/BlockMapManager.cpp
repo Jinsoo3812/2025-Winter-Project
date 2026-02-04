@@ -75,10 +75,12 @@ void ABlockMapManager::SpawnChunks()
 			{
 				NewChunk->SetBlockConfig(BlockConfig);
 
-				// Config에 있는 메시 정보를 청크에 등록
-				for (const auto& Pair : BlockConfig->BlockDefinitions)
+				for (const FBlockDefinition& Def : BlockConfig->BlockDefinitions)
 				{
-					NewChunk->RegisterBlockMesh(Pair.Key, Pair.Value.Mesh);
+					if (Def.Mesh)
+					{
+						NewChunk->RegisterBlockMesh(Def.Type, Def.Mesh);
+					}
 				}
 
 				// 맵에 등록

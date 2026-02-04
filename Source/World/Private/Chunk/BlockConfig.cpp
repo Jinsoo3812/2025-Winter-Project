@@ -3,69 +3,60 @@
 
 #include "BlockConfig.h"
 
-UStaticMesh* UBlockConfig::GetMeshForType(EBlockType Type) const
+const FBlockDefinition* UBlockConfig::GetBlockDef(const FGameplayTag& Tag) const
 {
-	if (const FBlockDefinition* Def = BlockDefinitions.Find(Type))
+	if (!Tag.IsValid())
 	{
-		return Def->Mesh;
+		UE_LOG(LogTemp, Warning, TEXT("UBlockConfig::GetBlockDef - Invalid GameplayTag provided."));
+		return nullptr;
 	}
+
+	if (const int32* FoundIndex = TagToIndexMap.Find(Tag))
+	{
+		if (BlockDefinitions.IsValidIndex(*FoundIndex))
+		{
+			return &BlockDefinitions[*FoundIndex];
+		}
+	}
+
 	return nullptr;
 }
 
-EBlockType UBlockConfig::GetBlockTypeByTag(const FGameplayTag& Tag) const
+const FBlockDefinition* UBlockConfig::GetBlockDef(EBlockType Type) const
 {
-	// 맵을 순회하며 태그가 일치하는지 확인
-	for (const auto& Pair : BlockDefinitions)
+	if (Type == EBlockType::None)
 	{
-		if (Pair.Value.bIsActor && Pair.Value.ActorTag.MatchesTag(Tag))
-		{
-			return Pair.Key;
-		}
-	}
-	// 못 찾으면 None 반환
-	return EBlockType::None;
-}
-
-FGameplayTag UBlockConfig::GetBlockTagByClass(TSubclassOf<AActor> InClass) const
-{
-	if (!InClass)
-	{
-		return FGameplayTag::EmptyTag;
+		UE_LOG(LogTemp, Warning, TEXT("UBlockConfig::GetBlockDef - EBlockType::None provided."));
+		return nullptr;
 	}
 
-	// 맵을 순회하며 Class가 일치하는지 확인
-	for (const auto& Pair : BlockDefinitions)
+	if (const int32* FoundIndex = TypeToIndexMap.Find(Type))
 	{
-		// 설정된 클래스와 현재 인스턴스의 클래스가 일치하는지 확인
-		if (Pair.Value.bIsActor && Pair.Value.ActorClass == InClass)
+		if (BlockDefinitions.IsValidIndex(*FoundIndex))
 		{
-			return Pair.Value.ActorTag;
+			return &BlockDefinitions[*FoundIndex];
 		}
 	}
 
-	// 못 찾으면 EmptyTag 반환
-	return FGameplayTag::EmptyTag;
-}
-
-TSubclassOf<AActor> UBlockConfig::GetBlockClassByTag(const FGameplayTag & Tag) const
-{
-	for (const auto& Pair : BlockDefinitions)
-	{
-		if (Pair.Value.bIsActor && Pair.Value.ActorTag.MatchesTag(Tag))
-		{
-			return Pair.Value.ActorClass;
-		}
-	}
 	return nullptr;
 }
 
-FBlockCPDInfo UBlockConfig::GetHighlightInfoByTag(const FGameplayTag& Tag) const
+const FBlockDefinition* UBlockConfig::GetBlockDef(TSubclassOf<AActor> Class) const
 {
-	if (const FBlockCPDInfo* Info = HighlightSettings.Find(Tag))
+	if (!Class)
 	{
-		return *Info;
+		UE_LOG(LogTemp, Warning, TEXT("UBlockConfig::GetBlockDef - Null Class provided."));
+		return nullptr;
 	}
 
-	// 못 찾으면 기본값(0,0) 반환
-	return FBlockCPDInfo();
+	// TSubclassOf는 내부적으로 UClass*로 변환 가능하므로 키로 사용 가능
+	if (const int32* FoundIndex = ClassToIndexMap.Find(Class))
+	{
+		if (BlockDefinitions.IsValidIndex(*FoundIndex))
+		{
+			return &BlockDefinitions[*FoundIndex];
+		}
+	}
+
+	return nullptr;
 }

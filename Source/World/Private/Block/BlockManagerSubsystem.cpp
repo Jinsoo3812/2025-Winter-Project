@@ -15,6 +15,7 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
 
+	// 현재 월드와 서브시스템 자신을 매핑
 	IBlockSystemInterface::RegisterSystem(GetWorld(), this);
 
 	// 개발자 설정(Project Settings)에서 설정 객체 가져오기
@@ -33,8 +34,7 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		return;
 	}
 
-	// Soft Pointer를 동기 로드(Synchronous Load)하여 실제 객체 가져오기
-	// 초기화 단계이므로 동기 로드가 허용됨. 
+	// BlockConfig 데이터 에셋을 동기 로드 및 캐싱
 	CachedBlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
 
 	if(!CachedBlockConfig)
@@ -46,7 +46,7 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 
 void UBlockManagerSubsystem::Deinitialize()
 {
-	// 시스템 종료 시 반드시 등록 해제 (Dangling Pointer 방지)
+	// 시스템 종료 시 반드시 등록 해제
 	IBlockSystemInterface::UnregisterSystem(GetWorld());
 
 	Super::Deinitialize();
@@ -123,7 +123,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 	}
 
 	// GameplayTag로 블록 클래스 찾기
-	TSubclassOf<AActor> FoundActorClass = CachedBlockConfig->GetBlockClassByTag(BlockTypeTag);
+	TSubclassOf<AActor> FoundActorClass = CachedBlockConfig->GetBlockDef(BlockTypeTag)->ActorClass;
 
 	if (!FoundActorClass)
 	{
@@ -176,7 +176,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 			if (AChunkBase* TargetChunk = MapManager->GetChunkAtLocation(Location))
 			{
 				// 태그를 이용해 정확한 EBlockType 찾기
-				EBlockType TargetType = CachedBlockConfig->GetBlockTypeByTag(BlockTypeTag);
+				EBlockType TargetType = CachedBlockConfig->GetBlockDef(BlockTypeTag)->Type;
 
 				// Config에 없는 Tag라면 Destructible로 기본 설정
 				if (TargetType == EBlockType::None)
@@ -244,7 +244,7 @@ void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& 
 			EBlockType TargetType = EBlockType::Destructible; // 기본값
 			if (CachedBlockConfig)
 			{
-				EBlockType FoundType = CachedBlockConfig->GetBlockTypeByTag(Req.BlockTag);
+				EBlockType FoundType = CachedBlockConfig->GetBlockDef(Req.BlockTag)->Type;
 				if (FoundType != EBlockType::None)
 				{
 					TargetType = FoundType;
@@ -323,8 +323,6 @@ void UBlockManagerSubsystem::HighlightBlock(const FBlockReference& BlockRef, con
 	if (!BlockRef.IsValid()) {
 		return;
 	}
-
-	FBlockCPDInfo CPDInfo = CachedBlockConfig->GetHighlightInfoByTag(Tag);
 
 	if (BlockRef.ItemIndex >= 0) // HISM
 	{

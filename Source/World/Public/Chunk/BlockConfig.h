@@ -14,21 +14,34 @@ class WORLD_API UBlockConfig : public UDataAsset
 	GENERATED_BODY()
 public:
 	// ----------------------------------------------------------------------------
-	// 각종 매핑 정보
+	// 블록 정의 및 데이터 매핑
 	// ----------------------------------------------------------------------------
 
-	// BlockType <-> FBlockDefinition 매핑
+	// 블록 타입별 정의 배열
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
-	TMap<EBlockType, FBlockDefinition> BlockDefinitions;
+	TArray<FBlockDefinition> BlockDefinitions;
 
-	// GameplayTag <-> FBlockCPDInfo 매핑
+	// 하이라이트 태그 <-> FBlockCPDInfo 매핑
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Highlight Config")
 	TMap<FGameplayTag, FBlockCPDInfo> HighlightSettings;
+
+protected:
+	// GameplayTag로 FBlockDefinition을 매핑한 맵
+	UPROPERTY(Transient)
+	TMap<FGameplayTag, int32> TagToIndexMap;
+
+	// BlockType으로 FBlockDefinition을 매핑한 맵
+	UPROPERTY(Transient)
+	TMap<EBlockType, int32> TypeToIndexMap;
+
+	// 블록 클래스로 FBlockDefinition을 매핑한 맵
+	UPROPERTY(Transient)
+	TMap<UClass*, int32> ClassToIndexMap;
 
 	// ----------------------------------------------------------------------------
 	// 폭탄 관련 설정
 	// ----------------------------------------------------------------------------
-
+public:
 	// 폭탄에 의한 CPD 설정 인덱스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
 	int32 BombCPDIndex = 1;
@@ -40,19 +53,13 @@ public:
 	// ----------------------------------------------------------------------------
 	// 헬퍼 함수
 	// ----------------------------------------------------------------------------
+public:
+	// 태그로 블록 정의 찾기
+	const FBlockDefinition* GetBlockDef(const FGameplayTag& Tag) const;
 
-	// EBlockType으로 메시를 가져오는 헬퍼 함수
-	UStaticMesh* GetMeshForType(EBlockType Type) const;
+	// 타입으로 블록 정의 찾기
+	const FBlockDefinition* GetBlockDef(EBlockType Type) const;
 
-	// 블록 타입 GameplayTag로 EBlockType을 찾는 헬퍼 함수
-	EBlockType GetBlockTypeByTag(const FGameplayTag& Tag) const;
-
-	// 블록 클래스 타입으로 GameplayTag를 찾는 헬퍼 함수
-	FGameplayTag GetBlockTagByClass(TSubclassOf<AActor> InClass) const;
-
-	// 블록 타입 GameplayTag로 클래스 타입을 찾는 헬퍼 함수
-	TSubclassOf<AActor> GetBlockClassByTag(const FGameplayTag& Tag) const;
-
-	// 하이라이트 GameplayTag로 FBlockCPDInfo를 찾는 헬퍼 함수
-	FBlockCPDInfo GetHighlightInfoByTag(const FGameplayTag& Tag) const;
+	// 클래스로 블록 정의 찾기
+	const FBlockDefinition* GetBlockDef(TSubclassOf<AActor> Class) const;
 };

@@ -165,12 +165,13 @@ void AChunkBase::UpdateChunkVisuals()
 
 	if (CachedBlockConfig)
 	{
-		for (const auto& Pair : CachedBlockConfig->BlockDefinitions)
+		for (const FBlockDefinition& Def : CachedBlockConfig->BlockDefinitions)
 		{
-			IsActorMap.Add(Pair.Key, Pair.Value.bIsActor);
-			if (Pair.Value.bIsActor)
+			IsActorMap.Add(Def.Type, Def.bIsActor);
+
+			if (Def.bIsActor)
 			{
-				ActorTagMap.Add(Pair.Key, Pair.Value.ActorTag);
+				ActorTagMap.Add(Def.Type, Def.Tag);
 			}
 		}
 	}

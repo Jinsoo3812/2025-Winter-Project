@@ -123,20 +123,24 @@ struct FBlockDefinition
 {
 	GENERATED_BODY()
 
-	// 렌더링에 사용할 메시
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	// 블록 타입
+	UPROPERTY(EditAnywhere, Category = "Definition")
+	EBlockType Type = EBlockType::None;
+
+	// 블록 메시
+	UPROPERTY(EditAnywhere, Category = "Definition")
 	UStaticMesh* Mesh = nullptr;
 
-	// 이 블록이 HISM이 아닌 Actor로 존재해야 하는지 여부
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic")
+	// Actor 여부
+	UPROPERTY(EditAnywhere, Category = "Definition")
 	bool bIsActor = false;
 
-	// Actor로 스폰될 때 사용할 태그 (Subsystem 전달용)
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic", meta = (EditCondition = "bIsActor"))
-	FGameplayTag ActorTag;
+	// 블록의 Gameplay Tag
+	UPROPERTY(EditAnywhere, Category = "Definition", meta = (EditCondition = "bIsActor"))
+	FGameplayTag Tag;
 
-	// Actor로 스폰될 때 사용할 클래스
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Logic", meta = (EditCondition = "bIsActor", AllowedClasses = "/Script/World.BlockBase"))
+	// 블록의 Class 타입
+	UPROPERTY(EditAnywhere, Category = "Definition", meta = (EditCondition = "bIsActor"))
 	TSubclassOf<AActor> ActorClass;
 };
 

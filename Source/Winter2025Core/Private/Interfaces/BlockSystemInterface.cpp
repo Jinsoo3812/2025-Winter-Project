@@ -3,7 +3,7 @@
 
 #include "BlockSystemInterface.h"
 
-// 정적 멤버 변수 정의
+// static 멤버 변수 정의
 TMap<TWeakObjectPtr<UWorld>, IBlockSystemInterface*> IBlockSystemInterface::GlobalSystemMap;
 
 void IBlockSystemInterface::RegisterSystem(UWorld* World, IBlockSystemInterface* System)
