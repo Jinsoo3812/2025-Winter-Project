@@ -15,7 +15,7 @@ class UBlockConfig;
 
 
 UCLASS()
-class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface, public IBlockInfoInterface
+class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface
 {
 	GENERATED_BODY()
 
@@ -51,12 +51,6 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Grid")
 	float GridSize = 100.0f;
 
-	/*
-	// 블록이 파괴 가능한지 여부를 담는 변수
-	UPROPERTY(VisibleAnywhere, Category = "Block")
-	bool IsDestrictible = false;
-	*/
-
 	// 블록의 외형 및 물리 충돌을 담당할 Mesh Component
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
@@ -75,11 +69,6 @@ protected:
 public:
 	// 블록의 메시 컴포넌트를 반환하는 함수 (머티리얼 변경 등에 사용)
 	UStaticMeshComponent* GetBlockMesh() const { return MeshComponent; }
-
-	/*
-	// 블록이 파괴 가능한지 여부를 반환하는 함수
-	virtual bool CanBeDestroyed() const { return IsDestrictible; }
-	*/
 
 	// 자신을 파괴하는 함수
 	virtual void SelfDestroy();
@@ -120,25 +109,8 @@ public:
 	// 폭발 관련
 	// -----------------------------------------------------------------------------
 protected:
-
-	/*
-	// 폭탄 부착/폭발로 인한 이벤트 처리 함수
-	void HandleBombEvent(const FGameplayTag& EventTag);
-	*/
-
 	// 현재 부착된 폭탄 개수 추적용
 	int32 CurrentBombCount = 0;
-
-	// -----------------------------------------------------------------------------
-	// BlockInfoInterface 구현
-	// -----------------------------------------------------------------------------
-	/*
-	FVector GetBlockLocation() const override { return GetActorLocation(); }
-	FRotator GetBlockRotation() const override { return GetActorRotation(); }
-	float GetBlockGridSize() const override { return GridSize; }
-	//  그리드에 정렬된 위치(GridSize 단위에 맞도록)를 반환하는 함수
-	FVector GetBlockAlignedLocation() const override;
-	*/
 
 	// -----------------------------------------------------------------------------
 	// GameplayEventInterface 구현

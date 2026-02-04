@@ -133,9 +133,8 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 
 	// GridSize 가져오기
 	float GridSize = 100.0f;
-	if (ABlockBase* CDO = Cast<ABlockBase>(FoundActorClass->GetDefaultObject()))
-	{
-		GridSize = CDO->GetBlockGridSize();
+	if (MapManager) {
+		GridSize = MapManager->GridSize;
 	}
 
 	// 위치 점유 확인
@@ -295,67 +294,6 @@ bool UBlockManagerSubsystem::IsLocationOccupied(
 	return World->OverlapAnyTestByObjectType(CheckLocation, FQuat::Identity, ObjectQueryParams, CheckShape, QueryParams);
 }
 
-/*
-void UBlockManagerSubsystem::GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks)
-{
-	UWorld* World = GetWorld();
-	if (!World) {
-		UE_LOG(LogTemp, Error, TEXT("BlockManagerSubsystem: World is null"));
-	}
-
-	OutBlocks.Reset();
-
-	// 1. OverlapMulti로 물리적 충돌체 검색
-	TArray<FOverlapResult> Overlaps;
-	FCollisionObjectQueryParams ObjectParams;
-	ObjectParams.AddObjectTypesToQuery(ECC_Block); // Block 채널
-	FCollisionShape Shape = FCollisionShape::MakeSphere(Radius);
-	FCollisionQueryParams Params;
-
-	World->OverlapMultiByObjectType(Overlaps, Origin, FQuat::Identity, ObjectParams, Shape, Params);
-
-	float RadiusSq = Radius * Radius;
-	for (const FOverlapResult& Result : Overlaps)
-	{
-		FBlockReference Ref;
-
-		// Case A: HISM (청크 지형)
-		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Result.GetComponent()))
-		{
-			if (AChunkBase* Chunk = Cast<AChunkBase>(Result.GetActor()))
-			{
-				// HISM 컴포넌트를 이용해 즉시 위치 조회
-				FTransform InstanceTransform;
-				HISM->GetInstanceTransform(Result.ItemIndex, InstanceTransform, true);
-
-				// 반경 내에 있는지 재확인
-				if (FVector::DistSquared(Origin, InstanceTransform.GetLocation()) <= RadiusSq)
-				{
-					Ref.TargetObject = Chunk;
-					Ref.TargetComponent = HISM;
-					Ref.ItemIndex = Result.ItemIndex;
-					OutBlocks.AddUnique(Ref);
-				}
-			}
-		}
-		// Case B: Actor (파괴 가능 블록 등)
-		else if (AActor* Actor = Result.GetActor())
-		{
-			// GameplayEventInterface 구현 여부 확인 (상호작용 가능한 블록만)
-			if (Actor->Implements<UGameplayEventInterface>())
-			{
-				if (FVector::DistSquared(Origin, Actor->GetActorLocation()) <= RadiusSq)
-				{
-					Ref.TargetObject = Actor;
-					Ref.ItemIndex = -1;
-					OutBlocks.AddUnique(Ref);
-				}
-			}
-		}
-	}
-}
-*/
-
 FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 {
 	if (!Ref.IsValid()) return FVector::ZeroVector;
@@ -407,39 +345,6 @@ void UBlockManagerSubsystem::HighlightBlock(const FBlockReference& BlockRef, con
 		}
 	}
 }
-
-/*
-void UBlockManagerSubsystem::DestroyBlocksInRadius(const FVector& Origin, float Radius)
-{
-	if (!MapManager) {
-		UE_LOG(LogTemp, Error, TEXT("DestroyBlocksInRadius: MapManager is not registered!"));
-		return;
-	}
-
-	// 그리드 순회 로직 (이전에 작성한 로직과 동일)
-	float GridSize = 100.0f;
-	int32 RangeSteps = FMath::CeilToInt(Radius / GridSize);
-
-	for (int32 x = -RangeSteps; x <= RangeSteps; x++)
-	{
-		for (int32 y = -RangeSteps; y <= RangeSteps; y++)
-		{
-			for (int32 z = -RangeSteps; z <= RangeSteps; z++)
-			{
-				FVector Offset(x * GridSize, y * GridSize, z * GridSize);
-				if (Offset.SizeSquared() <= FMath::Square(Radius + (GridSize * 0.5f)))
-				{
-					FVector CheckLocation = Origin + Offset;
-					if (AChunkBase* Chunk = MapManager->GetChunkAtLocation(CheckLocation))
-					{
-						Chunk->RemoveBlockAtWorldLocation(CheckLocation);
-					}
-				}
-			}
-		}
-	}
-}
-*/
 
 bool UBlockManagerSubsystem::GetBlockUnderCursor(const APlayerController* PlayerController, FBlockReference& OutBlockRef) {
 	if (!PlayerController) return false;

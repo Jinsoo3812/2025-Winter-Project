@@ -31,18 +31,22 @@ protected:
 	// -------------------------------------------------------------------------
 	// 기본 설정
 	// -------------------------------------------------------------------------
-protected:
-	// 블록 설정 데이터 에셋
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
-	UBlockConfig* BlockConfig;
-
-	// 생성할 월드의 청크 개수 (예: 4x4)
-	// 위로는 쌓지 않음
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
+public:
+	// 생성할 월드의 청크 개수 X (예: 4x4)
+	UPROPERTY(EditAnywhere, Category = "Config")
 	int32 WorldRangeX = 4;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config")
+	// 생성할 월드의 청크 개수 Y (예: 4x4)
+	UPROPERTY(EditAnywhere, Category = "Config")
 	int32 WorldRangeY = 4;
+
+	// 블록의 한 변의 길이
+	UPROPERTY(EditAnywhere, Category = "Config")
+	int32 GridSize = 100;
+protected:
+	// 블록 설정 데이터 에셋
+	UPROPERTY(EditAnywhere, Category = "Config")
+	UBlockConfig* BlockConfig;
 
 	// 테스트 용 기본 바닥의 층 수
 	UPROPERTY(EditDefaultsOnly, Category = "Config")

@@ -53,12 +53,6 @@ public:
 	
 	virtual float GetGridSize() const = 0;
 
-	// 반경 내의 모든 블록(Actor + HISM) 데이터를 삭제 (블록 파괴)
-	virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) = 0;
-
-	// 반경 내의 블록 참조들을 수집 (스킬 범위 표시 및 타게팅)
-	virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) = 0;
-
 	// 특정 블록에 하이라이트 적용 (HISM 인덱스 처리 포함)
 	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) = 0;
 

@@ -255,17 +255,15 @@ void ABlockBase::NotifyUpperBlock()
 		{
 			// 잠자던 위쪽 블록의 Tick을 켜서 추락하게 함
 			UpperBlock->SetActorTickEnabled(true);
-			// 로그 확인용
-			// UE_LOG(LogTemp, Log, TEXT("BlockBase: %s woke up %s"), *GetName(), *UpperBlock->GetName());
 		}
 		else
 		{
-			// 블록이 아닌 다른 물체일 경우 (로그 생략 가능)
+			// 블록이 아닌 다른 물체일 경우
 		}
 	}
 	else
 	{
-		// 위에 아무것도 없으므로 아무 작업도 하지 않음 (정상 상황)
+		// 위에 아무것도 없으므로 아무 작업도 하지 않음
 	}
 }
 
@@ -313,59 +311,6 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 	}
 	else UE_LOG(LogTemp, Warning, TEXT("BlockBase: Unrecognized GameplayEvent Tag %s in %s"), *EventTag.ToString(), *GetName());
 }
-
-/*
-void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
-{
-	if (!BlockConfig) {
-		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
-		return;
-	}
-
-	if (MeshComponent)
-	{	
-		// 폭탄이 모두 터져서 하이라이트를 제거해야 하는 경우
-		if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
-		{
-			CurrentBombCount = 0;
-			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
-			return;
-		}
-
-		// 폭탄 개수 증가 하이라이트
-		// 최대 폭탄 개수에 맞춰 Clamp
-		CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
-
-		// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
-		float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
-
-		// 폭탄 CPD Index도 Config에 정의되어 있음
-		MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
-	}
-	return;
-}
-*/
-
-/*
-FVector ABlockBase::GetBlockAlignedLocation() const
-{
-	// 현재 실제 액터의 위치
-	FVector CurrentLoc = GetActorLocation();
-
-	float HalfSize = GridSize / 2.0f;
-
-	// 0, 100, 200, -100... 등 정수 배수 좌표로 스냅
-	float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize;
-	float SnappedY = FMath::RoundToFloat(CurrentLoc.Y / GridSize) * GridSize;
-	float SnappedZ = FMath::RoundToFloat(CurrentLoc.Z / GridSize) * GridSize;
-
-	return FVector(SnappedX, SnappedY, SnappedZ);
-}
-*/
 
 void ABlockBase::SelfDestroy()
 {	

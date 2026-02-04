@@ -53,15 +53,15 @@ public:
 	// ---------------------------------------------------------
 public:
 	// GameplayTag를 이용해 블록 Actor를 소환하는 함수
-	virtual AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) override;
+	AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) override;
 	
 	// 해당 위치에 블록을 소환할 수 있는지 검사하는 함수
-	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) override;
+	bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) override;
 
 	// BlockReference로부터 블록의 월드 좌표를 얻는 함수
-	virtual FVector GetBlockLocation(const FBlockReference& Ref) override;
+	FVector GetBlockLocation(const FBlockReference& Ref) override;
 	
-	virtual float GetGridSize() const override { return 100.0f; }
+	float GetGridSize() const override { return 100.0f; }
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
 	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests);
@@ -70,8 +70,7 @@ public:
 	// @param Requests: 소환 요청 배열
 	void EnqueueBlockSpawns(const TArray<FBlockSpawnRequest>& Requests);
 
-	// virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) override;
-	// virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) override;
+	// 대상 블록 하나를 하이라이트하는 함수
 	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) override;
 
 protected:
