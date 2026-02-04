@@ -22,34 +22,10 @@ class WINTER2025CORE_API IBlockSystemInterface
 {
 	GENERATED_BODY()
 
-	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
+	// -----------------------------------------------------------------------------
+	// 초기화 및 기본 함수
+	// -----------------------------------------------------------------------------
 public:
-	// 블록 소환
-	virtual AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) = 0;
-	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) = 0;
-
-	// 시스템이 Ref를 해석해서 위치를 반환 (HISM이면 Transform 계산, Actor면 ActorLocation)
-	virtual FVector GetBlockLocation(const FBlockReference& Ref) = 0;
-	virtual float GetGridSize() const = 0;
-
-	// 반경 내의 모든 블록(Actor + HISM) 데이터를 삭제 (블록 파괴)
-	virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) = 0;
-
-	// FOverlapResult를 받아 BlockReference를 추출
-	virtual void GetBlocksFromOverlaps(const TArray<struct FOverlapResult>& Overlaps, TArray<FBlockReference>& OutBlocks) = 0;
-
-	// 반경 내의 블록 참조들을 수집 (스킬 범위 표시 및 타게팅)
-	virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) = 0;
-
-	// 특정 블록에 하이라이트 적용 (HISM 인덱스 처리 포함)
-	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) = 0;
-
-	/* 마우스 위치의 블록 정보를 반환하는 함수 */
-	virtual bool GetBlockUnderCursor(const APlayerController* PlayerController, FBlockReference& OutBlockRef) = 0;
-
-	/* 이미 HitResult가 있다면 그것을 분석하는 함수 */
-	virtual bool GetBlockFromHitResult(const FHitResult& HitResult, FBlockReference& OutBlockRef) = 0;
-
 	// 서브시스템이 생성될 때(Initialize) 자신을 등록
 	static void RegisterSystem(UWorld* World, IBlockSystemInterface* System);
 
@@ -61,4 +37,41 @@ public:
 private:
 	// 월드별로 인터페이스 구현체(BlockManagerSubsystem)를 저장하는 맵
 	static TMap<TWeakObjectPtr<UWorld>, IBlockSystemInterface*> GlobalSystemMap;
+
+	// ---------------------------------------------------------
+	// 블록 소환, 파괴, 조작
+	// ---------------------------------------------------------
+public:
+	// GameplayTag를 이용해 블록 Actor를 소환하는 함수
+	virtual AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) = 0;
+	
+	// 해당 위치에 블록을 소환할 수 있는지 검사하는 함수
+	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) = 0;
+
+	// BlockReference로부터 블록의 월드 좌표를 얻는 함수
+	virtual FVector GetBlockLocation(const FBlockReference& Ref) = 0;
+	
+	virtual float GetGridSize() const = 0;
+
+	// 반경 내의 모든 블록(Actor + HISM) 데이터를 삭제 (블록 파괴)
+	virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) = 0;
+
+	// 반경 내의 블록 참조들을 수집 (스킬 범위 표시 및 타게팅)
+	virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) = 0;
+
+	// 특정 블록에 하이라이트 적용 (HISM 인덱스 처리 포함)
+	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) = 0;
+
+	// ---------------------------------------------------------
+	// 블록 수집
+	// ---------------------------------------------------------
+public:
+	// FOverlapResult를 받아 BlockReference를 추출
+	virtual void GetBlocksFromOverlaps(const TArray<struct FOverlapResult>& Overlaps, TArray<FBlockReference>& OutBlocks) = 0;
+
+	/* 마우스 위치의 블록 정보를 반환하는 함수 */
+	virtual bool GetBlockUnderCursor(const APlayerController* PlayerController, FBlockReference& OutBlockRef) = 0;
+
+	/* 이미 HitResult가 있다면 그것을 분석하는 함수 */
+	virtual bool GetBlockFromHitResult(const FHitResult& HitResult, FBlockReference& OutBlockRef) = 0;
 };

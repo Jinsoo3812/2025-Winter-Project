@@ -189,8 +189,7 @@ void AChunkBase::UpdateChunkVisuals()
 	*/
 	Async(EAsyncExecution::ThreadPool, [WeakThis, Snapshot, GridSize, MyRequestID, IsActorMap, ActorTagMap]()
 	{
-		// 배칭 데이터를 담을 임시 맵
-		// 매 번 AddInstance를 호출하는 것은 렌더 스레드에게 부담을 줌
+		// 블록 타입별로 한 번에 AddInstances 호출을 하기 위한 배치 데이터
 		TMap<EBlockType, TArray<FTransform>> LocalBatchData;
 
 		// 이번 청크 갱신에서 발생한 액터 스폰 요청들
@@ -204,29 +203,16 @@ void AChunkBase::UpdateChunkVisuals()
 		// 많이 사용될 것 같은 블록은 미리 TArray에 메모리 공간을 예약하여 잦은 할당을 방지할 수 있음.
 		// LocalBatchData.FindOrAdd(EBlockType::Terrain).Reserve(DataCopy.Num() / 2);
 
-		if(!WeakThis.IsValid())
-		{
-			// 청크가 파괴되었으므로 작업 중단
-			return;
-		}
-		if (WeakThis->LastUpdateRequestID != MyRequestID)
-		{
-			// 해당 작업이 최신이 아니므로 중단
-			return;
-		}
+		if (!WeakThis.IsValid()) return;
+		if (WeakThis->LastUpdateRequestID != MyRequestID) return;
 
-		/*
-		* 캐시 적중률을 높이기 위한 3중 반복문
-		* 가장 안쪽 루프에 x를 두는 것이 메모리를 순서대로 읽는 방법
-		* Index = X + (Y * SizeX) + (Z * SizeX * SizeY)
-		*/
+		// 캐시 적중률을 높이는 3중 반복문
 		for (int32 z = 0; z < Snapshot.SizeZ; z++)
 		{
 			for (int32 y = 0; y < Snapshot.SizeY; y++)
 			{
 				for (int32 x = 0; x < Snapshot.SizeX; x++)
 				{
-					// 스냅샷을 통해 데이터 가져오기 (안전함)
 					FBlockData CurrentBlock = Snapshot.GetBlockData(x, y, z);
 
 					// 그리지 않아도 되는 블록은 건너뜀
@@ -258,7 +244,7 @@ void AChunkBase::UpdateChunkVisuals()
 						*/
 						FBlockData NeighborBlock = Snapshot.GetBlockData(NX, NY, NZ);
 
-						// 안그려져 있으면 자신을 그림
+						// 안 그려진 이웃이 있으면 자신을 그림
 						if (NeighborBlock.Type == EBlockType::None)
 						{
 							bIsVisible = true;
@@ -296,8 +282,6 @@ void AChunkBase::UpdateChunkVisuals()
 										LocalSpawnRequests.Add({ Location, *Tag });
 									}
 								}
-
-								// Actor니까 HISM에는 넣지 않음 (여기서 루프 끝)
 								continue;
 							}
 						}
@@ -306,7 +290,6 @@ void AChunkBase::UpdateChunkVisuals()
 						LocalBatchData.FindOrAdd(CurrentBlock.Type).Add(Transform);
 					}
 					else {
-						// 통계
 						CulledBlocks++;
 					}
 				}
@@ -320,18 +303,12 @@ void AChunkBase::UpdateChunkVisuals()
 			// [Game Thread] 계산된 데이터를 HISM에 적용 및 Actor 스폰 요청 전달
 
 			// 이 시점에서 청크가 파괴되었을 수도 있으므로 유효성 검사 (IsValid)
-			if (!WeakThis.IsValid()) {
-				UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Chunk destroyed before UpdateChunkVisuals could complete."));
-			}
+			if (!WeakThis.IsValid()) UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Chunk destroyed before UpdateChunkVisuals could complete."));
 			
-			/*
-			* 자신이 최신 작업인지 확인
-			* 자신이 작업하는 동안 누군가 새로운 작업을 시작했다면, 이 작업은 쓸모 없음
-			*/
-			if (WeakThis->LastUpdateRequestID != MyRequestID)
-			{
-				return;
-			}
+			
+			// 자신이 최신 작업인지 확인
+			// 자신이 작업하는 동안 누군가 새로운 작업을 시작했다면, 이 작업은 쓸모 없음
+			if (WeakThis->LastUpdateRequestID != MyRequestID) return;
 
 			// 버퍼 인덱스 교체
 			int32 OldBufferIndex = WeakThis->CurrentBufferIndex;
@@ -347,9 +324,7 @@ void AChunkBase::UpdateChunkVisuals()
 				if (Elem.Value) {
 					Elem.Value->ClearInstances();
 				}
-				else {
-					UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HISM component missing in BackBuffer for BlockType %d"), (int32)Elem.Key);
-				}
+				else UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HISM component missing in BackBuffer for BlockType %d"), (int32)Elem.Key);
 			}
 
 			// BackBuffer 채우기
@@ -369,9 +344,7 @@ void AChunkBase::UpdateChunkVisuals()
 					*/
 					Comp->AddInstances(Transforms, false, false);
 				}
-				else {
-					UE_LOG(LogTemp, Warning, TEXT("ChunkBase: No HISM component found in BackBuffer for BlockType %d"), (int32)Type);
-				}
+				else UE_LOG(LogTemp, Warning, TEXT("ChunkBase: No HISM component found in BackBuffer for BlockType %d"), (int32)Type);
 			}
 
 			// 새 버퍼(BackBuffer) 활성화
@@ -382,7 +355,7 @@ void AChunkBase::UpdateChunkVisuals()
 					Elem.Value->SetHiddenInGame(false);
 					Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 					// 렌더링 강제 업데이트 요청
-					Elem.Value->MarkRenderStateDirty();
+					// Elem.Value->MarkRenderStateDirty();
 				}
 			}
 
@@ -393,14 +366,14 @@ void AChunkBase::UpdateChunkVisuals()
 			// 타이머를 돌며 주기적으로 렌더링 명령을 다 마쳤는지 검사
 			if (UWorld* World = WeakThis->GetWorld())
 			{
-				// 기존 타이머가 돌고 있다면 제거 (안전장치)
+				// 기존 타이머가 돌고 있다면 제거
 				World->GetTimerManager().ClearTimer(WeakThis->RenderFenceTimerHandle);
 
 				// 타이머에 렌더 펜스 검사 함수 바인딩
 				FTimerDelegate TimerDel;
 				TimerDel.BindUObject(WeakThis.Get(), &AChunkBase::CheckRenderFence, OldBufferIndex);
 
-				// 0,01초마다 검사
+				// 0.01초마다 검사
 				World->GetTimerManager().SetTimer(WeakThis->RenderFenceTimerHandle, TimerDel, 0.01f, true);
 			}
 
@@ -419,7 +392,7 @@ void AChunkBase::UpdateChunkVisuals()
 			{
 				FVector ChunkOrigin = WeakThis->GetActorLocation();
 				TArray<FBlockSpawnRequest> WorldRequests;
-				// 메모리 예약은 메모리 할당 오버헤드를 줄여줘요~
+				// 메모리 예약은 메모리 할당 오버헤드를 줄여줌
 				WorldRequests.Reserve(LocalSpawnRequests.Num());
 
 				// 요청 변환 (Local -> World)
@@ -438,6 +411,7 @@ void AChunkBase::UpdateChunkVisuals()
 					int32 Y = FMath::RoundToInt(Req.WorldLocation.Y / GridSize);
 					int32 Z = FMath::RoundToInt(Req.WorldLocation.Z / GridSize);
 
+					// 소환이 확정되지 않았는데 플래그를 미리 세우고 있음
 					int32 Index = WeakThis->GetBlockIndex(X, Y, Z);
 					if (WeakThis->BlockDataArray.IsValidIndex(Index))
 					{
@@ -551,12 +525,8 @@ void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)
 	int32 Index = GetBlockIndex(X, Y, Z);
 	if (BlockDataArray.IsValidIndex(Index))
 	{
-		// 플래그를 다시 false로 되돌림 -> 다음 UpdateChunkVisuals 때 다시 시도하게 됨
+		// 플래그를 다시 false로 되돌림
 		BlockDataArray[Index].bIsActorSpawned = false;
-
-		// 필요하다면 다시 시각적 업데이트를 요청하거나, 
-		// 일정 시간 뒤에 재시도하도록 로직을 추가할 수 있음
-		// UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Spawn Failed Rollback at %d %d %d"), X, Y, Z);
 	}
 }
 
@@ -586,7 +556,7 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 	}
 
 	// -------------------------------------------------------------------------
-	// Case 1: 폭탄 하이라이트 (중첩 카운팅 로직)
+	// Case 1: 폭탄 하이라이트
 	// -------------------------------------------------------------------------
 	if (Tag.MatchesTag(TAG_Block_Highlight_Bomb))
 	{
@@ -601,7 +571,7 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 			// CPD 0으로 초기화
 			HISM->SetCustomDataValue(ItemIndex, CachedBlockConfig->BombCPDIndex, 0.0f, true);
 
-			// 맵이 비었으면 컴포넌트 키 자체도 제거 (선택사항)
+			// 맵이 비었으면 컴포넌트 키 자체도 제거
 			if (InstanceCounts.Num() == 0)
 			{
 				HISMBombCountMap.Remove(HISM);
@@ -637,9 +607,7 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 
 		HISM->SetCustomDataValue(ItemIndex, CPDIndex, CPDValue, true);
 	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HighlightHISMBlock called with unknown Tag %s."), *Tag.ToString());
-	}
+	else UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HighlightHISMBlock called with unknown Tag %s."), *Tag.ToString());
 }
 
 void AChunkBase::CheckRenderFence(int32 OldBufferIndex)
@@ -660,16 +628,10 @@ void AChunkBase::CheckRenderFence(int32 OldBufferIndex)
 					Elem.Value->SetHiddenInGame(true);
 					Elem.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Invalid HISM in OldBuffer during Fence Callback."));
-				}
+				else UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Invalid HISM in OldBuffer during Fence Callback."));
 			}
 		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("ChunkBase: Invalid OldBufferIndex in Fence Callback."));
-		}
+		else UE_LOG(LogTemp, Error, TEXT("ChunkBase: Invalid OldBufferIndex in Fence Callback."));
 
 		// 타이머 종료
 		if (UWorld* World = GetWorld())

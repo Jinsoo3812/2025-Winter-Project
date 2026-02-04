@@ -22,14 +22,17 @@ struct FBlockSpawnRequest
 	TWeakObjectPtr<AChunkBase> OwnerChunk;
 };
 
-/**
- * 
+/*
+ * 외부 모듈이 요청한 블록 소환, 파괴, 조작 등을 대신 처리해주는 서브시스템
  */
 UCLASS()
 class WORLD_API UBlockManagerSubsystem : public UTickableWorldSubsystem, public IBlockSystemInterface
 {
 	GENERATED_BODY()
-	
+
+	// -----------------------------------------------------------------------------
+	// 초기화 및 기본 함수
+	// -----------------------------------------------------------------------------
 public:
 	// UTickableWorldSubsystem 인터페이스 구현
 	virtual void Tick(float DeltaTime) override;
@@ -41,58 +44,65 @@ public:
 	virtual void Initialize(FSubsystemCollectionBase& Collection) override;
 
 	virtual void Deinitialize() override;
-	 
+
 	// BlockMapManager가 BeginPlay 시점에 자신을 등록
 	void RegisterMapManager(ABlockMapManager* InManager);
-
+	
 	// ---------------------------------------------------------
-	// IBlockSystemInterface 구현
+	// 블록 소환, 파괴, 조작
 	// ---------------------------------------------------------
+public:
+	// GameplayTag를 이용해 블록 Actor를 소환하는 함수
 	virtual AActor* SpawnBlockByTag(FGameplayTag BlockTypeTag, FVector Location, FRotator Rotation, bool bEnableGravity) override;
+	
+	// 해당 위치에 블록을 소환할 수 있는지 검사하는 함수
 	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) override;
 
+	// BlockReference로부터 블록의 월드 좌표를 얻는 함수
 	virtual FVector GetBlockLocation(const FBlockReference& Ref) override;
+	
 	virtual float GetGridSize() const override { return 100.0f; }
-
-	virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) override;
-	virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) override;
-	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) override;
-
-	// ---------------------------------------------------------
-	// 블록 수집 및 생성
-	// ---------------------------------------------------------
-
-	/* FOverlapResult를 받아 BlockReference를 추출 */
-	void GetBlocksFromOverlaps(const TArray<struct FOverlapResult>& Overlaps, TArray<FBlockReference>& OutBlocks) override;
-
-	/* 마우스 위치의 블록 정보를 반환하는 함수 */
-	bool GetBlockUnderCursor(const APlayerController* PlayerController, FBlockReference& OutBlockRef) override;
-
-	/* 이미 HitResult가 있다면 그것을 분석하는 함수 */
-	bool GetBlockFromHitResult(const FHitResult& HitResult, FBlockReference& OutBlockRef) override;
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
 	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests);
 
-	/*
-	* ChunkBase로부터 블록 Actor 소환 요청을 받아 Queue에 추가하는 함수
-	* @param Requests: 소환 요청 배열
-	*/
+	// Actor 블록 소환 요청을 한 번에 받아 Queue에 등록하는 함수
+	// @param Requests: 소환 요청 배열
 	void EnqueueBlockSpawns(const TArray<FBlockSpawnRequest>& Requests);
-protected:
-	// Gameplay Tag와 블록 클래스의 매핑
-	UPROPERTY(EditDefaultsOnly)
-	TMap<FGameplayTag, TSubclassOf<ABlockBase>> BlockClassMap;
 
-	/*
-	* TQueue는 Thread-Safe를 지원
-	* 대기 중인 스폰 요청 Queue
-	*/
+	// virtual void DestroyBlocksInRadius(const FVector& Origin, float Radius) override;
+	// virtual void GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks) override;
+	virtual void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) override;
+
+protected:
+	// TQueue는 Thread-Safe를 지원
+	// 대기 중인 스폰 요청 Queue
 	TQueue<FBlockSpawnRequest> SpawnQueue;
 
 	// 한 프레임에 처리할 최대 스폰 개수
 	UPROPERTY(EditDefaultsOnly)
 	int32 MaxSpawnsPerFrame = 100;
+
+	// ---------------------------------------------------------
+	// 블록 수집
+	// ---------------------------------------------------------
+public:
+	/* FOverlapResult를 받아 BlockReference만 추출 */
+	void GetBlocksFromOverlaps(const TArray<struct FOverlapResult>& Overlaps, TArray<FBlockReference>& OutBlocks) override;
+
+	/* 마우스 위치의 BlockReference를 반환하는 함수 */
+	bool GetBlockUnderCursor(const APlayerController* PlayerController, FBlockReference& OutBlockRef) override;
+
+	/* HitResult로부터 BlockReference를 반환하는 함수 */
+	bool GetBlockFromHitResult(const FHitResult& HitResult, FBlockReference& OutBlockRef) override;
+
+	// ---------------------------------------------------------
+	// 참조 캐싱
+	// ---------------------------------------------------------
+protected:
+	// Gameplay Tag와 블록 클래스의 매핑
+	UPROPERTY(EditDefaultsOnly)
+	TMap<FGameplayTag, TSubclassOf<ABlockBase>> BlockClassMap;
 
 	// 청크를 찾기 위한 매니저 참조
 	UPROPERTY(Transient)

@@ -14,7 +14,7 @@
 	GAMEPLAYATTRIBUTE_VALUE_SETTER(PropertyName) \
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
-// 파괴 시 호출할델리게이트 선언
+// 파괴 시 호출할 델리게이트 선언
 // 파라미터로 누가 죽였는지 전달
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnDestroyed, AActor*);
 

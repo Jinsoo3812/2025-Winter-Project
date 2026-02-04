@@ -51,9 +51,7 @@ void ABlockMapManager::GenerateWorld()
 void ABlockMapManager::SpawnChunks()
 {
 	UWorld* World = GetWorld();
-	if (!World) {
-		UE_LOG(LogTemp, Error, TEXT("WorldMapManager: Unable to get UWorld!"));
-	}
+	if (!World) UE_LOG(LogTemp, Error, TEXT("WorldMapManager: Unable to get UWorld!"));
 
 	// WorldRange 범위만큼 청크 생성
 	for (int32 x = 0; x < WorldRangeX; x++)
@@ -107,11 +105,10 @@ void ABlockMapManager::GenerateBasicTerrain()
 			UE_LOG(LogTemp, Warning, TEXT("WorldMapManager: Null chunk found in ChunkMap!"));
 			return;
 		}
-
-		/*
-		* 청크 내부의 모든 블록을 순회.
-		* 단순 연산이므로 큰 오버헤드가 아니지만, 순간적으로 몇 청크씩 생성하는 경우 프레임 드랍이 있을 수 있음.
-		*/
+		
+		// 청크 내부의 모든 블록을 순회.
+		// 단순 연산이므로 큰 오버헤드가 아니지만, 순간적으로 몇 청크씩 생성하는 경우 프레임 드랍이 있을 수 있음.
+		
 		for (int32 x = 0; x < AChunkBase::ChunkSizeX; x++)
 		{
 			for (int32 y = 0; y < AChunkBase::ChunkSizeY; y++)
@@ -121,7 +118,7 @@ void ABlockMapManager::GenerateBasicTerrain()
 				{
 					if (z < FloorHeight)
 					{
-						Chunk->SetBlockType(x, y, z, EBlockType::Terrain);
+						Chunk->SetBlockType(x, y, z, FloorBlockType);
 					}
 					else
 					{

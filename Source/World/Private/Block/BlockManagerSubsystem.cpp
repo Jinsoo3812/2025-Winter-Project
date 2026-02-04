@@ -18,7 +18,6 @@ void UBlockManagerSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	IBlockSystemInterface::RegisterSystem(GetWorld(), this);
 
 	// 개발자 설정(Project Settings)에서 설정 객체 가져오기
-	// GetDefault<T>()는 CDO(Class Default Object)를 가져오므로 매우 빠름
 	const UBlockSettings* Settings = GetDefault<UBlockSettings>();
 
 	if (!Settings)
@@ -69,9 +68,6 @@ void UBlockManagerSubsystem::Tick(float DeltaTime)
 	// 정해진 예산(MaxSpawnsPerFrame)만큼만 반복 처리
 	while (ProcessCount < MaxSpawnsPerFrame && SpawnQueue.Dequeue(Request))
 	{
-		// 이미 해당 위치에 블록이 있는지 등은 SpawnBlockByTag 내부의 IsLocationOccupied에서 체크함
-		// 하지만 청크 생성 시점이라 비어있을 확률이 높음
-
 		// Actor 스폰 실행 (중력은 끄고 시작하는 것이 일반적, 필요시 true)
 		AActor* SpawnedActor = SpawnBlockByTag(Request.BlockTag, Request.WorldLocation, FRotator::ZeroRotator, false);
 		if (SpawnedActor) {
@@ -84,8 +80,7 @@ void UBlockManagerSubsystem::Tick(float DeltaTime)
 				}
 				else
 				{
-					// 청크가 그새 파괴되었거나 정보가 없다면 경고 (디버깅용)
-					// UE_LOG(LogTemp, Warning, TEXT("Spawned Block but Chunk is missing!"));
+					// 청크가 유효하지 않으므로 넘어감
 				}
 			}
 		}
@@ -127,7 +122,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 		return nullptr;
 	}
 
-	// Config의 헬퍼 함수를 통해 클래스 조회 (GetBlockClassByTag)
+	// GameplayTag로 블록 클래스 찾기
 	TSubclassOf<AActor> FoundActorClass = CachedBlockConfig->GetBlockClassByTag(BlockTypeTag);
 
 	if (!FoundActorClass)
@@ -151,9 +146,8 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 	}
 
 	// 소환
-	// 충돌 쿼리는 이미 했으므로 AlwaysSpawn 사용
 	FActorSpawnParameters SpawnParams;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn; // 점유 확인했으므로 항상 소환
 
 	AActor* NewActor = GetWorld()->SpawnActor<AActor>(FoundActorClass, Location, Rotation, SpawnParams);
 	ABlockBase* NewBlock = Cast<ABlockBase>(NewActor);
@@ -164,11 +158,10 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 		// 위치를 명확하게 다시 설정 (SpawnActor 시 미세한 오차 방지)
 		NewBlock->SetActorLocation(Location);
 
-		// 중력 설정: 요청받은 bEnableGravity 값에 따라 블록 상태 변경
-		// BlockBase의 변수(bCanFall)와 Tick 설정을 외부에서 제어
+		// 중력 설정
 		if (bEnableGravity)
 		{
-			NewBlock->SetCanFall(true); // Setter 함수가 없다면 BlockBase에 추가 권장 또는 public 변수 직접 접근
+			NewBlock->SetCanFall(true);
 			NewBlock->SetActorTickEnabled(true);
 		}
 		else
@@ -177,19 +170,8 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 			NewBlock->SetActorTickEnabled(false);
 		}
 
-		// 디버그용
-		if (!MapManager)
-		{
-			UE_LOG(LogTemp, Error, TEXT("SpawnBlockByTag: MapManager is NULL! Cannot link chunk."));
-		}
-		else if (!CachedBlockConfig)
-		{
-			UE_LOG(LogTemp, Error, TEXT("SpawnBlockByTag: LoadedBlockConfig is NULL!"));
-		}
-
-		/*
-		* 청크 시스템과 동기화
-		*/
+		
+		// 청크 시스템과 동기화
 		if (MapManager && CachedBlockConfig)
 		{
 			if (AChunkBase* TargetChunk = MapManager->GetChunkAtLocation(Location))
@@ -197,7 +179,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(FGameplayTag BlockTypeTag, FVect
 				// 태그를 이용해 정확한 EBlockType 찾기
 				EBlockType TargetType = CachedBlockConfig->GetBlockTypeByTag(BlockTypeTag);
 
-				// 만약 Config에 없는 태그라면 기본값(Destructible) 혹은 에러 처리
+				// Config에 없는 Tag라면 Destructible로 기본 설정
 				if (TargetType == EBlockType::None)
 				{
 					TargetType = EBlockType::Destructible; // Fallback
@@ -313,6 +295,7 @@ bool UBlockManagerSubsystem::IsLocationOccupied(
 	return World->OverlapAnyTestByObjectType(CheckLocation, FQuat::Identity, ObjectQueryParams, CheckShape, QueryParams);
 }
 
+/*
 void UBlockManagerSubsystem::GetBlocksInRadius(const FVector& Origin, float Radius, TArray<FBlockReference>& OutBlocks)
 {
 	UWorld* World = GetWorld();
@@ -371,6 +354,7 @@ void UBlockManagerSubsystem::GetBlocksInRadius(const FVector& Origin, float Radi
 		}
 	}
 }
+*/
 
 FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 {
@@ -382,6 +366,7 @@ FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Ref.TargetComponent.Get()))
 		{
 			FTransform Trans;
+			// 월드 좌표로 반환
 			HISM->GetInstanceTransform(Ref.ItemIndex, Trans, true);
 			return Trans.GetLocation();
 		}
@@ -412,19 +397,18 @@ void UBlockManagerSubsystem::HighlightBlock(const FBlockReference& BlockRef, con
 	}
 	else // Actor
 	{
-		// Actor를 직접 캐스팅하는 대신, 약속된 인터페이스를 통해 메시지 전달
 		if (IGameplayEventInterface* EventInterface = Cast<IGameplayEventInterface>(BlockRef.TargetObject.Get()))
 		{
 			FGameplayEventData Payload;
 			Payload.EventTag = Tag;
 			Payload.Instigator = nullptr;
 
-			// BlockBase::HandleGameplayEvent가 호출됨 -> 내부에서 CPD 변경 로직 수행
 			EventInterface->HandleGameplayEvent(Tag, Payload);
 		}
 	}
 }
 
+/*
 void UBlockManagerSubsystem::DestroyBlocksInRadius(const FVector& Origin, float Radius)
 {
 	if (!MapManager) {
@@ -455,6 +439,7 @@ void UBlockManagerSubsystem::DestroyBlocksInRadius(const FVector& Origin, float 
 		}
 	}
 }
+*/
 
 bool UBlockManagerSubsystem::GetBlockUnderCursor(const APlayerController* PlayerController, FBlockReference& OutBlockRef) {
 	if (!PlayerController) return false;
@@ -522,7 +507,7 @@ void UBlockManagerSubsystem::GetBlocksFromOverlaps(const TArray<FOverlapResult>&
 
 	for (const FOverlapResult& Result : Overlaps)
 	{
-		// Case A: HISM (청크 지형)
+		// Case A: HISM
 		if (UHierarchicalInstancedStaticMeshComponent* HISM = Cast<UHierarchicalInstancedStaticMeshComponent>(Result.GetComponent()))
 		{
 			if (AChunkBase* Chunk = Cast<AChunkBase>(Result.GetActor()))
@@ -536,7 +521,7 @@ void UBlockManagerSubsystem::GetBlocksFromOverlaps(const TArray<FOverlapResult>&
 				OutBlocks.AddUnique(Ref);
 			}
 		}
-		// Case B: Actor (파괴 가능 블록 등)
+		// Case B: Actor
 		else if (AActor* Actor = Result.GetActor())
 		{
 			// 인터페이스 구현 여부 확인
