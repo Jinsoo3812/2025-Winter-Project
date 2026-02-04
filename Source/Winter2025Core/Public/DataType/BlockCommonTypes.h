@@ -135,11 +135,7 @@ struct FBlockDefinition
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Logic", meta = (EditCondition = "bIsActor"))
 	FGameplayTag ActorTag;
 
-	// ------------------------------------------------------------
-	// 이주를 위한 임시 속성들
-	// ------------------------------------------------------------
-
-	// 순환 참조 방지를 위해 AActor 사용. 필요 시 Cast해서 사용.
+	// Actor로 스폰될 때 사용할 클래스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Logic", meta = (EditCondition = "bIsActor", AllowedClasses = "/Script/World.BlockBase"))
 	TSubclassOf<AActor> ActorClass;
 };

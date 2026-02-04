@@ -13,11 +13,3 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Preview, "Block.Highlight.Preview");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Target, "Block.Highlight.Target");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb, "Block.Highlight.Bomb");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb_None, "Block.Highlight.Bomb.None");
-
-BlockGameplayTags::BlockGameplayTags()
-{
-}
-
-BlockGameplayTags::~BlockGameplayTags()
-{
-}

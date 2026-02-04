@@ -13,92 +13,46 @@ class WORLD_API UBlockConfig : public UDataAsset
 {
 	GENERATED_BODY()
 public:
-	// Enum 키를 기반으로 블록 정의를 찾기 위한 맵
+	// ----------------------------------------------------------------------------
+	// 각종 매핑 정보
+	// ----------------------------------------------------------------------------
+
+	// BlockType <-> FBlockDefinition 매핑
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
 	TMap<EBlockType, FBlockDefinition> BlockDefinitions;
 
-	// GameplayTag를 기반으로 CPD 값을 연결하기 위한 맵
+	// GameplayTag <-> FBlockCPDInfo 매핑
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Highlight Config")
 	TMap<FGameplayTag, FBlockCPDInfo> HighlightSettings;
 
+	// ----------------------------------------------------------------------------
+	// 폭탄 관련 설정
+	// ----------------------------------------------------------------------------
+
+	// 폭탄에 의한 CPD 설정 인덱스
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
 	int32 BombCPDIndex = 1;
 
+	// 폭탄 하나에 해당하는 CPD 강도 증가량
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Block Config")
 	float BombIntensityPerCount = 0.33f;
 
+	// ----------------------------------------------------------------------------
+	// 헬퍼 함수
+	// ----------------------------------------------------------------------------
+
 	// EBlockType으로 메시를 가져오는 헬퍼 함수
-	UStaticMesh* GetMeshForType(EBlockType Type) const
-	{
-		if (const FBlockDefinition* Def = BlockDefinitions.Find(Type))
-		{
-			return Def->Mesh;
-		}
-		return nullptr;
-	}
+	UStaticMesh* GetMeshForType(EBlockType Type) const;
 
-	// GameplayTag로 EBlockType을 찾는 헬퍼 함수
-	EBlockType GetBlockTypeByTag(const FGameplayTag& Tag) const
-	{
-		// 맵을 순회하며 태그가 일치하는지 확인
-		for (const auto& Pair : BlockDefinitions)
-		{
-			if (Pair.Value.bIsActor && Pair.Value.ActorTag.MatchesTag(Tag))
-			{
-				return Pair.Key;
-			}
-		}
-		// 못 찾으면 None 반환
-		return EBlockType::None;
-	}
+	// 블록 타입 GameplayTag로 EBlockType을 찾는 헬퍼 함수
+	EBlockType GetBlockTypeByTag(const FGameplayTag& Tag) const;
 
-	FGameplayTag GetBlockTagByClass(TSubclassOf<AActor> InClass) const
-	{
-		if (!InClass)
-		{
-			return FGameplayTag::EmptyTag;
-		}
+	// 블록 클래스 타입으로 GameplayTag를 찾는 헬퍼 함수
+	FGameplayTag GetBlockTagByClass(TSubclassOf<AActor> InClass) const;
 
-		// 맵을 순회하며 Class가 일치하는지 확인
-		for (const auto& Pair : BlockDefinitions)
-		{
-			// 설정된 클래스와 현재 인스턴스의 클래스가 일치하는지 확인
-			if (Pair.Value.bIsActor && Pair.Value.ActorClass == InClass)
-			{
-				return Pair.Value.ActorTag;
-			}
-		}
+	// 블록 타입 GameplayTag로 클래스 타입을 찾는 헬퍼 함수
+	TSubclassOf<AActor> GetBlockClassByTag(const FGameplayTag& Tag) const;
 
-		// 못 찾으면 EmptyTag 반환
-		return FGameplayTag::EmptyTag;
-	}
-
-	// ------------------------------------------------------------
-	// 이주용 임시 함수들
-	// ------------------------------------------------------------
-
-	// Tag로 ActorClass 찾기 (DA_BlockConfig 대체용)
-	TSubclassOf<AActor> GetBlockClassByTag(const FGameplayTag& Tag) const
-	{
-		for (const auto& Pair : BlockDefinitions)
-		{
-			if (Pair.Value.bIsActor && Pair.Value.ActorTag.MatchesTag(Tag))
-			{
-				return Pair.Value.ActorClass;
-			}
-		}
-		return nullptr;
-	}
-
-	// Tag로 CPDInfo 찾기 (DA_BlockConfig 대체용)
-	FBlockCPDInfo GetHighlightInfoByTag(const FGameplayTag& Tag) const
-	{
-		if (const FBlockCPDInfo* Info = HighlightSettings.Find(Tag))
-		{
-			return *Info;
-		}
-
-		// 못 찾으면 기본값(0,0) 반환
-		return FBlockCPDInfo();
-	}
+	// 하이라이트 GameplayTag로 FBlockCPDInfo를 찾는 헬퍼 함수
+	FBlockCPDInfo GetHighlightInfoByTag(const FGameplayTag& Tag) const;
 };

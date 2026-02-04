@@ -45,6 +45,8 @@ void ABlockBase::BeginPlay()
 		{
 			if (!Settings->BlockConfigAsset.IsNull())
 			{
+				// 디스크에서 에셋을 찾아 메모리에 올림
+				// 로딩이 완료될 때까지 이곳에서 실행흐름이 멈춤
 				BlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
 			}
 		}
@@ -124,14 +126,12 @@ void ABlockBase::PostInitializeComponents()
 		}
 	}
 
-	// 유효성 검사 (찾았는지 확인)
 	if (!MeshComponent)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent not found in %s"), *GetName());
 	}
 }
 
-// Called every frame
 void ABlockBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -271,7 +271,6 @@ void ABlockBase::NotifyUpperBlock()
 
 void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload)
 {
-	// Config 유효성 체크
 	if (!BlockConfig) {
 		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
 		return;
@@ -282,6 +281,7 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 	{
 		if (MeshComponent)
 		{   
+			// 폭탄 해제
 			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
 			{
 				CurrentBombCount = 0;
@@ -297,16 +297,12 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 			// 폭탄 CPD Index도 Config에 정의되어 있음
 			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
-		}
+		else UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
+		
 		return;
 	}
 
 	// 일반적인 On/Off 형태의 Highlight 태그 처리
-	// Ex) Block.Highlight.Preview 같은 태그가 왔을 때,
-	// BlockCPDIndexMap에서 해당 태그에 맞는 CPD 정보를 찾음
 	if (const FBlockCPDInfo* FoundInfo = BlockConfig->HighlightSettings.Find(EventTag))
 	{
 		// 찾은 정보대로 CPD 업데이트
@@ -315,13 +311,10 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 			MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
 		}
 	}
-	else
-	{
-		// 맵에도 없고, 특수 처리 태그도 아님 -> 경고
-		// UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
-	}
+	else UE_LOG(LogTemp, Warning, TEXT("BlockBase: Unrecognized GameplayEvent Tag %s in %s"), *EventTag.ToString(), *GetName());
 }
 
+/*
 void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
 {
 	if (!BlockConfig) {
@@ -355,7 +348,9 @@ void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
 	}
 	return;
 }
+*/
 
+/*
 FVector ABlockBase::GetBlockAlignedLocation() const
 {
 	// 현재 실제 액터의 위치
@@ -370,6 +365,7 @@ FVector ABlockBase::GetBlockAlignedLocation() const
 
 	return FVector(SnappedX, SnappedY, SnappedZ);
 }
+*/
 
 void ABlockBase::SelfDestroy()
 {	
@@ -381,11 +377,7 @@ void ABlockBase::SelfDestroy()
 		// 현재 나의 월드 좌표를 넘겨줌 (청크가 알아서 로컬 좌표로 변환할 것임)
 		ParentChunk->RemoveBlockAtWorldLocation(GetActorLocation());
 	}
-	else
-	{
-		// 청크 정보가 없다면 그냥 혼자 죽음 (레거시)
-		UE_LOG(LogTemp, Warning, TEXT("BlockBase: Destroyed without ParentChunk notification."));
-	}
+	else UE_LOG(LogTemp, Warning, TEXT("[BlockBase] I (%s) am destroyed, but my ParentChunk is invalid."), *GetName());
 
 	Destroy();
 }

@@ -5,14 +5,13 @@
 #include "Components/SceneComponent.h"
 #include "Async/Async.h"
 #include "BlockConfig.h"
-#include "DA_BlockConfig.h"
 #include "BlockManagerSubsystem.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "BlockGameplayTags.h"
 
 AChunkBase::AChunkBase()
 {
-	// 청크 자체는 틱을 돌 필요가 없음 (최적화)
+	// 청크 자체는 틱을 돌 필요가 없음
 	PrimaryActorTick.bCanEverTick = false;
 
 	// Transform을 갖는 기본 컴포넌트
@@ -23,7 +22,7 @@ AChunkBase::AChunkBase()
 	int32 TotalBlocks = ChunkSizeX * ChunkSizeY * ChunkSizeZ;
 	BlockDataArray.Init(FBlockData{ EBlockType::None }, TotalBlocks);
 
-	// 버퍼 2개 공간 확보
+	// 이중 버퍼 확보
 	HISM_Buffers.AddDefaulted(2);
 	CurrentBufferIndex = 0;
 }
@@ -142,31 +141,25 @@ void AChunkBase::UpdateChunkVisuals()
 	// 이번 작업의 고유 ID 캡처
 	int32 MyRequestID = LastUpdateRequestID;
 
-	FChunkSnapshot Snapshot;
-	Snapshot.MyData = BlockDataArray; // 내 데이터 복사
-	Snapshot.SizeX = ChunkSizeX;
-	Snapshot.SizeY = ChunkSizeY;
-	Snapshot.SizeZ = ChunkSizeZ;
+	// 현재 청크의 상태 스냅샷
+	FChunkSnapshot Snapshot(BlockDataArray, ChunkSizeX, ChunkSizeY, ChunkSizeZ);
 	int32 GridSize = BlockGridSize;
 
-	// 이웃 데이터 복사 (존재하는 경우에만)
+	// 이웃 데이터 복사
 	for (int32 i = 0; i < (int32)EBlockNeighbor::Count; i++)
 	{
 		if (Neighbors[i].IsValid())
 		{
-			/*
-			* 이웃의 전체 BlockData를 복사하여 스레드 안전성 확보
-			* 이웃의 접한 면만 복사하는 방법으로 최적화 가능
-			*/
+			
+			// 이웃의 전체 BlockData를 복사하여 스레드 안전성 확보
+			// 이웃의 접한 면만 복사하는 방법으로 최적화 가능	
 			Snapshot.NeighborDataMap.Add((EBlockNeighbor)i, Neighbors[i]->BlockDataArray);
 		}
 	}
 
-	/*
-	* BlockConfig는 UObject(DataAsset)이므로 워커 스레드에서 접근해서는 안됨
-	* 또한 BlockConfig를 사용하면 매번 여러 번의 포인터를 거쳐야함 (Config -> BlockDefinitions -> Tag 등)
-	* 람다 함수 내부에 캡처해두면 캐시 적중률이 올라감
-	*/
+	// BlockConfig는 UObject(DataAsset)이므로 워커 스레드에서 접근해서는 안됨
+	// 또한 BlockConfig를 사용하면 매번 여러 번의 포인터를 거쳐야함 (Config -> BlockDefinitions -> Tag 등)
+	// 람다 함수 내부에 캡처해두면 캐시 적중률이 올라감
 	TMap<EBlockType, bool> IsActorMap;
 	TMap<EBlockType, FGameplayTag> ActorTagMap;
 

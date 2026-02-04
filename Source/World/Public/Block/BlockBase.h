@@ -18,14 +18,24 @@ UCLASS()
 class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface, public IBlockInfoInterface
 {
 	GENERATED_BODY()
-	
+
+	// -----------------------------------------------------------------------------
+	// 초기화 및 기본 함수
+	// -----------------------------------------------------------------------------
 public:	
 	ABlockBase();
 
-	// -----------------------------------------------------------------------------
-	// Chunk 관련
-	// -----------------------------------------------------------------------------
+	virtual void Tick(float DeltaTime) override;
 
+protected:
+	virtual void BeginPlay() override;
+
+	virtual void PostInitializeComponents() override;
+
+	// -----------------------------------------------------------------------------
+	// Chunk
+	// -----------------------------------------------------------------------------
+public:
 	void SetParentChunk(AChunkBase* InChunk);
 
 protected:
@@ -34,24 +44,18 @@ protected:
 	TWeakObjectPtr<AChunkBase> ParentChunk;
 
 	// -----------------------------------------------------------------------------
-	// 초기화 함수들
+	// BlockBase 설정
 	// -----------------------------------------------------------------------------
-
-	virtual void BeginPlay() override;
-
-	virtual void PostInitializeComponents() override;
-
-	// -----------------------------------------------------------------------------
-	// BlockBase 고유
-	// -----------------------------------------------------------------------------
-
+protected:
 	// 블록(정육면체)의 한 변의 길이
 	UPROPERTY(EditDefaultsOnly, Category = "Grid")
 	float GridSize = 100.0f;
 
+	/*
 	// 블록이 파괴 가능한지 여부를 담는 변수
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	bool IsDestrictible = false;
+	*/
 
 	// 블록의 외형 및 물리 충돌을 담당할 Mesh Component
 	UPROPERTY(VisibleAnywhere, Category = "Block")
@@ -61,16 +65,21 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UBoxComponent> CollisionComponent;
 
-	// 이 블록이 참조할 설정 파일 (블루프린트 디폴트에서 설정하거나, 스폰 시 주입)
-	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	// 각종 블록 매핑 설정값 (Setting에서 캐시)
 	TObjectPtr<UBlockConfig> BlockConfig;
 
 	// 최대 폭탄 부착 개수
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	int32 MaxBombCount;
 
+public:
+	// 블록의 메시 컴포넌트를 반환하는 함수 (머티리얼 변경 등에 사용)
+	UStaticMeshComponent* GetBlockMesh() const { return MeshComponent; }
+
+	/*
 	// 블록이 파괴 가능한지 여부를 반환하는 함수
 	virtual bool CanBeDestroyed() const { return IsDestrictible; }
+	*/
 
 	// 자신을 파괴하는 함수
 	virtual void SelfDestroy();
@@ -78,7 +87,7 @@ protected:
 	// -----------------------------------------------------------------------------
 	// 낙하 관련
 	// -----------------------------------------------------------------------------
-
+protected:
 	// 낙하해도 되는 블록인지
 	bool bCanFall = false;
 
@@ -102,45 +111,39 @@ protected:
 
 	// 자신의 위 블록이 추락할 수 있도록 깨우는 함수
 	void NotifyUpperBlock();
-
-	// -----------------------------------------------------------------------------
-	// 폭발 관련
-	// -----------------------------------------------------------------------------
-
-	void HandleBombEvent(const FGameplayTag& EventTag);
-
-	// 현재 부착된 폭탄 개수 추적용
-	int32 CurrentBombCount = 0;
-
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// -----------------------------------------------------------------------------
-	// BlockInfoInterface 구현
-	// -----------------------------------------------------------------------------
-
-	FVector GetBlockLocation() const override { return GetActorLocation(); }
-	FRotator GetBlockRotation() const override { return GetActorRotation(); }
-	float GetBlockGridSize() const override { return GridSize; }
-
-	// -----------------------------------------------------------------------------
-	// 헬퍼 함수
-	// -----------------------------------------------------------------------------
-
-	//  그리드에 정렬된 위치(GridSize 단위에 맞도록)를 반환하는 함수
-	FVector GetBlockAlignedLocation() const override;
-
-	// 블록의 메시 컴포넌트를 반환하는 함수 (머티리얼 변경 등에 사용)
-	UStaticMeshComponent* GetBlockMesh() const { return MeshComponent; }
-
+	
+public:
 	// 낙하 가능 여부 설정 함수
 	void SetCanFall(bool bNewCanFall) { bCanFall = bNewCanFall; }
 
 	// -----------------------------------------------------------------------------
+	// 폭발 관련
+	// -----------------------------------------------------------------------------
+protected:
+
+	/*
+	// 폭탄 부착/폭발로 인한 이벤트 처리 함수
+	void HandleBombEvent(const FGameplayTag& EventTag);
+	*/
+
+	// 현재 부착된 폭탄 개수 추적용
+	int32 CurrentBombCount = 0;
+
+	// -----------------------------------------------------------------------------
+	// BlockInfoInterface 구현
+	// -----------------------------------------------------------------------------
+	/*
+	FVector GetBlockLocation() const override { return GetActorLocation(); }
+	FRotator GetBlockRotation() const override { return GetActorRotation(); }
+	float GetBlockGridSize() const override { return GridSize; }
+	//  그리드에 정렬된 위치(GridSize 단위에 맞도록)를 반환하는 함수
+	FVector GetBlockAlignedLocation() const override;
+	*/
+
+	// -----------------------------------------------------------------------------
 	// GameplayEventInterface 구현
 	// -----------------------------------------------------------------------------
-
+public:
 	/* GameplayEvent를 수신하는 함수 */
 	void HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload) override;
 };

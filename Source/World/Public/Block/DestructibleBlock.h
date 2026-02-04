@@ -6,7 +6,6 @@
 #include "BlockBase.h"
 #include "AbilitySystemInterface.h"
 #include "AbilitySystemComponent.h"
-#include "GameplayTagContainer.h"
 #include "DestructibleBlock.generated.h"
 
 class UBlockAttributeSet;
@@ -17,27 +16,36 @@ class UBlockAttributeSet;
 UCLASS()
 class WORLD_API ADestructibleBlock : public ABlockBase, public IAbilitySystemInterface
 {
-	// ASC를 갖는 클래스는 IAbilitySystemInterface를 상속
 	GENERATED_BODY()
+
+	// -------------------------------------------------------------
+	// 초기화 및 기본 함수
+	// -------------------------------------------------------------
 public:
 	ADestructibleBlock();
-
-	// ASC를 반환. ASC는 Game Ability, Game Effect 등을 관리
-	// 순수 가상 함수이므로 반드시 구현
-	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-
-	// 자신을 파괴하는 함수
-	void SelfDestroy() override;
 
 protected:
 	virtual void BeginPlay() override;
 
-	// Ability System Component
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GAS")
+	// -------------------------------------------------------------
+	// ASC
+	// -------------------------------------------------------------
+public:
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
+
+protected:
+	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY()
 	UBlockAttributeSet* BlockAttributeSet;
+
+	// -------------------------------------------------------------
+	// 파괴
+	// -------------------------------------------------------------
+protected:
+	// 자신을 파괴하는 함수
+	void SelfDestroy() override;
 
 	// AttributeSet의 OnDestroyed 델리게이트에 바인딩 될 함수
 	void HandleDestroyed(AActor* InstigatorActor);
