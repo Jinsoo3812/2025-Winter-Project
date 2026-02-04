@@ -398,7 +398,7 @@ FVector UBlockManagerSubsystem::GetBlockLocation(const FBlockReference& Ref)
 void UBlockManagerSubsystem::HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag)
 {
 	if (!BlockRef.IsValid()) {
-		UE_LOG(LogTemp, Warning, TEXT("HighlightBlock: Invalid Block Reference"));
+		return;
 	}
 
 	FBlockCPDInfo CPDInfo = CachedBlockConfig->GetHighlightInfoByTag(Tag);

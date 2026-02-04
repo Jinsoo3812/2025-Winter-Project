@@ -52,6 +52,27 @@ public:
 		return EBlockType::None;
 	}
 
+	FGameplayTag GetBlockTagByClass(TSubclassOf<AActor> InClass) const
+	{
+		if (!InClass)
+		{
+			return FGameplayTag::EmptyTag;
+		}
+
+		// 맵을 순회하며 Class가 일치하는지 확인
+		for (const auto& Pair : BlockDefinitions)
+		{
+			// 설정된 클래스와 현재 인스턴스의 클래스가 일치하는지 확인
+			if (Pair.Value.bIsActor && Pair.Value.ActorClass == InClass)
+			{
+				return Pair.Value.ActorTag;
+			}
+		}
+
+		// 못 찾으면 EmptyTag 반환
+		return FGameplayTag::EmptyTag;
+	}
+
 	// ------------------------------------------------------------
 	// 이주용 임시 함수들
 	// ------------------------------------------------------------

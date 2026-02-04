@@ -65,7 +65,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	TObjectPtr<UBlockConfig> BlockConfig;
 
-	// 이 블록이 참조할 설정 파일 (블루프린트 디폴트에서 설정하거나, 스폰 시 주입)
+	// 최대 폭탄 부착 개수
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	int32 MaxBombCount;
 

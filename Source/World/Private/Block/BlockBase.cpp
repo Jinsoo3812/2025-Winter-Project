@@ -8,6 +8,8 @@
 #include "BlockGameplayTags.h"
 #include "BlockSettings.h"
 #include "ChunkBase.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 
 
 // Sets default values
@@ -46,6 +48,55 @@ void ABlockBase::BeginPlay()
 				BlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
 			}
 		}
+	}
+
+	if (BlockConfig)
+	{
+		// 1. 현재 내 클래스(this->GetClass())에 해당하는 태그를 Config에서 조회
+		FGameplayTag MyBlockTag = BlockConfig->GetBlockTagByClass(GetClass());
+
+		if (MyBlockTag.IsValid())
+		{
+			// 2. ASC 가져오기 (IAbilitySystemInterface를 구현했는지 확인)
+			UAbilitySystemComponent* ASC = nullptr;
+
+			// 인터페이스를 통한 접근 시도 (가장 권장되는 방식)
+			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(this))
+			{
+				ASC = ASI->GetAbilitySystemComponent();
+			}
+			// 인터페이스가 없다면 컴포넌트 검색 시도 (Fallback)
+			else
+			{
+				ASC = FindComponentByClass<UAbilitySystemComponent>();
+			}
+
+			// 3. ASC가 유효하다면 Loose Tag 추가
+			if (ASC)
+			{
+				// LooseGameplayTag: GameplayEffect 없이 ASC에 직접 태그를 추가함.
+				// 블록의 타입(Identity)처럼 정적인 속성을 정의할 때 적합함.
+				ASC->AddLooseGameplayTag(MyBlockTag);
+
+				// (디버깅용 로그 - 필요 시 주석 해제)
+				// UE_LOG(LogTemp, Log, TEXT("BlockBase: Assigned Tag %s to %s"), *MyBlockTag.ToString(), *GetName());
+			}
+			else
+			{
+				// BlockBase 자체는 ASC가 없을 수 있으므로(파괴 불가능 블록 등),
+				// ASC가 없다고 해서 반드시 에러는 아님. 필요하다면 로그 출력.
+				// UE_LOG(LogTemp, Warning, TEXT("BlockBase: No ASC found on %s, could not assign tag."), *GetName());
+			}
+		}
+		else
+		{
+			// Config에는 있지만 현재 클래스와 매칭되는 정의가 없는 경우
+			UE_LOG(LogTemp, Warning, TEXT("BlockBase: No matching ActorTag found in BlockConfig for Class %s"), *GetClass()->GetName());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase: BlockConfig failed to load in %s"), *GetName());
 	}
 }
 
