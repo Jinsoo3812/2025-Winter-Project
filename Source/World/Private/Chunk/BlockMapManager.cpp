@@ -62,8 +62,8 @@ void ABlockMapManager::SpawnChunks()
 		{
 			// 청크의 월드 위치 계산
 			// 청크 하나의 실제 크기 = GridSize * ChunkSize
-			float ChunkWorldSizeX = AChunkBase::ChunkSizeX * GridSize; // ex. 16 * 100
-			float ChunkWorldSizeY = AChunkBase::ChunkSizeY * GridSize;
+			float ChunkWorldSizeX = ChunkSizeX * GridSize; // ex. 16 * 100
+			float ChunkWorldSizeY = ChunkSizeY * GridSize;
 
 			FVector SpawnLoc(x * ChunkWorldSizeX, y * ChunkWorldSizeY, 0.0f);
 			FRotator SpawnRot = FRotator::ZeroRotator;
@@ -71,11 +71,13 @@ void ABlockMapManager::SpawnChunks()
 			FActorSpawnParameters SpawnParams;
 			SpawnParams.Owner = this;
 
-			AChunkBase* NewChunk = World->SpawnActor<AChunkBase>(AChunkBase::StaticClass(), SpawnLoc, SpawnRot, SpawnParams);
+			AChunkBase* NewChunk = World->SpawnActor<AChunkBase>(StaticClass(), SpawnLoc, SpawnRot, SpawnParams);
 
 			if (NewChunk)
 			{
+				// 청크 초기화
 				NewChunk->SetBlockConfig(BlockConfig);
+				NewChunk->InitializeChunkSize(ChunkSizeX, ChunkSizeY, ChunkSizeZ);
 
 				for (const FBlockDefinition& Def : BlockConfig->BlockDefinitions)
 				{
@@ -113,12 +115,12 @@ void ABlockMapManager::GenerateBasicTerrain()
 		// 청크 내부의 모든 블록을 순회.
 		// 단순 연산이므로 큰 오버헤드가 아니지만, 순간적으로 몇 청크씩 생성하는 경우 프레임 드랍이 있을 수 있음.
 		
-		for (int32 x = 0; x < AChunkBase::ChunkSizeX; x++)
+		for (int32 x = 0; x < ChunkSizeX; x++)
 		{
-			for (int32 y = 0; y < AChunkBase::ChunkSizeY; y++)
+			for (int32 y = 0; y < ChunkSizeY; y++)
 			{
 				// FloorHeight 칸까지는 Terrain, 그 위는 공기
-				for (int32 z = 0; z < AChunkBase::ChunkSizeZ; z++)
+				for (int32 z = 0; z < ChunkSizeZ; z++)
 				{
 					if (z < FloorHeight)
 					{
@@ -148,8 +150,8 @@ void ABlockMapManager::UpdateAllChunks()
 AChunkBase* ABlockMapManager::GetChunkAtLocation(FVector Location) const
 {
 	// 월드 좌표 -> 청크 좌표 변환
-	float ChunkWorldSizeX = AChunkBase::ChunkSizeX * GridSize;
-	float ChunkWorldSizeY = AChunkBase::ChunkSizeY * GridSize;
+	float ChunkWorldSizeX = ChunkSizeX * GridSize;
+	float ChunkWorldSizeY = ChunkSizeY * GridSize;
 
 	// 음수 좌표 처리 등을 위해 Floor(내림 후 정수 변환) 사용 권장
 	int32 ChunkX = FMath::FloorToInt(Location.X / ChunkWorldSizeX);

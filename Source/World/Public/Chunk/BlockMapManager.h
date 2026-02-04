@@ -40,6 +40,18 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Config")
 	int32 WorldRangeY = 4;
 
+	// 청크 하나의 X축 블록 개수
+	UPROPERTY(EditAnywhere, Category = "Config")
+	int32 ChunkSizeX = 16;
+
+	// 청크 하나의 Y축 블록 개수
+	UPROPERTY(EditAnywhere, Category = "Config")
+	int32 ChunkSizeY = 16;
+
+	// 청크 하나의 Z축 블록 개수
+	UPROPERTY(EditAnywhere, Category = "Config")
+	int32 ChunkSizeZ = 32;
+
 	// 블록의 한 변의 길이
 	int32 GridSize = 100;
 protected:

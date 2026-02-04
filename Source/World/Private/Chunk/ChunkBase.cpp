@@ -18,10 +18,6 @@ AChunkBase::AChunkBase()
 	RootSceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootComponent"));
 	RootComponent = RootSceneComponent;
 
-	// 데이터 배열 초기화 (공기로 채움)
-	int32 TotalBlocks = ChunkSizeX * ChunkSizeY * ChunkSizeZ;
-	BlockDataArray.Init(FBlockData{ EBlockType::None }, TotalBlocks);
-
 	// 이중 버퍼 확보
 	HISM_Buffers.AddDefaulted(2);
 	CurrentBufferIndex = 0;
@@ -35,6 +31,17 @@ void AChunkBase::BeginPlay()
 	{
 		GridSize = CachedBlockConfig->GridSize;
 	}
+}
+
+void AChunkBase::InitializeChunkSize(int32 InSizeX, int32 InSizeY, int32 InSizeZ)
+{
+	ChunkSizeX = InSizeX;
+	ChunkSizeY = InSizeY;
+	ChunkSizeZ = InSizeZ;
+
+	// 배열 메모를 미리 할당하여 최적화
+	int32 TotalBlocks = ChunkSizeX * ChunkSizeY * ChunkSizeZ;
+	BlockDataArray.Init(FBlockData{ EBlockType::None }, TotalBlocks);
 }
 
 int32 AChunkBase::GetBlockIndex(int32 X, int32 Y, int32 Z) const
