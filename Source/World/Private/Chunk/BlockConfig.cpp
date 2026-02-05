@@ -3,6 +3,25 @@
 
 #include "BlockConfig.h"
 
+void UBlockConfig::PostLoad()
+{
+	Super::PostLoad();
+
+	// 맵 초기화 
+	TagToIndexMap.Empty();
+	TypeToIndexMap.Empty();
+	ClassToIndexMap.Empty();
+
+	for (int32 i = 0; i < BlockDefinitions.Num(); i++)
+	{
+		const FBlockDefinition& Def = BlockDefinitions[i];
+
+		if (Def.Tag.IsValid()) TagToIndexMap.Add(Def.Tag, i);
+		if (Def.Type != EBlockType::None) TypeToIndexMap.Add(Def.Type, i);
+		if (Def.ActorClass) ClassToIndexMap.Add(Def.ActorClass, i);
+	}
+}
+
 const FBlockDefinition* UBlockConfig::GetBlockDef(const FGameplayTag& Tag) const
 {
 	if (!Tag.IsValid())

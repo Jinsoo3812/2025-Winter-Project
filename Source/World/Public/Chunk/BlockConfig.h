@@ -28,7 +28,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Block Highlight Config")
 	TMap<FGameplayTag, FBlockCPDInfo> HighlightSettings;
 
-
+	// 엔진이 에셋을 로드한 직후 자동으로 호출되는 함수
+	void PostLoad() override;
 
 protected:
 	// GameplayTag로 FBlockDefinition을 매핑한 맵
