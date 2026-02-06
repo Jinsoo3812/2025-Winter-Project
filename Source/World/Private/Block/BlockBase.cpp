@@ -271,34 +271,47 @@ void ABlockBase::NotifyUpperBlock()
 
 void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload)
 {
-	if (!BlockConfig) {
+	if (!BlockConfig)
+	{
 		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
 		return;
 	}
 
-	// 폭탄 하이라이트 태그 처리는 중첩형이므로 특수 처리
+	// 태그 분류 (Router)
+	if (EventTag.MatchesTag(TAG_Block_Highlight))
+	{
+		HandleHighlight(EventTag, Payload);
+	}
+}
+
+void ABlockBase::HandleHighlight(FGameplayTag EventTag, const FGameplayEventData& Payload)
+{
+	if (!MeshComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during HandleHighlight in %s"), *GetName());
+		return;
+	}
+
+	// 폭탄 하이라이트 특수 처리
 	if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb))
 	{
-		if (MeshComponent)
-		{   
-			// 폭탄 해제
-			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
-			{
-				CurrentBombCount = 0;
-				MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
-				return;
-			}
+		// 폭탄 해제
+		if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
+		{
+			CurrentBombCount = 0;
+			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
+		}
+		// 폭탄 카운트 증가
+		else
+		{
 			// 최대 폭탄 개수에 맞춰 Clamp
 			CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
 
 			// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
 			float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
 
-			// 폭탄 CPD Index도 Config에 정의되어 있음
 			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
 		}
-		else UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
-		
 		return;
 	}
 
@@ -306,12 +319,13 @@ void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEvent
 	if (const FBlockCPDInfo* FoundInfo = BlockConfig->HighlightSettings.Find(EventTag))
 	{
 		// 찾은 정보대로 CPD 업데이트
-		if (MeshComponent)
-		{
-			MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
-		}
+		MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
 	}
-	else UE_LOG(LogTemp, Warning, TEXT("BlockBase: Unrecognized GameplayEvent Tag %s in %s"), *EventTag.ToString(), *GetName());
+	else
+	{
+		// Highlight 태그인 줄 알고 들어왔는데, Config에도 없고 Bomb도 아닌 경우
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: Undefined Highlight Tag %s in Config"), *EventTag.ToString());
+	}
 }
 
 void ABlockBase::SelfDestroy()
