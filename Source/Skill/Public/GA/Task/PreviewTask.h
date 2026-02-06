@@ -53,25 +53,23 @@ public:
 	* @param OwningAbility 이 Task를 소유할 Gameplay Ability
 	* @param InRange TickTask에서 사용할 프리뷰 범위
 	* @param InPreviewTag 프리뷰 범위 하이라이트에 사용할 Gameplay Tag
-	* @param InCursorTag 커서 위치 하이라이트에 사용할 Gameplay Tag
+	* @param InCursorTag 커서 위치 하이라이트에 사용할 Gameplay Tag (기본값 EmptyTag)
 	* @param VisualizerClass 범위 시각화에 사용할 액터 클래스 (기본값 nullptr)
-	* @param bTraceCursor 마우스 커서 위치에 하이라이트 여부 (기본값 true)
+	* @param GhostBlockClass 블록 시각화에 사용할 액터 클래스 (기본값 nullptr)
 	*/
 	static UPreviewTask* CreatePreviewTask(
 		USkillBase* OwningAbility,
 		FSkillPreviewRange InRange,
 		FGameplayTag InPreviewTag,
-		FGameplayTag InCursorTag,
+		FGameplayTag InCursorTag = FGameplayTag::EmptyTag,
 		TSubclassOf<AActor> InVisualizerClass = nullptr,
-		bool InbHighlightCursorBlock = true
+		TSubclassOf<AActor> InGhostBlockClass = nullptr
 	);
 
 	virtual void Activate() override;
 	virtual void OnDestroy(bool bInOwnerFinished) override;
 
-	/*
-	* FSkillPreviewRange에 따라 매 프레임 블록 하이라이트 갱신
-	*/
+	// FSkillPreviewRange에 따라 매 프레임 블록 하이라이트 갱신
 	virtual void TickTask(float DeltaTime) override;
 
 	/* 입력받은 블록이 현재 프리뷰(범위) 내에 포함되어 있는지 확인 */
@@ -94,9 +92,6 @@ protected:
 	// 프리뷰 범위 내 블록 하이라이트에 사용할 태그
 	FGameplayTag PreviewTag;
 
-	// 커서 위치의 블록을 하이라이트 할 지 여부
-	bool bHighlightCursorBlock;
-
 	// 커서 위치 블록 하이라이트에 사용할 태그
 	FGameplayTag CursorTag;
 
@@ -117,12 +112,19 @@ protected:
 	// 시각화
 	// -------------------------------------------------------------
 
-	// 시각화 액터의 클래스
+	// 범위 시각화 액터의 클래스
 	TSubclassOf<AActor> VisualizerClass;
 
-	// 시각화 액터의 인스턴스
+	// 범위 시각화 액터의 인스턴스
 	UPROPERTY()
 	TObjectPtr<AActor> SpawnedVisualizer;
+
+	// 블록 시각화 액터의 클래스
+	TSubclassOf<AActor> GhostBlockClass;
+
+	// 블록 시각화 액터의 인스턴스
+	UPROPERTY()
+	TObjectPtr<AActor> SpawnedGhostBlock;
 
 	// -------------------------------------------------------------
 	// 캐싱

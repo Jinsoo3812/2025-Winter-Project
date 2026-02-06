@@ -14,5 +14,7 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Target, "Block.Highlight.Target");
 
 // 진짜 쓰는 것들만
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight, "Block.Highlight");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_None, "Block.Highlight.None");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb, "Block.Highlight.Bomb");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb_None, "Block.Highlight.Bomb.None");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Invalid, "Block.Highlight.Invalid");

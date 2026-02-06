@@ -14,7 +14,7 @@ UPreviewTask* UPreviewTask::CreatePreviewTask(
 	FGameplayTag InPreviewTag,
 	FGameplayTag InCursorTag,
 	TSubclassOf<AActor> InVisualizerClass,
-	bool InbHighlightCursorBlock
+	TSubclassOf<AActor> InGhostBlockClass
 )
 {
 	UPreviewTask* NewTask = NewAbilityTask<UPreviewTask>(OwningAbility);
@@ -22,7 +22,7 @@ UPreviewTask* UPreviewTask::CreatePreviewTask(
 	NewTask->PreviewTag = InPreviewTag;
 	NewTask->CursorTag = InCursorTag;
 	NewTask->VisualizerClass = InVisualizerClass;
-	NewTask->bHighlightCursorBlock = InbHighlightCursorBlock;
+	NewTask->GhostBlockClass = InGhostBlockClass;
 
 	NewTask->bTickingTask = true;
 	return NewTask;
@@ -34,7 +34,12 @@ void UPreviewTask::Activate()
 
 	BlockSystem = Cast<USkillBase>(Ability)->GetBlockSystem();
 
-	if (VisualizerClass && GetWorld())
+	if (!GetWorld()) {
+		UE_LOG(LogTemp, Warning, TEXT("PreviewTask: Missing World"));
+		return;
+	}
+
+	if (VisualizerClass)
 	{
 		FActorSpawnParameters SpawnParams;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -44,9 +49,23 @@ void UPreviewTask::Activate()
 
 		if (SpawnedVisualizer)
 		{
-			// 시각화 전용이므로 충돌 꺼두기 (안전장치)
+			// 충돌 끄기
 			SpawnedVisualizer->SetActorEnableCollision(false);
 		}
+		else UE_LOG(LogTemp, Warning, TEXT("PreviewTask: Failed to spawn Visualizer Actor"));
+	}
+
+	if(GhostBlockClass)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		SpawnedGhostBlock = GetWorld()->SpawnActor<AActor>(GhostBlockClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (SpawnedGhostBlock)
+		{
+			SpawnedGhostBlock->SetActorEnableCollision(false);
+			SpawnedGhostBlock->SetActorHiddenInGame(true);
+		}
+		else UE_LOG(LogTemp, Warning, TEXT("PreviewTask: Failed to spawn GhostBlock Actor"));
 	}
 }
 
@@ -102,8 +121,11 @@ void UPreviewTask::TickTask(float DeltaTime)
 	}
 
 
-	// 5. 마우스 커서 아래 블록 감지
-	if (bHighlightCursorBlock) {
+	// 5. 마우스 커서 아래 블록 로직
+	bool bCursorHighlight = (CursorTag != FGameplayTag::EmptyTag);
+	bool bShowGhostBlock = (SpawnedGhostBlock != nullptr);
+
+	if (bCursorHighlight || bShowGhostBlock) {
 		APlayerController* PC = Ability->GetCurrentActorInfo()->PlayerController.Get();
 		FBlockReference CursorBlock;
 
@@ -113,11 +135,27 @@ void UPreviewTask::TickTask(float DeltaTime)
 			if (HighlightedBlocks.Contains(CursorBlock))
 			{
 				// 커서 타겟 하이라이트
-				BlockSystem->HighlightBlock(CursorBlock, CursorTag);
-				CurrentCursorBlock = CursorBlock;
+				if (bCursorHighlight) {
+					BlockSystem->HighlightBlock(CursorBlock, CursorTag);
+					CurrentCursorBlock = CursorBlock;
+				}
+
+				// 고스트 블록 시각화
+				if (bShowGhostBlock)
+				{
+					FVector TargetLoc = BlockSystem->GetBlockLocation(CursorBlock);
+					float GridSize = BlockSystem->GetGridSize();
+
+					// 타겟 블록 위에 스냅
+					FVector PreviewLoc = TargetLoc + FVector(0, 0, GridSize);
+
+					SpawnedGhostBlock->SetActorLocation(PreviewLoc);
+					SpawnedGhostBlock->SetActorHiddenInGame(false);
+				}
 			}
 			else {
 				CurrentCursorBlock.Reset();
+				if (bShowGhostBlock) SpawnedGhostBlock->SetActorHiddenInGame(true);
 			}
 		}
 	}
@@ -222,6 +260,12 @@ void UPreviewTask::OnDestroy(bool bInOwnerFinished)
 	{
 		SpawnedVisualizer->Destroy();
 		SpawnedVisualizer = nullptr;
+	}
+
+	if(SpawnedGhostBlock)
+	{
+		SpawnedGhostBlock->Destroy();
+		SpawnedGhostBlock = nullptr;
 	}
 
 	Super::OnDestroy(bInOwnerFinished);

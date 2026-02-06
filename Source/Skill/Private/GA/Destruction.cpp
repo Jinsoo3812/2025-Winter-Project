@@ -22,7 +22,7 @@ void UDestruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		Tag_Highlight_Range,
 		Tag_Highlight_Cursor,
 		PreviewVisualizerClass,
-		false
+		nullptr
 	);
 
 	if (PreviewTask)

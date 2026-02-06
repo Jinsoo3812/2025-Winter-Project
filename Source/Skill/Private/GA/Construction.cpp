@@ -19,7 +19,9 @@ void UConstruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 		this,
 		PreviewRange,
 		Tag_Highlight_Range,
-		Tag_Highlight_Cursor
+		Tag_Highlight_Cursor,
+		nullptr,
+		BlockClassToSpawn
 	);
 
 	// Task가 준비되었으면 활성화

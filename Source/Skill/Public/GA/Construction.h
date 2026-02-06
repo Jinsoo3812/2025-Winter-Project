@@ -35,6 +35,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Construction")
 	FGameplayTag BlockTagToSpawn;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Construction")
+	TSubclassOf<AActor> BlockClassToSpawn;
+
 	// -------------------------------------------------------------------
 	// Gameplay Tags
 	// -------------------------------------------------------------------

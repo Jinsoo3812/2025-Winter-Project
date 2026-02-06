@@ -57,6 +57,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Block")
 	TObjectPtr<UBoxComponent> CollisionComponent;
 
+	UPROPERTY(Transient)
 	// 각종 블록 매핑 설정값 (Setting에서 캐시)
 	TObjectPtr<UBlockConfig> BlockConfig;
 
