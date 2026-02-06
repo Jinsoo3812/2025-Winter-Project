@@ -24,6 +24,8 @@ public:
 protected:
 	void BeginPlay() override;
 
+	virtual void OnConstruction(const FTransform& Transform) override;
+
 	// 위치를 갖는 기본 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class USceneComponent* RootScene;
@@ -37,6 +39,7 @@ protected:
 	FGameplayTag TargetBlockTag;
 
 	// HISM 인스턴스 초기화 (한 번만 수행)
+	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void RebuildInstances();
 
 	// -----------------------------------------------------------------------------
@@ -46,15 +49,15 @@ public:
 	/*
 	 * 매 틱마다 호출되어 프리뷰 블록을 갱신하는 함수
 	 * @param TargetLocation: 마우스 커서가 가리키는 월드 좌표 (스냅된 위치)
-	 * @return bool: 커서가 가리키는 '기준점(Anchor)'이 설치 가능한지 여부
+	 * @return bool: 커서가 가리키는 TargetLocation이 설치 가능한지 여부
 	 */
-	virtual bool UpdatePreviewState(FVector TargetLocation) override;
+	virtual bool UpdatePreviewState_Implementation(FVector TargetLocation) override;
 
 	/*
 	 * 건설 확정 시 호출되는 함수
 	 * @return TArray<FPreviewSpawnData> : 소환할 블록들의 태그와 월드 좌표 리스트
 	 */
-	virtual TArray<FPreviewSpawnData> GetValidSpawnData() override;
+	virtual TArray<FPreviewSpawnData> GetValidSpawnData_Implementation() override;
 
 protected:
 	// 생성 블록들의 상대적 위치 배열

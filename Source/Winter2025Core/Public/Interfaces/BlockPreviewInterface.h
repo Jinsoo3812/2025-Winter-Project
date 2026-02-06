@@ -43,12 +43,12 @@ public:
 	 * @return bool: 커서가 가리키는 '기준점(Anchor)'이 설치 가능한지 여부
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Preview")
-	virtual bool UpdatePreviewState(FVector TargetLocation);
+	bool UpdatePreviewState(FVector TargetLocation);
 
 	/*
 	 * 건설 확정 시 호출되는 함수
 	 * @return TArray<FPreviewSpawnData> : 소환할 블록들의 태그와 월드 좌표 리스트
 	 */
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Preview")
-	virtual TArray<FPreviewSpawnData> GetValidSpawnData();
+	TArray<FPreviewSpawnData> GetValidSpawnData();
 };

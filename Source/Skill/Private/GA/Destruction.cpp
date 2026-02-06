@@ -20,7 +20,7 @@ void UDestruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		this,
 		PreviewRange, // 에디터에서 설정한 Box 범위 전달
 		Tag_Highlight_Range,
-		Tag_Highlight_Cursor,
+		FGameplayTag::EmptyTag,
 		PreviewVisualizerClass,
 		nullptr
 	);

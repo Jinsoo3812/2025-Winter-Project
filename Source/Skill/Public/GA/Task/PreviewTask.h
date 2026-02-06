@@ -47,6 +47,9 @@ class SKILL_API UPreviewTask : public UAbilityTask
 {
 	GENERATED_BODY()
 
+	//-------------------------------------------------------------
+	// 초기화 및 기본 멤버
+	// -------------------------------------------------------------
 public:
 	/*
 	* 프리뷰 Task 생성 함수
@@ -75,8 +78,11 @@ public:
 	/* 입력받은 블록이 현재 프리뷰(범위) 내에 포함되어 있는지 확인 */
 	bool IsBlockInPreview(const FBlockReference& BlockRef) const;
 
+	// GA에서 프리뷰 액터를 제어(회전 등)하기 위한 Getter
+	AActor* GetSpawnedPreviewActor() const { return SpawnedGhostBlock; }
+
 	//-------------------------------------------------------------
-	// 프리뷰 범위 및 하이라이트
+	// 프리뷰 
 	// -------------------------------------------------------------
 public:
 	// 현재 범위 내에 들어와 하이라이트 되고 있는 모든 블록 반환
