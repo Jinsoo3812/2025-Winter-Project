@@ -162,6 +162,13 @@ void AWinter2025Player::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 		// 임시; 빌드만 되도록 해놨음
 		EnhancedInput->BindAction(LeftClickAction.Get(), ETriggerEvent::Started, this, &AWinter2025Player::OnLeftClick);
 	}
+
+	// 좌클릭 바인딩
+	if (MouseWheelClickAction.Get())
+	{
+		// 임시; 빌드만 되도록 해놨음
+		EnhancedInput->BindAction(MouseWheelClickAction.Get(), ETriggerEvent::Started, this, &AWinter2025Player::OnMouseWheelClick);
+	}
 }
 
 void AWinter2025Player::Input_AbilityTagPressed(FGameplayTag InputTag)
@@ -250,6 +257,27 @@ void AWinter2025Player::OnLeftClick(const FInputActionValue& Value)
 	// "Input.Action.Confirm" 태그와 함께 이벤트 발행
 	// 이 태그는 GA_Construction에서 기다리고 있는 태그와 정확히 일치해야 합니다.
 	FGameplayTag ConfirmTag = TAG_Input_LeftClick;
+
+	// ASC를 통해 이벤트 전송
+	// 활성화된 모든 어빌리티 중, 이 태그를 기다리는(WaitGameplayEvent) 어빌리티에게 신호가 갑니다.
+	CachedASC->HandleGameplayEvent(ConfirmTag, &EventData);
+}
+
+void AWinter2025Player::OnMouseWheelClick(const FInputActionValue& Value)
+{
+	if (!CachedASC) {
+		UE_LOG(LogTemp, Warning, TEXT("AWinter2025Player: OnMouseWheelClick - CachedASC is null."));
+		return;
+	}
+
+	// 이벤트 데이터 생성 (누가 보냈는지, 타겟은 누구인지 등)
+	FGameplayEventData EventData;
+	EventData.Instigator = this;
+	EventData.Target = this;
+
+	// "Input.Action.Confirm" 태그와 함께 이벤트 발행
+	// 이 태그는 GA_Construction에서 기다리고 있는 태그와 정확히 일치해야 합니다.
+	FGameplayTag ConfirmTag = TAG_Input_MouseWheelClick;
 
 	// ASC를 통해 이벤트 전송
 	// 활성화된 모든 어빌리티 중, 이 태그를 기다리는(WaitGameplayEvent) 어빌리티에게 신호가 갑니다.

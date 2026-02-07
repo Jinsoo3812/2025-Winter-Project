@@ -52,15 +52,10 @@ void APreviewActorBase::BeginPlay()
 		else UE_LOG(LogTemp, Error, TEXT("PreviewActorBase: Failed to get BlockSettings in BeginPlay"));
     }
 
-    // 인스턴스 초기 배치
-    RebuildInstances();
-}
-
-void APreviewActorBase::OnConstruction(const FTransform& Transform)
-{
-    Super::OnConstruction(Transform);
-
-    RebuildInstances();
+    if (UWorld* World = GetWorld())
+    {
+        World->GetTimerManager().SetTimerForNextTick(this, &APreviewActorBase::RebuildInstances);
+    }
 }
 
 void APreviewActorBase::RebuildInstances()
@@ -70,17 +65,108 @@ void APreviewActorBase::RebuildInstances()
         UE_LOG(LogTemp, Error, TEXT("PreviewActorBase: HISMComponent is null in RebuildInstances"));
 		return;
     }
+    /*
+    // [해결책] 컴포넌트가 꺼져있다면 강제로 켭니다.
+    if (!HISMComponent->IsActive())
+    {
+        HISMComponent->Activate(true); // bReset = true
+        HISMComponent->SetComponentTickEnabled(true); // 틱도 강제로 켭니다.
+        UE_LOG(LogTemp, Warning, TEXT("DeepDebug: HISM was Inactive! Forcing Activation..."));
+    }
+    */
+
+    /*
+    UStaticMesh* CurrentMesh = HISMComponent->GetStaticMesh();
+    if (CurrentMesh)
+    {
+        // 원본 메시의 바운드 박스 크기를 확인합니다.
+        FBoxSphereBounds MeshBounds = CurrentMesh->GetBounds();
+        UE_LOG(LogTemp, Warning, TEXT("DeepDebug: [Mesh Origin Check] Name: %s | Radius: %f | Extent: %s"),
+            *CurrentMesh->GetName(),
+            MeshBounds.SphereRadius,
+            *MeshBounds.BoxExtent.ToString());
+    }
+    else
+    {
+        // 메시가 있다면 이름 출력 (디버깅용)
+        UE_LOG(LogTemp, Log, TEXT("[RebuildInstances] Using Mesh: %s"), *CurrentMesh->GetName());
+    }
+    */
 
     HISMComponent->ClearInstances();
     ValidInstanceIndices.Reset();
 
-    // 설정된 오프셋만큼 인스턴스 생성
+    TArray<FTransform> InstanceTransforms;
+    InstanceTransforms.Reserve(RelativeBlockOffsets.Num());
+
     for (const FVector& Offset : RelativeBlockOffsets)
     {
-        // 로컬 좌표로 배치
-        FTransform Trans(FRotator::ZeroRotator, Offset);
-        HISMComponent->AddInstance(Trans);
+        // 스케일 1.0 명시 필수
+        InstanceTransforms.Emplace(FRotator::ZeroRotator, Offset, FVector::OneVector);
     }
+
+    // 2. 일괄 추가 (여기가 핵심)
+    // bShouldReturnIndices: false (인덱스 반환 불필요 시 성능 이득)
+    HISMComponent->AddInstances(InstanceTransforms, false);
+
+    // HISMComponent->BuildTreeIfOutdated(false, true);
+
+    // 그 후 바운드와 렌더 상태를 갱신
+    // HISMComponent->UpdateBounds();
+
+    /*
+    // ================= [Low-Level Debug Log] =================
+    if (HISMComponent)
+    {
+        // 1. 월드 등록 여부 (이게 false면 렌더링 절대 불가)
+        bool bIsRegistered = HISMComponent->IsRegistered();
+
+        // 2. 렌더 상태 생성 여부 (SceneProxy가 만들어졌는지)
+        bool bRenderState = HISMComponent->IsRenderStateCreated();
+
+        // 3. 물리 상태 생성 여부 (PhysicsState)
+        bool bPhysicsState = HISMComponent->IsPhysicsStateCreated();
+
+        // 4. 컴포넌트가 활성화 상태인지
+        bool bIsActive = HISMComponent->IsActive();
+
+        FBoxSphereBounds Bounds = HISMComponent->Bounds;
+
+        UE_LOG(LogTemp, Error, TEXT("DeepDebug: [Status Check] Registered: %s | RenderState: %s | Active: %s | Extent: %s"),
+            bIsRegistered ? TEXT("YES") : TEXT("NO"),
+            bRenderState ? TEXT("YES") : TEXT("NO"),
+            bIsActive ? TEXT("YES") : TEXT("NO"),
+            *Bounds.BoxExtent.ToString());
+    }
+    // =========================================================
+    */
+
+    // HISMComponent->MarkRenderStateDirty();
+
+    /*
+    if (HISMComponent->IsVisible())
+    {
+        HISMComponent->SetVisibility(false);
+        HISMComponent->SetVisibility(true);
+    }
+
+    // ================= [로그 추가 시작] =================
+    // HISM이 인스턴스를 다 넣은 직후, 렌더 상태와 바운드 크기를 확인합니다.
+    if (HISMComponent)
+    {
+        FBoxSphereBounds Bounds = HISMComponent->Bounds;
+        bool bRenderState = HISMComponent->IsRenderStateCreated();
+        int32 Count = HISMComponent->GetInstanceCount();
+
+        // Extent가 (0,0,0)이라면 엔진은 이 물체의 크기를 0으로 보고 있다는 뜻입니다.
+        UE_LOG(LogTemp, Warning, TEXT("DeepDebug: [RebuildInstances] Count: %d | RenderStateCreated: %s | Extent: %s | Origin: %s"),
+            Count,
+            bRenderState ? TEXT("TRUE") : TEXT("FALSE"),
+            *Bounds.BoxExtent.ToString(),
+            *Bounds.Origin.ToString());
+    }
+    // ================= [로그 추가 끝] =================
+    */
 }
 
 bool APreviewActorBase::UpdatePreviewState_Implementation(FVector TargetLocation)

@@ -7,6 +7,8 @@
 #include "BlockPreviewInterface.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 
+#include "Components/HierarchicalInstancedStaticMeshComponent.h"
+
 UBarrier::UBarrier()
 {
 	CurrentPreviewRotation = FRotator::ZeroRotator;
@@ -18,6 +20,10 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayEventData* TriggerEventData)
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
+
+	// 프리뷰 모드 진입: 태그 부착
+	AddGameplayTagToOwner(Tag_Player_State_Preview);
+	AddAbilityTag(Tag_Skill_State_Preview);
 
 	// 초기 회전값 설정 (캐릭터가 바라보는 방향 기준 90도 스냅)
 	if (AActor* Avatar = GetAvatarActorFromActorInfo())
@@ -78,23 +84,45 @@ void UBarrier::OnMouseWheelEventReceived(FGameplayEventData Payload)
 {
 	if (!PreviewTask) return;
 
-	// Payload.EventMagnitude에 휠 델타값이 들어온다고 가정 (Input Action 매핑 필요)
-	float Magnitude = Payload.EventMagnitude;
+	// 90도 회전
+	CurrentPreviewRotation.Yaw += 90.0f;
 
-	if (Magnitude != 0.0f)
+	// 정규화 (-180 ~ 180)
+	CurrentPreviewRotation.Normalize();
+
+	// 프리뷰 액터에 회전 적용
+	if (AActor* SpawnedActor = PreviewTask->GetSpawnedPreviewActor())
 	{
-		// 90도 회전
-		float Dir = (Magnitude > 0) ? 1.0f : -1.0f;
-		CurrentPreviewRotation.Yaw += (Dir * 90.0f);
+		// SpawnedActor->SetActorRotation(CurrentPreviewRotation);
 
-		// 정규화 (-180 ~ 180)
-		CurrentPreviewRotation.Normalize();
-
-		// 프리뷰 액터에 회전 적용
-		if (AActor* SpawnedActor = PreviewTask->GetSpawnedPreviewActor())
+		UHierarchicalInstancedStaticMeshComponent* HISM = SpawnedActor->FindComponentByClass<UHierarchicalInstancedStaticMeshComponent>();
+		
+		if (HISM)
 		{
-			SpawnedActor->SetActorRotation(CurrentPreviewRotation);
+			// 2. 핵심 데이터 로깅: 인스턴스 개수, 메쉬 유무, 컴포넌트 가시성
+			int32 InstanceCount = HISM->GetInstanceCount();
+			bool bHasMesh = (HISM->GetStaticMesh() != nullptr);
+			bool bIsVisible = HISM->IsVisible(); // 컴포넌트 자체의 Visible 옵션
+
+			UE_LOG(LogTemp, Warning, TEXT("Barrier Debug: [HISM Status] Instances: %d | Has Mesh: %s | Is Visible: %s"),
+				InstanceCount,
+				bHasMesh ? TEXT("YES") : TEXT("NO"),
+				bIsVisible ? TEXT("YES") : TEXT("NO"));
 		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Barrier Debug: SpawnedActor does NOT have HISM Component!"));
+		}
+
+		if (SpawnedActor->IsHidden()) {
+			SpawnedActor->SetActorHiddenInGame(false);
+			UE_LOG(LogTemp, Log, TEXT("Barrier: Unhiding preview actor to apply rotation."));
+		}
+		else {
+			SpawnedActor->SetActorHiddenInGame(true);
+			UE_LOG(LogTemp, Log, TEXT("Barrier: Hiding preview actor to apply rotation."));
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Barrier Debug: Actor Location: %s"), *SpawnedActor->GetActorLocation().ToString());
 	}
 }
 
@@ -146,6 +174,10 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 
 void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	// 종료 처리: 태그 제거
+	RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
+	RemoveAbilityTag(Tag_Skill_State_Preview);
+
 	if (PreviewTask)
 	{
 		PreviewTask->EndTask();

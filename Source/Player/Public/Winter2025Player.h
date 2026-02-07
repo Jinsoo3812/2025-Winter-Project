@@ -65,6 +65,9 @@ protected:
 	TObjectPtr<UInputAction> LeftClickAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> MouseWheelClickAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
 
 	void Move(const FInputActionValue& Value);
@@ -72,6 +75,8 @@ protected:
 	void OnMovementSpeedChanged(const FOnAttributeChangeData& Data);
 
 	void OnLeftClick(const FInputActionValue& Value);
+
+	void OnMouseWheelClick(const FInputActionValue& Value);
 
 	// ------------------
 	// 스킬 입력 처리 일반화

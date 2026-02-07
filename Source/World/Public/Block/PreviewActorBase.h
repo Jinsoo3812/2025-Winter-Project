@@ -24,8 +24,6 @@ public:
 protected:
 	void BeginPlay() override;
 
-	virtual void OnConstruction(const FTransform& Transform) override;
-
 	// 위치를 갖는 기본 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class USceneComponent* RootScene;
