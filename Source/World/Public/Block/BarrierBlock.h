@@ -38,7 +38,7 @@ protected:
 	FGameplayTag TeamEnemyTag;
 
 	// -------------------------------------------------------------------------
-	// 컴포넌트 & 설정
+	// 발사 설정
 	// -------------------------------------------------------------------------
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
@@ -47,6 +47,13 @@ protected:
 	// 발사 속도 
 	UPROPERTY(EditDefaultsOnly, Category = "Barrier Stats")
 	float LaunchSpeed = 1500.0f;
+
+	// 발사 후 최대 수명
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	float MaxLifeTime = 3.0f;
+
+	// 수명 타이머 핸들
+	FTimerHandle LifeTimerHandle;
 
 	// 아군 넉백 힘
 	UPROPERTY(EditDefaultsOnly, Category = "Barrier Stats")

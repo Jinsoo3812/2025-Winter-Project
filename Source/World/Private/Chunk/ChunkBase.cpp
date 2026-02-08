@@ -523,9 +523,6 @@ void AChunkBase::RemoveBlockAtWorldLocation(FVector WorldLocation)
 	// 시각적 업데이트 요청 (이 블록은 Actor였으므로 HISM 갱신은 필요 없을 수 있으나, 
 	// 이웃 블록의 옆면(Culling)을 다시 그려야 하므로 호출 필수
 	UpdateChunkVisuals();
-
-	// 통계
-	UE_LOG(LogTemp, Warning, TEXT("[ChunkBase] Block Data cleared! Triggering Visual Update to reveal neighbors..."));
 }
 
 void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)

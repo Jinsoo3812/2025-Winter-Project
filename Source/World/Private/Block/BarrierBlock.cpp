@@ -4,8 +4,8 @@
 #include "Block/BarrierBlock.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
-#include "Components/BoxComponent.h"
 #include "GameFramework/Character.h"
+#include "ChunkBase.h"
 
 ABarrierBlock::ABarrierBlock()
 {
@@ -49,7 +49,18 @@ void ABarrierBlock::Launch(FVector Direction)
 		return;
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("BarrierBlock: Launched in direction %s"), *Direction.ToString());
+	// 자폭 타이머 시작
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().SetTimer(LifeTimerHandle, this, &ABarrierBlock::Explode, MaxLifeTime, false);
+	}
+
+	// 부모 청크에서 자신을 제거하여 청크 관리에서 제외
+	if (ParentChunk.IsValid())
+	{
+		ParentChunk->RemoveBlockAtWorldLocation(GetActorLocation());
+		ParentChunk = nullptr;
+	}
 
 	// 컴포넌트 활성화 및 속도 설정
 	ProjectileMovement->Activate();
@@ -99,10 +110,7 @@ void ABarrierBlock::OnHit(UPrimitiveComponent* HitComp,
 
 				UE_LOG(LogTemp, Log, TEXT("BarrierBlock: Knockback Ally %s"), *OtherActor->GetName());
 
-				// 아군을 맞췄을 때는 폭발하지 않고 통과하거나 소멸? 
-				// 명세: "충돌 시 폭발하지 않고 밀어냄". 
-				// 관통하려면 여기서 return, 멈추려면 Explode(). 
-				// 보통 스킬은 아군 통과가 많지만, 밀어낸다고 했으니 여기서 부딪히고 끝나는게 자연스러움.
+				// 아군을 튕겨낸 후 폭발
 				Explode();
 			}
 		}
@@ -141,6 +149,11 @@ void ABarrierBlock::OnHit(UPrimitiveComponent* HitComp,
 
 void ABarrierBlock::Explode()
 {
+	if (UWorld* World = GetWorld())
+	{
+		World->GetTimerManager().ClearTimer(LifeTimerHandle);
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("BarrierBlock: Exploding %s"), *GetName());
 	Destroy();
 }

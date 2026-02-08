@@ -29,6 +29,9 @@ public:
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS")
+	FGameplayTagContainer InitialGameplayTags;
+
 protected:
 	// ------------------
 	// 초기화 함수

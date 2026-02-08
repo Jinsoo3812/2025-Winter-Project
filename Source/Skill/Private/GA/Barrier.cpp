@@ -92,13 +92,15 @@ void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActivationInfo ActivationInfo,
 	bool bReplicateEndAbility, bool bWasCancelled)
 {
-	// 종료 처리: 태그 제거
-	RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
-	RemoveAbilityTag(Tag_Skill_State_Preview);
-
 	if (PreviewTask)
 	{
+		// 프리뷰 태그 제거
+		RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
+		RemoveAbilityTag(Tag_Skill_State_Preview);
+
+		// 태스크 종료
 		PreviewTask->EndTask();
+		PreviewTask = nullptr;
 	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);

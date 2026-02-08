@@ -50,6 +50,13 @@ void AWinter2025Player::InitializeGAS()
 		// ASC 초기화
 		CachedASC->InitAbilityActorInfo(PS, this);
 
+		// 기본 태그 추가
+		if (InitialGameplayTags.IsValid())
+		{
+			// PlayerState의 ASC에 태그 추가
+			CachedASC->AddLooseGameplayTags(InitialGameplayTags);
+		}
+
 		// 구체적인 컴포넌트 클래스(USkillComponent) 대신 인터페이스를 찾음
 		// PlayerState에 붙어있는 컴포넌트들 중, 스킬 인터페이스를 구현한 놈을 찾아서 초기화
 		TArray<UActorComponent*> Components;
