@@ -14,7 +14,8 @@ enum class EBlockType : uint8
 {
 	None 	UMETA(DisplayName = "None"), // 빈 공간
 	Terrain		UMETA(DisplayName = "Terrain"),
-	Destructible	UMETA(DisplayName = "Destructible")
+	Destructible	UMETA(DisplayName = "Destructible"),
+	Barrier		UMETA(DisplayName = "Barrier")
 };
 
 // 6방향 이웃 블록을 나타내는 Enum

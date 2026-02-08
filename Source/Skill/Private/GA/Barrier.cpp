@@ -5,9 +5,8 @@
 #include "PreviewTask.h"
 #include "BlockSystemInterface.h"
 #include "BlockPreviewInterface.h"
+#include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
-
-#include "Components/HierarchicalInstancedStaticMeshComponent.h"
 
 UBarrier::UBarrier()
 {
@@ -21,6 +20,14 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
+	// 생성 프리뷰 & 발사 모드 분기
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (ASC && ASC->HasMatchingGameplayTag(Tag_Player_State_Active_Barrier)) {
+		// 발사 후 즉시 반환
+		Launch();
+		return;
+	}
+	
 	// 프리뷰 모드 진입: 태그 부착
 	AddGameplayTagToOwner(Tag_Player_State_Preview);
 	AddAbilityTag(Tag_Skill_State_Preview);
@@ -80,6 +87,23 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	WaitWheel->ReadyForActivation();
 }
 
+void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo,
+	bool bReplicateEndAbility, bool bWasCancelled)
+{
+	// 종료 처리: 태그 제거
+	RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
+	RemoveAbilityTag(Tag_Skill_State_Preview);
+
+	if (PreviewTask)
+	{
+		PreviewTask->EndTask();
+	}
+
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
 void UBarrier::OnMouseWheelEventReceived(FGameplayEventData Payload)
 {
 	if (!PreviewTask) return;
@@ -113,6 +137,30 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		return;
 	}
 
+	// 발사 방향 결정
+	if (AActor* Avatar = GetAvatarActorFromActorInfo())
+	{
+		FVector PlayerLoc = Avatar->GetActorLocation();
+		FVector TargetLoc = SpawnedActor->GetActorLocation();
+
+		// 1. 시전자에서 목표 지점으로 향하는 벡터 계산
+		FVector Dir = TargetLoc - PlayerLoc;
+		Dir.Z = 0.0f; // 높이 차이 무시 (수평 방향만 고려)
+
+		// 가장 지배적인 축(Dominant Axis)을 찾아 4방향으로 스냅
+		// X축의 크기가 Y축보다 크면 앞/뒤, 아니면 좌/우
+		if (FMath::Abs(Dir.X) > FMath::Abs(Dir.Y))
+		{
+			// X 성분의 부호(Sign)만 남김 (1 or -1)
+			LaunchDirection = FVector(FMath::Sign(Dir.X), 0.0f, 0.0f);
+		}
+		else
+		{
+			// Y 성분의 부호(Sign)만 남김 (1 or -1)
+			LaunchDirection = FVector(0.0f, FMath::Sign(Dir.Y), 0.0f);
+		}
+	}
+
 	// 1. 프리뷰 액터에게 소환할 수 있는 블록 위치 목록 요청
 	TArray<FTransform> SpawnTransforms = PreviewActor->GetValidSpawnData();
 
@@ -137,8 +185,7 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		}
 		else UE_LOG(LogTemp, Warning, TEXT("Barrier: BlockSystem is null. Cannot spawn blocks."));
 
-		// 성공 종료
-		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+		// 블록 스폰 비동기 작업 완료 후 EndAbility 호출
 	}
 	else
 	{
@@ -151,28 +198,63 @@ void UBarrier::OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBloc
 {
 	CurrentBarrierBlocks = SpawnedBlocks;
 
-	int32 ValidCount = 0;
-	for (const auto& BlockPtr : SpawnedBlocks)
+	if (CurrentBarrierBlocks.Num() > 0)
 	{
-		if (BlockPtr.IsValid())
-		{
-			ValidCount++;
-		}
+		// 블록 생성 성공 시 시전자에게 상태 태그 부착
+		AddGameplayTagToOwner(Tag_Player_State_Active_Barrier);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("Barrier: OnBlocksSpawned Callback Triggered! Total Spawned: %d"), ValidCount);
+	// 블록이 생성 확정된 후 안전하게 종료
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
-void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+void UBarrier::Launch()
 {
-	// 종료 처리: 태그 제거
-	RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
-	RemoveAbilityTag(Tag_Skill_State_Preview);
+	UE_LOG(LogTemp, Log, TEXT("Barrier: Launch Sequence Initiated."));
 
-	if (PreviewTask)
+	if (CurrentBarrierBlocks.Num() > 0)
 	{
-		PreviewTask->EndTask();
+		for (auto& BlockPtr : CurrentBarrierBlocks)
+		{
+			if (AActor* BlockActor = BlockPtr.Get())
+			{
+				UFunction* LaunchFunc = BlockActor->FindFunction(FName("Launch"));
+
+				if (LaunchFunc)
+				{
+					// 파라미터 구조체 정의 (함수 인자와 순서/타입이 일치해야 함)
+					struct FLaunchParams
+					{
+						FVector Direction;
+					};
+
+					FLaunchParams Params;
+					Params.Direction = LaunchDirection;
+
+					// 함수 실행
+					BlockActor->ProcessEvent(LaunchFunc, &Params);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Warning, TEXT("BlockActor does not have Launch function!"));
+				}
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Barrier: Block is invalid or destroyed."));
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Barrier: No blocks to launch."));
 	}
 
-	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+	// 2. 상태 해제 및 종료
+	RemoveGameplayTagFromOwner(Tag_Player_State_Active_Barrier);
+
+	// 배열 초기화
+	CurrentBarrierBlocks.Empty();
+
+	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

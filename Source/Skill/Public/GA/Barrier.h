@@ -34,6 +34,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag Tag_Player_State_Preview;
 
+	// 시전자에게 붙을 장벽 소환 상태 태그
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag Tag_Player_State_Active_Barrier;
+
 	// 스킬 인스턴스에 붙을 상태 태그
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag Tag_Skill_State_Preview;
@@ -54,6 +58,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag Tag_Event_Rotation;
 
+	// 소환할 블록 태그
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag BlockTagToSpawn;
 
@@ -73,15 +78,21 @@ protected:
 	UPROPERTY()
 	TArray<TWeakObjectPtr<AActor>> CurrentBarrierBlocks;
 
+	// 현재 프리뷰 회전 값 (90도 단위)
+	FRotator CurrentPreviewRotation;
+
 	// 블록 소환이 완료된 후 호출되는 함수
 	void OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBlocks);
 
 	// -------------------------------------------------------------------------
-	// 상태
+	// 발사
 	// -------------------------------------------------------------------------
 protected:
-	// 현재 프리뷰 회전 값 (90도 단위)
-	FRotator CurrentPreviewRotation;
+	// 발사 방향 저장
+	FVector LaunchDirection = FVector::ForwardVector;
+
+	// 발사 함수
+	void Launch();
 
 	// -------------------------------------------------------------------------
 	// 입력 이벤트 처리
