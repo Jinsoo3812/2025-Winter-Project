@@ -49,13 +49,13 @@ public:
 	 * @param TargetLocation: 마우스 커서가 가리키는 월드 좌표 (스냅된 위치)
 	 * @return bool: 커서가 가리키는 TargetLocation이 설치 가능한지 여부
 	 */
-	virtual bool UpdatePreviewState_Implementation(FVector TargetLocation) override;
+	virtual bool UpdatePreviewState(FVector TargetLocation) override;
 
 	/*
 	 * 건설 확정 시 호출되는 함수
 	 * @return TArray<FPreviewSpawnData> : 소환할 블록들의 태그와 월드 좌표 리스트
 	 */
-	virtual TArray<FPreviewSpawnData> GetValidSpawnData_Implementation() override;
+	virtual TArray<FPreviewSpawnData> GetValidSpawnData() override;
 
 protected:
 	// 생성 블록들의 상대적 위치 배열

@@ -264,8 +264,6 @@ void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& 
 	// 액터 스폰 큐에 등록 (Time Slicing)
 	// 데이터는 이미 다 바꿨고, 이제 실제 액터만 천천히 나오면 됨
 	EnqueueBlockSpawns(Requests);
-
-	UE_LOG(LogTemp, Log, TEXT("Batch Spawned %d blocks across %d chunks."), Requests.Num(), ChunkRequestMap.Num());
 }
 
 bool UBlockManagerSubsystem::IsLocationOccupied(

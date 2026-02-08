@@ -159,7 +159,8 @@ void UPreviewTask::TickTask(float DeltaTime)
 						SpawnedGhostBlock->SetActorHiddenInGame(false);
 
 						// 인터페이스 호출: 액터 스스로 위치를 잡고, 유효성을 판단하여 색상을 바꿈
-						bool bIsInstallable = IBlockPreviewInterface::Execute_UpdatePreviewState(SpawnedGhostBlock, PreviewLoc);
+						IBlockPreviewInterface* PreviewInterface = Cast<IBlockPreviewInterface>(SpawnedGhostBlock);
+						bool bIsInstallable = PreviewInterface->UpdatePreviewState(PreviewLoc);
 					}
 					else
 					{
@@ -167,27 +168,6 @@ void UPreviewTask::TickTask(float DeltaTime)
 						SpawnedGhostBlock->SetActorLocation(PreviewLoc);
 						SpawnedGhostBlock->SetActorHiddenInGame(false);
 					}
-
-					// ================= [로그 추가 시작] =================
-					// 이동 직후, 액터 위치와 HISM 컴포넌트의 바운드 위치를 비교합니다.
-					if (SpawnedGhostBlock)
-					{
-						// HISM 컴포넌트 가져오기
-						auto* HISM = SpawnedGhostBlock->FindComponentByClass<UHierarchicalInstancedStaticMeshComponent>();
-						if (HISM)
-						{
-							FVector ActorLoc = SpawnedGhostBlock->GetActorLocation();
-							FVector BoundsOrigin = HISM->Bounds.Origin;
-							FVector BoundsExtent = HISM->Bounds.BoxExtent;
-
-							// ActorLoc과 BoundsOrigin이 현저하게 다르다면(특히 Origin이 0,0,0 근처라면) 바운드 갱신 누락입니다.
-							UE_LOG(LogTemp, Warning, TEXT("DeepDebug: [Tick] ActorLoc: %s | BoundsOrigin: %s | BoundsExtent: %s"),
-								*ActorLoc.ToString(),
-								*BoundsOrigin.ToString(),
-								*BoundsExtent.ToString());
-						}
-					}
-					// ================= [로그 추가 끝] =================
 				}
 			}
 			else {

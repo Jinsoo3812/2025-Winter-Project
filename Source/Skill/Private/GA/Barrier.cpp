@@ -93,36 +93,7 @@ void UBarrier::OnMouseWheelEventReceived(FGameplayEventData Payload)
 	// 프리뷰 액터에 회전 적용
 	if (AActor* SpawnedActor = PreviewTask->GetSpawnedPreviewActor())
 	{
-		// SpawnedActor->SetActorRotation(CurrentPreviewRotation);
-
-		UHierarchicalInstancedStaticMeshComponent* HISM = SpawnedActor->FindComponentByClass<UHierarchicalInstancedStaticMeshComponent>();
-		
-		if (HISM)
-		{
-			// 2. 핵심 데이터 로깅: 인스턴스 개수, 메쉬 유무, 컴포넌트 가시성
-			int32 InstanceCount = HISM->GetInstanceCount();
-			bool bHasMesh = (HISM->GetStaticMesh() != nullptr);
-			bool bIsVisible = HISM->IsVisible(); // 컴포넌트 자체의 Visible 옵션
-
-			UE_LOG(LogTemp, Warning, TEXT("Barrier Debug: [HISM Status] Instances: %d | Has Mesh: %s | Is Visible: %s"),
-				InstanceCount,
-				bHasMesh ? TEXT("YES") : TEXT("NO"),
-				bIsVisible ? TEXT("YES") : TEXT("NO"));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Barrier Debug: SpawnedActor does NOT have HISM Component!"));
-		}
-
-		if (SpawnedActor->IsHidden()) {
-			SpawnedActor->SetActorHiddenInGame(false);
-			UE_LOG(LogTemp, Log, TEXT("Barrier: Unhiding preview actor to apply rotation."));
-		}
-		else {
-			SpawnedActor->SetActorHiddenInGame(true);
-			UE_LOG(LogTemp, Log, TEXT("Barrier: Hiding preview actor to apply rotation."));
-		}
-		UE_LOG(LogTemp, Warning, TEXT("Barrier Debug: Actor Location: %s"), *SpawnedActor->GetActorLocation().ToString());
+		SpawnedActor->SetActorRotation(CurrentPreviewRotation);
 	}
 }
 
@@ -134,15 +105,16 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		return;
 	}
 
-	AActor* PreviewActor = PreviewTask->GetSpawnedPreviewActor();
-	if (!PreviewActor || !PreviewActor->Implements<UBlockPreviewInterface>())
+	AActor* SpawnedActor = PreviewTask->GetSpawnedPreviewActor();
+	IBlockPreviewInterface* PreviewActor;
+	if (!(PreviewActor = Cast<IBlockPreviewInterface>(SpawnedActor)))
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
 		return;
 	}
 
 	// 1. 프리뷰 액터에게 "유효한 소환 명세서" 요청
-	TArray<FPreviewSpawnData> SpawnRequests = IBlockPreviewInterface::Execute_GetValidSpawnData(PreviewActor);
+	TArray<FPreviewSpawnData> SpawnRequests = PreviewActor->GetValidSpawnData();
 
 	// 2. 유효한 데이터가 있다면 실제 소환 진행
 	if (SpawnRequests.Num() > 0)
