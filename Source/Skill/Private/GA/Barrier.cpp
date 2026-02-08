@@ -128,8 +128,12 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 				FinalRequests.Add(Req);
 			}
 
+			// 콜백 델리게이트 생성 및 바인딩
+			FOnBlockBatchSpawnComplete OnCompleteDelegate;
+			OnCompleteDelegate.BindUObject(this, &UBarrier::OnBlocksSpawned);
+
 			// 일괄 소환 요청
-			BlockSystem->SpawnBlocksBatch(FinalRequests);
+			BlockSystem->SpawnBlocksBatch(FinalRequests, OnCompleteDelegate);
 		}
 		else UE_LOG(LogTemp, Warning, TEXT("Barrier: BlockSystem is null. Cannot spawn blocks."));
 
@@ -141,6 +145,22 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		// 설치 불가능한 위치를 클릭함
 		UE_LOG(LogTemp, Log, TEXT("Barrier: Cannot build here. Invalid location."));
 	}
+}
+
+void UBarrier::OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBlocks)
+{
+	CurrentBarrierBlocks = SpawnedBlocks;
+
+	int32 ValidCount = 0;
+	for (const auto& BlockPtr : SpawnedBlocks)
+	{
+		if (BlockPtr.IsValid())
+		{
+			ValidCount++;
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Barrier: OnBlocksSpawned Callback Triggered! Total Spawned: %d"), ValidCount);
 }
 
 void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)

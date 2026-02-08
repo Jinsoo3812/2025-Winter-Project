@@ -12,6 +12,17 @@ class ABlockMapManager;
 class UBlockConfig;
 
 /*
+* 진행 중인 배치 스폰 작업을 추적하기 위한 구조체
+*/
+struct FActiveBatchInfo
+{
+	int32 TotalCount = 0;           // 전체 요청 개수
+	int32 ProcessedCount = 0;       // 처리된 개수 (성공+실패)
+	TArray<TWeakObjectPtr<AActor>> SpawnedActors; // 성공한 액터들 목록
+	FOnBlockBatchSpawnComplete Callback; // 다 끝나면 호출할 함수
+};
+
+/*
  * 외부 모듈이 요청한 블록 소환, 파괴, 조작 등을 대신 처리해주는 서브시스템
  */
 UCLASS()
@@ -62,7 +73,8 @@ public:
 	FVector GetBlockLocation(const FBlockReference& Ref) override;
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
-	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests) override;
+	void SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
+		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete()) override;
 
 	// Actor 블록 소환 요청을 한 번에 받아 Queue에 등록하는 함수
 	// @param Requests: 소환 요청 배열
@@ -79,6 +91,12 @@ protected:
 	// 한 프레임에 처리할 최대 스폰 개수
 	UPROPERTY(EditDefaultsOnly)
 	int32 MaxSpawnsPerFrame = 100;
+
+	// 배치 ID 발급용 카운터
+	int32 NextBatchID = 0;
+
+	// 현재 진행 중인 배치 작업 맵 (Key: BatchID)
+	TMap<int32, FActiveBatchInfo> ActiveBatches;
 
 	// ---------------------------------------------------------
 	// 블록 수집

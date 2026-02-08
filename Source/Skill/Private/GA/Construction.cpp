@@ -61,7 +61,11 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 		FVector SpawnLoc = TargetLoc + FVector(0, 0, BlockSystem->GetGridSize());
 
 		FBlockSpawnRequest Request(BlockTagToSpawn, SpawnLoc, true);
-		BlockSystem->SpawnBlocksBatch({ Request });
+
+		// const 인자가 아니라서 어쩔 수 없이 TArray로 감싸서 넘김
+		TArray<FBlockSpawnRequest> Requests;
+		Requests.Add(Request);
+		BlockSystem->SpawnBlocksBatch(Requests);
 	}
 	else
 	{

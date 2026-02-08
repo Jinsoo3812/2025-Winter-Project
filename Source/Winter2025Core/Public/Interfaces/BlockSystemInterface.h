@@ -8,6 +8,9 @@
 #include "BlockCommonTypes.h"
 #include "BlockSystemInterface.generated.h"
 
+// 소환이 완료되었을 때 결과를 받아볼 델리게이트
+DECLARE_DELEGATE_OneParam(FOnBlockBatchSpawnComplete, const TArray<TWeakObjectPtr<AActor>>&);
+
 // Actor 블록 소환을 요청하기 위한 구조체
 struct FBlockSpawnRequest
 {
@@ -19,6 +22,9 @@ struct FBlockSpawnRequest
 
 	// 소환 후 중력 활성화 여부
 	bool bEnableGravity = false;
+
+	// 배치 작업 ID
+	int32 BatchID = -1;
 
 	FBlockSpawnRequest() = default;
 
@@ -68,7 +74,8 @@ public:
 		bool bEnableGravity
 	) = 0;
 	
-	virtual void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests) = 0;
+	virtual void SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
+		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete()) = 0;
 
 	// 해당 위치에 블록을 소환할 수 있는지 검사하는 함수
 	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) = 0;

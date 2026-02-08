@@ -70,35 +70,58 @@ void UBlockManagerSubsystem::Tick(float DeltaTime)
 	// 정해진 예산(MaxSpawnsPerFrame)만큼만 반복 처리
 	while (ProcessCount < MaxSpawnsPerFrame && SpawnQueue.Dequeue(Request))
 	{
-		// Actor 스폰 실행 (중력은 끄고 시작하는 것이 일반적, 필요시 true)
+		// Actor 스폰 실행
 		AActor* SpawnedActor = SpawnBlockByTag(Request.BlockTag,
 			Request.WorldLocation, FRotator::ZeroRotator, Request.bEnableGravity);
 
 		AChunkBase* OwnerChunk = MapManager ? MapManager->GetChunkAtLocation(Request.WorldLocation) : nullptr;
+		FActiveBatchInfo* BatchInfo = ActiveBatches.Find(Request.BatchID);
 
 		if (SpawnedActor) {
-			if (ABlockBase* NewBlock = Cast<ABlockBase>(SpawnedActor))
+			// 소환된 Actor에게 소유 청크 할당
+			if (OwnerChunk)
 			{
-				// 요청서에 적힌 청크가 살아있는지 확인
-				if (OwnerChunk)
+				if (ABlockBase* NewBlock = Cast<ABlockBase>(SpawnedActor))
 				{
 					NewBlock->SetParentChunk(OwnerChunk);
 				}
-				else
-				{
-					// 청크가 유효하지 않으므로 넘어감
-				}
+			}
+			// 소환 성공 액터를 배치 작업 정보에 추가
+			if (BatchInfo)
+			{
+				BatchInfo->SpawnedActors.Add(SpawnedActor);
 			}
 		}
-		// 스폰 실패이므로 롤백 요청
 		else {
+			// 소환 실패 시 청크에 알려 롤백 처리
 			if (OwnerChunk)
 			{
 				OwnerChunk->OnBlockSpawnFailed(Request.WorldLocation);
 			}
 		}
+
+		// 배치 작업 정보 업데이트 (소환 성공 여부 관계 없이)
+		if (BatchInfo)
+		{
+			BatchInfo->ProcessedCount++;
+
+			// 배치 작업 완료 시 콜백 함수 실행
+			if (BatchInfo->ProcessedCount >= BatchInfo->TotalCount)
+			{
+				if (BatchInfo->Callback.IsBound())
+				{
+					BatchInfo->Callback.Execute(BatchInfo->SpawnedActors);
+				}
+
+				// 완료된 배치 작업 정보 제거
+				ActiveBatches.Remove(Request.BatchID);
+			}
+		}
+
 		ProcessCount++;
 	}
+
+
 }
 
 // 필수 오버라이드 (Stat ID 반환)
@@ -144,7 +167,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(
 	// 위치 점유 확인
 	if (IsLocationOccupied(Location, GridSize))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BlockManagerSubsystem: Location %s is occupied"), *Location.ToString());
+		// UE_LOG(LogTemp, Warning, TEXT("BlockManagerSubsystem: Location %s is occupied"), *Location.ToString());
 		return nullptr;
 	}
 
@@ -209,7 +232,8 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(
 	}
 }
 
-void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests)
+void UBlockManagerSubsystem::SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
+	const FOnBlockBatchSpawnComplete& OnComplete)
 {
 	if (!MapManager)
 	{
@@ -217,16 +241,28 @@ void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& 
 		return;
 	}
 
+	// 이번 배치 작업 등록
+	int32 CurrentBatchID = NextBatchID++;
+
+	FActiveBatchInfo& NewBatch = ActiveBatches.Add(CurrentBatchID);
+	NewBatch.TotalCount = Requests.Num();
+	NewBatch.ProcessedCount = 0;
+	NewBatch.Callback = OnComplete;
+
 	// 청크별로 요청 분류
 	// Key: 청크 포인터, Value: 해당 청크에 속한 요청들
 	TMap<AChunkBase*, TArray<FBlockSpawnRequest>> ChunkRequestMap;
 
-	for (const FBlockSpawnRequest& Req : Requests)
+	for (FBlockSpawnRequest& Req : Requests)
 	{
+		// 청크별 데이터 업데이트를 위한 매핑
 		if (AChunkBase* Chunk = MapManager->GetChunkAtLocation(Req.WorldLocation))
 		{
 			ChunkRequestMap.FindOrAdd(Chunk).Add(Req);
 		}
+
+		// 개별 요청에 배치 ID 할당
+		Req.BatchID = CurrentBatchID;
 	}
 
 	// 각 청크별로 데이터 일괄 업데이트 수행

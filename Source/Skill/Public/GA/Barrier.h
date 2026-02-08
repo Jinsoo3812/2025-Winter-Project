@@ -69,6 +69,13 @@ protected:
 	UPROPERTY()
 	UPreviewTask* PreviewTask;
 
+	// 현재 소환된 장벽 블록들 (PerInstance 정책으로 유지)
+	UPROPERTY()
+	TArray<TWeakObjectPtr<AActor>> CurrentBarrierBlocks;
+
+	// 블록 소환이 완료된 후 호출되는 함수
+	void OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBlocks);
+
 	// -------------------------------------------------------------------------
 	// 상태
 	// -------------------------------------------------------------------------
@@ -77,7 +84,7 @@ protected:
 	FRotator CurrentPreviewRotation;
 
 	// -------------------------------------------------------------------------
-	// 이벤트 핸들러
+	// 입력 이벤트 처리
 	// -------------------------------------------------------------------------
 protected:
 	// 마우스 휠 이벤트 처리
