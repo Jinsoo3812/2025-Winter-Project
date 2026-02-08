@@ -121,9 +121,9 @@ bool APreviewActorBase::UpdatePreviewState(FVector TargetLocation)
     return bAnchorValid;
 }
 
-TArray<FPreviewSpawnData> APreviewActorBase::GetValidSpawnData()
+TArray<FTransform> APreviewActorBase::GetValidSpawnData()
 {
-    TArray<FPreviewSpawnData> SpawnDataList;
+    TArray<FTransform> SpawnTransList;
 
     // UpdatePreviewState에서 계산해둔 '유효한 인덱스'들만 순회
     for (int32 Idx : ValidInstanceIndices)
@@ -132,12 +132,8 @@ TArray<FPreviewSpawnData> APreviewActorBase::GetValidSpawnData()
         // 월드 좌표 트랜스폼 가져오기
         HISMComponent->GetInstanceTransform(Idx, InstanceTrans, true);
 
-        FPreviewSpawnData NewData;
-        NewData.BlockTag = TargetBlockTag;
-        NewData.SpawnTransform = InstanceTrans;
-
-        SpawnDataList.Add(NewData);
+        SpawnTransList.Add(InstanceTrans);
     }
 
-    return SpawnDataList;
+    return SpawnTransList;
 }

@@ -4,23 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Interface.h"
-#include "GameplayTagContainer.h"
 #include "BlockPreviewInterface.generated.h"
-
-/*
-* 프리뷰 블록 생성 요청 정보 구조체
-*/
-USTRUCT(BlueprintType)
-struct FPreviewSpawnData
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTag BlockTag;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FTransform SpawnTransform; // 월드 트랜스폼
-};
 
 // This class does not need to be modified.
 UINTERFACE(MinimalAPI)
@@ -46,7 +30,7 @@ public:
 
 	/*
 	 * 건설 확정 시 호출되는 함수
-	 * @return TArray<FPreviewSpawnData> : 소환할 블록들의 태그와 월드 좌표 리스트
+	 * @return TArray<FTransform> : 소환할 블록들의 태그와 월드 좌표 리스트
 	 */
-	virtual TArray<FPreviewSpawnData> GetValidSpawnData() = 0;
+	virtual TArray<FTransform> GetValidSpawnData() = 0;
 };

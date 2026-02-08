@@ -32,10 +32,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	class UHierarchicalInstancedStaticMeshComponent* HISMComponent;
 
-	// 생성할 실제 블록 태그
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Preview")
-	FGameplayTag TargetBlockTag;
-
 	// HISM 인스턴스 초기화 (한 번만 수행)
 	UFUNCTION(BlueprintCallable, Category = "Preview")
 	void RebuildInstances();
@@ -53,9 +49,9 @@ public:
 
 	/*
 	 * 건설 확정 시 호출되는 함수
-	 * @return TArray<FPreviewSpawnData> : 소환할 블록들의 태그와 월드 좌표 리스트
+	 * @return TArray<FTransform> : 소환할 가능한 블록들의 월드 좌표 리스트
 	 */
-	virtual TArray<FPreviewSpawnData> GetValidSpawnData() override;
+	virtual TArray<FTransform> GetValidSpawnData() override;
 
 protected:
 	// 생성 블록들의 상대적 위치 배열

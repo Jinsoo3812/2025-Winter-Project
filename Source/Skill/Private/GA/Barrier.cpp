@@ -113,19 +113,18 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		return;
 	}
 
-	// 1. 프리뷰 액터에게 "유효한 소환 명세서" 요청
-	TArray<FPreviewSpawnData> SpawnRequests = PreviewActor->GetValidSpawnData();
+	// 1. 프리뷰 액터에게 소환할 수 있는 블록 위치 목록 요청
+	TArray<FTransform> SpawnTransforms = PreviewActor->GetValidSpawnData();
 
 	// 2. 유효한 데이터가 있다면 실제 소환 진행
-	if (SpawnRequests.Num() > 0)
+	if (SpawnTransforms.Num() > 0)
 	{
 		if (BlockSystem)
 		{
-			// FPreviewSpawnData -> FBlockSpawnRequest 옮기기
 			TArray<FBlockSpawnRequest> FinalRequests;
-			for (const FPreviewSpawnData& Data : SpawnRequests)
+			for (auto& SpawnTransform : SpawnTransforms)
 			{
-				FBlockSpawnRequest Req(Data.BlockTag, Data.SpawnTransform.GetLocation(), true);
+				FBlockSpawnRequest Req(BlockTagToSpawn, SpawnTransform.GetLocation(), true);
 				FinalRequests.Add(Req);
 			}
 

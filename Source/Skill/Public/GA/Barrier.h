@@ -54,6 +54,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag Tag_Event_Rotation;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag BlockTagToSpawn;
+
 	// -------------------------------------------------------------------------
 	// 프리뷰
 	// -------------------------------------------------------------------------
