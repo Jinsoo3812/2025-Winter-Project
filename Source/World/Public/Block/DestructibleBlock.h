@@ -24,6 +24,9 @@ class WORLD_API ADestructibleBlock : public ABlockBase, public IAbilitySystemInt
 public:
 	ADestructibleBlock();
 
+	// BossDragon이 SetLifeSpan을 사용하므로 일단..
+	virtual void LifeSpanExpired() override;
+
 protected:
 	virtual void BeginPlay() override;
 

@@ -15,11 +15,5 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb, "Block.Highlight.Bomb");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb_None, "Block.Highlight.Bomb.None");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_AttackZone, "Block.Highlight.AttackZone");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_AttackZone_None, "Block.Highlight.AttackZone.None");
-
-BlockGameplayTags::BlockGameplayTags()
-{
-}
-
-BlockGameplayTags::~BlockGameplayTags()
-{
-}
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight, "Block.Highlight");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Invalid, "Block.Highlight.Invalid");

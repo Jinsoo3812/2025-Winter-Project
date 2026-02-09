@@ -29,6 +29,11 @@ ADestructibleBlock::ADestructibleBlock()
 	BlockAttributeSet = CreateDefaultSubobject<UBlockAttributeSet>(TEXT("BlockAttributeSet"));
 }
 
+void ADestructibleBlock::LifeSpanExpired()
+{
+	SelfDestroy();
+}
+
 void ADestructibleBlock::BeginPlay()
 {
 	Super::BeginPlay();

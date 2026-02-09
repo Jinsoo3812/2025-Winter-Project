@@ -22,9 +22,10 @@
 
 // 프로젝트 내부 모듈 헤더
 #include "Enemy/Public/EnemyAttributeSet.h" 
-#include "Block/BlockBase.h"          
+#include "Block/BlockBase.h"
+#include "BlockSystemInterface.h"        // 블록 시스템 인터페이스 (0209 수정)
+#include "BlockSpawnPayload.h"
 #include "Block/BlockManagerSubsystem.h"   // 블록 생성 관리자
-#include "BlockSpawnInterface.h"
 #include "BlockGameplayTags.h"             // 블록 태그 정의 헤더
 #include "CollisionChannels.h"
 
@@ -138,13 +139,13 @@ void ABossDragon::SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, flo
 	UWorld* World = GetWorld();
 	if (!World) return;
 
-	IBlockSpawnInterface* BlockSubsystem = IBlockSpawnInterface::GetBlockManagerSubsystem(World);
+	IBlockSystemInterface* BlockSubsystem = IBlockSystemInterface::Get(World); // 0209 수정
 	if (!BlockSubsystem) return;
 
 	// 기존에 혹시 남아있는 계단이 있다면 정리하고 시작 (선택사항)
 	// DestroySpawnedStairs(); 
 
-	float GridSize = 100.0f;
+	float GridSize = BlockSubsystem->GetGridSize(); // 0209 수정
 
 	// 위치 스냅 및 방향 설정
 	FVector SnappedCenter;
@@ -153,6 +154,9 @@ void ABossDragon::SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, flo
 	SnappedCenter.Z = CenterLocation.Z;
 
 	FVector Directions[] = { FVector(1,0,0), FVector(-1,0,0), FVector(0,1,0), FVector(0,-1,0) };
+
+	// 0209 수정
+	TArray<FBlockSpawnRequest> SpawnRequests;
 
 	for (const FVector& Dir : Directions)
 	{
@@ -167,26 +171,48 @@ void ABossDragon::SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, flo
 
 				if (!BlockSubsystem->IsLocationOccupied(HeightPos, GridSize))
 				{
-					// 블록 생성
-					AActor* NewBlock = BlockSubsystem->SpawnBlockByTag(
+					// 0209 수정: FBlockSpawnRequest 사용
+					FBlockSpawnRequest NewRequest(
 						TAG_Block_Type_Destructible,
 						HeightPos,
-						FRotator::ZeroRotator,
-						false
+						true, // bEnableGravity
+						nullptr // Payload
 					);
 
-					if (NewBlock)
-					{
-						// [중요] 안전장치 타이머 설정
-						// 우리가 직접 삭제하지 않아도 LifeTime(15초) 뒤엔 무조건 사라짐 (쓰레기 방지)
-						NewBlock->SetLifeSpan(LifeTime);
-
-						// [핵심] 리스트에 등록 -> 나중에 강제로 즉시 지우기 위해 저장함
-						SpawnedStairsList.Add(NewBlock);
-					}
+					SpawnRequests.Add(NewRequest);
 				}
 			}
 		}
+	}
+
+	// 0209 수정
+	if (SpawnRequests.Num() > 0)
+	{
+		// 비동기 콜백에서 BossDragon이 유효한지 확인하기 위해 WeakPtr 사용
+		TWeakObjectPtr<ABossDragon> WeakSelf(this);
+
+		// 배치 소환 완료 시 실행될 델리게이트 바인딩 (람다 사용)
+		FOnBlockBatchSpawnComplete OnBatchComplete;
+		OnBatchComplete.BindLambda([WeakSelf, LifeTime](const TArray<TWeakObjectPtr<AActor>>& SpawnedActors)
+			{
+				// 보스가 이미 파괴되었다면 로직 중단
+				if (!WeakSelf.IsValid()) return;
+
+				for (const TWeakObjectPtr<AActor>& WeakActor : SpawnedActors)
+				{
+					if (AActor* NewBlock = WeakActor.Get())
+					{
+						// 안전장치 타이머 설정
+						NewBlock->SetLifeSpan(LifeTime);
+
+						// 리스트에 등록 -> 나중에 강제로 즉시 지우기 위해 저장함
+						WeakSelf->SpawnedStairsList.Add(NewBlock);
+					}
+				}
+			});
+
+		// 서브시스템에 배치 소환 요청 전송
+		BlockSubsystem->SpawnBlocksBatch(SpawnRequests, OnBatchComplete);
 	}
 }
 
