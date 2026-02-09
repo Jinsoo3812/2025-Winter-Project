@@ -231,6 +231,29 @@ void UBarrier::Launch()
 	{
 		for (auto& BlockPtr : CurrentBarrierBlocks)
 		{
+			// 상호 물리적 무시 설정
+			for (const auto& SourcePtr : CurrentBarrierBlocks)
+			{
+				AActor* SourceActor = SourcePtr.Get();
+				if (!SourceActor) continue;
+
+				// 충돌을 담당하는 PrimitiveComponent(루트) 가져오기
+				UPrimitiveComponent* SourcePrim = Cast<UPrimitiveComponent>(SourceActor->GetRootComponent());
+				if (!SourcePrim) continue;
+
+				for (const auto& TargetPtr : CurrentBarrierBlocks)
+				{
+					AActor* TargetActor = TargetPtr.Get();
+
+					// 자기 자신이 아니고 대상이 유효하다면
+					if (TargetActor && SourceActor != TargetActor)
+					{
+						// 이동 중 충돌 검사에서 서로를 아예 제외시킴
+						SourcePrim->IgnoreActorWhenMoving(TargetActor, true);
+					}
+				}
+			}
+
 			if (AActor* BlockActor = BlockPtr.Get())
 			{
 				UFunction* LaunchFunc = BlockActor->FindFunction(FName("Launch"));
