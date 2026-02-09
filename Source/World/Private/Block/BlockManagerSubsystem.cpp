@@ -72,7 +72,7 @@ void UBlockManagerSubsystem::Tick(float DeltaTime)
 	{
 		// Actor 스폰 실행
 		AActor* SpawnedActor = SpawnBlockByTag(Request.BlockTag,
-			Request.WorldLocation, FRotator::ZeroRotator, Request.bEnableGravity);
+			Request.WorldLocation, FRotator::ZeroRotator, Request.bEnableGravity, Request.Payload);
 
 		AChunkBase* OwnerChunk = MapManager ? MapManager->GetChunkAtLocation(Request.WorldLocation) : nullptr;
 		FActiveBatchInfo* BatchInfo = ActiveBatches.Find(Request.BatchID);
@@ -146,7 +146,8 @@ void UBlockManagerSubsystem::RegisterMapManager(ABlockMapManager* InManager)
 AActor* UBlockManagerSubsystem::SpawnBlockByTag(
 	FGameplayTag BlockTypeTag,
 	FVector Location, FRotator
-	Rotation, bool bEnableGravity)
+	Rotation, bool bEnableGravity,
+	const UBlockSpawnPayload* InPayload)
 {
 	if (!CachedBlockConfig)
 	{
@@ -181,6 +182,12 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(
 	// 생성 후 설정 (중력, 위치 보정 등)
 	if (NewBlock)
 	{
+		// Payload로 블록 멤버 변수 초기화
+		if (InPayload)
+		{
+			NewBlock->InitializeBlock(InPayload);
+		}
+
 		// 위치를 명확하게 다시 설정 (SpawnActor 시 미세한 오차 방지)
 		NewBlock->SetActorLocation(Location);
 
@@ -233,7 +240,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(
 }
 
 void UBlockManagerSubsystem::SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
-	const FOnBlockBatchSpawnComplete& OnComplete)
+	const FOnBlockBatchSpawnComplete& OnComplete, const UBlockSpawnPayload* InPayload)
 {
 	if (!MapManager)
 	{

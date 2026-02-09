@@ -25,6 +25,24 @@ ABarrierBlock::ABarrierBlock()
 	ProjectileMovement->bShouldBounce = false;
 }
 
+void ABarrierBlock::InitializeBlock(const UBlockSpawnPayload* InPayload)
+{
+	Super::InitializeBlock(InPayload);
+
+	if (InPayload)
+	{
+		if (const UBarrierSpawnPayload* BarrierData = Cast<UBarrierSpawnPayload>(InPayload))
+		{
+			this->LaunchSpeed = BarrierData->LaunchSpeed;
+			this->MaxLifeTime = BarrierData->MaxLifeTime;
+			this->TeamAllyTag = BarrierData->TeamAllyTag;
+			this->TeamEnemyTag = BarrierData->TeamEnemyTag;
+			this->AllyKnockbackStrength = BarrierData->AllyKnockbackStrength;
+			this->DamageEffectClass = BarrierData->DamageEffectClass;
+		}
+	}
+}
+
 void ABarrierBlock::BeginPlay()
 {
 	Super::BeginPlay();

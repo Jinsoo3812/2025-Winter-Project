@@ -170,7 +170,20 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 	if (SpawnTransforms.Num() > 0)
 	{
 		if (BlockSystem)
-		{
+		{	
+			// [추가] Payload 객체 생성 (NewObject 사용)
+			// Outer를 this(Ability)로 설정하여 Ability가 살아있는 동안은 안전하게 유지
+			UBarrierSpawnPayload* BarrierPayload = NewObject<UBarrierSpawnPayload>(this);
+
+			// 데이터 채우기 (Barrier 스킬의 멤버 변수값들을 전달)
+			// *주의: UBarrier 클래스에 아래 변수들이 정의되어 있어야 함
+			BarrierPayload->LaunchSpeed = this->LaunchSpeed;
+			BarrierPayload->MaxLifeTime = this->MaxLifeTime;
+			BarrierPayload->TeamAllyTag = this->TeamAllyTag; // 예: Team.Ally
+			BarrierPayload->TeamEnemyTag = this->TeamEnemyTag; // 예: Team.Enemy
+			BarrierPayload->AllyKnockbackStrength = this->AllyKnockbackStrength;
+			BarrierPayload->DamageEffectClass = this->DamageEffectClass;
+
 			TArray<FBlockSpawnRequest> FinalRequests;
 			for (auto& SpawnTransform : SpawnTransforms)
 			{

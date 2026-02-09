@@ -6,6 +6,7 @@
 #include "UObject/Interface.h"
 #include "GameplayTagContainer.h"
 #include "BlockCommonTypes.h"
+#include "BlockSpawnPayload.h"
 #include "BlockSystemInterface.generated.h"
 
 // 소환이 완료되었을 때 결과를 받아볼 델리게이트
@@ -26,10 +27,13 @@ struct FBlockSpawnRequest
 	// 배치 작업 ID
 	int32 BatchID = -1;
 
+	UPROPERTY()
+	UBlockSpawnPayload* Payload = nullptr;
+
 	FBlockSpawnRequest() = default;
 
-	FBlockSpawnRequest(FGameplayTag InTag, FVector InLocation, bool bInEnableGravity = false)
-		: BlockTag(InTag), WorldLocation(InLocation), bEnableGravity(bInEnableGravity) {}
+	FBlockSpawnRequest(FGameplayTag InTag, FVector InLocation, bool bInEnableGravity = false, UBlockSpawnPayload* InPayload = nullptr)
+		: BlockTag(InTag), WorldLocation(InLocation), bEnableGravity(bInEnableGravity), Payload(InPayload) {}
 };
 
 // This class does not need to be modified.
@@ -71,11 +75,13 @@ public:
 		FGameplayTag BlockTypeTag,
 		FVector Location,
 		FRotator Rotation,
-		bool bEnableGravity
+		bool bEnableGravity,
+		const UBlockSpawnPayload* InPayload = nullptr
 	) = 0;
 	
 	virtual void SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
-		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete()) = 0;
+		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete(),
+		const UBlockSpawnPayload* InPayload = nullptr) = 0;
 
 	// 해당 위치에 블록을 소환할 수 있는지 검사하는 함수
 	virtual bool IsLocationOccupied(const FVector& CheckLocation, float CheckGridSize) = 0;

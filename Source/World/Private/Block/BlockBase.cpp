@@ -33,6 +33,11 @@ ABlockBase::ABlockBase()
 	CollisionComponent->SetCollisionObjectType(ECC_Block);
 }
 
+void ABlockBase::InitializeBlock(const UBlockSpawnPayload* InPayload)
+{
+	// Payload를 사용하지 않는 블록을 위한 기본 구현
+}
+
 // Called when the game starts or when spawned
 void ABlockBase::BeginPlay()
 {

@@ -62,6 +62,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag BlockTagToSpawn;
 
+	// 아군(플레이어)은 밀어내기 위한 태그
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag TeamAllyTag;
+
+	// 적(다른 블록, 적)과의 충돌에서 폭발하기 위한 태그
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag TeamEnemyTag;
+
 	// -------------------------------------------------------------------------
 	// 프리뷰
 	// -------------------------------------------------------------------------
@@ -90,6 +98,22 @@ protected:
 protected:
 	// 발사 방향 저장
 	FVector LaunchDirection = FVector::ForwardVector;
+
+	// 발사 속도 
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	float LaunchSpeed = 1500.0f;
+
+	// 발사 후 최대 수명
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	float MaxLifeTime = 3.0f;
+
+	// 아군 넉백 힘
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	float AllyKnockbackStrength = 800.0f;
+
+	// 적에게 적용할 데미지 GE 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
 	// 발사 함수
 	void Launch();

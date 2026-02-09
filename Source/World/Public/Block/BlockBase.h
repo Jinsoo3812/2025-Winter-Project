@@ -7,6 +7,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameplayEventInterface.h"
+#include "BlockSpawnPayload.h"
 #include "BlockBase.generated.h"
 
 class AChunkBase;
@@ -25,6 +26,8 @@ public:
 	ABlockBase();
 
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void InitializeBlock(const UBlockSpawnPayload* InPayload);
 
 protected:
 	virtual void BeginPlay() override;

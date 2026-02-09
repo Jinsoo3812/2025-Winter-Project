@@ -62,7 +62,8 @@ protected:
 		FGameplayTag BlockTypeTag,
 		FVector Location,
 		FRotator Rotation,
-		bool bEnableGravity
+		bool bEnableGravity,
+		const UBlockSpawnPayload* InPayload = nullptr
 	) override;
 
 public:
@@ -74,7 +75,8 @@ public:
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
 	void SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
-		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete()) override;
+		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete(),
+		const UBlockSpawnPayload* InPayload = nullptr) override;
 
 	// Actor 블록 소환 요청을 한 번에 받아 Queue에 등록하는 함수
 	// @param Requests: 소환 요청 배열

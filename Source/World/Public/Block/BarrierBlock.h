@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Block/DestructibleBlock.h"
 #include "GameFramework/ProjectileMovementComponent.h"
-#include "GameplayEffectTypes.h"
 #include "BarrierBlock.generated.h"
 
 /**
@@ -22,6 +21,9 @@ class WORLD_API ABarrierBlock : public ADestructibleBlock
 public:
 	ABarrierBlock();
 
+	// UBlockSpawnPayload를 이용해 멤버 변수 초기화
+	virtual void InitializeBlock(const UBlockSpawnPayload* InPayload) override;
+
 protected:
 	virtual void BeginPlay() override;
 
@@ -30,11 +32,9 @@ protected:
 	// ------------------------------------------------------------- 
 protected:
 	// 아군(플레이어)은 밀어내기 위한 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag TeamAllyTag;
 
 	// 적(다른 블록, 적)과의 충돌에서 폭발하기 위한 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag TeamEnemyTag;
 
 	// -------------------------------------------------------------------------
@@ -45,22 +45,22 @@ protected:
 	UProjectileMovementComponent* ProjectileMovement;
 
 	// 발사 속도 
-	UPROPERTY(EditDefaultsOnly, Category = "Barrier Stats")
+	UPROPERTY()
 	float LaunchSpeed = 1500.0f;
 
 	// 발사 후 최대 수명
-	UPROPERTY(EditDefaultsOnly, Category = "Launch")
+	UPROPERTY()
 	float MaxLifeTime = 3.0f;
 
 	// 수명 타이머 핸들
 	FTimerHandle LifeTimerHandle;
 
 	// 아군 넉백 힘
-	UPROPERTY(EditDefaultsOnly, Category = "Barrier Stats")
+	UPROPERTY()
 	float AllyKnockbackStrength = 800.0f;
 
 	// 적에게 적용할 데미지 GE 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "Barrier Stats")
+	UPROPERTY()
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
 	// -------------------------------------------------------------------------
