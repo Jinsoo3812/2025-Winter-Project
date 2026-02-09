@@ -49,6 +49,19 @@ void UEnemyAttributeSet::OnRep_MaxHealth(const FGameplayAttributeData& OldMaxHea
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UEnemyAttributeSet, MaxHealth, OldMaxHealth);
 }
 
+
+void UEnemyAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
+{
+    Super::PreAttributeChange(Attribute, NewValue);
+
+    // 체력 변경 전 미리 제한 (Clamping) 
+    if (Attribute == GetHealthAttribute())
+    {
+        NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
+    }
+}
+
+
 /**
  * [핵심 로직: 스킬 적용 후 처리]
  * 팀원이 만든 스킬(GameplayEffect)이 이 적에게 적용된 "직후"에 호출됩니다.
@@ -58,57 +71,79 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	FGameplayAttribute ChangedAttribute = Data.EvaluatedData.Attribute;
+	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
+	{
+		// Data.Target 자체가 ASC의 레퍼런스입니다.
+		UAbilitySystemComponent* TargetASC = &Data.Target;
 
-    // 체력이 변했을 때 로직 수행
-    if (ChangedAttribute == GetHealthAttribute())
-    {
-        // 0. 타겟(맞은 애) 가져오기
-        AActor* TargetActor = nullptr;
-        if (Data.Target.AbilityActorInfo->AvatarActor.IsValid())
-        {
-            TargetActor = Data.Target.AbilityActorInfo->AvatarActor.Get();
-        }
+		// ASC를 통해 AvatarActor(캐릭터)를 직접 가져옵니다. 
+		AActor* TargetActor = TargetASC->GetAvatarActor();
 
-        // -----------------------------------------------------------------
-        // [허수아비 로직] 액터 태그에 "Scarecrow"가 붙어 있는지 확인
-        // -----------------------------------------------------------------
-        if (TargetActor && TargetActor->ActorHasTag(FName("Scarecrow")))
-        {
-            // 1. 입은 데미지 계산 (체력이 깎인 양 = Magnitude는 음수이므로 -를 붙임)
-            float DamageReceived = -Data.EvaluatedData.Magnitude;
+		// [중요] 최적화 및 변수 충돌 방지
+		// AEnemyBase로의 캐스팅을 여기서 딱 한 번만 수행하여 재사용합니다.
+		AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor);
 
-            // 2. 데미지가 있을 때만 로그 출력 (치유나 0 데미지 제외)
-            if (DamageReceived > 0.0f)
-            {
-                // 화면에 붉은색 글씨로 띄우기 (디버깅용)
-                GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red,
-                    FString::Printf(TEXT("[허수아비] 아야! 데미지: %.1f"), DamageReceived));
+		if (IsValid(TargetActor))
+		{
+			// 1. 대미지 수치 확인 및 UI 출력 요청
+			// Magnitude는 변화량이며, 대미지는 체력을 깎으므로 보통 음수(-)입니다.
+			// 이를 양수로 변환하여 UI에 전달합니다.
+			float DamageReceived = -Data.EvaluatedData.Magnitude;
 
-                // 출력 로그창에 남기기
-                UE_LOG(LogTemp, Warning, TEXT("[Scarecrow] Took Damage: %f | Current HP: %f"),
-                    DamageReceived, GetHealth());
-            }
+			if (DamageReceived > 0.0f)
+			{
 
-            // 3. [무한 체력 핵심] 체력을 즉시 최대치로 복구
-            SetHealth(GetMaxHealth());
+				// ----------------------------------------------------------------
+				// [디버깅] 대미지가 들어왔을 때 로그와 화면에 출력합니다.
+				FString DebugMsg = FString::Printf(TEXT("EnemyAttributeSet : [%s] Took Damage: %.1f | Current HP : %.1f"),
+					*TargetActor->GetName(), DamageReceived, GetHealth());
 
-            // 4. 여기서 함수 종료 (아래의 사망 처리 로직으로 넘어가지 않음 -> 절대 안 죽음)
-            return;
-        }
-        // -----------------------------------------------------------------
+				// (1) 화면에 2초간 붉은색 글씨로 출력
+				if (GEngine)
+				{
+					GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, DebugMsg);
+				}
 
-        // [일반 몬스터 로직]
-        // 체력을 0~Max 사이로 자름
-        SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+				// (2) 출력 로그(Output Log) 창에도 기록
+				UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
+				// ----------------------------------------------------------------
+				
 
-        // 체력이 0 이하라면 사망 처리
-        if (GetHealth() <= 0.0f)
-        {
-            if (AEnemyBase* Enemy = Cast<AEnemyBase>(TargetActor))
-            {
-                Enemy->Die(); // 사망 함수 호출
-            }
-        }
-    }
+				// EnemyBase를 상속받은 모든 몬스터(보스, 쫄몹, 허수아비 등)에게 작동합니다.
+				if (Enemy)
+				{
+					// BlueprintImplementableEvent 호출 -> BP에서 위젯 스폰 로직 실행
+					Enemy->ShowDamageNumber(DamageReceived);
+				}
+			}
+
+			// [특수 상태 처리] 무적(Invincible) 또는 허수아비(Scarecrow) 상태 확인
+			// 이 상태에서는 체력이 줄어들지 않고 즉시 회복됩니다.
+			// (대미지 폰트는 위에서 이미 출력되었으므로 타격감은 유지됩니다.)
+			if (TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Invincible"))) ||
+				TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Scarecrow"))))
+			{
+				SetHealth(GetMaxHealth());
+				return;
+			}
+
+			// 2. 체력 값 보정 (Clamping)
+			// 체력이 0 미만으로 떨어지거나 최대 체력을 초과하지 않도록 보정합니다.
+			SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
+
+			// 3. 사망 처리
+			// 체력이 0 이하가 되었을 때 사망 로직을 수행합니다.
+			if (GetHealth() <= 0.0f)
+			{
+				if (Enemy)
+				{
+					// 이미 사망 상태(State.Dead)가 아닐 때만 사망 함수 호출 (중복 사망 방지)
+					if (!TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead"))))
+					{
+						Enemy->Die();
+					}
+				}
+			}
+		}
+	}
 }

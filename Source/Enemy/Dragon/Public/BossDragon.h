@@ -2,11 +2,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "EnemyBase.h" // 부모 클래스
+#include "EnemyBase.h"
 #include "MotionWarpingComponent.h"
+#include "GameplayTagContainer.h" // GameplayTag 사용
+#include "GameplayEffectTypes.h" // FOnAttributeChangeData 정의 헤더 포함 필요
 #include "BossDragon.generated.h"
 
-class UBoxComponent; // 전방 선언
+class UBoxComponent;
+class UMotionWarpingComponent;
+class UGameplayEffect;
 
 UCLASS()
 class ENEMY_API ABossDragon : public AEnemyBase
@@ -16,35 +20,72 @@ class ENEMY_API ABossDragon : public AEnemyBase
 public:
 	ABossDragon();
 
-	// [애님 노티파이에서 호출] 돌진 판정 박스 켜기/끄기
+	// -------------------------------------------------------------------
+	// [1] 체력 기반 패턴 트리거 (66%, 33%)
+	// -------------------------------------------------------------------
+	// 체력이 변할 때마다 호출되는 콜백 함수
+	void OnHealthChanged(const FOnAttributeChangeData& Data);
+
+	// -------------------------------------------------------------------
+	// [2] 즉사기 패턴 로직 (계단 소환, 경고, 처형)
+	// -------------------------------------------------------------------
+
+	// 계단 소환 (십자가 형태) - Subsystem을 사용하여 블록 생성 (지속시간 포함 버전)
+	UFUNCTION(BlueprintCallable, Category = "Combat|Wipe")
+	void SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, float LifeTime = 15.0f);
+
+	// 바닥 경고 표시 (빨간색) 및 [수정] 경고 해제 시 계단 삭제
+	UFUNCTION(BlueprintCallable, Category = "Combat|Wipe")
+	void SetFloorWarningState(FVector CenterLocation, float Radius, bool bIsWarning);
+
+	// 높이 판정 처형 (즉사기 실행)
+	UFUNCTION(BlueprintCallable, Category = "Combat|Wipe")
+	void ExecuteHeightJudgmentKill(float SafeHeightThreshold = 200.0f);
+
+	// [추가] 저장된 계단을 모두 삭제하는 함수 (내부적으로 호출됨)
+	void DestroySpawnedStairs();
+
+	// -------------------------------------------------------------------
+	// [3] 기본 기능 (돌진, 모션워핑)
+	// -------------------------------------------------------------------
 	void SetRushCollisionEnabled(bool bEnable);
 
-
-	
-
-	// 모션 워핑 타겟 업데이트 함수 (블루프린트에서 호출 가능하게 설정)
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void UpdateMotionWarpTarget(AActor* TargetActor);
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void PostInitializeComponents() override; // 컴포넌트 세팅 완료 후 호출됨
+	virtual void PostInitializeComponents() override;
 
-	// [충돌 이벤트] 박스에 뭔가가 닿았을 때 실행
+	// 충돌 이벤트
 	UFUNCTION()
 	void OnRushOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 protected:
-	// 돌진 판정용 박스 컴포넌트
+	// 컴포넌트들
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	TObjectPtr<UBoxComponent> RushHitBox;
 
-	// 돌진 데미지용 GameplayEffect (에디터에서 할당)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MotionWarping")
+	TObjectPtr<UMotionWarpingComponent> MotionWarpingComp;
+
+	// GAS 이펙트
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Combat")
 	TSubclassOf<UGameplayEffect> RushDamageEffect;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "GAS|Combat")
+	TSubclassOf<UGameplayEffect> WipeDamageEffect;
 
-	// [추가] 모션 워핑 컴포넌트
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "MotionWarping")
-	TObjectPtr<UMotionWarpingComponent> MotionWarpingComp;
+	// [설정] 패턴 발동용 태그 (Event.Boss.Pattern.Wipe)
+	UPROPERTY(EditDefaultsOnly, Category = "GAS|Combat")
+	FGameplayTag WipePatternEventTag;
+
+	// [추가] 생성된 계단 블록들을 기억하는 배열 (TWeakObjectPtr로 안전하게 참조)
+	UPROPERTY()
+	TArray<TWeakObjectPtr<AActor>> SpawnedStairsList;
+
+private:
+	// 패턴 중복 실행 방지 플래그
+	bool bPattern66Triggered = false;
+	bool bPattern33Triggered = false;
 };

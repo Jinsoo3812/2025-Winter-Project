@@ -1,4 +1,4 @@
-﻿// Fill out your copyright notice in the Description page of Project Settings.
+// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "BlockGameplayTags.h"
@@ -8,12 +8,18 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Terrain, "Block.Type.Terrain");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Type_Destructible, "Block.Type.Destructible");
 
 // Block Highlight Tags
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_None, "Block.Highlight.None");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Preview, "Block.Highlight.Preview");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Target, "Block.Highlight.Target");
-
-// 진짜 쓰는 것들만
-UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight, "Block.Highlight");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_None, "Block.Highlight.None");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb, "Block.Highlight.Bomb");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Bomb_None, "Block.Highlight.Bomb.None");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Invalid, "Block.Highlight.Invalid");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_AttackZone, "Block.Highlight.AttackZone");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_AttackZone_None, "Block.Highlight.AttackZone.None");
+
+BlockGameplayTags::BlockGameplayTags()
+{
+}
+
+BlockGameplayTags::~BlockGameplayTags()
+{
+}

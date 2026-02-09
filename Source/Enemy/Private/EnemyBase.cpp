@@ -8,6 +8,8 @@
 #include "AIController.h" // AI 컨트롤러 접근용
 #include "BrainComponent.h" // AI 뇌(비헤이비어 트리) 정지용
 #include "GameFramework/CharacterMovementComponent.h" // (혹시 이동 멈출 때 필요)
+#include "GameplayTagsManager.h" // 태그 관리를 위해 추가
+
 
 AEnemyBase::AEnemyBase()
 {
@@ -65,6 +67,27 @@ void AEnemyBase::BeginPlay()
 	}
 }
 
+void AEnemyBase::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	// GAS 시스템 초기화 (AI가 컨트롤러에 빙의될 때 실행)
+	if (AbilitySystemComponent)
+	{
+		// 1. Owner와 Avatar 설정 (서버/클라이언트 동기화 중요)
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+
+		// 2. 초기 스탯 및 스킬 부여 (서버 권한이 있을 때만)
+		if (HasAuthority())
+		{
+			InitializeAttributes();
+			GiveDefaultAbilities();
+		}
+	}
+}
+
+
+
 void AEnemyBase::InitializeAttributes()
 {
 	// 에디터에 할당된 GE가 있고, ASC가 유효하다면 적용
@@ -87,24 +110,60 @@ void AEnemyBase::InitializeAttributes()
 
 void AEnemyBase::GiveDefaultAbilities()
 {
-	// 에디터에 설정된 스킬 목록 순회
-	if (HasAuthority() && AbilitySystemComponent)
+	// 이미 스킬이 부여되었는지 확인하여 중복 방지
+	if (!HasAuthority() || !AbilitySystemComponent || bAbilitiesInitialized) return;
+
+	for (TSubclassOf<UGameplayAbility>& AbilityClass : StartupAbilities)
 	{
-		for (TSubclassOf<UGameplayAbility>& AbilityClass : StartupAbilities)
+		if (AbilityClass)
 		{
-			if (AbilityClass)
-			{
-				// 스킬 부여 (GiveAbility)
-				// Level 1로 부여, InputID는 AI라 보통 -1(없음) 사용
-				FGameplayAbilitySpec Spec(AbilityClass, 1, -1);
-				AbilitySystemComponent->GiveAbility(Spec);
-			}
+			AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass, 1, -1));
 		}
+	}
+	bAbilitiesInitialized = true; // 플래그 설정
+}
+
+
+/*
+* ForceResetCombatState
+* 전투 상태를 강제로 초기화합니다.
+* - 모든 스킬 및 어빌리티를 취소
+* - 이동 정지 및 AI 로직 초기화
+* - 어그로 초기화 (필요시 추가 구현 가능)
+*/
+void AEnemyBase::ForceResetCombatState()
+{
+	// 1. GAS 어빌리티(스킬/공격) 모두 취소
+	if (GetAbilitySystemComponent())
+	{
+		GetAbilitySystemComponent()->CancelAllAbilities();
+	}
+
+	// 2. 이동 및 AI 로직 정지
+	if (AController* CurrentController = GetController())
+	{
+		CurrentController->StopMovement(); // 물리적 이동 멈춤
+
+		if (AAIController* AIC = Cast<AAIController>(CurrentController))
+		{
+			AIC->ClearFocus(EAIFocusPriority::Gameplay); // 쳐다보던 것 멈춤
+			// 필요한 경우 BrainComponent(BT)를 잠시 멈출 수도 있음
+			// AIC->GetBrainComponent()->StopLogic("PhaseTransition"); 
+		}
+	}
+
+	// 3. (선택사항) 물리 상태 초기화 (공중에 떠있거나 밀려나는 중이라면 멈춤)
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->StopMovementImmediately();
 	}
 }
 
+
+
 void AEnemyBase::OnAttackHit(AActor* TargetActor)
 {
+
 	if (!TargetActor || !AttackDamageEffect) return;
 
 	// 1. 타겟도 GAS 시스템(ASC)을 가지고 있는지 확인
@@ -123,39 +182,44 @@ void AEnemyBase::OnAttackHit(AActor* TargetActor)
 			// 3. 데미지 적용!
 			AbilitySystemComponent->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
 
-			UE_LOG(LogTemp, Log, TEXT("[EnemyBase] Successfully applied damage to %s"), *TargetActor->GetName());
+			UE_LOG(LogTemp, Log, TEXT("[EnemyBase] : Successfully applied damage to %s"), *TargetActor->GetName());
 		}
 	}
 }
 
 void AEnemyBase::Die()
 {
-	// 이미 죽었으면 무시
-	if (GetLifeSpan() > 0.0f) return;
+	// 1. 이미 죽었거나 파괴 중이면 중단 (중복 실행 방지 핵심)
+	if (bIsDying || !IsValid(this)) return;
+	bIsDying = true; // 헤더에 bool bIsDying; 선언 필요
 
-	UE_LOG(LogTemp, Warning, TEXT("[EnemyBase] %s has Died!"), *GetName());
-
-	// 1. 충돌 끄기 (시체 밟고 지나가도록)
-	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 래그돌 쓸거면 QueryAndPhysics
-
-	// 2. 사망 몽타주 재생
-	if (DeadMontage)
+	// 2. 서버에서 사망 태그 부여
+	if (AbilitySystemComponent)
 	{
-		PlayAnimMontage(DeadMontage);
+		AbilitySystemComponent->AddLooseGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead")));
 	}
 
-	// 3. AI 컨트롤러 정지 (BrainComponent 정지)
+	// 3. 컴포넌트 유효성 검사 후 콜리전 제거 
+	if (GetCapsuleComponent())
+	{
+		GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	if (GetMesh())
+	{
+		GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+
+	// 4. AI 컨트롤러 및 브레인 컴포넌트 안전하게 정지 
 	if (AAIController* AICon = Cast<AAIController>(GetController()))
 	{
-		// BrainComponent가 null이 아닐 때만 정지
 		if (AICon->BrainComponent)
 		{
 			AICon->BrainComponent->StopLogic("Died");
 		}
 	}
 
-	// 4. 일정 시간 뒤 액터 제거 (필요하다면)
+	// 5. 블루프린트 이벤트 호출 및 생존 기간 설정 
+	BP_OnDie();
 	SetLifeSpan(5.0f);
 }
 
