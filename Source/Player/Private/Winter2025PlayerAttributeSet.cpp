@@ -1,8 +1,8 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Winter2025PlayerAttributeSet.h"
-#include "Net/UnrealNetwork.h"        // ³×Æ®¿öÅ© µ¿±âÈ­(DOREPLIFETIME)¸¦ À§ÇØ ÇÊ¼ö
-#include "GameplayEffectExtension.h"  // GE µ¥ÀÌÅÍ¸¦ ´Ù·ç±â À§ÇØ ÇÊ¼ö
+#include "Net/UnrealNetwork.h"        // ë„¤íŠ¸ì›Œí¬ ë™ê¸°í™”(DOREPLIFETIME)ë¥¼ ìœ„í•´ í•„ìˆ˜
+#include "GameplayEffectExtension.h"  // GE ë°ì´í„°ë¥¼ ë‹¤ë£¨ê¸° ìœ„í•´ í•„ìˆ˜
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -14,10 +14,10 @@ void UWinter2025PlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	/*
-	* µ¿±âÈ­ µî·Ï
-	* ¼­¹öÀÇ Attribute SetÀÌ º¯ÇÏ¸é, Å¬¶óÀÌ¾ğÆ®ÀÇ Attribute SetÀ¸·Î º¹Á¦ÇÑ´Ù.
-	* COND_None: Á¶°Ç ¾øÀÌ Ç×»ó º¹Á¦
-	* REPNOTIFY_Always: °ªÀÌ ¹Ù²ğ ¶§¸¶´Ù OnRep_XXX ÇÔ¼ö¸¦ È£Ãâ
+	* ë™ê¸°í™” ë“±ë¡
+	* ì„œë²„ì˜ Attribute Setì´ ë³€í•˜ë©´, í´ë¼ì´ì–¸íŠ¸ì˜ Attribute Setìœ¼ë¡œ ë³µì œí•œë‹¤.
+	* COND_None: ì¡°ê±´ ì—†ì´ í•­ìƒ ë³µì œ
+	* REPNOTIFY_Always: ê°’ì´ ë°”ë€” ë•Œë§ˆë‹¤ OnRep_XXX í•¨ìˆ˜ë¥¼ í˜¸ì¶œ
 	*/
 	DOREPLIFETIME_CONDITION_NOTIFY(UWinter2025PlayerAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UWinter2025PlayerAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
@@ -30,8 +30,8 @@ void UWinter2025PlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeP
 void UWinter2025PlayerAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
 	/*
-	* Å¬¶óÀÌ¾ğÆ® GASÀÇ ¿¹Ãø°ª°ú ¼­¹ö¿¡¼­ ¿Â ½ÇÁ¦ °ªÀÌ ´Ù¸¦ ¼ö ÀÖÀ¸¹Ç·Î
-	* ±× µÑÀ» ºñ±³ÇØ¼­ µ¿±âÈ­ ÀÛ¾÷À» ¼öÇàÇÏ´Â ¸ÅÅ©·Î
+	* í´ë¼ì´ì–¸íŠ¸ GASì˜ ì˜ˆì¸¡ê°’ê³¼ ì„œë²„ì—ì„œ ì˜¨ ì‹¤ì œ ê°’ì´ ë‹¤ë¥¼ ìˆ˜ ìˆìœ¼ë¯€ë¡œ
+	* ê·¸ ë‘˜ì„ ë¹„êµí•´ì„œ ë™ê¸°í™” ì‘ì—…ì„ ìˆ˜í–‰í•˜ëŠ” ë§¤í¬ë¡œ
 	*/
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UWinter2025PlayerAttributeSet, Health, OldHealth);
 }
@@ -60,7 +60,7 @@ void UWinter2025PlayerAttributeSet::OnRep_MovementSpeed(const FGameplayAttribute
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UWinter2025PlayerAttributeSet, MovementSpeed, OldMovementSpeed);
 
-	// Å¬¶óÀÌ¾ğÆ®µµ ÀÚ±â Ä³¸¯ÅÍÀÇ MaxWalkSpeed¸¦ ¸ÂÃçÁà¾ß ¹ö¹÷ÀÓ(Rubber-banding)ÀÌ ¾øÀ½
+	// í´ë¼ì´ì–¸íŠ¸ë„ ìê¸° ìºë¦­í„°ì˜ MaxWalkSpeedë¥¼ ë§ì¶°ì¤˜ì•¼ ë²„ë²…ì„(Rubber-banding)ì´ ì—†ìŒ
 	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
 	if (ASC && ASC->GetAvatarActor())
 	{
@@ -87,31 +87,31 @@ void UWinter2025PlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEff
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	// (Âü°í: Ã¼·ÂÀÌ 0ÀÌ µÇ¾úÀ» ¶§ »ç¸Á Ã³¸® µîµµ ¿©±â¼­ if (Health)·Î Ã³¸®ÇÕ´Ï´Ù)
+	// (ì°¸ê³ : ì²´ë ¥ì´ 0ì´ ë˜ì—ˆì„ ë•Œ ì‚¬ë§ ì²˜ë¦¬ ë“±ë„ ì—¬ê¸°ì„œ if (Health)ë¡œ ì²˜ë¦¬í•©ë‹ˆë‹¤)
 
 
-	// [Ã¼·Â º¯µ¿ Ã³¸®]
-	// º¯°æµÈ ¼Ó¼ºÀÌ 'Health'ÀÎ °æ¿ì¿¡¸¸ ¾Æ·¡ ·ÎÁ÷À» ½ÇÇàÇÕ´Ï´Ù.
+	// [ì²´ë ¥ ë³€ë™ ì²˜ë¦¬]
+	// ë³€ê²½ëœ ì†ì„±ì´ 'Health'ì¸ ê²½ìš°ì—ë§Œ ì•„ë˜ ë¡œì§ì„ ì‹¤í–‰í•©ë‹ˆë‹¤.
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
-		// [Clamp Ã³¸®: ¼öÄ¡ °íÁ¤]
-		// Ã¼·ÂÀº 0º¸´Ù ÀÛ¾ÆÁú ¼ö ¾ø°í, ÃÖ´ë Ã¼·Â(MaxHealth)º¸´Ù Ä¿Áú ¼ö ¾ø½À´Ï´Ù.
-		// ¿¹: Ã¼·Â 100¿¡¼­ 1000 È¸º¹À» ¹Ş¾Æµµ 100À¸·Î °íÁ¤.
+		// [Clamp ì²˜ë¦¬: ìˆ˜ì¹˜ ê³ ì •]
+		// ì²´ë ¥ì€ 0ë³´ë‹¤ ì‘ì•„ì§ˆ ìˆ˜ ì—†ê³ , ìµœëŒ€ ì²´ë ¥(MaxHealth)ë³´ë‹¤ ì»¤ì§ˆ ìˆ˜ ì—†ìŠµë‹ˆë‹¤.
+		// ì˜ˆ: ì²´ë ¥ 100ì—ì„œ 1000 íšŒë³µì„ ë°›ì•„ë„ 100ìœ¼ë¡œ ê³ ì •.
 		SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 
-		// [µğ¹ö±ë ·Î±×]
-		// ÇÃ·¹ÀÌ¾î°¡ ¸Â¾ÒÀ» ¶§ ·Î±×Ã¢¿¡ ÇöÀç Ã¼·ÂÀ» ¶ç¿ó´Ï´Ù.
+		// [ë””ë²„ê¹… ë¡œê·¸]
+		// í”Œë ˆì´ì–´ê°€ ë§ì•˜ì„ ë•Œ ë¡œê·¸ì°½ì— í˜„ì¬ ì²´ë ¥ì„ ë„ì›ë‹ˆë‹¤.
 		UE_LOG(LogTemp, Warning, TEXT("[Player] Ouch! Current HP: %f"), GetHealth());
 
-		// [»ç¸Á Ã³¸®]
+		// [ì‚¬ë§ ì²˜ë¦¬]
 		if (GetHealth() <= 0.0f)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[Player] Player Died! (Ã¼·ÂÀÌ 0ÀÌ µÇ¾ú½À´Ï´Ù)"));
-			// ¿©±â¿¡ »ç¸Á ¾Ö´Ï¸ŞÀÌ¼Ç Àç»ı, Á¶ÀÛ ºÒ´É Ã³¸® µîÀ» Ãß°¡ÇÏ¸é µË´Ï´Ù.
+			UE_LOG(LogTemp, Error, TEXT("[Player] Player Died! (ì²´ë ¥ì´ 0ì´ ë˜ì—ˆìŠµë‹ˆë‹¤)"));
+			// ì—¬ê¸°ì— ì‚¬ë§ ì• ë‹ˆë©”ì´ì…˜ ì¬ìƒ, ì¡°ì‘ ë¶ˆëŠ¥ ì²˜ë¦¬ ë“±ì„ ì¶”ê°€í•˜ë©´ ë©ë‹ˆë‹¤.
 		}
 	}
 
-	// [¸¶³ª º¯µ¿ Ã³¸®]
+	// [ë§ˆë‚˜ ë³€ë™ ì²˜ë¦¬]
 	if (Data.EvaluatedData.Attribute == GetManaAttribute())
 	{
 		SetMana(FMath::Clamp(GetMana(), 0.0f, GetMaxMana()));

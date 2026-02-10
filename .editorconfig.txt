@@ -1,7 +1,9 @@
 root = true
 
-[*.{cpp,h,cs,target,build}]
+[*.{cpp,h,cs}]
 charset = utf-8-bom
 end_of_line = crlf
-insert_final_newline = true
-trim_trailing_whitespace = true
+
+[*.{target,build}.cs]
+charset = utf-8-bom
+end_of_line = crlf

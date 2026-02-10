@@ -1,16 +1,16 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 
 #include "Block/BlockAttributeSet.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
-#include "Block/DestructibleBlock.h" // ADestructibleBlockÀÇ Çì´õ ÇÊ¿ä
+#include "Block/DestructibleBlock.h" // ADestructibleBlockì˜ í—¤ë” í•„ìš”
 
 UBlockAttributeSet::UBlockAttributeSet()
 {
-	// »ı¼ºÀÚ¿¡¼­ ÃÊ±â°ª ¼³Á¤
-	// Âü°í: ½ÇÁ¦ °ÔÀÓ¿¡¼­´Â GameplayEffect¸¦ ÅëÇØ ÃÊ±âÈ­ÇÏ´Â °ÍÀÌ Á¤¼®ÀÌÁö¸¸, 
-	// ´Ü¼øÇÑ ¾×ÅÍÀÇ °æ¿ì »ı¼ºÀÚ ÃÊ±âÈ­µµ À¯È¿ÇÔ.
+	// ìƒì„±ìì—ì„œ ì´ˆê¸°ê°’ ì„¤ì •
+	// ì°¸ê³ : ì‹¤ì œ ê²Œì„ì—ì„œëŠ” GameplayEffectë¥¼ í†µí•´ ì´ˆê¸°í™”í•˜ëŠ” ê²ƒì´ ì •ì„ì´ì§€ë§Œ, 
+	// ë‹¨ìˆœí•œ ì•¡í„°ì˜ ê²½ìš° ìƒì„±ì ì´ˆê¸°í™”ë„ ìœ íš¨í•¨.
 	InitHealth(1.f);
 	InitMaxHealth(1.f);
 }
@@ -20,9 +20,9 @@ void UBlockAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	/*
-	* °ªÀÌ º¯°æµÇ¸é ¹«Á¶°Ç ¾Ë¸²
-	* COND_None: Á¶°Ç ¾øÀÌÇ×»ó º¹Á¦
-	* REPNOTIFY_Always: °ªÀÌ º¯°æµÉ ¶§¸¶´Ù OnRep ÇÔ¼ö È£Ãâ
+	* ê°’ì´ ë³€ê²½ë˜ë©´ ë¬´ì¡°ê±´ ì•Œë¦¼
+	* COND_None: ì¡°ê±´ ì—†ì´í•­ìƒ ë³µì œ
+	* REPNOTIFY_Always: ê°’ì´ ë³€ê²½ë  ë•Œë§ˆë‹¤ OnRep í•¨ìˆ˜ í˜¸ì¶œ
 	*/
 	DOREPLIFETIME_CONDITION_NOTIFY(UBlockAttributeSet, Health, COND_None, REPNOTIFY_Always);
 	DOREPLIFETIME_CONDITION_NOTIFY(UBlockAttributeSet, MaxHealth, COND_None, REPNOTIFY_Always);
@@ -32,7 +32,7 @@ void UBlockAttributeSet::PreAttributeChange(const FGameplayAttribute& Attribute,
 {
 	Super::PreAttributeChange(Attribute, NewValue);
 
-	// Ã¼·ÂÀº 0 ~ MaxHealth »çÀÌ·Î Á¦ÇÑ
+	// ì²´ë ¥ì€ 0 ~ MaxHealth ì‚¬ì´ë¡œ ì œí•œ
 	if (Attribute == GetHealthAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.0f, GetMaxHealth());
@@ -43,13 +43,13 @@ void UBlockAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 {
 	Super::PostGameplayEffectExecute(Data);
 
-	// º¯°æµÈ ¼Ó¼ºÀÌ Ã¼·ÂÀÎ °æ¿ì
+	// ë³€ê²½ëœ ì†ì„±ì´ ì²´ë ¥ì¸ ê²½ìš°
 	if (Data.EvaluatedData.Attribute == GetHealthAttribute())
 	{
-		// Ã¼·ÂÀÌ 0 ÀÌÇÏÀÎÁö È®ÀÎ
+		// ì²´ë ¥ì´ 0 ì´í•˜ì¸ì§€ í™•ì¸
 		if (GetHealth() <= 0.0f)
 		{
-			// GE ÄÁÅØ½ºÆ®¿¡¼­ °¡ÇØÀÚ(Instigator) ÃßÃâ
+			// GE ì»¨í…ìŠ¤íŠ¸ì—ì„œ ê°€í•´ì(Instigator) ì¶”ì¶œ
 			AActor* Instigator = Data.EffectSpec.GetContext().GetInstigator();
 
 			if (OnDestroyed.IsBound())
@@ -63,8 +63,8 @@ void UBlockAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 void UBlockAttributeSet::OnRep_Health(const FGameplayAttributeData& OldHealth)
 {
 	/*
-	* Å¬¶óÀÌ¾ğÆ® GASÀÇ ¿¹Ãø°ª°ú ¼­¹ö¿¡¼­ ¿Â ½ÇÁ¦ °ªÀÌ ´Ù¸¦ ¼ö ÀÖÀ¸¹Ç·Î
-	* ±× µÑÀ» ºñ±³ÇØ¼­ µ¿±âÈ­ ÀÛ¾÷À» ¼öÇàÇÏ´Â ¸ÅÅ©·Î
+	* í´ë¼ì´ì–¸íŠ¸ GASì˜ ì˜ˆì¸¡ê°’ê³¼ ì„œë²„ì—ì„œ ì˜¨ ì‹¤ì œ ê°’ì´ ë‹¤ë¥¼ ìˆ˜ ìˆìœ¼ë¯€ë¡œ
+	* ê·¸ ë‘˜ì„ ë¹„êµí•´ì„œ ë™ê¸°í™” ì‘ì—…ì„ ìˆ˜í–‰í•˜ëŠ” ë§¤í¬ë¡œ
 	*/
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UBlockAttributeSet, Health, OldHealth);
 }

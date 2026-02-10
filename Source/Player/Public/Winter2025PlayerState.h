@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -18,13 +18,13 @@ class AWinter2025PlayerState : public APlayerState, public IAbilitySystemInterfa
 public:
 	AWinter2025PlayerState();
 
-	/* IAbilitySystemInterface ±¸Çö */
+	/* IAbilitySystemInterface êµ¬í˜„ */
 	UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 	/* Player AttributeSet Getter */
 	UWinter2025PlayerAttributeSet* GetAttributeSet() const { return AttributeSet; }
 
-	/* ÇÃ·¹ÀÌ¾î ±âº» ½ºÅÈ ÃÊ±âÈ­ */
+	/* í”Œë ˆì´ì–´ ê¸°ë³¸ ìŠ¤íƒ¯ ì´ˆê¸°í™” */
 	void InitializePlayerStats(int32 Level);
 
 protected:
@@ -34,11 +34,11 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UWinter2025PlayerAttributeSet> AttributeSet;
 
-	/* ·¹º§ º° ÇÃ·¹ÀÌ¾î ±âº» ½ºÅÈ */
+	/* ë ˆë²¨ ë³„ í”Œë ˆì´ì–´ ê¸°ë³¸ ìŠ¤íƒ¯ */
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	UDataTable* PlayerStatsDataTable;
 
-	/* ÇöÀç ÇÃ·¹ÀÌ¾î ·¹º§ */
+	/* í˜„ì¬ í”Œë ˆì´ì–´ ë ˆë²¨ */
 	UPROPERTY(EditDefaultsOnly, Category = "Stats")
 	int32 PlayerLevel = 1;
 };

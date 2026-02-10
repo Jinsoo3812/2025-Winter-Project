@@ -1,4 +1,4 @@
-
+ï»¿
 
 #pragma once
 
@@ -6,9 +6,10 @@
 #include "NativeGameplayTags.h"
 
 /**
- * Input°ú °ü·ÃµÈ GameplayTags¸¦ Á¤ÀÇÇÏ´Â Å¬·¡½º
+ * Inputê³¼ ê´€ë ¨ëœ GameplayTagsë¥¼ ì •ì˜í•˜ëŠ” í´ë˜ìŠ¤
  */
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Input_LeftClick);
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Input_MouseWheelClick);
 
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Input_Skill_Slot1);
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Input_Skill_Slot2);

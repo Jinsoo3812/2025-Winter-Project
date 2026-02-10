@@ -4,8 +4,12 @@
 #include "Block/BlockBase.h"
 #include "Engine/World.h"
 #include "CollisionChannels.h"
-#include "Block/DA_BlockConfig.h"
+#include "BlockConfig.h"
 #include "BlockGameplayTags.h"
+#include "BlockSettings.h"
+#include "ChunkBase.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 
 
 // Sets default values
@@ -16,9 +20,6 @@ ABlockBase::ABlockBase()
 
 	// 처음에는 비활성화 상태로 시작
 	PrimaryActorTick.bStartWithTickEnabled = false;
-
-	// [추가] 중요: 서버에서 발생한 색상 변경을 클라이언트로 전파하기 위해 리플리케이션을 켭니다.
-	bReplicates = true;
 
 	// 물리 충돌을 담당할 BoxComponent 생성 (Root)
 	CollisionComponent = CreateDefaultSubobject<UBoxComponent>(TEXT("CollisionBox"));
@@ -32,10 +33,80 @@ ABlockBase::ABlockBase()
 	CollisionComponent->SetCollisionObjectType(ECC_Block);
 }
 
+void ABlockBase::InitializeBlock(const UBlockSpawnPayload* InPayload)
+{
+	// Payload를 사용하지 않는 블록을 위한 기본 구현
+}
+
 // Called when the game starts or when spawned
 void ABlockBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// BlockConfig 캐시
+	if (!BlockConfig)
+	{
+		if (const UBlockSettings* Settings = GetDefault<UBlockSettings>())
+		{
+			if (!Settings->BlockConfigAsset.IsNull())
+			{
+				// 디스크에서 에셋을 찾아 메모리에 올림
+				// 로딩이 완료될 때까지 이곳에서 실행흐름이 멈춤
+				BlockConfig = Settings->BlockConfigAsset.LoadSynchronous();
+			}
+		}
+	}
+
+	if (BlockConfig)
+	{
+		GridSize = BlockConfig->GridSize;
+
+		// 1. 현재 내 클래스(this->GetClass())에 해당하는 태그를 Config에서 조회
+		FGameplayTag MyBlockTag = BlockConfig->GetBlockDef(this->GetClass())->Tag;
+
+		if (MyBlockTag.IsValid())
+		{
+			// 2. ASC 가져오기 (IAbilitySystemInterface를 구현했는지 확인)
+			UAbilitySystemComponent* ASC = nullptr;
+
+			// 인터페이스를 통한 접근 시도 (가장 권장되는 방식)
+			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(this))
+			{
+				ASC = ASI->GetAbilitySystemComponent();
+			}
+			// 인터페이스가 없다면 컴포넌트 검색 시도 (Fallback)
+			else
+			{
+				ASC = FindComponentByClass<UAbilitySystemComponent>();
+			}
+
+			// 3. ASC가 유효하다면 Loose Tag 추가
+			if (ASC)
+			{
+				// LooseGameplayTag: GameplayEffect 없이 ASC에 직접 태그를 추가함.
+				// 블록의 타입(Identity)처럼 정적인 속성을 정의할 때 적합함.
+				ASC->AddLooseGameplayTag(MyBlockTag);
+
+				// (디버깅용 로그 - 필요 시 주석 해제)
+				// UE_LOG(LogTemp, Log, TEXT("BlockBase: Assigned Tag %s to %s"), *MyBlockTag.ToString(), *GetName());
+			}
+			else
+			{
+				// BlockBase 자체는 ASC가 없을 수 있으므로(파괴 불가능 블록 등),
+				// ASC가 없다고 해서 반드시 에러는 아님. 필요하다면 로그 출력.
+				// UE_LOG(LogTemp, Warning, TEXT("BlockBase: No ASC found on %s, could not assign tag."), *GetName());
+			}
+		}
+		else
+		{
+			// Config에는 있지만 현재 클래스와 매칭되는 정의가 없는 경우
+			UE_LOG(LogTemp, Warning, TEXT("BlockBase: No matching ActorTag found in BlockConfig for Class %s"), *GetClass()->GetName());
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("BlockBase: BlockConfig failed to load in %s"), *GetName());
+	}
 }
 
 void ABlockBase::PostInitializeComponents()
@@ -62,14 +133,12 @@ void ABlockBase::PostInitializeComponents()
 		}
 	}
 
-	// 유효성 검사 (찾았는지 확인)
 	if (!MeshComponent)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent not found in %s"), *GetName());
 	}
 }
 
-// Called every frame
 void ABlockBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -193,202 +262,93 @@ void ABlockBase::NotifyUpperBlock()
 		{
 			// 잠자던 위쪽 블록의 Tick을 켜서 추락하게 함
 			UpperBlock->SetActorTickEnabled(true);
-			// 로그 확인용
-			// UE_LOG(LogTemp, Log, TEXT("BlockBase: %s woke up %s"), *GetName(), *UpperBlock->GetName());
 		}
 		else
 		{
-			// 블록이 아닌 다른 물체일 경우 (로그 생략 가능)
+			// 블록이 아닌 다른 물체일 경우
 		}
 	}
 	else
 	{
-		// 위에 아무것도 없으므로 아무 작업도 하지 않음 (정상 상황)
+		// 위에 아무것도 없으므로 아무 작업도 하지 않음
 	}
 }
 
-//void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload)
-//{
-//	// Config 유효성 체크
-//	if (!BlockConfig) {
-//		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
-//		return;
-//	}
-//
-//	// 폭탄 하이라이트 태그 처리는 중첩형이므로 특수 처리
-//	if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb))
-//	{
-//		if (MeshComponent)
-//		{   
-//			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
-//			{
-//				CurrentBombCount = 0;
-//				MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
-//				return;
-//			}
-//			// 최대 폭탄 개수에 맞춰 Clamp
-//			CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
-//
-//			// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
-//			float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
-//
-//			// 폭탄 CPD Index도 Config에 정의되어 있음
-//			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
-//		}
-//		else
-//		{
-//			UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
-//		}
-//		return;
-//	}
-//
-//	// 일반적인 On/Off 형태의 Highlight 태그 처리
-//	// Ex) Block.Highlight.Preview 같은 태그가 왔을 때,
-//	// BlockCPDIndexMap에서 해당 태그에 맞는 CPD 정보를 찾음
-//	if (const FBlockCPDInfo* FoundInfo = BlockConfig->BlockCPDIndexMap.Find(EventTag))
-//	{
-//		// 찾은 정보대로 CPD 업데이트
-//		if (MeshComponent)
-//		{
-//			MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
-//		}
-//	}
-//	else
-//	{
-//		// 맵에도 없고, 특수 처리 태그도 아님 -> 경고
-//		// UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
-//	}
-//}
-
-// -----------------------------------------------------------------------------
-// [수정] GameplayEventInterface 구현 (네트워크 대응)
-// -----------------------------------------------------------------------------
 void ABlockBase::HandleGameplayEvent(FGameplayTag EventTag, const FGameplayEventData& Payload)
 {
-	// [설명]
-	// 1. 서버(HasAuthority)인 경우:
-	//    보스 공격(GA_AttackRange)은 서버에서 실행됩니다.
-	//    서버에서 색을 바꾸면서 동시에 클라이언트들에게도 "색을 바꿔라"고 Multicast를 보냅니다.
-	if (HasAuthority())
+	if (!BlockConfig)
 	{
-		Multicast_HandleGameplayEvent(EventTag);
-	}
-	// 2. 클라이언트인 경우:
-	//    건설 모드(GA_Construction)의 프리뷰처럼 내 컴퓨터에서만 보여야 하는 경우
-	//    즉시 색상 변경 로직을 실행합니다.
-	else
-	{
-		ApplyColorChange(EventTag);
-	}
-}
-
-
-void ABlockBase::HandleBombEvent(const FGameplayTag& EventTag)
-{
-	if (MeshComponent)
-	{	
-		// 폭탄이 모두 터져서 하이라이트를 제거해야 하는 경우
-		if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
-		{
-			CurrentBombCount = 0;
-			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
-			return;
-		}
-
-		// 폭탄 개수 증가 하이라이트
-		// 최대 폭탄 개수에 맞춰 Clamp
-		CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
-
-		// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
-		float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
-
-		// 폭탄 CPD Index도 Config에 정의되어 있음
-		MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
-	}
-	return;
-}
-
-// [추가] 서버에서 호출하면 모든 클라이언트에서 실행되는 함수 (현재는 색상 변경만 적용)
-void ABlockBase::Multicast_HandleGameplayEvent_Implementation(FGameplayTag EventTag)
-{
-	// 모든 클라이언트(나 포함)가 이 함수를 실행하여 색을 바꿉니다.
-	ApplyColorChange(EventTag);
-}
-
-// [추가] 실제 색상/CPD 변경 로직 (기존 코드를 여기로 이동)
-void ABlockBase::ApplyColorChange(FGameplayTag EventTag)
-{
-	// Config 유효성 체크
-	if (!BlockConfig) {
 		UE_LOG(LogTemp, Warning, TEXT("BlockBase: BlockConfig is null in %s"), *GetName());
 		return;
 	}
 
-	// 폭탄 하이라이트 태그 처리는 중첩형이므로 특수 처리
+	// 태그 분류 (Router)
+	if (EventTag.MatchesTag(TAG_Block_Highlight))
+	{
+		HandleHighlight(EventTag, Payload);
+	}
+}
+
+void ABlockBase::HandleHighlight(FGameplayTag EventTag, const FGameplayEventData& Payload)
+{
+	if (!MeshComponent)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during HandleHighlight in %s"), *GetName());
+		return;
+	}
+
+	// 폭탄 하이라이트 특수 처리
 	if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb))
 	{
-		if (MeshComponent)
+		// 폭탄 해제
+		if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
 		{
-			if (EventTag.MatchesTag(TAG_Block_Highlight_Bomb_None))
-			{
-				CurrentBombCount = 0;
-				MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
-				return;
-			}
+			CurrentBombCount = 0;
+			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, 0.0f);
+		}
+		// 폭탄 카운트 증가
+		else
+		{
 			// 최대 폭탄 개수에 맞춰 Clamp
 			CurrentBombCount = FMath::Clamp(CurrentBombCount + 1, 0, MaxBombCount);
 
 			// CPD 값 계산 (미리 설정된 강도 * 폭탄 개수)
 			float NewValue = CurrentBombCount * BlockConfig->BombIntensityPerCount;
 
-			// 폭탄 CPD Index도 Config에 정의되어 있음
 			MeshComponent->SetCustomPrimitiveDataFloat(BlockConfig->BombCPDIndex, NewValue);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("BlockBase: MeshComponent is null during Bomb Event in %s"), *GetName());
 		}
 		return;
 	}
 
 	// 일반적인 On/Off 형태의 Highlight 태그 처리
-	// Ex) Block.Highlight.Preview (파랑), Block.Highlight.Target (빨강)
-	if (const FBlockCPDInfo* FoundInfo = BlockConfig->BlockCPDIndexMap.Find(EventTag))
+	if (const FBlockCPDInfo* FoundInfo = BlockConfig->HighlightSettings.Find(EventTag))
 	{
 		// 찾은 정보대로 CPD 업데이트
-		if (MeshComponent)
-		{
-			MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
-		}
+		MeshComponent->SetCustomPrimitiveDataFloat(FoundInfo->CPDIndex, FoundInfo->CPDValue);
 	}
 	else
 	{
-		 //맵에도 없고, 특수 처리 태그도 아님 -> 경고
-		 UE_LOG(LogTemp, Warning, TEXT("BlockBase: EventTag %s not found in BlockCPDIndexMap of %s"), *EventTag.ToString(), *GetName());
+		// Highlight 태그인 줄 알고 들어왔는데, Config에도 없고 Bomb도 아닌 경우
+		UE_LOG(LogTemp, Warning, TEXT("BlockBase: Undefined Highlight Tag %s in Config"), *EventTag.ToString());
 	}
 }
 
+void ABlockBase::SelfDestroy()
+{	
+	// 죽기 전에 청크에게 내 자리 비워달라고 요청
+	if (ParentChunk.IsValid())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BlockBase] I (%s) am destroyed. Notifying Chunk to clear my spot: %s"),
+			*GetName(), *GetActorLocation().ToString());
+		// 현재 나의 월드 좌표를 넘겨줌 (청크가 알아서 로컬 좌표로 변환할 것임)
+		ParentChunk->RemoveBlockAtWorldLocation(GetActorLocation());
+	}
+	else UE_LOG(LogTemp, Warning, TEXT("[BlockBase] I (%s) am destroyed, but my ParentChunk is invalid."), *GetName());
 
-FVector ABlockBase::GetBlockAlignedLocation() const
-{
-	// 현재 실제 액터의 위치
-	FVector CurrentLoc = GetActorLocation();
-
-	float HalfSize = GridSize / 2.0f;
-
-	// 0, 100, 200, -100... 등 정수 배수 좌표로 스냅
-	float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize;
-	float SnappedY = FMath::RoundToFloat(CurrentLoc.Y / GridSize) * GridSize;
-	float SnappedZ = FMath::RoundToFloat(CurrentLoc.Z / GridSize) * GridSize;
-
-	return FVector(SnappedX, SnappedY, SnappedZ);
+	Destroy();
 }
 
-void ABlockBase::SelfDestroy()
+void ABlockBase::SetParentChunk(AChunkBase* InChunk)
 {
-	Destroy();
+	ParentChunk = InChunk;
 }

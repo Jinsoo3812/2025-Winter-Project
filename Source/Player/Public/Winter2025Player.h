@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
@@ -20,7 +20,7 @@ class AWinter2025Player : public ACharacter, public IAbilitySystemInterface
 
 public:
 	// ------------------
-	// ÃÊ±âÈ­ ÇÔ¼ö
+	// ì´ˆê¸°í™” í•¨ìˆ˜
 	// ------------------
 	AWinter2025Player();
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
@@ -29,13 +29,16 @@ public:
 
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "GAS")
+	FGameplayTagContainer InitialGameplayTags;
+
 protected:
 	// ------------------
-	// ÃÊ±âÈ­ ÇÔ¼ö
+	// ì´ˆê¸°í™” í•¨ìˆ˜
 	// ------------------
 
 	/*
-	* ¼­¹ö - Å¬¶óÀÌ¾ğÆ® °øÅë GAS ÃÊ±âÈ­ ÇÔ¼ö
+	* ì„œë²„ - í´ë¼ì´ì–¸íŠ¸ ê³µí†µ GAS ì´ˆê¸°í™” í•¨ìˆ˜
 	*/
 	void InitializeGAS();
 
@@ -46,15 +49,15 @@ protected:
 	TObjectPtr<UAbilitySystemComponent> CachedASC;
 
 	// ------------------
-	// ÀÔ·Â ¹ÙÀÎµù Ã³¸® °ü·Ã
-	// IMC·Î ¹°¸® Å°¿Í InputAction ¸ÅÇÎ
+	// ì…ë ¥ ë°”ì¸ë”© ì²˜ë¦¬ ê´€ë ¨
+	// IMCë¡œ ë¬¼ë¦¬ í‚¤ì™€ InputAction ë§¤í•‘
 	// ------------------
 
-	// ÀÌµ¿/Á¡ÇÁ Àü¿ë (WASD, Space) - Priority 0
+	// ì´ë™/ì í”„ ì „ìš© (WASD, Space) - Priority 0
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> BasicMappingContext;
 
-	// ½ºÅ³ Àü¿ë (Q, E, R, 1, 2, 3 µî) - Priority 1
+	// ìŠ¤í‚¬ ì „ìš© (Q, E, R, 1, 2, 3 ë“±) - Priority 1
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> SkillMappingContext;
 
@@ -65,6 +68,9 @@ protected:
 	TObjectPtr<UInputAction> LeftClickAction;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
+	TObjectPtr<UInputAction> MouseWheelClickAction;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputAction> JumpAction;
 
 	void Move(const FInputActionValue& Value);
@@ -73,9 +79,11 @@ protected:
 
 	void OnLeftClick(const FInputActionValue& Value);
 
+	void OnMouseWheelClick(const FInputActionValue& Value);
+
 	// ------------------
-	// ½ºÅ³ ÀÔ·Â Ã³¸® ÀÏ¹İÈ­
-	// ÅÂ±× ±â¹İÀ¸·Î ¾îºô¸®Æ¼ È°¼ºÈ­ ½Ãµµ
+	// ìŠ¤í‚¬ ì…ë ¥ ì²˜ë¦¬ ì¼ë°˜í™”
+	// íƒœê·¸ ê¸°ë°˜ìœ¼ë¡œ ì–´ë¹Œë¦¬í‹° í™œì„±í™” ì‹œë„
 	// ------------------
 
 	void Input_AbilityTagPressed(FGameplayTag InputTag);

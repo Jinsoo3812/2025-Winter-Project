@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+Ôªø// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -6,7 +6,7 @@
 #include "NativeGameplayTags.h"
 
 /**
- * Block∞˙ ∞¸∑√µ» GameplayTags∏¶ ¡§¿««œ¥¬ ≈¨∑°Ω∫
+ * BlockÍ≥º Í¥ÄÎ†®Îêú GameplayTagsÎ•º Ï†ïÏùòÌïòÎäî ÌååÏùº
  */
 
  // Block Type Tags
@@ -14,18 +14,16 @@ WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Type_Terrain);
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Type_Destructible);
 
 // Block Highlight Tags
-WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_None);
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Preview);
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Target);
-WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Bomb);
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Bomb_None);
-// ∞¯∞› ¿Â∆« ¿¸øÎ ≈¬±◊
+// ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩÔøΩÔøΩÔøΩ ÔøΩ¬±ÔøΩ
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_AttackZone);
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_AttackZone_None);
 
-class WINTER2025CORE_API BlockGameplayTags
-{
-public:
-	BlockGameplayTags();
-	~BlockGameplayTags();
-};
+// ÏßÑÏßú Ïì∞Îäî Í≤ÉÎì§Îßå
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight); // Block.Highlight
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_None);
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Bomb); // Block.Highlight.Bomb
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Bomb_None); // Block.Highlight.Bomb.None
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Block_Highlight_Invalid);

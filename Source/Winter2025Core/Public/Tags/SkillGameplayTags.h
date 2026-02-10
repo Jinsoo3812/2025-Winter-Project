@@ -1,18 +1,22 @@
-
+О╩©
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "NativeGameplayTags.h"
 
-WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill); // ╫╨еЁюсю╩ г╔╫цго╢б еб╠в
-WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // ╫╨еЁ ╫цюЭ аъюсю╩ ╫цюЭюз©║╟т ╨н©╘го╢б еб╠в
-WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // ╣╔╧лаЖ еб╠в©К
-WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Cooldown); // дПе╦юс еб╠в©К
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill); // Л┼╓М┌╛Л·└Л²└ М▒°Л▀°М∙≤К┼■ М┐°Й╥╦
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Casting); // Л┼╓М┌╛ Л▀°Л═└ Л╓▒Л·└Л²└ Л▀°Л═└Л·░Л≈░Й╡▄ К╤─Л≈╛М∙≤К┼■ М┐°Й╥╦
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Preview); // Player.State.Preview
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Damage);   // К█╟К╞╦Л╖─ М┐°Й╥╦Л ╘
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Data_Cooldown); // Л©╗М┐─Л·└ М┐°Й╥╦Л ╘
 
-// фДюлаН ╟Э╦╝╦╕ ю╖гя еб╠в ╪╠╬П
-WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_BuffBarrier_Phase1); // ╧ы╢з©║ ╧Эю╖╦╕ г╔╫цгя ╩Себ
-WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_BuffBarrier_Phase2); // ╨М╥ою╩ ╪рх╞гя ╩Себ
+// М▌≤Л²╢Л╕┬ Й╢─К╕╛К╔╪ Л°└М∙° М┐°Й╥╦ Л└═Л√╦
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_BuffBarrier_Phase1); // К╟■К▀╔Л≈░ К╡■Л°└К╔╪ М▒°Л▀°М∙° Л┐│М┐°
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_BuffBarrier_Phase2); // К╦■К║²Л²└ Л├▄М≥≤М∙° Л┐│М┐°
+
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Player_State_Preview);
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_State_Preview);
 
 /**
  * 

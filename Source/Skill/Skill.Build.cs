@@ -14,5 +14,13 @@ public class Skill: ModuleRules
             "Winter2025Core",
             "InputCore"
         });
+
+        PublicIncludePaths.AddRange(new string[] {
+			"Skill",
+			"Skill/Public/Data",
+			"Skill/Public/GA",
+            "Skill/Public/GA/Task",
+            "Skill/Public/Rune"
+		});
     }
 }

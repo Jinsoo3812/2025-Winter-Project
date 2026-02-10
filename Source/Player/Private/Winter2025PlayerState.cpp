@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Winter2025PlayerState.h"
 #include "AbilitySystemComponent.h"
@@ -8,7 +8,7 @@
 
 AWinter2025PlayerState::AWinter2025PlayerState()
 {
-	// ASC ¼³Á¤
+	// ASC ì„¤ì •
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
@@ -32,14 +32,14 @@ void AWinter2025PlayerState::InitializePlayerStats(int32 Level)
 		return;
 	}
 
-	// µ¥ÀÌÅÍ Å×ÀÌºí¿¡¼­ ·¹º§¿¡ ÇØ´çÇÏ´Â ½ºÅÈ °¡Á®¿À±â
+	// ë°ì´í„° í…Œì´ë¸”ì—ì„œ ë ˆë²¨ì— í•´ë‹¹í•˜ëŠ” ìŠ¤íƒ¯ ê°€ì ¸ì˜¤ê¸°
 	FString ContextString(TEXT("Player Stats Lookup"));
 	FName RowName = FName(*FString::FromInt(Level));
 	FPlayerInitialStatsRow* StatsRow = PlayerStatsDataTable->FindRow<FPlayerInitialStatsRow>(RowName, ContextString);
 
 	if (StatsRow && AttributeSet)
 	{
-		// AttributeSet¿¡ ÃÊ±â ½ºÅÈ Àû¿ë
+		// AttributeSetì— ì´ˆê¸° ìŠ¤íƒ¯ ì ìš©
 		AttributeSet->SetHealth(StatsRow->InitialHealth);
 		AttributeSet->SetMaxHealth(StatsRow->InitialMaxHealth);
 		AttributeSet->SetMana(StatsRow->InitialMana);
@@ -50,7 +50,7 @@ void AWinter2025PlayerState::InitializePlayerStats(int32 Level)
 		UE_LOG(LogTemp, Log, TEXT("ATestPlayerState: Loaded stats for Level %d - HP: %f, Mana: %f, AttackPower: %f, MovementSpeed: %f"),
 			Level, StatsRow->InitialMaxHealth, StatsRow->InitialMaxMana, StatsRow->InitialAttackPower, StatsRow->InitialMovementSpeed);
 
-		// ½ÇÁ¦ Ä³¸¯ÅÍ ÀÌµ¿ ¼Óµµµµ ÃÊ±â°ªÀ¸·Î ¸ÂÃçÁÖ±â
+		// ì‹¤ì œ ìºë¦­í„° ì´ë™ ì†ë„ë„ ì´ˆê¸°ê°’ìœ¼ë¡œ ë§ì¶°ì£¼ê¸°
 		APawn* Pawn = GetPawn();
 		if (ACharacter* Character = Cast<ACharacter>(Pawn))
 		{
