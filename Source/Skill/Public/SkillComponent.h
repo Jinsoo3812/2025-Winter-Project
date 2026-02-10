@@ -2,155 +2,109 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "SkillSystemInterface.h"
 #include "GameplayTagContainer.h"
-#include "GameplayAbilitySpec.h"
+#include "GameplayAbilitySpecHandle.h"
 #include "SkillComponent.generated.h"
 
 class UGameplayAbility;
 class UAbilitySystemComponent;
 class UDA_Rune;
 
-/**
- * 룬 슬롯 구조체
- * 개별 룬 슬롯의 상태를 관리
- */
+// 룬 슬롯 구조체
 USTRUCT(BlueprintType)
 struct FRuneSlot
 {
 	GENERATED_BODY()
 
-	// 장착된 룬 에셋
-	UPROPERTY(EditDefaultsOnly, Category = "Rune")
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TObjectPtr<UDA_Rune> RuneAsset;
 
-	FRuneSlot() : RuneAsset(nullptr) {}
+	// 현재 장착된 룬에 의해 부착될 태그
+	UPROPERTY(VisibleAnywhere)
+	FGameplayTag CachedCombinedTag;
 };
 
-/**
- * 스킬 슬롯 구조체
- * 캐릭터가 장착한 스킬의 정보를 담는 구조체
- * Skill의 GA와 그 SpecHandle을 보관
- */
+// 스킬 슬롯 구조체
 USTRUCT(BlueprintType)
 struct FSkillSlot
 {
 	GENERATED_BODY()
 
-	// 이 슬롯이 어떤 입력 태그에 반응하는지 명시 (ex: Input.Skill.Slot1)
-	UPROPERTY(EditDefaultsOnly, Category = "Config")
+public:
+	// 슬롯 식별 태그 (ex. Skill.Slot.1)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FGameplayTag SlotTag;
 
-	// 슬롯에 장착된 GA 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "Skill")
+	// 장착된 스킬
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSubclassOf<UGameplayAbility> EquippedSkill;
 
-	// ASC에서 받은 Ability Handle (GA 활성화/제거용)
-	// GA의 SpecHandle은 GE의 SpecHandle과 달리 int32 ID를 가짐
-	// GA Spec은 GA가 ASC에 장착될 때, 그 ASC가 TArray로 보관함
-	// Handle을 통해 ASC가 보관 중인 GA Spec에 접근 가능
-	UPROPERTY()
-	FGameplayAbilitySpecHandle AbilityHandle;
-
-	// 장착된 룬 슬롯들
-	UPROPERTY(EditDefaultsOnly, Category = "Rune")
+	// 룬 슬롯 배열
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FRuneSlot> RuneSlots;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Rune")
-	int32 MaxRuneSlots = 3;
-
-	// 장착된 초록 룬 (캐싱) - nullptr이면 초록 룬 없음
-	UPROPERTY()
-	TObjectPtr<UDA_Rune> EquippedGreenRune;
-
-	// 기본 생성자
-	FSkillSlot() : EquippedSkill(nullptr), AbilityHandle(), EquippedGreenRune(nullptr) {
-		RuneSlots.SetNum(MaxRuneSlots ? MaxRuneSlots : 3); // 룬 슬롯 확보
-	}
-
-	// 초록 룬 캐시 업데이트 (룬 장착/해제 시 호출)
-	void UpdateGreenRuneCache();
 };
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class USkillComponent : public UActorComponent, public ISkillSystemInterface
+class SKILL_API USkillComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+	// ---------------------------------------------------------------
+	// 초기화 및 기본 멤버
+	// ---------------------------------------------------------------
 public:
 	USkillComponent();
 
-	// 외부(PlayerState)에서 ASC가 준비되었음을 알릴 때 호출
-	void InitializeSkillSystem(UAbilitySystemComponent* InASC) override;
-
-	// 로비나 인게임에서 스킬을 교체할 때 호출
-	UFUNCTION(BlueprintCallable, Category = "Skill")
-	void EquipSkill(FGameplayTag SlotTag, TSubclassOf<UGameplayAbility> AbilityClass);
-
-	// 리플리케이션 규칙 정의 함수 (SkillSlots  동기화)
+	// 복제 설정
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
-	// -----------------
-	// 룬 관련 함수들
-	// -----------------
+	// ASC 초기화 및 기본 스킬 장착
+	void InitializeSkillSystem(UAbilitySystemComponent* InASC);
 
-	// 룬 장착 함수
-	// @param SlotIndex: 스킬 슬롯 인덱스
-	// @param RuneSlotIndex: 룬 슬롯 인덱스 (0~2)
-	// @param RuneData: 장착할 룬 데이터 에셋
-	// @return 성공 여부
-	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
-	bool EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* RuneData);
+	// 스킬 슬롯 개수
+	UPROPERTY(EditDefaultsOnly, Category = "SkillSlot")
+	int32 SkillSlotCount = 3;
 
-	// 룬 장착 해제 함수
-	// @param SlotIndex: 스킬 슬롯 인덱스
-	// @param RuneSlotIndex: 해제할 룬 슬롯 인덱스 (0~2)
-	// @return 성공 여부
-	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
-	bool UnequipRune(int32 SlotIndex, int32 RuneSlotIndex);
+	// 룬 슬롯 개수
+	UPROPERTY(EditDefaultsOnly, Category = "SkillSlot")
+	int32 RuneSlotCount = 3;
 
-	// 룬 ID(RowName)를 통해 데이터 테이블에서 룬을 찾아 장착하는 함수
-	// @param SlotIndex: 스킬 슬롯 인덱스
-	// @param RuneSlotIndex: 룬 슬롯 인덱스
-	// @param RuneID: 데이터 테이블의 행 이름 (RowName)
-	UFUNCTION(BlueprintCallable, Category = "Skill Manager|Rune")
-	bool EquipRuneByID(int32 SlotIndex, int32 RuneSlotIndex, FName RuneID);
-
-	// 해당 슬롯의 '피해량(Red)' 룬 합계 반환 (예: 1.5 = 150%)
-	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
-	float GetTotalDamageMultiplier(int32 SlotIndex) const;
-
-	// 해당 슬롯의 '쿨타임(Yellow)' 룬 합계 반환
-	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
-	float GetTotalCooldownReduction(int32 SlotIndex) const;
-
-	// 해당 슬롯의 '범위(Blue)' 룬 합계 반환
-	UFUNCTION(BlueprintPure, Category = "Skill Manager|Calculation")
-	float GetTotalRangeMultiplier(int32 SlotIndex) const;
+	// 실제 런타임에 운용되는 스킬셋 (Replicated)
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Skill")
+	TArray<FSkillSlot> SkillSlots;
 
 protected:
-	// 캐시된 ASC 포인터
+	virtual void BeginPlay() override;
+
+	// 에디터에서 설정하는 기본 스킬셋 (테스트용)
+	UPROPERTY(EditDefaultsOnly, Category = "Skill")
+	TArray<FSkillSlot> DefaultSkills;
+
+	// ASC 캐싱
 	UPROPERTY()
 	TObjectPtr<UAbilitySystemComponent> CachedASC;
 
-	// 스킬 슬롯 배열
-	UPROPERTY(EditDefaultsOnly, Category = "Skill Manager", Replicated)
-	TArray<FSkillSlot> SkillSlots;
-
-	// 룬 데이터베이스
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Skill Manager")
-	TObjectPtr<UDataTable> RuneDataTable;
-
-	// 현재 장착된 스킬 핸들 관리 (SlotTag -> SpecHandle)
+	// 활성화된 스킬 핸들 관리 (SlotTag : Handle)
 	TMap<FGameplayTag, FGameplayAbilitySpecHandle> ActiveSkillHandles;
 
-	// BP Class Defaults에서 설정하는 초기 스킬셋
-	UPROPERTY(EditDefaultsOnly, Category = "Skill")
-	TArray<FSkillSlot> DefaultSkillSets;
+	// ---------------------------------------------------------------
+	// 스킬 및 룬 장착/해제
+	// ---------------------------------------------------------------
+public:
+	// 스킬 장착
+	void EquipSkill(FGameplayTag SlotTag, TSubclassOf<UGameplayAbility> AbilityClass);
 
-	// 실제 어빌리티 부여 로직
-	void GiveAbility(FGameplayTag SlotTag, TSubclassOf<UGameplayAbility> AbilityClass);
+	// 룬 장착
+	bool EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* RuneData);
 
-	// 슬롯 인덱스가 유효한지 검사하는 헬퍼 함수
-	bool IsValidSlotIndex(int32 SlotIndex) const;
+	// 룬 해제
+	bool UnequipRune(int32 SlotIndex, int32 RuneSlotIndex);
+
+protected:
+	// 룬 태그 업데이트 헬퍼 (Owner ASC에 태그 부착/제거)
+	void UpdateRuneTag(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* NewRune);
+
+	// 슬롯 태그와 룬 태그를 조합하여 고유 태그 생성 (예: Skill.Slot.1 + Rune.Red -> Skill.Slot.1.Rune.Red)
+	FGameplayTag CombineRuneTag(FGameplayTag SlotTag, FGameplayTag RuneTag) const;
 };
