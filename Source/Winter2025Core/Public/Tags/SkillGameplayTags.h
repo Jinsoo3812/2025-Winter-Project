@@ -18,12 +18,6 @@ WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_BuffBarrier_Phase2);
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Player_State_Preview);
 WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_State_Preview);
 
-/**
- * 
- */
-class WINTER2025CORE_API SkillGameplayTags
-{
-public:
-	SkillGameplayTags();
-	~SkillGameplayTags();
-};
+// 개편 이후
+
+WINTER2025CORE_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(TAG_Skill_Slot); // Skill.Slot

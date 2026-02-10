@@ -181,9 +181,9 @@ FGameplayTag USkillComponent::CombineRuneTag(FGameplayTag SlotTag, FGameplayTag 
 	// 문자열 합성 (예: "Skill.Slot.1" + "." + "Rune.Red")
 	FString CombinedString = FString::Printf(TEXT("%s.%s"), *SlotTag.ToString(), *RuneTag.ToString());
 
-	// 태그 요청 (없으면 에러가 날 수 있으므로, 미리 프로젝트 세팅나 Ini에서 정의되어 있거나, 
-	// 혹은 NativeTag로 등록되어 있어야 안전함. 동적 생성이 필요하다면 RequestGameplayTag의 2번째 인자 true)
-	return FGameplayTag::RequestGameplayTag(FName(*CombinedString), false);
+	// 태그 요청 (없으면 에러가 날 수 있으므로, 미리 프로젝트 세팅이나 Native를 준비)
+	// 2번째 인자는 에러 발생 시 자동 생성 여부
+	return FGameplayTag::RequestGameplayTag(FName(*CombinedString), true);
 }
 
 void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

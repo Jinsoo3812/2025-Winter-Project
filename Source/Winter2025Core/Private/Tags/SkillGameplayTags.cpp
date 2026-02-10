@@ -13,10 +13,5 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_BuffBarrier_Phase2, "State.Skill.BuffBarrier.Ph
 UE_DEFINE_GAMEPLAY_TAG(TAG_Player_State_Preview, "Player.State.Preview");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_State_Preview, "Skill.State.Preview");
 
-SkillGameplayTags::SkillGameplayTags()
-{
-}
-
-SkillGameplayTags::~SkillGameplayTags()
-{
-}
+// 개편 이후
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Slot, "Skill.Slot");
