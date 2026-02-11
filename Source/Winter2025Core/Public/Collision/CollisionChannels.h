@@ -5,13 +5,4 @@
 #include "CoreMinimal.h"
 
 #define ECC_Block ECC_GameTraceChannel1
-
-/**
- * 
- */
-class WINTER2025CORE_API CollisionChannels
-{
-public:
-	CollisionChannels();
-	~CollisionChannels();
-};
+#define ECC_Enemy ECC_GameTraceChannel2

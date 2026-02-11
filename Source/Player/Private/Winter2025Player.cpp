@@ -2,7 +2,6 @@
 
 #include "Winter2025Player.h"
 #include "Winter2025PlayerState.h"
-#include "SkillSystemInterface.h"
 #include "PlayerInputConfig.h"
 #include "InputGameplayTags.h"
 #include "AbilitySystemComponent.h"
@@ -50,26 +49,11 @@ void AWinter2025Player::InitializeGAS()
 		// ASC ì´ˆê¸°í™”
 		CachedASC->InitAbilityActorInfo(PS, this);
 
-		// ê¸°ë³¸ íƒœê·¸ ì¶”ê°€
+		// ê¸°ë³¸ íƒœê·¸ ì¶”ê°€ (Player)
 		if (InitialGameplayTags.IsValid())
 		{
 			// PlayerStateì˜ ASCì— íƒœê·¸ ì¶”ê°€
 			CachedASC->AddLooseGameplayTags(InitialGameplayTags);
-		}
-
-		// êµ¬ì²´ì ì¸ ì»´í¬ë„ŒíŠ¸ í´ëž˜ìŠ¤(USkillComponent) ëŒ€ì‹  ì¸í„°íŽ˜ì´ìŠ¤ë¥¼ ì°¾ìŒ
-		// PlayerStateì— ë¶™ì–´ìžˆëŠ” ì»´í¬ë„ŒíŠ¸ë“¤ ì¤‘, ìŠ¤í‚¬ ì¸í„°íŽ˜ì´ìŠ¤ë¥¼ êµ¬í˜„í•œ ë†ˆì„ ì°¾ì•„ì„œ ì´ˆê¸°í™”
-		TArray<UActorComponent*> Components;
-		PS->GetComponents(Components);
-
-		for (UActorComponent* Comp : Components)
-		{
-			// SkillComponent ì´ˆê¸°í™”
-			if (ISkillSystemInterface* SkillInterface = Cast<ISkillSystemInterface>(Comp))
-			{
-				SkillInterface->InitializeSkillSystem(CachedASC);
-				break; // í•˜ë‚˜ë§Œ ìžˆë‹¤ê³  ê°€ì •
-			}
 		}
 
 		CachedASC->GetGameplayAttributeValueChangeDelegate(
@@ -232,8 +216,8 @@ void AWinter2025Player::Move(const FInputActionValue& Value)
 	{
 		FRotator Rotation = Controller->GetControlRotation();
 		
-		// ÇÃ·¹ÀÌ¾îÀÎ °æ¿ì, 'Ä«¸Þ¶ó°¡ ½ÇÁ¦·Î º¸´Â ¹æÇâ'À» °¡Á®¿É´Ï´Ù.
-		// Ç×»ó "È­¸é ±âÁØ"À¸·Î W°¡ À§ÂÊ, D°¡ ¿À¸¥ÂÊÀÌ µË´Ï´Ù.
+		// ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½, 'Ä«ï¿½Þ¶ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½'ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½É´Ï´ï¿½.
+		// ï¿½×»ï¿½ "È­ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½ï¿½ï¿½ Wï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, Dï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ë´Ï´ï¿½.
 		if (APlayerController* PC = Cast<APlayerController>(Controller))
 		{
 			if (PC->PlayerCameraManager)
@@ -242,15 +226,15 @@ void AWinter2025Player::Move(const FInputActionValue& Value)
 			}
 		}
 
-		// Yaw(¼öÆò È¸Àü)¸¸ »ç¿ëÇÏ°í Pitch(»óÇÏ), Roll(±â¿ï±â)Àº ¹«½Ã
-		// (ÇÇÄ¡ -50µµÀÎ »óÅÂ¿¡¼­µµ ¶¥ À§¿¡¼­ ÆòÇàÇÏ°Ô ¿òÁ÷ÀÌ°Ô ÇØÁÝ´Ï´Ù)
+		// Yaw(ï¿½ï¿½ï¿½ï¿½ È¸ï¿½ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ Pitch(ï¿½ï¿½ï¿½ï¿½), Roll(ï¿½ï¿½ï¿½ï¿½)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		// (ï¿½ï¿½Ä¡ -50ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Â¿ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ì°ï¿½ ï¿½ï¿½ï¿½Ý´Ï´ï¿½)
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// È¸Àü Çà·ÄÀ» ÅëÇØ ¾Õ/¿À¸¥ÂÊ ¹æÇâ º¤ÅÍ ÃßÃâ
+		// È¸ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		
-		// ÀÌµ¿ Àû¿ë
+		// ï¿½Ìµï¿½ ï¿½ï¿½ï¿½ï¿½
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
 	}

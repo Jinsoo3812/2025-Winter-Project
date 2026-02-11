@@ -3,10 +3,3 @@
 
 #include "CollisionChannels.h"
 
-CollisionChannels::CollisionChannels()
-{
-}
-
-CollisionChannels::~CollisionChannels()
-{
-}

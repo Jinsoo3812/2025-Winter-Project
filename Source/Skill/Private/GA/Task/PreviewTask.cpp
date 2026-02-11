@@ -88,7 +88,7 @@ void UPreviewTask::TickTask(float DeltaTime)
 		return;
 	}
 
-	// 1. 이전 프레임 하이라이트 제거
+	// 이전 프레임 하이라이트 제거
 	for (const FBlockReference& Ref : HighlightedBlocks)
 	{
 		BlockSystem->HighlightBlock(Ref, TAG_Block_Highlight_None);
@@ -96,13 +96,41 @@ void UPreviewTask::TickTask(float DeltaTime)
 	HighlightedBlocks.Reset();
 
 
-	// 2. 범위 계산 및 시각화, 오버랩 수행
+	// 범위 계산 및 시각화, 오버랩 수행
 	TArray<FOverlapResult> Overlaps;
 	UpdatePreviewShapeAndOverlap(Overlaps, Avatar);
 
-	// 3. 오버랩 결과 중 BlockReference 추출
+	// ECC_Block Overlap만 담을 배열
+	TArray<FOverlapResult> BlockOverlaps;
+
+	for (const FOverlapResult& Result : Overlaps)
+	{
+		AActor* Actor = Result.GetActor();
+		if (!Actor || Actor == Avatar) continue;
+
+		UPrimitiveComponent* Component = Result.GetComponent();
+		if (!Component) continue;
+
+		ECollisionChannel Channel = Component->GetCollisionObjectType();
+
+		// 적
+		if (Channel == ECC_Enemy)
+		{
+			OverlappedEnemies.AddUnique(Actor);
+		}
+		// 블록
+		else if (Channel == ECC_Block)
+		{
+			BlockOverlaps.Add(Result);
+		}
+	}
+
+	// 블록은 서브 시스템에 요청하여 Actor만 있는 배열로 변환
 	TArray<FBlockReference> TargetBlocks;
-	BlockSystem->GetBlocksFromOverlaps(Overlaps, TargetBlocks);
+	if (BlockOverlaps.Num() > 0)
+	{
+		BlockSystem->GetBlocksFromOverlaps(BlockOverlaps, TargetBlocks);
+	}
 
 	// 4. 하이라이트 적용
 	FVector Center = Avatar->GetActorLocation() + Avatar->GetActorRotation().RotateVector(Range.RelativeOffset);
@@ -132,7 +160,7 @@ void UPreviewTask::TickTask(float DeltaTime)
 		APlayerController* PC = Ability->GetCurrentActorInfo()->PlayerController.Get();
 		FBlockReference CursorBlock;
 
-		// Subsystem 기능 활용: 마우스 아래 블록 조회 (User가 추가 요청한 함수)
+		// Subsystem 기능 활용: 마우스 아래 블록 조회
 		if (BlockSystem->GetBlockUnderCursor(PC, CursorBlock))
 		{
 			if (HighlightedBlocks.Contains(CursorBlock))
@@ -254,6 +282,7 @@ void UPreviewTask::UpdatePreviewShapeAndOverlap(TArray<FOverlapResult>& OutOverl
 	// 4. 물리 충돌 감지
 	FCollisionObjectQueryParams ObjectParams;
 	ObjectParams.AddObjectTypesToQuery(ECC_Block);
+	ObjectParams.AddObjectTypesToQuery(ECC_Enemy);
 	FCollisionQueryParams QueryParams;
 	QueryParams.AddIgnoredActor(Avatar);
 

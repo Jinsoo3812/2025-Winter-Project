@@ -38,9 +38,17 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Destruction")
 	TSubclassOf<UGameplayEffect> DestructionEffectClass;
 
-	// 이 태그를 가진 대상만 타격함 (예: State.Destructible)
+	// 이 태그를 가진 대상만 파괴 GE 적용 
 	UPROPERTY(EditDefaultsOnly, Category = "Destruction")
-	FGameplayTag TargetRequiredTag;
+	FGameplayTag DestructibleTag;
+
+	// 적용할 Gameplay Effect 클래스 (피해 로직이 담긴 GE)
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	TSubclassOf<UGameplayEffect> DamageEffectClass;
+
+	// 이 태그를 가진 대상만 파괴 GE 적용 
+	UPROPERTY(EditDefaultsOnly, Category = "Damage")
+	FGameplayTag EnemyTag;
 
 	// 프리뷰 시각화용 액터 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "Destruction")
