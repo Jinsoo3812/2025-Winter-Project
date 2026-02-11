@@ -48,7 +48,6 @@ void UDestruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 
 void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
 {
-	// 1. 필수 요소 확인
 	if (!BlockSystem || !DestructionEffectClass)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("Destruction: Missing BlockSystem or GE Class"));
@@ -56,41 +55,27 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
 		return;
 	}
 
-	// 2. PreviewTask가 이미 계산해둔 하이라이트 목록 가져오기
-	const TArray<FBlockReference>& Targets = PreviewTask->GetCurrentHighlightedBlocks();
+	// PreviewTask로부터 블록 및 적 정보 가져오기
+	const TArray<FBlockReference>& TargetBlocks = PreviewTask->GetCurrentHighlightedBlocks();
+	const TArray<TWeakObjectPtr<AActor>>& TargetEnemies = PreviewTask->GetOverlappedEnemies();
 
-	if (Targets.Num() <= 0)
+	if (TargetBlocks.IsEmpty() && TargetEnemies.IsEmpty())
 	{
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 		return;
 	}
 
-	// 3. GE 적용 로직 
-	UAbilitySystemComponent* MyASC = GetAbilitySystemComponentFromActorInfo();
-	FGameplayEffectContextHandle ContextHandle = MyASC->MakeEffectContext();
-	ContextHandle.AddSourceObject(GetAvatarActorFromActorInfo());
-
-	FGameplayEffectSpecHandle SpecHandle = MyASC->MakeOutgoingSpec(DestructionEffectClass, 1.0f, ContextHandle);
-
-	if (SpecHandle.IsValid())
+	// GE 적용
+	if (TargetBlocks.Num() > 0)
 	{
-		int32 HitCount = 0;
-		for (const FBlockReference& Ref : Targets)
-		{
-			if (AActor* TargetActor = Cast<AActor>(Ref.TargetObject.Get()))
-			{
-				if (UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor))
-				{
-					if (TargetASC->HasMatchingGameplayTag(TargetRequiredTag))
-					{
-						MyASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-						HitCount++;
-					}
-				}
-			}
-		}
-		UE_LOG(LogTemp, Log, TEXT("Destruction: Successfully destroyed %d blocks from Preview list."), HitCount);
+		ApplyGameplayEffectToTargets(TargetBlocks, DestructionEffectClass, DestructibleTag);
 	}
+	if (TargetEnemies.Num() > 0)
+	{	
+		UE_LOG(LogTemp, Log, TEXT("Destruction: Applying Damage GE to %d Enemies"), TargetEnemies.Num());
+		ApplyGameplayEffectToTargets(TargetEnemies, DamageEffectClass, EnemyTag);
+	}
+
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

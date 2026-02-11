@@ -467,17 +467,13 @@ void UBlockManagerSubsystem::GetBlocksFromOverlaps(const TArray<FOverlapResult>&
 				OutBlocks.AddUnique(Ref);
 			}
 		}
-		// Case B: Actor
-		else if (AActor* Actor = Result.GetActor())
+		// Case B: BlockBase Actor
+		else if (ABlockBase* Block = Cast<ABlockBase>(Result.GetActor()))
 		{
-			// 인터페이스 구현 여부 확인
-			if (Actor->Implements<UGameplayEventInterface>())
-			{
-				FBlockReference Ref;
-				Ref.TargetObject = Actor;
-				Ref.ItemIndex = -1;
-				OutBlocks.AddUnique(Ref);
-			}
+			FBlockReference Ref;
+			Ref.TargetObject = Block;
+			Ref.ItemIndex = -1;
+			OutBlocks.AddUnique(Ref);
 		}
 	}
 }

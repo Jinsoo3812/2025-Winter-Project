@@ -5,6 +5,9 @@
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
 #include "PreviewTask.h"
+#include "AbilitySystemComponent.h" 
+#include "AbilitySystemBlueprintLibrary.h" 
+#include "BlockCommonTypes.h"
 #include "SkillBase.generated.h"
 
 class IBlockSystemInterface;
@@ -93,6 +96,86 @@ protected:
 
 	// 현재 나에게 특정 태그가 있는지 확인
 	bool HasAbilityTag(const FGameplayTag& Tag) const;
+
+	// -----------------------------------------------------------------------------
+	// GE 적용 관련 유틸리티
+	// -----------------------------------------------------------------------------
+protected:
+	// 다양한 포인터 타입에서 AActor*를 끄집어내는 로직
+	FORCEINLINE AActor* ExtractActor(AActor* Ptr) { return Ptr; }
+	FORCEINLINE AActor* ExtractActor(const TWeakObjectPtr<AActor>& Ptr) { return Ptr.Get(); }
+	FORCEINLINE AActor* ExtractActor(const TObjectPtr<AActor>& Ptr) { return Ptr.Get(); }
+	// FBlockReference 에서도 AActor* 추출
+	FORCEINLINE AActor* ExtractActor(const FBlockReference& Ref) { return Cast<AActor>(Ref.TargetObject.Get()); }
+
+	/*
+	* 다수의 액터에게 동일한 GE를 적용하는 헬퍼 함수
+	* @param TargetActors      적용 대상 액터 배열
+	* @param EffectClass       적용할 GE 클래스
+	* @param RequiredTag       이 태그를 가진 대상에게만 적용 (EmptyTag면 검사 건너뜀)
+	* @param Level             GE 레벨
+	* @return                  성공적으로 적용된 횟수
+	*/
+	template <typename T> // Template이라서 헤더에 구현
+	int32 ApplyGameplayEffectToTargets(const TArray<T>& Targets,
+		TSubclassOf<UGameplayEffect> EffectClass,
+		FGameplayTag RequiredTag = FGameplayTag::EmptyTag, float Level = 1.0f)
+	{
+		if (Targets.IsEmpty() || !EffectClass) {
+			UE_LOG(LogTemp, Warning, TEXT("SkillBase: ApplyGameplayEffectToTargets - Invalid targets or effect class"));
+			return 0;
+		}
+
+		UAbilitySystemComponent* SourceASC = GetAbilitySystemComponentFromActorInfo();
+		if (!SourceASC) {
+			UE_LOG(LogTemp, Warning, TEXT("SkillBase: ApplyGameplayEffectToTargets - SourceASC is null"));
+			return 0;
+		}
+
+		// Context 생성 
+		FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
+		ContextHandle.AddSourceObject(GetAvatarActorFromActorInfo());
+
+		// Spec 생성
+		FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(EffectClass, Level, ContextHandle);
+		if (!SpecHandle.IsValid()) return 0;
+
+		int32 ApplyCount = 0;
+
+		// 템플릿 루프: 무엇이 들어오든 ExtractActor가 처리함
+		for (const T& Item : Targets)
+		{
+			// 헬퍼 함수를 통해 실제 액터 포인터 추출
+			AActor* TargetActor = ExtractActor(Item);
+
+			if (!TargetActor) continue;
+
+			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+			if (!TargetASC) continue;
+
+			// 태그 검사
+			if (RequiredTag == FGameplayTag::EmptyTag || !TargetASC->HasMatchingGameplayTag(RequiredTag))
+			{
+				UE_LOG(LogTemp, Log, TEXT("SkillBase: Skipped applying GE %s to %s due to missing tag %s"),
+					*EffectClass->GetName(),
+					*TargetActor->GetName(),
+					*RequiredTag.ToString()
+				);
+				continue;
+			}
+
+			// 적용
+			SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
+			UE_LOG(LogTemp, Log, TEXT("SkillBase: Applied GE %s to %s"),
+				*EffectClass->GetName(),
+				*TargetActor->GetName()
+			);
+			ApplyCount++;
+		}
+
+		return ApplyCount;
+	}
+
 
 	// -----------------------------------------------------------------------------
 	// 캐싱 데이터

@@ -109,10 +109,21 @@ protected:
 
 	/*
 	* 프리뷰 위치 계산, 시각화 액터 업데이트, 물리 충돌 검사 수행
-	* @param OutOverlaps 결과로 받을 오버랩 배열
+	* @param OutOverlaps 결과로 받을 오버랩 배열 (적과 블록)
 	* @param Avatar 캐릭터 (기준점)
 	*/
 	void UpdatePreviewShapeAndOverlap(TArray<FOverlapResult>& OutOverlaps, AActor* Avatar);
+
+	// -------------------------------------------------------------
+	// 적
+	// -------------------------------------------------------------
+protected:
+	// 범위 내에서 오버랩된 적 목록 (ECC_Enenmy 채널 사용)
+	UPROPERTY()
+	TArray<TWeakObjectPtr<AActor>> OverlappedEnemies;
+public:
+	// 현재 범위 내에서 감지된 적(Actor) 목록 반환
+	const TArray<TWeakObjectPtr<AActor>>& GetOverlappedEnemies() const { return OverlappedEnemies; }
 
 	// -------------------------------------------------------------
 	// 시각화

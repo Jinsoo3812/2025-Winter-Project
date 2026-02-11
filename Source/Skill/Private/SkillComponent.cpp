@@ -42,12 +42,12 @@ void USkillComponent::InitializeSkillSystem(UAbilitySystemComponent* InASC)
 	}
 
 	// 1. DefaultSkills를 런타임 SkillSlots로 복사 (테스트용)
-	if (SkillSlots.Num() == 0 && DefaultSkills.Num() > 0)
+	if (DefaultSkills.Num() > 0)
 	{
 		SkillSlots = DefaultSkills;
 	}
 	// 없으면 기본 에디터 상 기본 개수
-	else if (SkillSlots.Num() == 0)
+	else
 	{
 		SkillSlots.SetNum(SkillSlotCount);
 	}
@@ -84,7 +84,22 @@ void USkillComponent::InitializeSkillSystem(UAbilitySystemComponent* InASC)
 
 void USkillComponent::EquipSkill(FGameplayTag SlotTag, TSubclassOf<UGameplayAbility> AbilityClass)
 {
-	if (!CachedASC || !SlotTag.IsValid() || !AbilityClass) return;
+	if (!CachedASC || !SlotTag.IsValid() || !AbilityClass)
+	{
+		if (!CachedASC)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Cannot equip skill, ASC is null"));
+		}
+		if (!SlotTag.IsValid())
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Cannot equip skill, SlotTag is invalid"));
+		}
+		if (!AbilityClass)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Cannot equip skill, AbilityClass is null"));
+		}
+		return;
+	}
 
 	// 기존 스킬 해제
 	if (ActiveSkillHandles.Contains(SlotTag))
