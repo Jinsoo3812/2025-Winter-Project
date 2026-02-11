@@ -4,26 +4,12 @@
 #include "Components/ActorComponent.h"
 #include "GameplayTagContainer.h"
 #include "GameplayAbilitySpecHandle.h"
+#include "DA_Rune.h"
 #include "SkillComponent.generated.h"
 
 class UGameplayAbility;
 class UAbilitySystemComponent;
 class UDA_Rune;
-
-// 룬 슬롯 구조체
-USTRUCT(BlueprintType)
-struct FRuneSlot
-{
-	GENERATED_BODY()
-
-public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TObjectPtr<UDA_Rune> RuneAsset;
-
-	// 현재 장착된 룬에 의해 부착될 태그
-	UPROPERTY(VisibleAnywhere)
-	FGameplayTag CachedCombinedTag;
-};
 
 // 스킬 슬롯 구조체
 USTRUCT(BlueprintType)
@@ -42,7 +28,7 @@ public:
 
 	// 룬 슬롯 배열
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FRuneSlot> RuneSlots;
+	TArray<TObjectPtr<UDA_Rune> > RuneSlots;
 };
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -101,10 +87,20 @@ public:
 	// 룬 해제
 	bool UnequipRune(int32 SlotIndex, int32 RuneSlotIndex);
 
-protected:
-	// 룬 태그 업데이트 헬퍼 (Owner ASC에 태그 부착/제거)
-	void UpdateRuneTag(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* NewRune);
+	// ---------------------------------------------------------------
+	// 룬 계산
+	// ---------------------------------------------------------------
+public:
+	/**
+	 * 특정 슬롯의 룬 구성을 확인하여 최종 배율을 반환
+	 * @param SlotTag 검사할 스킬 슬롯 (ex. Skill.Slot.1)
+	 * @param Type 집계할 룬 타입 (ex. Red)
+	 * @return 배율 (CurveTable 참조, 실패 시 1.0)
+	 */
+	float GetTotalRuneMultiplier(FGameplayTag SlotTag, ERuneType Type) const;
 
-	// 슬롯 태그와 룬 태그를 조합하여 고유 태그 생성 (예: Skill.Slot.1 + Rune.Red -> Skill.Slot.1.Rune.Red)
-	FGameplayTag CombineRuneTag(FGameplayTag SlotTag, FGameplayTag RuneTag) const;
+protected:
+	// 룬 개수에 따른 배율을 정의한 테이블 (X축: 개수, Y축: 배율)
+	UPROPERTY(EditDefaultsOnly, Category = "Rune|Config")
+	TObjectPtr<UCurveTable> RuneCurveTable;
 };

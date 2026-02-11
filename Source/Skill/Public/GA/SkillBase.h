@@ -8,6 +8,8 @@
 #include "AbilitySystemComponent.h" 
 #include "AbilitySystemBlueprintLibrary.h" 
 #include "BlockCommonTypes.h"
+#include "SkillGameplayTags.h"
+#include "SkillComponent.h"
 #include "SkillBase.generated.h"
 
 class IBlockSystemInterface;
@@ -101,7 +103,7 @@ protected:
 	// GE 적용 관련 유틸리티
 	// -----------------------------------------------------------------------------
 protected:
-	// 다양한 포인터 타입에서 AActor*를 끄집어내는 로직
+	// 다양한 포인터 타입에서 AActor*를 꺼내는 로직
 	FORCEINLINE AActor* ExtractActor(AActor* Ptr) { return Ptr; }
 	FORCEINLINE AActor* ExtractActor(const TWeakObjectPtr<AActor>& Ptr) { return Ptr.Get(); }
 	FORCEINLINE AActor* ExtractActor(const TObjectPtr<AActor>& Ptr) { return Ptr.Get(); }
@@ -118,8 +120,7 @@ protected:
 	*/
 	template <typename T> // Template이라서 헤더에 구현
 	int32 ApplyGameplayEffectToTargets(const TArray<T>& Targets,
-		TSubclassOf<UGameplayEffect> EffectClass,
-		FGameplayTag RequiredTag = FGameplayTag::EmptyTag, float Level = 1.0f)
+		TSubclassOf<UGameplayEffect> EffectClass, float Level = 1.0f)
 	{
 		if (Targets.IsEmpty() || !EffectClass) {
 			UE_LOG(LogTemp, Warning, TEXT("SkillBase: ApplyGameplayEffectToTargets - Invalid targets or effect class"));
@@ -136,9 +137,41 @@ protected:
 		FGameplayEffectContextHandle ContextHandle = SourceASC->MakeEffectContext();
 		ContextHandle.AddSourceObject(GetAvatarActorFromActorInfo());
 
+		// 시전 GA 주입
+		ContextHandle.SetAbility(this);
+
 		// Spec 생성
 		FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(EffectClass, Level, ContextHandle);
 		if (!SpecHandle.IsValid()) return 0;
+
+		// 룬 배율 계산
+		float RuneMultiplier = 1.0f;
+
+		// SkillComponent 찾기
+		if (AActor* OwnerActor = GetOwningActorFromActorInfo())
+		{
+			if (USkillComponent* SkillComp = OwnerActor->FindComponentByClass<USkillComponent>())
+			{
+				// 2. 내 슬롯 태그 찾기 ("Skill.Slot" 포함 여부 확인)
+				if (const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
+				{
+					for (const FGameplayTag& Tag : Spec->DynamicAbilityTags)
+					{
+						if (Tag.MatchesTag(TAG_Skill_Slot))
+						{
+							// 3. 배율 요청 (데미지니까 Red)
+							RuneMultiplier = SkillComp->GetTotalRuneMultiplier(Tag, ERuneType::Red);
+							break;
+						}
+					}
+				}
+			}
+		}
+
+		// 스킬 기본 피해량 SetByCaller로 주입
+		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, BaseDamage);
+		// 룬 배율 SetByCaller로 주입
+		SpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_RuneMultiplier, RuneMultiplier);
 
 		int32 ApplyCount = 0;
 
@@ -152,17 +185,6 @@ protected:
 
 			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
 			if (!TargetASC) continue;
-
-			// 태그 검사
-			if (RequiredTag == FGameplayTag::EmptyTag || !TargetASC->HasMatchingGameplayTag(RequiredTag))
-			{
-				UE_LOG(LogTemp, Log, TEXT("SkillBase: Skipped applying GE %s to %s due to missing tag %s"),
-					*EffectClass->GetName(),
-					*TargetActor->GetName(),
-					*RequiredTag.ToString()
-				);
-				continue;
-			}
 
 			// 적용
 			SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);

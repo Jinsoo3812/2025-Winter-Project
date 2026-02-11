@@ -1,7 +1,6 @@
 ﻿#include "SkillComponent.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/GameplayAbility.h"
-#include "DA_Rune.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemBlueprintLibrary.h"
 
@@ -10,6 +9,12 @@ USkillComponent::USkillComponent()
 	PrimaryComponentTick.bCanEverTick = false;
 	bWantsInitializeComponent = true;
 	SetIsReplicatedByDefault(true);
+}
+
+void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(USkillComponent, SkillSlots);
 }
 
 void USkillComponent::BeginPlay()
@@ -68,16 +73,6 @@ void USkillComponent::InitializeSkillSystem(UAbilitySystemComponent* InASC)
 		{
 			// 스킬 등록
 			EquipSkill(SkillSlots[i].SlotTag, SkillSlots[i].EquippedSkill);
-
-			// 룬 태그 적용 
-			for (int32 j = 0; j < SkillSlots[i].RuneSlots.Num(); ++j)
-			{
-				UDA_Rune* Rune = SkillSlots[i].RuneSlots[j].RuneAsset;
-				if (Rune)
-				{
-					UpdateRuneTag(i, j, Rune);
-				}
-			}
 		}
 	}
 }
@@ -139,8 +134,7 @@ bool USkillComponent::EquipRune(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* 
 	if (!SkillSlots[SlotIndex].RuneSlots.IsValidIndex(RuneSlotIndex)) return false;
 	if (!RuneData) return false;
 
-	// 태그 업데이트 (기존 태그 제거 -> 새 태그 추가)
-	UpdateRuneTag(SlotIndex, RuneSlotIndex, RuneData);
+	SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex] = RuneData;
 
 	return true;
 }
@@ -149,60 +143,64 @@ bool USkillComponent::UnequipRune(int32 SlotIndex, int32 RuneSlotIndex)
 {
 	if (!SkillSlots.IsValidIndex(SlotIndex)) return false;
 
-	// 태그 제거 및 데이터 nullptr 처리
-	UpdateRuneTag(SlotIndex, RuneSlotIndex, nullptr);
+	SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex] = nullptr;
 
 	return true;
 }
 
-void USkillComponent::UpdateRuneTag(int32 SlotIndex, int32 RuneSlotIndex, UDA_Rune* NewRune)
+float USkillComponent::GetTotalRuneMultiplier(FGameplayTag SlotTag, ERuneType Type) const
 {
-	if (!CachedASC) return;
+	UE_LOG(LogTemp, Log, TEXT("SkillComponent: GetTotalRuneMultiplier - SlotTag: %s, Type: %d"), *SlotTag.ToString(), (int32)Type);
+	if (!SlotTag.IsValid()) return 1.0f;
 
-	FRuneSlot& TargetRuneSlot = SkillSlots[SlotIndex].RuneSlots[RuneSlotIndex];
+	// 1. 해당 태그를 가진 슬롯 찾기
+	const FSkillSlot* FoundSlot = SkillSlots.FindByPredicate([&](const FSkillSlot& Slot) {
+		return Slot.SlotTag == SlotTag;
+		});
 
-	// 기존 룬이 있었다면 태그 제거
-	if (TargetRuneSlot.CachedCombinedTag.IsValid())
+	if (!FoundSlot)
 	{
-		CachedASC->RemoveLooseGameplayTag(TargetRuneSlot.CachedCombinedTag);
-		TargetRuneSlot.CachedCombinedTag = FGameplayTag::EmptyTag;
+		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: GetTotalRuneMultiplier - Cannot find SkillSlot with Tag %s"), *SlotTag.ToString());
+		return 1.0f;
 	}
 
-	// 데이터 교체
-	TargetRuneSlot.RuneAsset = NewRune;
-
-	//  룬이 있다면 태그 생성 및 부착
-	if (NewRune)
+	// 2. 해당 타입의 룬 개수 카운트
+	int32 RuneCount = 0;
+	for (const TObjectPtr<UDA_Rune>& RunePtr : FoundSlot->RuneSlots)
 	{
-		FGameplayTag SlotTag = SkillSlots[SlotIndex].SlotTag;
-		FGameplayTag RuneTypeTag = NewRune->RuneTag;
-
-		// 태그 합성: "Skill.Slot.1" + "Rune.Red" -> "Skill.Slot.1.Rune.Red"
-		FGameplayTag CombinedTag = CombineRuneTag(SlotTag, RuneTypeTag);
-
-		if (CombinedTag.IsValid())
+		if (RunePtr && RunePtr->RuneType == Type)
 		{
-			CachedASC->AddLooseGameplayTag(CombinedTag);
-			TargetRuneSlot.CachedCombinedTag = CombinedTag;
+			RuneCount++;
 		}
 	}
-}
 
-FGameplayTag USkillComponent::CombineRuneTag(FGameplayTag SlotTag, FGameplayTag RuneTag) const
-{
-	// 슬롯 태그나 룬 태그가 유효하지 않으면 리턴
-	if (!SlotTag.IsValid() || !RuneTag.IsValid()) return FGameplayTag::EmptyTag;
+	if (RuneCount <= 0 || !RuneCurveTable) return 1.0f;
 
-	// 문자열 합성 (예: "Skill.Slot.1" + "." + "Rune.Red")
-	FString CombinedString = FString::Printf(TEXT("%s.%s"), *SlotTag.ToString(), *RuneTag.ToString());
+	// 1. 룬 타입에 맞는 Row Name 결정 (테이블의 행 이름과 일치해야 함)
+	FName RowName = NAME_None;
+	switch (Type)
+	{
+	case ERuneType::Red:
+		RowName = FName("Damage"); // CurveTable의 행 이름
+		break;
+	case ERuneType::Yellow:
+		RowName = FName("Cooldown");
+		break;
+	case ERuneType::Blue:
+		RowName = FName("Range");
+		break;
+	default:
+		return 1.0f;
+	}
 
-	// 태그 요청 (없으면 에러가 날 수 있으므로, 미리 프로젝트 세팅이나 Native를 준비)
-	// 2번째 인자는 에러 발생 시 자동 생성 여부
-	return FGameplayTag::RequestGameplayTag(FName(*CombinedString), true);
-}
+	if (RuneCount <= 0 || !RuneCurveTable) return 1.0f;
 
-void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(USkillComponent, SkillSlots);
+	const FRealCurve* Curve = RuneCurveTable->FindCurve(RowName, FString(), false);
+
+	if (Curve)
+	{
+		return Curve->Eval((float)RuneCount);
+	}
+
+	return 1.0f;
 }

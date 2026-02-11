@@ -68,12 +68,12 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
 	// GE 적용
 	if (TargetBlocks.Num() > 0)
 	{
-		ApplyGameplayEffectToTargets(TargetBlocks, DestructionEffectClass, DestructibleTag);
+		ApplyGameplayEffectToTargets(TargetBlocks, DestructionEffectClass);
 	}
 	if (TargetEnemies.Num() > 0)
 	{	
 		UE_LOG(LogTemp, Log, TEXT("Destruction: Applying Damage GE to %d Enemies"), TargetEnemies.Num());
-		ApplyGameplayEffectToTargets(TargetEnemies, DamageEffectClass, EnemyTag);
+		ApplyGameplayEffectToTargets(TargetEnemies, DamageEffectClass);
 	}
 
 
