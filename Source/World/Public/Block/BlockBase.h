@@ -3,6 +3,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
+#include "AbilitySystemComponent.h"
 #include "GameFramework/Actor.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/BoxComponent.h"
@@ -12,10 +14,11 @@
 
 class AChunkBase;
 class UBlockConfig;
+class UBlockAttributeSet;
 
 
 UCLASS()
-class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface
+class WORLD_API ABlockBase : public AActor, public IGameplayEventInterface, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -33,6 +36,26 @@ protected:
 	virtual void BeginPlay() override;
 
 	virtual void PostInitializeComponents() override;
+
+	// -----------------------------------------------------------------------------
+	// ASC
+	// -----------------------------------------------------------------------------
+public:
+	// IAbilitySystemInterface 구현
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override { return AbilitySystemComponent; }
+
+	// 외부에서 AttributeSet에 접근할 수 있도록 Getter 제공
+	UBlockAttributeSet* GetAttributeSet() const { return AttributeSet; }
+
+protected:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Abilities")
+	TObjectPtr<UBlockAttributeSet> AttributeSet;
+
+	// 파괴 시 호출되는 순수 가상 함수
+	virtual void OnDestroyed(AActor* InstigatorActor) PURE_VIRTUAL(ABlockBase::OnDestroyed, );
 
 	// -----------------------------------------------------------------------------
 	// Chunk
