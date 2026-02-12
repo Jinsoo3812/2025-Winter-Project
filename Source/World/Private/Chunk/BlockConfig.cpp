@@ -19,6 +19,7 @@ void UBlockConfig::PostLoad()
 		if (Def.Tag.IsValid()) TagToIndexMap.Add(Def.Tag, i);
 		if (Def.Type != EBlockType::None) TypeToIndexMap.Add(Def.Type, i);
 		if (Def.ActorClass) ClassToIndexMap.Add(Def.ActorClass, i);
+		if (Def.NativeClass) ClassToIndexMap.Add(Def.NativeClass, i);
 	}
 }
 

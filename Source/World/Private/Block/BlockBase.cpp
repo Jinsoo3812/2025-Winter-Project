@@ -67,20 +67,32 @@ void ABlockBase::BeginPlay()
 
 	if (BlockConfig)
 	{
+		// GridSize 초기화
 		GridSize = BlockConfig->GridSize;
 
-		FGameplayTag MyBlockTag = BlockConfig->GetBlockDef(this->GetClass())->Tag;
-
-		if (MyBlockTag.IsValid())
+		if (AbilitySystemComponent)
 		{
-			if (AbilitySystemComponent)
+			// 현재 클래스부터 시작해서 부모 클래스로 거슬러 올라감
+			UClass* CurrentClass = this->GetClass();
+
+			// BlockBase에 도달할 때까지 반복
+			while (CurrentClass && CurrentClass->IsChildOf(ABlockBase::StaticClass()))
 			{
-				AbilitySystemComponent->AddLooseGameplayTag(MyBlockTag);
+				// 부모들의 Tag를 모두 추가
+				if (const FBlockDefinition* Def = BlockConfig->GetBlockDef(CurrentClass))
+				{
+					if (Def->Tag.IsValid())
+					{
+						AbilitySystemComponent->AddLooseGameplayTag(Def->Tag);
+					}
+				}
+
+				// 한 단계 상위 클래스로 이동 
+				CurrentClass = CurrentClass->GetSuperClass();
 			}
 		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("BlockBase: No matching ActorTag found in BlockConfig for Class %s"), *GetClass()->GetName());
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("BlockBase: AbilitySystemComponent is null in %s"), *GetName());
 		}
 	}
 	else
