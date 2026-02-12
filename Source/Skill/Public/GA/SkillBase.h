@@ -188,10 +188,6 @@ protected:
 
 			// 적용
 			SourceASC->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-			UE_LOG(LogTemp, Log, TEXT("SkillBase: Applied GE %s to %s"),
-				*EffectClass->GetName(),
-				*TargetActor->GetName()
-			);
 			ApplyCount++;
 		}
 

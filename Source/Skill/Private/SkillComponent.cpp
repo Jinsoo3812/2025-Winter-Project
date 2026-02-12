@@ -150,7 +150,6 @@ bool USkillComponent::UnequipRune(int32 SlotIndex, int32 RuneSlotIndex)
 
 float USkillComponent::GetTotalRuneMultiplier(FGameplayTag SlotTag, ERuneType Type) const
 {
-	UE_LOG(LogTemp, Log, TEXT("SkillComponent: GetTotalRuneMultiplier - SlotTag: %s, Type: %d"), *SlotTag.ToString(), (int32)Type);
 	if (!SlotTag.IsValid()) return 1.0f;
 
 	// 1. 해당 태그를 가진 슬롯 찾기
