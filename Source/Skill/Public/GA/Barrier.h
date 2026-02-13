@@ -16,6 +16,9 @@ class SKILL_API UBarrier : public USkillBase
 public:
 	UBarrier();
 
+	// -----------------------------------------------------------------------------
+	// 스킬 GA의 시전, 취소 등 생명주기
+	// -----------------------------------------------------------------------------
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -27,32 +30,15 @@ protected:
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		bool bReplicateEndAbility,
 		bool bWasCancelled) override;
+
+	virtual void StartPreview() override;
 	// -------------------------------------------------------------------
 	// Gameplay Tags
 	// -------------------------------------------------------------------
-	// 시전자에게 붙을 상태 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Player_State_Preview;
 
 	// 시전자에게 붙을 장벽 소환 상태 태그
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag Tag_Player_State_Active_Barrier;
-
-	// 스킬 인스턴스에 붙을 상태 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Skill_State_Preview;
-
-	// 블록 하이라이트용 태그 (범위 표시)
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Highlight_Range;
-
-	// 블록 하이라이트용 태그 (마우스 커서)
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Highlight_Cursor;
-
-	// 입력 이벤트: 좌클릭(확인)
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Event_Confirm;
 
 	// 입력 이벤트: 마우스 휠(회전)
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
@@ -61,14 +47,6 @@ protected:
 	// 소환할 블록 태그
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag BlockTagToSpawn;
-
-	// 아군(플레이어)은 밀어내기 위한 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag TeamAllyTag;
-
-	// 적(다른 블록, 적)과의 충돌에서 폭발하기 위한 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag TeamEnemyTag;
 
 	// -------------------------------------------------------------------------
 	// 프리뷰

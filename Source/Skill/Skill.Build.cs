@@ -20,7 +20,8 @@ public class Skill: ModuleRules
 			"Skill/Public/Data",
 			"Skill/Public/GA",
             "Skill/Public/GA/Task",
-            "Skill/Public/Rune"
+            "Skill/Public/Rune",
+            "Skill/Public/GA/Object"
 		});
     }
 }

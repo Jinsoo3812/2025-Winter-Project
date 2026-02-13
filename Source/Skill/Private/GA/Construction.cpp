@@ -10,11 +10,25 @@ void UConstruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// 1. 프리뷰 모드 진입: 태그 부착
-	AddGameplayTagToOwner(Tag_Player_State_Preview);
-	AddAbilityTag(Tag_Skill_State_Preview);
+	StartPreview();
 
-	// 2. 프리뷰 태스크 시작 (매 프레임 하이라이트 갱신)
+	// Confirm 입력 대기 (좌클릭)
+	UAbilityTask_WaitGameplayEvent* WaitConfirm = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+		this,
+		Tag_Event_Confirm,
+		nullptr, // GA의 소유자가 아닌 다른 특정 액터의 ASC에서 발생하는 Event를 기다릴 때 사용
+		false,   // 이벤트가 감지되면 Task 종료 (true) or 계속 대기 (false)
+		false    // 하위 Gameplay Tag는 무시 (true) or 포함 (false)
+	);
+	WaitConfirm->EventReceived.AddDynamic(this, &UConstruction::OnConfirmEventReceived);
+	WaitConfirm->ReadyForActivation();
+}
+
+void UConstruction::StartPreview()
+{
+	Super::StartPreview();
+
+	// 프리뷰 태스크 시작 (매 프레임 하이라이트 갱신)
 	PreviewTask = UPreviewTask::CreatePreviewTask(
 		this,
 		PreviewRange,
@@ -29,19 +43,7 @@ void UConstruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, con
 	{
 		PreviewTask->ReadyForActivation();
 	}
-
-	// 3. 입력 대기
-	// Confirm (좌클릭)
-	UAbilityTask_WaitGameplayEvent* WaitConfirm = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
-		this,
-		Tag_Event_Confirm,
-		nullptr, // GA의 소유자가 아닌 다른 특정 액터의 ASC에서 발생하는 Event를 기다릴 때 사용
-		false,   // 이벤트가 감지되면 Task 종료 (true) or 계속 대기 (false)
-		false    // 하위 Gameplay Tag는 무시 (true) or 포함 (false)
-	);
-	WaitConfirm->EventReceived.AddDynamic(this, &UConstruction::OnConfirmEventReceived);
-	WaitConfirm->ReadyForActivation();
-}
+}	
 
 void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 {
@@ -78,7 +80,6 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 void UConstruction::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
 	// 종료 처리: 태그 제거
-	RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
 	RemoveAbilityTag(Tag_Skill_State_Preview);
 
 	// 태스크 정리

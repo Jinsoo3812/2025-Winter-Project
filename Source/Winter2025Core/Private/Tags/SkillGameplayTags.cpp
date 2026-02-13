@@ -1,19 +1,17 @@
-﻿#include "SkillGameplayTags.h"
-
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "State.Casting");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Preview, "Player.State.Preview");
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-// 페이즈 관리를 위한 태그 정의
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_BuffBarrier_Phase1, "State.Skill.BuffBarrier.Phase1");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_BuffBarrier_Phase2, "State.Skill.BuffBarrier.Phase2");
+#include "SkillGameplayTags.h"
 
-UE_DEFINE_GAMEPLAY_TAG(TAG_Player_State_Preview, "Player.State.Preview");
-UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_State_Preview, "Skill.State.Preview");
-
-// 개편 이후
+// Skill Slot 태그
 UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Slot, "Skill.Slot");
+
+// 스킬 상태 태그
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill, "Skill");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Casting, "Skill.State.Casting");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Skill_Preview, "Skill.State.Preview");
+
+// GE SetByCaller 태그
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Damage, "Data.Damage");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_Cooldown, "Data.Cooldown");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Data_RuneMultiplier, "Data.RuneMultiplier");

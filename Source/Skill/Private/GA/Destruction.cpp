@@ -11,26 +11,9 @@ void UDestruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// 1. 프리뷰 모드 진입
-	AddGameplayTagToOwner(Tag_State_Preview);
-	AddAbilityTag(Tag_Skill_State_Preview);
+	StartPreview();
 
-	// 2. 프리뷰 태스크 시작 (박스 범위 시각화)
-	PreviewTask = UPreviewTask::CreatePreviewTask(
-		this,
-		PreviewRange, // 에디터에서 설정한 Box 범위 전달
-		Tag_Highlight_Range,
-		FGameplayTag::EmptyTag,
-		PreviewVisualizerClass,
-		nullptr
-	);
-
-	if (PreviewTask)
-	{
-		PreviewTask->ReadyForActivation();
-	}
-
-	// 3. 입력 대기 (좌클릭)
+	// 입력 대기 (좌클릭)
 	UAbilityTask_WaitGameplayEvent* WaitConfirm = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
 		this,
 		Tag_Event_Confirm,
@@ -45,6 +28,26 @@ void UDestruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, cons
 		WaitConfirm->ReadyForActivation();
 	}
 }
+
+void UDestruction::StartPreview()
+{
+	Super::StartPreview();
+
+	// 프리뷰 태스크 시작 (박스 범위 시각화)
+	PreviewTask = UPreviewTask::CreatePreviewTask(
+		this,
+		PreviewRange, // 에디터에서 설정한 Box 범위 전달
+		Tag_Highlight_Range,
+		FGameplayTag::EmptyTag,
+		PreviewVisualizerClass,
+		nullptr
+	);
+
+	if (PreviewTask)
+	{
+		PreviewTask->ReadyForActivation();
+	}
+}	
 
 void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
 {
@@ -82,7 +85,6 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
 
 void UDestruction::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	RemoveGameplayTagFromOwner(Tag_State_Preview);
 	RemoveAbilityTag(Tag_Skill_State_Preview);
 
 	if (PreviewTask)

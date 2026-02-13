@@ -27,10 +27,8 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		Launch();
 		return;
 	}
-	
-	// 프리뷰 모드 진입: 태그 부착
-	AddGameplayTagToOwner(Tag_Player_State_Preview);
-	AddAbilityTag(Tag_Skill_State_Preview);
+
+	StartPreview();
 
 	// 초기 회전값 설정 (캐릭터가 바라보는 방향 기준 90도 스냅)
 	if (AActor* Avatar = GetAvatarActorFromActorInfo())
@@ -39,29 +37,6 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		// 90도 단위 스냅 (0, 90, 180, 270)
 		float SnappedYaw = FMath::GridSnap(Yaw, 90.0f);
 		CurrentPreviewRotation = FRotator(0, SnappedYaw, 0);
-	}
-
-	// 프리뷰 태스크 시작
-	PreviewTask = UPreviewTask::CreatePreviewTask(
-		this,
-		PreviewRange,
-		Tag_Highlight_Range,
-		Tag_Highlight_Cursor,
-		nullptr,
-		PreviewActorClass 
-	);
-
-	// Task 활성화
-	if (PreviewTask)
-	{
-		PreviewTask->ReadyForActivation();
-
-		// [중요] 초기 회전 적용
-		// PreviewTask가 생성한 Actor에 접근할 수 있어야 함 (Getter 필요)
-		if (AActor* SpawnedActor = PreviewTask->GetSpawnedPreviewActor())
-		{
-			SpawnedActor->SetActorRotation(CurrentPreviewRotation);
-		}
 	}
 
 	// 입력 대기 (Confirm: 좌클릭)
@@ -87,6 +62,34 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	WaitWheel->ReadyForActivation();
 }
 
+void UBarrier::StartPreview()
+{
+	Super::StartPreview();
+
+	// 프리뷰 태스크 시작
+	PreviewTask = UPreviewTask::CreatePreviewTask(
+		this,
+		PreviewRange,
+		Tag_Highlight_Range,
+		Tag_Highlight_Cursor,
+		nullptr,
+		PreviewActorClass
+	);
+
+	// Task 활성화
+	if (PreviewTask)
+	{
+		PreviewTask->ReadyForActivation();
+
+		// [중요] 초기 회전 적용
+		// PreviewTask가 생성한 Actor에 접근할 수 있어야 함 (Getter 필요)
+		if (AActor* SpawnedActor = PreviewTask->GetSpawnedPreviewActor())
+		{
+			SpawnedActor->SetActorRotation(CurrentPreviewRotation);
+		}
+	}
+}
+
 void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo,
@@ -95,7 +98,6 @@ void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	if (PreviewTask)
 	{
 		// 프리뷰 태그 제거
-		RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
 		RemoveAbilityTag(Tag_Skill_State_Preview);
 
 		// 태스크 종료

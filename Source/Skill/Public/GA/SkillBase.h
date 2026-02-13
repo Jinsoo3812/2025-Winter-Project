@@ -52,6 +52,34 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Skill Stats")
 	FSkillPreviewRange PreviewRange;
 
+	// -------------------------------------------------------------------
+	// Gameplay Tags
+	// -------------------------------------------------------------------
+
+	// 스킬 인스턴스에 붙을 상태 태그
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag Tag_Skill_State_Preview;
+
+	// 블록 하이라이트용 태그 (범위 표시)
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag Tag_Highlight_Range;
+
+	// 블록 하이라이트용 태그 (마우스 커서)
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag Tag_Highlight_Cursor;
+
+	// 입력 이벤트: 좌클릭(확인)
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag Tag_Event_Confirm;
+
+	// 아군(플레이어)은 밀어내기 위한 태그
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag TeamAllyTag;
+
+	// 적(다른 블록, 적)과의 충돌에서 폭발하기 위한 태그
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag TeamEnemyTag;
+
 	// -----------------------------------------------------------------------------
 	// 스킬 GA의 시전, 취소 등 생명주기
 	// -----------------------------------------------------------------------------
@@ -72,20 +100,22 @@ protected:
 		const FGameplayAbilityActorInfo* ActorInfo,
 		const FGameplayAbilityActivationInfo ActivationInfo) override;
 
+	virtual void StartPreview();
+
 	// -----------------------------------------------------------------------------
 	// 시전자, GA 본인에게 태그 부착되는 태그 관리
 	// -----------------------------------------------------------------------------
 
 	/*
 	* 시전자(Owner)에게 Gameplay Tag를 추가
-	* LooseTag는 Replication 저책에 따라 동기화되지 않을 수 있음
+	* LooseTag는 Replication 정책에 따라 동기화되지 않을 수 있음
 	* @param TagToAdd 추가할 Gameplay Tag
 	*/
 	void AddGameplayTagToOwner(const FGameplayTag& TagToAdd);
 
 	/*
 	* 시전자(Owner)에게서 Gameplay Tag를 제거
-	* LooseTag는 Replication 저책에 따라 동기화되지 않을 수 있음
+	* LooseTag는 Replication 정책에 따라 동기화되지 않을 수 있음
 	* @param TagToRemove 제거할 Gameplay Tag
 	*/
 	void RemoveGameplayTagFromOwner(const FGameplayTag& TagToRemove);

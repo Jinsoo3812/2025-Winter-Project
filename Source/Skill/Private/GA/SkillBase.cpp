@@ -30,10 +30,8 @@ void USkillBase::ActivateAbility(
 		// 반복문에서 구조체 참조(Spec&)를 사용합니다.
 		for (const FGameplayAbilitySpec& Spec : Specs)
 		{
-			// 1. 활성화된(IsActive) 스킬이고
-			// 2. 나 자신(this)이 아니며 (Spec.Ability로 접근)
-			// 3. 동적 태그(DynamicAbilityTags)에 프리뷰 태그가 있는지 확인 (.으로 접근)
-			if (Spec.IsActive() && Spec.Ability != this && Spec.DynamicAbilityTags.HasTag(TAG_Skill_State_Preview))
+			// Preview 상태인 GA가 있다면 취소
+			if (Spec.IsActive() && Spec.Ability != this && Spec.DynamicAbilityTags.HasTag(Tag_Skill_State_Preview))
 			{
 				UE_LOG(LogTemp, Log, TEXT("SkillBase: Cancelling Previewing Skill: %s"), *Spec.Ability->GetName());
 
@@ -60,6 +58,11 @@ void USkillBase::ActivateAbility(
 	}
 }
 
+void USkillBase::StartPreview()
+{
+	AddAbilityTag(Tag_Skill_State_Preview);
+}
+
 void USkillBase::InputPressed(
 	const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
@@ -67,7 +70,7 @@ void USkillBase::InputPressed(
 {
 	Super::InputPressed(Handle, ActorInfo, ActivationInfo);
 	
-	if (HasAbilityTag(TAG_Skill_State_Preview))
+	if (HasAbilityTag(Tag_Skill_State_Preview))
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
