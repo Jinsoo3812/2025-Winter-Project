@@ -42,6 +42,12 @@ void ABomb::InitializeExplosive(const FBombPayload& InPayload)
 		Payload.BlockSystem = IBlockSystemInterface::Get(this);
 	}
 
+	// 시전자와 충돌하지 않도록 설정
+	if (GetInstigator())
+	{
+		CollisionComp->IgnoreActorWhenMoving(GetInstigator(), true);
+	}
+
 	// Payload에 설정된 시간으로 '폭발' 타이머 설정
 	if (Payload.AutoDetonateTime > 0.0f)
 	{
@@ -61,8 +67,10 @@ void ABomb::LaunchByTime(FVector TargetLocation, float Time, float GravityZ)
 
 	FVector StartLoc = GetActorLocation();
 	FVector Displacement = TargetLocation - StartLoc;
-	FVector GravityCorrection = FVector(0, 0, -0.5f * GravityZ * Time * Time);
-	FVector Velocity = (Displacement - GravityCorrection) / Time;
+
+	FVector GravityDrop = FVector(0, 0, 0.5f * GravityZ * Time * Time);
+
+	FVector Velocity = (Displacement - GravityDrop) / Time;
 
 	if (ProjectileMovement)
 	{
@@ -125,7 +133,7 @@ void ABomb::StickToTarget(USceneComponent* TargetComp, FName SocketName, const F
 	AttachToComponent(TargetComp, AttachRules, SocketName);
 
 	// 부착 이벤트 전송
-	if (Payload.InstigatorASC.IsValid() && Payload.DetonationEventTag.IsValid())
+	if (Payload.InstigatorASC.IsValid() && Payload.AttachedEventTag.IsValid())
 	{
 		FGameplayEventData EventData;
 		EventData.Instigator = this;
@@ -238,6 +246,8 @@ void ABomb::Detonate()
 			Payload.DetonationEventTag,
 			EventData
 		);
+
+		UE_LOG(LogTemp, Warning, TEXT("Bomb: Event Sent! Tag: %s"), *Payload.DetonationEventTag.ToString());
 	}
 
 	Destroy();

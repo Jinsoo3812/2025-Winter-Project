@@ -19,20 +19,6 @@ void UStickyBomb::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		return;
 	}
 
-	// 이미 폭탄이 부착된 상태라면 격발 
-	if (ASC->HasMatchingGameplayTag(Tag_Player_State_Bomb_Active))
-	{
-		CommandDetonate();
-		return;
-	}
-
-	// 폭탄이 날아가는 중이라면 입력 무시
-	if (ASC->HasMatchingGameplayTag(Tag_Player_State_Bomb_Throwing))
-	{
-		return;
-	}
-
-	// 아무 상태도 아니라면 프리뷰 시작
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	StartPreview();
 
@@ -46,6 +32,27 @@ void UStickyBomb::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	);
 	WaitConfirm->EventReceived.AddDynamic(this, &UStickyBomb::OnConfirmEventReceived);
 	WaitConfirm->ReadyForActivation();
+}
+
+void UStickyBomb::InputPressed(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo)
+{
+	Super::InputPressed(Handle, ActorInfo, ActivationInfo);
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+
+	// 폭탄이 날아가는 중이라면 입력 무시
+	if (ASC->HasMatchingGameplayTag(Tag_Player_State_Bomb_Throwing))
+	{
+		return;
+	}
+
+	// 폭탄이 활성화(부착)된 상태에서 키를 다시 눌렀다면 기폭
+	if (ASC && ASC->HasMatchingGameplayTag(Tag_Player_State_Bomb_Active))
+	{
+		CommandDetonate();
+	}
 }
 
 void UStickyBomb::StartPreview()
@@ -116,7 +123,7 @@ void UStickyBomb::ThrowBomb(const FVector& TargetLocation)
 
 	// 폭탄 스폰
 	FTransform SpawnTransform;
-	SpawnTransform.SetLocation(Avatar->GetActorLocation() + Avatar->GetActorForwardVector() * 30.0f); // 캐릭터 약간 앞
+	SpawnTransform.SetLocation(Avatar->GetActorLocation() + Avatar->GetActorForwardVector() * 100.0f); // 캐릭터 약간 앞
 	SpawnTransform.SetRotation(Avatar->GetActorRotation().Quaternion());
 
 	ABomb* SpawnedBomb = GetWorld()->SpawnActorDeferred<ABomb>(BombClass, SpawnTransform, Avatar, Cast<APawn>(Avatar));
@@ -127,6 +134,7 @@ void UStickyBomb::ThrowBomb(const FVector& TargetLocation)
 		FBombPayload Payload;
 		Payload.ExplosionRadius = ExplosionRadius;
 		Payload.AutoDetonateTime = AutoDetonateTime;
+		Payload.InstigatorASC = GetAbilitySystemComponentFromActorInfo();
 		Payload.AttachedEventTag = Tag_Event_BombAttached;
 		Payload.DetonationEventTag = Tag_Event_BombDetonated;
 		Payload.BlockSystem = BlockSystem;
@@ -212,7 +220,7 @@ void UStickyBomb::CommandDetonate()
 void UStickyBomb::OnBombDetonated(FGameplayEventData Payload)
 {
 	// 폭탄이 터졌음 (자폭했든, 적에 맞았든, 내가 터트렸든)
-
+	UE_LOG(LogTemp, Log, TEXT("StickyBomb: Bomb detonated."));
 	// 모든 상태 태그 정리
 	RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Throwing);
 	RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Active);
@@ -226,6 +234,7 @@ void UStickyBomb::OnBombDetonated(FGameplayEventData Payload)
 
 void UStickyBomb::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
+	UE_LOG(LogTemp, Log, TEXT("StickyBomb: EndAbility called."));	
 	// 혹시 프리뷰가 켜진 상태로 끝났다면 정리
 	if (PreviewTask)
 	{
@@ -235,8 +244,17 @@ void UStickyBomb::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 	}
 
 	// 상태 태그 정리
-	RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Throwing);
-	RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Active);
+	if (ActorInfo->AbilitySystemComponent.IsValid())
+	{
+		if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(Tag_Player_State_Bomb_Throwing))
+		{
+			RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Throwing);
+		}
+		if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(Tag_Player_State_Bomb_Active))
+		{
+			RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Active);
+		}
+	}
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

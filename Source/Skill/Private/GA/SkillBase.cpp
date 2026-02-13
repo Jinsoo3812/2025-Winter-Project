@@ -31,7 +31,7 @@ void USkillBase::ActivateAbility(
 		for (const FGameplayAbilitySpec& Spec : Specs)
 		{
 			// Preview 상태인 GA가 있다면 취소
-			if (Spec.IsActive() && Spec.Ability != this && Spec.DynamicAbilityTags.HasTag(Tag_Skill_State_Preview))
+			if (Spec.IsActive() && Spec.Ability != this && Spec.DynamicAbilityTags.HasTag(TAG_Skill_State_Preview))
 			{
 				UE_LOG(LogTemp, Log, TEXT("SkillBase: Cancelling Previewing Skill: %s"), *Spec.Ability->GetName());
 

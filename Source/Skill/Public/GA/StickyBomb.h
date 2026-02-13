@@ -81,6 +81,11 @@ protected:
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		bool bReplicateEndAbility, bool bWasCancelled) override;
 
+	// 실행 중인 어빌리티의 키 입력을 처리
+	virtual void InputPressed(const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo) override;
+
 	// -----------------------------------------------------------------------------
 	// 단계별 로직
 	// -----------------------------------------------------------------------------
