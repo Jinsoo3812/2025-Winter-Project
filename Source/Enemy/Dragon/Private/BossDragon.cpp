@@ -23,7 +23,7 @@
 // 프로젝트 내부 모듈 헤더
 #include "Enemy/Public/EnemyAttributeSet.h" 
 #include "Block/BlockBase.h"
-#include "BlockSystemInterface.h"        // 블록 시스템 인터페이스 (0209 수정)
+#include "BlockSystemInterface.h"
 #include "BlockSpawnPayload.h"
 #include "Block/BlockManagerSubsystem.h"   // 블록 생성 관리자
 #include "BlockGameplayTags.h"             // 블록 태그 정의 헤더
@@ -133,30 +133,27 @@ void ABossDragon::OnHealthChanged(const FOnAttributeChangeData& Data)
 // ---------------------------------------------------------------------------
 void ABossDragon::SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, float LifeTime)
 {
-	// 서버 권한 확인
 	if (!HasAuthority()) return;
 
 	UWorld* World = GetWorld();
-	if (!World) return;
+	// 새로운 인터페이스 접근 방식: static 함수인 Get()을 사용합니다.
+	IBlockSystemInterface* BlockSystem = IBlockSystemInterface::Get(World);
 
-	IBlockSystemInterface* BlockSubsystem = IBlockSystemInterface::Get(World); // 0209 수정
-	if (!BlockSubsystem) return;
+	if (!BlockSystem)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[BossDragon] BlockSystemInterface Not Found!"));
+		return;
+	}
 
-	// 기존에 혹시 남아있는 계단이 있다면 정리하고 시작 (선택사항)
-	// DestroySpawnedStairs(); 
+	// 인터페이스에서 제공하는 GridSize를 사용합니다. (보통 100.0f)
+	const float GridSize = BlockSystem->GetGridSize();
 
-	float GridSize = BlockSubsystem->GetGridSize(); // 0209 수정
-
-	// 위치 스냅 및 방향 설정
 	FVector SnappedCenter;
 	SnappedCenter.X = FMath::RoundToFloat(CenterLocation.X / GridSize) * GridSize;
 	SnappedCenter.Y = FMath::RoundToFloat(CenterLocation.Y / GridSize) * GridSize;
 	SnappedCenter.Z = CenterLocation.Z;
 
 	FVector Directions[] = { FVector(1,0,0), FVector(-1,0,0), FVector(0,1,0), FVector(0,-1,0) };
-
-	// 0209 수정
-	TArray<FBlockSpawnRequest> SpawnRequests;
 
 	for (const FVector& Dir : Directions)
 	{
@@ -169,50 +166,26 @@ void ABossDragon::SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, flo
 				FVector HeightPos = SpawnPos;
 				HeightPos.Z = SnappedCenter.Z + (H * GridSize);
 
-				if (!BlockSubsystem->IsLocationOccupied(HeightPos, GridSize))
+				// 인터페이스의 IsLocationOccupied 사용
+				if (!BlockSystem->IsLocationOccupied(HeightPos, GridSize))
 				{
-					// 0209 수정: FBlockSpawnRequest 사용
-					FBlockSpawnRequest NewRequest(
+					// 인터페이스의 SpawnBlockByTag 사용
+					AActor* NewBlock = BlockSystem->SpawnBlockByTag(
 						TAG_Block_Type_Destructible,
 						HeightPos,
-						true, // bEnableGravity
-						nullptr // Payload
+						FRotator::ZeroRotator,
+						false, // 중력 비활성화
+						nullptr // 페이로드 생략
 					);
 
-					SpawnRequests.Add(NewRequest);
+					if (NewBlock)
+					{
+						NewBlock->SetLifeSpan(LifeTime);
+						SpawnedStairsList.Add(NewBlock);
+					}
 				}
 			}
 		}
-	}
-
-	// 0209 수정
-	if (SpawnRequests.Num() > 0)
-	{
-		// 비동기 콜백에서 BossDragon이 유효한지 확인하기 위해 WeakPtr 사용
-		TWeakObjectPtr<ABossDragon> WeakSelf(this);
-
-		// 배치 소환 완료 시 실행될 델리게이트 바인딩 (람다 사용)
-		FOnBlockBatchSpawnComplete OnBatchComplete;
-		OnBatchComplete.BindLambda([WeakSelf, LifeTime](const TArray<TWeakObjectPtr<AActor>>& SpawnedActors)
-			{
-				// 보스가 이미 파괴되었다면 로직 중단
-				if (!WeakSelf.IsValid()) return;
-
-				for (const TWeakObjectPtr<AActor>& WeakActor : SpawnedActors)
-				{
-					if (AActor* NewBlock = WeakActor.Get())
-					{
-						// 안전장치 타이머 설정
-						NewBlock->SetLifeSpan(LifeTime);
-
-						// 리스트에 등록 -> 나중에 강제로 즉시 지우기 위해 저장함
-						WeakSelf->SpawnedStairsList.Add(NewBlock);
-					}
-				}
-			});
-
-		// 서브시스템에 배치 소환 요청 전송
-		BlockSubsystem->SpawnBlocksBatch(SpawnRequests, OnBatchComplete);
 	}
 }
 
@@ -221,27 +194,23 @@ void ABossDragon::SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, flo
 // ---------------------------------------------------------------------------
 void ABossDragon::SetFloorWarningState(FVector CenterLocation, float Radius, bool bIsWarning)
 {
-	// 1. 태그 결정
-	// Warning이 True(경고 시작)면 빨강, False(경고 끝)면 원래 색
-	FGameplayTag TagToSend = bIsWarning ? TAG_Block_Highlight_AttackZone : TAG_Block_Highlight_AttackZone_None;
-
-	// =========================================================================
-	// [핵심 로직] 경고가 끝나는 순간(False), 계단도 같이 삭제합니다.
-	// =========================================================================
-	if (bIsWarning == false)
+	// [1] 경고가 꺼지는 상황(False)이라면 -> 생성했던 계단들도 즉시 삭제
+	if (!bIsWarning)
 	{
-		// 이 함수가 호출되면, LifeTime이 아직 남았더라도 즉시 계단들이 파괴됩니다.
 		DestroySpawnedStairs();
 	}
 
-	// 2. 주변 블록 검색
+	// [2] 태그 결정 (True면 공격 구역 표시, False면 해제)
+	FGameplayTag TagToSend = bIsWarning ? TAG_Block_Highlight_AttackZone : TAG_Block_Highlight_AttackZone_None;
+
+	// [3] 범위 내 블록 검색 설정
 	TArray<FOverlapResult> Overlaps;
 	FCollisionShape SphereShape = FCollisionShape::MakeSphere(Radius);
 	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this);
+	Params.AddIgnoredActor(this); // 보스 자신 제외
 
 	FCollisionObjectQueryParams ObjectParams;
-	ObjectParams.AddObjectTypesToQuery(ECC_Block); // 블록 채널 감지
+	ObjectParams.AddObjectTypesToQuery(ECC_Block); // 블록 전용 채널 사용
 
 	bool bHit = GetWorld()->OverlapMultiByObjectType(
 		Overlaps,
@@ -252,7 +221,7 @@ void ABossDragon::SetFloorWarningState(FVector CenterLocation, float Radius, boo
 		Params
 	);
 
-	// 3. 색상 변경 이벤트 전송
+	// [4] 검색된 블록들에게 색상 변경 이벤트 전송
 	if (bHit)
 	{
 		FGameplayEventData EventData;
@@ -263,6 +232,7 @@ void ABossDragon::SetFloorWarningState(FVector CenterLocation, float Radius, boo
 		{
 			if (ABlockBase* Block = Cast<ABlockBase>(Result.GetActor()))
 			{
+				// BlockBase 내부의 네트워크 멀티캐스트 로직 실행
 				Block->HandleGameplayEvent(TagToSend, EventData);
 			}
 		}

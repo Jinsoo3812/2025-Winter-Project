@@ -52,9 +52,10 @@ public:
 	 * 데미지 폰트 출력을 위한 이벤트
 	 * C++에서는 호출만 하고, 실제 구현(위젯 스폰)은 블루프린트에서 합니다.
 	 * 그래서 BlueprintImplementableEvent.
+	 * 타격 위치도 필요해서 FVector 추가
 	 */
 	UFUNCTION(BlueprintImplementableEvent, Category = "Combat")
-	void ShowDamageNumber(float DamageAmount);
+	void ShowDamageNumber(float DamageAmount, FVector HitLocation); // FVector 추가!
 
 protected:
 	virtual void BeginPlay() override;
