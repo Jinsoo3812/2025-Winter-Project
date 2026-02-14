@@ -147,12 +147,11 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		FVector PlayerLoc = Avatar->GetActorLocation();
 		FVector TargetLoc = SpawnedActor->GetActorLocation();
 
-		// 1. 시전자에서 목표 지점으로 향하는 벡터 계산
+		// 시전자에서 목표 지점으로 향하는 벡터 계산
 		FVector Dir = TargetLoc - PlayerLoc;
 		Dir.Z = 0.0f; // 높이 차이 무시 (수평 방향만 고려)
 
 		// 가장 지배적인 축(Dominant Axis)을 찾아 4방향으로 스냅
-		// X축의 크기가 Y축보다 크면 앞/뒤, 아니면 좌/우
 		if (FMath::Abs(Dir.X) > FMath::Abs(Dir.Y))
 		{
 			// X 성분의 부호(Sign)만 남김 (1 or -1)
@@ -165,10 +164,10 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		}
 	}
 
-	// 1. 프리뷰 액터에게 소환할 수 있는 블록 위치 목록 요청
+	// 프리뷰 액터에게 소환할 수 있는 블록 위치 목록 요청
 	TArray<FTransform> SpawnTransforms = PreviewActor->GetValidSpawnData();
 
-	// 2. 유효한 데이터가 있다면 실제 소환 진행
+	//  실제 소환 진행
 	if (SpawnTransforms.Num() > 0)
 	{
 		if (BlockSystem)
@@ -184,12 +183,33 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 			BarrierPayload->TeamAllyTag = this->TeamAllyTag; // 예: Team.Ally
 			BarrierPayload->TeamEnemyTag = this->TeamEnemyTag; // 예: Team.Enemy
 			BarrierPayload->AllyKnockbackStrength = this->AllyKnockbackStrength;
-			BarrierPayload->DamageEffectClass = this->DamageEffectClass;
+
+			if (DamageEffectClass)
+			{
+				UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+				FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+				ContextHandle.AddSourceObject(this);
+
+				FGameplayEffectSpecHandle DamageSpecHandle = ASC->MakeOutgoingSpec(DamageEffectClass, 1.0f, ContextHandle);
+
+				if (DamageSpecHandle.IsValid())
+				{
+					// 데미지 룬 배율
+					float RuneMultiplier = GetRuneMultiplier(ERuneType::Red);
+
+					// SetByCaller 주입
+					DamageSpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, BaseDamage);
+					DamageSpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_RuneMultiplier, RuneMultiplier);
+
+					// SpecHandle을 Payload에 전달
+					BarrierPayload->DamageSpecHandle = DamageSpecHandle;
+				}
+			}
 
 			TArray<FBlockSpawnRequest> FinalRequests;
 			for (auto& SpawnTransform : SpawnTransforms)
 			{
-				FBlockSpawnRequest Req(BlockTagToSpawn, SpawnTransform.GetLocation(), true);
+				FBlockSpawnRequest Req(BlockTagToSpawn, SpawnTransform.GetLocation(), true, BarrierPayload);
 				FinalRequests.Add(Req);
 			}
 

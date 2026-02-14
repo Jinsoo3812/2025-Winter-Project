@@ -38,7 +38,7 @@ void ABarrierBlock::InitializeBlock(const UBlockSpawnPayload* InPayload)
 			this->TeamAllyTag = BarrierData->TeamAllyTag;
 			this->TeamEnemyTag = BarrierData->TeamEnemyTag;
 			this->AllyKnockbackStrength = BarrierData->AllyKnockbackStrength;
-			this->DamageEffectClass = BarrierData->DamageEffectClass;
+			this->DamageSpecHandle = BarrierData->DamageSpecHandle;
 		}
 	}
 }
@@ -133,27 +133,18 @@ void ABarrierBlock::OnHit(UPrimitiveComponent* HitComp,
 			}
 		}
 		// B. 적군 (데미지 & 폭발)
-		else if (TargetASC->HasMatchingGameplayTag(TeamEnemyTag))
+		else
 		{
-			// GE 적용 (Damage)
-			if (DamageEffectClass && GetAbilitySystemComponent())
+			// GE Spec을 타겟에게 적용
+			if (DamageSpecHandle.IsValid())
 			{
-				FGameplayEffectContextHandle ContextHandle = GetAbilitySystemComponent()->MakeEffectContext();
-				ContextHandle.AddSourceObject(this);
-
-				FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(DamageEffectClass, 1.0f, ContextHandle);
-				if (SpecHandle.IsValid())
-				{
-					GetAbilitySystemComponent()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-				}
+				TargetASC->ApplyGameplayEffectSpecToSelf(*DamageSpecHandle.Data.Get());
+			}
+			else {
+				UE_LOG(LogTemp, Warning, TEXT("BarrierBlock: DamageSpecHandle is invalid. Cannot apply damage to %s"), *OtherActor->GetName());
 			}
 
 			UE_LOG(LogTemp, Log, TEXT("BarrierBlock: Hit Enemy %s -> Explode"), *OtherActor->GetName());
-			Explode();
-		}
-		else
-		{
-			// GAS를 가졌지만 지정된 TAG가 없는 경우 -> 무조건 폭발
 			Explode();
 		}
 	}

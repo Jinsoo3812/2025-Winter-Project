@@ -59,9 +59,8 @@ protected:
 	UPROPERTY()
 	float AllyKnockbackStrength = 800.0f;
 
-	// 적에게 적용할 데미지 GE 클래스
-	UPROPERTY()
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	// Payload를 통해 전달받은 GE Spec
+	FGameplayEffectSpecHandle DamageSpecHandle;
 
 	// -------------------------------------------------------------------------
 	// 스킬 동작 

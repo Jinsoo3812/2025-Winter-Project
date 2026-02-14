@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "GameplayEffect.h"
+#include "GameplayEffectTypes.h"
 #include "BlockSpawnPayload.generated.h"
 
 UCLASS()
@@ -43,7 +44,6 @@ public:
 	// 아군 넉백 힘
 	float AllyKnockbackStrength = 800.0f;
 
-	UPROPERTY()
-	// 폭발 시 적용할 데미지 이펙트 클래스
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	// 적에게 입힐 데미지 GE SpecHandle
+	FGameplayEffectSpecHandle DamageSpecHandle;
 };
