@@ -132,11 +132,12 @@ void UStickyBomb::ThrowBomb(const FVector& TargetLocation)
 	{
 		// Payload 구성
 		FBombPayload Payload(
-			ExplosionRadius,
+			ExplosionRadius * GetRuneMultiplier(ERuneType::Blue),
 			AutoDetonateTime,
 			GetAbilitySystemComponentFromActorInfo(),
 			Tag_Event_BombAttached,
 			Tag_Event_BombDetonated,
+			BombHighlightTag,
 			BlockSystem
 		);
 
@@ -292,17 +293,8 @@ void UStickyBomb::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGam
 	}
 
 	// 상태 태그 정리
-	if (ActorInfo->AbilitySystemComponent.IsValid())
-	{
-		if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(Tag_Player_State_Bomb_Throwing))
-		{
-			RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Throwing);
-		}
-		if (ActorInfo->AbilitySystemComponent->HasMatchingGameplayTag(Tag_Player_State_Bomb_Active))
-		{
-			RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Active);
-		}
-	}
+	RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Throwing);
+	RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Active);
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }

@@ -98,12 +98,6 @@ const FGameplayTagContainer* USkillBase::GetCooldownTags() const
 		MutableTags->AddTag(CooldownTag);
 	}
 
-	// 부모 클래스에 등록된 기본 태그들이 있다면 합쳐줌
-	if (const FGameplayTagContainer* ParentTags = Super::GetCooldownTags())
-	{
-		MutableTags->AppendTags(*ParentTags);
-	}
-
 	return MutableTags;
 }
 
@@ -181,8 +175,13 @@ void USkillBase::RemoveGameplayTagFromOwner(const FGameplayTag& TagToRemove)
 
 	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo())
 	{
-		ASC->RemoveLooseGameplayTag(TagToRemove);
+		if (ASC->HasMatchingGameplayTag(TagToRemove))
+		{
+			ASC->RemoveLooseGameplayTag(TagToRemove);
+		}
 	}
+
+
 }
 
 void USkillBase::AddAbilityTag(const FGameplayTag& Tag)

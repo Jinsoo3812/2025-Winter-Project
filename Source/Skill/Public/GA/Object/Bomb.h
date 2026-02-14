@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
+#include "BlockCommonTypes.h"
 #include "Bomb.generated.h"
 
 class USphereComponent;
@@ -41,6 +42,10 @@ public:
 	UPROPERTY()
 	FGameplayTag DetonationEventTag;
 
+	// 폭발 시 시전자에게 보낼 이벤트 태그
+	UPROPERTY()
+	FGameplayTag BombHighlightTag;
+
 	// BlockSystem 캐시
 	IBlockSystemInterface* BlockSystem;
 
@@ -48,12 +53,13 @@ public:
 
 	FBombPayload(float InExplosionRadius, float InAutoDetonateTime,
 		UAbilitySystemComponent* InInstigatorASC, FGameplayTag InAttachedEventTag,
-		FGameplayTag InDetonationEventTag, IBlockSystemInterface* InBlockSystem)
+		FGameplayTag InDetonationEventTag, FGameplayTag InBombHighlightTag, IBlockSystemInterface* InBlockSystem)
 		: ExplosionRadius(InExplosionRadius)
 		, AutoDetonateTime(InAutoDetonateTime)
 		, InstigatorASC(InInstigatorASC)
 		, AttachedEventTag(InAttachedEventTag)
 		, DetonationEventTag(InDetonationEventTag)
+		, BombHighlightTag(InBombHighlightTag)
 		, BlockSystem(InBlockSystem)
 	{}
 };
@@ -104,6 +110,9 @@ protected:
 	// 예: Tag.State.StickyTarget
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	FGameplayTag StickyTargetTag;
+
+	UPROPERTY()
+	FBlockReference AttachedBlockRef;
 
 	// -----------------------------------------------------------------------------
 	// 폭발

@@ -33,10 +33,13 @@ void UDestruction::StartPreview()
 {
 	Super::StartPreview();
 
+	FSkillPreviewRange MultipliedPreviewRange = PreviewRange;
+	MultipliedPreviewRange.Dimensions *= GetRuneMultiplier(ERuneType::Blue);
+
 	// 프리뷰 태스크 시작 (박스 범위 시각화)
 	PreviewTask = UPreviewTask::CreatePreviewTask(
 		this,
-		PreviewRange, // 에디터에서 설정한 Box 범위 전달
+		MultipliedPreviewRange, // 에디터에서 설정한 Box 범위 전달
 		Tag_Highlight_Range,
 		FGameplayTag::EmptyTag,
 		PreviewVisualizerClass,
@@ -64,6 +67,8 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
 
 	if (TargetBlocks.IsEmpty() && TargetEnemies.IsEmpty())
 	{
+		// 아무도 히트 시키지 못했어도 쿨타임은 돌아야지..
+		CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 		return;
 	}
@@ -103,6 +108,8 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
 		ApplyGameplayEffectToTargets(TargetEnemies, DamageSpecHandle);
 	}
 
+	// 쿨타임 시작
+	CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 
 	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }

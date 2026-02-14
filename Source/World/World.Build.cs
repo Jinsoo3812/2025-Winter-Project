@@ -19,8 +19,10 @@ public class World: ModuleRules
 
         PublicIncludePaths.AddRange(new string[] {
 			"World",
-			"World/Public/Block",
-			"World/Public/Chunk"
+			"World/Public/Blocks",
+			"World/Public/Chunk",
+            "World/Public/Blocks/GAS",
+            "World/Public/Blocks/Preview"
 		});
     }
 }

@@ -12,7 +12,8 @@ public class Skill: ModuleRules
             "GameplayTasks",
             "GameplayTags",
             "Winter2025Core",
-            "InputCore"
+            "InputCore",
+            "PhysicsCore"
         });
 
         PublicIncludePaths.AddRange(new string[] {

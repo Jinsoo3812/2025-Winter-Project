@@ -63,6 +63,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag Tag_Event_BombDetonated;
 
+	// 폭탄 부착 시 블록 하이라이트 태그
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag BombHighlightTag;
+
 	// -----------------------------------------------------------------------------
 	// 내부 상태 관리
 	// -----------------------------------------------------------------------------

@@ -1,4 +1,7 @@
-﻿#include "Bomb.h"
+﻿// Fill out your copyright notice in the Description page of Project Settings.
+
+
+#include "Bomb.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -9,6 +12,8 @@
 #include "CollisionChannels.h"
 #include "Engine/OverlapResult.h"
 #include "Abilities/GameplayAbilityTargetTypes.h"
+#include "PhysicalSurfaces.h"
+#include "BlockGameplayTags.h"
 #include "DrawDebugHelpers.h"
 
 ABomb::ABomb()
@@ -19,6 +24,7 @@ ABomb::ABomb()
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->SetCollisionProfileName(TEXT("Projectile"));
 	CollisionComp->OnComponentHit.AddDynamic(this, &ABomb::OnHit);
+	CollisionComp->bReturnMaterialOnMove = true;
 	RootComponent = CollisionComp;
 
 	// 메시 컴포넌트 설정
@@ -81,30 +87,22 @@ void ABomb::LaunchByTime(FVector TargetLocation, float Time, float GravityZ)
 
 void ABomb::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	if (bHasDetonated || !OtherActor) return;
-
-	// 부착 가능 여부 판단 (태그)
-	bool bIsSticky = false;
-
-	UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(OtherActor);
-
-	// ASC가 있고, 설정된 Sticky 태그가 있다면 확인
-	if (TargetASC && StickyTargetTag.IsValid())
+	if (!OtherActor || !OtherComp || !Hit.PhysMaterial.IsValid())
 	{
-		if (TargetASC->HasMatchingGameplayTag(StickyTargetTag))
-		{
-			bIsSticky = true;
-		}
+		Detonate(); // 매터리얼이 없거나 유효하지 않으면 즉시 폭발
+		return;
 	}
 
-	if (bIsSticky)
+	// Physical Material에서 SurfaceType 가져오기 (O(1) 비용)
+	EPhysicalSurface SurfaceType = UPhysicalMaterial::DetermineSurfaceType(Hit.PhysMaterial.Get());
+
+	// Sticky 여부 판별 (Surface_Sticky가 Project Settings에서 SurfaceType1이라고 가정)
+	if (SurfaceType == SURFACE_STICKY)
 	{
-		// HISM에도 붙게 하기 위해 Component에 부착
 		StickToTarget(OtherComp, NAME_None, Hit);
 	}
 	else
 	{
-		UE_LOG(LogTemp, Log, TEXT("Bomb: Hit non-sticky target. BOOM."));
 		Detonate();
 	}
 }
@@ -132,6 +130,20 @@ void ABomb::StickToTarget(USceneComponent* TargetComp, FName SocketName, const F
 	// HISM Instance 개별에 붙는 것이 아닌 컴포넌트와의 상대적 위치 유지
 	FAttachmentTransformRules AttachRules(EAttachmentRule::KeepWorld, true);
 	AttachToComponent(TargetComp, AttachRules, SocketName);
+
+	if (Payload.BlockSystem)
+	{
+		// BlockSystem에 구현된 함수를 사용하여 HitResult로부터 정확한 BlockReference 추출
+		if (Payload.BlockSystem->GetBlockFromHitResult(Hit, AttachedBlockRef))
+		{
+			// 추출에 성공했다면 하이라이트 적용 (Payload에 HighlightTag가 있다고 가정)
+			Payload.BlockSystem->HighlightBlock(AttachedBlockRef, Payload.BombHighlightTag);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Bomb: Hit surface is not a valid block for highlighting."));
+		}
+	}
 
 	// 부착 이벤트 전송
 	if (Payload.InstigatorASC.IsValid() && Payload.AttachedEventTag.IsValid())
@@ -240,6 +252,8 @@ void ABomb::Detonate()
 			EventData
 		);
 	}
+
+	Payload.BlockSystem->HighlightBlock(AttachedBlockRef, TAG_Block_Highlight_Bomb_None);
 
 	Destroy();
 }

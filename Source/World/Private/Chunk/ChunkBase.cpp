@@ -117,9 +117,21 @@ void AChunkBase::RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh)
 
 				// CPD 사용을 위한 CPD 슬롯 설정(넉넉하게)
 				NewHISM->NumCustomDataFloats = 8;
-
+				
 				// Stationary: 위치 고정 & 런타임 인스턴스 변경 등 가능
 				NewHISM->SetMobility(EComponentMobility::Stationary);
+
+				// Physical Material 가져오기
+				UPhysicalMaterial* StickyPhysMat = nullptr;
+				if (CachedBlockConfig) {
+					StickyPhysMat = CachedBlockConfig->GetBlockDef(Type)->PhysMat;
+				}
+
+				if (StickyPhysMat)
+				{
+					// HISM 컴포넌트 전체에 피지컬 머티리얼 덮어쓰기
+					NewHISM->SetPhysMaterialOverride(StickyPhysMat);
+				}
 
 				// 초기 상태 설정
 				if (BufferIdx == CurrentBufferIndex)

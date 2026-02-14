@@ -1,8 +1,8 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
-#include "Block/DestructibleBlock.h"
+#include "DestructibleBlock.h"
 #include "AbilitySystemComponent.h"
-#include "Block/BlockAttributeSet.h"
+#include "BlockAttributeSet.h"
 
 void ADestructibleBlock::BeginPlay()
 {

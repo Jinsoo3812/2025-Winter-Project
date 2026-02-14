@@ -35,15 +35,6 @@ protected:
 	float BaseCooldown = 5.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Skill Stats")
-	float BaseRange = 1.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Skill Stats")
-	float RangeXY = 500.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Skill Stats")
-	float RangeZ = 200.0f;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Skill Stats")
 	FSkillPreviewRange PreviewRange;
 
 	// -------------------------------------------------------------------

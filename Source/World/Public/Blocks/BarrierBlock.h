@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Block/DestructibleBlock.h"
+#include "DestructibleBlock.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "BarrierBlock.generated.h"
 
