@@ -128,6 +128,29 @@ float USkillBase::GetRuneMultiplier(ERuneType RuneType) const
 	return RuneMultiplier;
 }
 
+int32 USkillBase::GetRuneCount(ERuneType RuneType) const
+{
+	if (!SkillComp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillBase: SkillComp is null in GetRuneCount"));	
+		return 0;
+	}
+	int32 RuneCount = 0;
+	// 내 슬롯 태그를 이용해 룬 개수 가져오기
+	if (const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
+	{
+		for (const FGameplayTag& Tag : Spec->DynamicAbilityTags)
+		{
+			if (Tag.MatchesTag(TAG_Skill_Slot))
+			{
+				RuneCount = SkillComp->GetTotalRuneCount(Tag, RuneType);
+				break;
+			}
+		}
+	}
+	return RuneCount;
+}
+
 void USkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo) const

@@ -6,6 +6,8 @@
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "ChunkBase.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "EventGameplayTags.h"
 
 ABarrierBlock::ABarrierBlock()
 {
@@ -39,6 +41,7 @@ void ABarrierBlock::InitializeBlock(const UBlockSpawnPayload* InPayload)
 			this->TeamEnemyTag = BarrierData->TeamEnemyTag;
 			this->AllyKnockbackStrength = BarrierData->AllyKnockbackStrength;
 			this->DamageSpecHandle = BarrierData->DamageSpecHandle;
+			this->CachedInstigator = BarrierData->InstigatorActor;
 		}
 	}
 }
@@ -163,6 +166,23 @@ void ABarrierBlock::Explode()
 		World->GetTimerManager().ClearTimer(LifeTimerHandle);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("BarrierBlock: Exploding %s"), *GetName());
 	Destroy();
+}
+
+void ABarrierBlock::Destroyed()
+{
+	// 시전자의 ASC에 파괴 이벤트를 보냄
+	if (CachedInstigator.IsValid())
+	{	
+		FGameplayEventData EventData;
+		EventData.Instigator = this;
+		EventData.Target = this;
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(CachedInstigator.Get(), TAG_Event_Block_Destroyed_Barrier, EventData);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("BarrierBlock: CachedInstigator is invalid. Cannot send Destroyed Event."));
+	}
+
+	Super::Destroyed();
 }

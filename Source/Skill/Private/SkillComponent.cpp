@@ -152,26 +152,7 @@ float USkillComponent::GetTotalRuneMultiplier(FGameplayTag SlotTag, ERuneType Ty
 {
 	if (!SlotTag.IsValid()) return 1.0f;
 
-	// 1. 해당 태그를 가진 슬롯 찾기
-	const FSkillSlot* FoundSlot = SkillSlots.FindByPredicate([&](const FSkillSlot& Slot) {
-		return Slot.SlotTag == SlotTag;
-		});
-
-	if (!FoundSlot)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: GetTotalRuneMultiplier - Cannot find SkillSlot with Tag %s"), *SlotTag.ToString());
-		return 1.0f;
-	}
-
-	// 2. 해당 타입의 룬 개수 카운트
-	int32 RuneCount = 0;
-	for (const TObjectPtr<UDA_Rune>& RunePtr : FoundSlot->RuneSlots)
-	{
-		if (RunePtr && RunePtr->RuneType == Type)
-		{
-			RuneCount++;
-		}
-	}
+	int32 RuneCount = GetTotalRuneCount(SlotTag, Type);
 
 	if (RuneCount <= 0 || !RuneCurveTable) return 1.0f;
 
@@ -202,4 +183,32 @@ float USkillComponent::GetTotalRuneMultiplier(FGameplayTag SlotTag, ERuneType Ty
 	}
 
 	return 1.0f;
+}
+
+int32 USkillComponent::GetTotalRuneCount(FGameplayTag SlotTag, ERuneType Type) const
+{
+	if (!SlotTag.IsValid()) return 1.0f;
+
+	// 해당 태그를 가진 슬롯 찾기
+	const FSkillSlot* FoundSlot = SkillSlots.FindByPredicate([&](const FSkillSlot& Slot) {
+		return Slot.SlotTag == SlotTag;
+		});
+
+	if (!FoundSlot)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: GetTotalRuneMultiplier - Cannot find SkillSlot with Tag %s"), *SlotTag.ToString());
+		return 1.0f;
+	}
+
+	// 해당 타입의 룬 개수 카운트
+	int32 RuneCount = 0;
+	for (const TObjectPtr<UDA_Rune>& RunePtr : FoundSlot->RuneSlots)
+	{
+		if (RunePtr && RunePtr->RuneType == Type)
+		{
+			RuneCount++;
+		}
+	}
+
+	return RuneCount;
 }

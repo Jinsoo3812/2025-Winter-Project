@@ -179,6 +179,9 @@ protected:
 	// SkillComponent로 부터 현재 슬롯의 룬 배율을 가져오는 함수
 	float GetRuneMultiplier(ERuneType RuneType) const;
 
+	// SkillComponent로 부터 현재 슬롯의 룬 개수를 가져오는 함수
+	int32 GetRuneCount(ERuneType RuneType) const;
+
 
 	// -----------------------------------------------------------------------------
 	// 캐싱 데이터

@@ -52,6 +52,10 @@ void APreviewActorBase::BeginPlay()
 		else UE_LOG(LogTemp, Error, TEXT("PreviewActorBase: Failed to get BlockSettings in BeginPlay"));
 	}
 
+	// CPD 정보 캐시
+	ValidCPD = BlockConfig->HighlightSettings.Find(TAG_Block_Highlight_None);
+	InvalidCPD = BlockConfig->HighlightSettings.Find(TAG_Block_Highlight_Invalid);
+
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimerForNextTick(this, &APreviewActorBase::RebuildInstances);
@@ -86,10 +90,6 @@ void APreviewActorBase::RebuildInstances()
 bool APreviewActorBase::UpdatePreviewState(FVector TargetLocation)
 {
 	SetActorLocation(TargetLocation);
-
-	// CPD 정보 찾기 
-	const FBlockCPDInfo* ValidCPD = BlockConfig->HighlightSettings.Find(TAG_Block_Highlight_None);
-	const FBlockCPDInfo* InvalidCPD = BlockConfig->HighlightSettings.Find(TAG_Block_Highlight_Invalid);
 
 	float ValidValue = ValidCPD ? ValidCPD->CPDValue : 0.0f;
 	float InvalidValue = InvalidCPD ? InvalidCPD->CPDValue : 1.0f;
@@ -136,4 +136,9 @@ TArray<FTransform> APreviewActorBase::GetValidSpawnData()
 	}
 
 	return SpawnTransList;
+}
+
+void APreviewActorBase::SetBlockOffsets(const TArray<FVector>& NewOffsets)
+{
+	RelativeBlockOffsets = NewOffsets;
 }

@@ -44,6 +44,9 @@ public:
 	// 아군 넉백 힘
 	float AllyKnockbackStrength = 800.0f;
 
+	// 시전자 액터
+	TWeakObjectPtr<AActor> InstigatorActor = nullptr;
+
 	// 적에게 입힐 데미지 GE SpecHandle
 	FGameplayEffectSpecHandle DamageSpecHandle;
 };

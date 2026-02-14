@@ -31,7 +31,14 @@ protected:
 		bool bReplicateEndAbility,
 		bool bWasCancelled) override;
 
+	// 실행 중인 어빌리티의 키 입력을 처리
+	virtual void InputPressed(const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo) override;
+
 	virtual void StartPreview() override;
+
+	void OnBlockDestroyed(FGameplayEventData Payload);
 	// -------------------------------------------------------------------
 	// Gameplay Tags
 	// -------------------------------------------------------------------
@@ -48,12 +55,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag BlockTagToSpawn;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Barrier")
+	TArray<FIntPoint> BarrierShapesByRuneCount;
+
 	// -------------------------------------------------------------------------
 	// 프리뷰
 	// -------------------------------------------------------------------------
 protected:
 	// 프리뷰로 사용할 BP 클래스 (BP_BarrierPreview 할당)
-	UPROPERTY(EditDefaultsOnly, Category = "Construction")
+	UPROPERTY(EditDefaultsOnly, Category = "Barrier")
 	TSubclassOf<AActor> PreviewActorClass;
 
 	// 태스크 포인터 저장
@@ -69,6 +79,9 @@ protected:
 
 	// 블록 소환이 완료된 후 호출되는 함수
 	void OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBlocks);
+
+	// 룬 개수에 따라 로컬 오프셋 배열을 계산하는 내부 헬퍼 함수
+	TArray<FVector> CalculateBarrierOffsetsByRune() const;
 
 	// -------------------------------------------------------------------------
 	// 발사

@@ -27,6 +27,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void Destroyed() override;
+
 	// -------------------------------------------------------------
 	// Gameplay Tags
 	// ------------------------------------------------------------- 
@@ -74,6 +76,9 @@ public:
 	void Launch(FVector Direction);
 
 protected:
+	// Payload로부터 전달받은 시전자 액터 캐싱
+	TWeakObjectPtr<AActor> CachedInstigator;
+
 	// 충돌 이벤트 처리
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp,
