@@ -4,6 +4,8 @@
 #include "GA/SkillBase.h"
 #include "BlockSystemInterface.h"
 #include "SkillGameplayTags.h"
+#include "GameplayEffect.h"
+#include "AbilitySystemComponent.h"
 
 USkillBase::USkillBase()
 {
@@ -13,6 +15,8 @@ USkillBase::USkillBase()
 	// 클라이언트에서 즉시 실행 후 서버가 검증
 	NetExecutionPolicy = EGameplayAbilityNetExecutionPolicy::LocalPredicted;
 }
+
+
 
 void USkillBase::ActivateAbility(
 	const FGameplayAbilitySpecHandle Handle,
@@ -44,17 +48,25 @@ void USkillBase::ActivateAbility(
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 	
 	// BlockSystemInterface 캐싱
-	if (UWorld* World = GetWorld())
-	{
-		if (!BlockSystem)
+	if (!BlockSystem) {
+		if (UWorld* World = GetWorld())
 		{
 			BlockSystem = IBlockSystemInterface::Get(World);
 		}
+		else {
+			UE_LOG(LogTemp, Error, TEXT("SkillBase: World is null in ActivateAbility"));
+			EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+			return;
+		}
 	}
-	else {
-		UE_LOG(LogTemp, Error, TEXT("SkillBase: World is null in ActivateAbility"));
-		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
-		return;
+
+
+	// SkillComponent 캐싱
+	if (!SkillComp) {
+		if (AActor* OwnerActor = GetOwningActorFromActorInfo())
+		{
+			SkillComp = OwnerActor->FindComponentByClass<USkillComponent>();
+		}
 	}
 }
 
@@ -74,6 +86,76 @@ void USkillBase::InputPressed(
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 	}
+}
+
+const FGameplayTagContainer* USkillBase::GetCooldownTags() const
+{
+	FGameplayTagContainer* MutableTags = const_cast<FGameplayTagContainer*>(&TempCooldownTags);
+	MutableTags->Reset();
+
+	if (CooldownTag.IsValid())
+	{
+		MutableTags->AddTag(CooldownTag);
+	}
+
+	// 부모 클래스에 등록된 기본 태그들이 있다면 합쳐줌
+	if (const FGameplayTagContainer* ParentTags = Super::GetCooldownTags())
+	{
+		MutableTags->AppendTags(*ParentTags);
+	}
+
+	return MutableTags;
+}
+
+float USkillBase::GetRuneMultiplier(ERuneType RuneType) const
+{
+	if (!SkillComp)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("SkillBase: SkillComp is null in GetCooldownRuneMultiplier"));	
+		return 1.0f;
+	}
+
+	float RuneMultiplier = 1.0f;
+
+	// 내 슬롯 태그를 이용해 룬 배율 가져오기
+	if (const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
+	{
+		for (const FGameplayTag& Tag : Spec->DynamicAbilityTags)
+		{
+			if (Tag.MatchesTag(TAG_Skill_Slot))
+			{
+				// 배율 요청 (쿨타임은 Yellow)
+				RuneMultiplier = SkillComp->GetTotalRuneMultiplier(Tag, RuneType);
+				break;
+			}
+		}
+	}
+
+	return RuneMultiplier;
+}
+
+void USkillBase::ApplyCooldown(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	UGameplayEffect* CooldownGE = GetCooldownGameplayEffect();
+	if (!CooldownGE) return;
+
+	// Spec 생성
+	FGameplayEffectSpecHandle SpecHandle = MakeOutgoingGameplayEffectSpec(Handle, ActorInfo, ActivationInfo, CooldownGE->GetClass(), GetAbilityLevel());
+	if (!SpecHandle.IsValid()) return;
+
+	// Cooldown GE Spec에 쿨타임 태그 주입 
+	if (CooldownTag.IsValid())
+	{
+		SpecHandle.Data.Get()->DynamicGrantedTags.AddTag(CooldownTag);
+	}
+
+	// 쿨타임 시간 주입 (SetByCaller)
+	SpecHandle.Data.Get()->SetSetByCallerMagnitude(TAG_Data_Cooldown, BaseCooldown * GetRuneMultiplier(ERuneType::Yellow));
+
+	// 시전자에게 적용
+	ApplyGameplayEffectSpecToOwner(Handle, ActorInfo, ActivationInfo, SpecHandle);
 }
 
 void USkillBase::AddGameplayTagToOwner(const FGameplayTag& TagToAdd)

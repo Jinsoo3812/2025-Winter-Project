@@ -5,12 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GameplayTagContainer.h"
-#include "GameplayEffect.h"
 #include "Bomb.generated.h"
 
 class USphereComponent;
 class UProjectileMovementComponent;
 class IBlockSystemInterface;
+class UAbilitySystemComponent;
 
 /*
  * 스킬(GA)에서 폭탄(Actor)으로 전달할 Payload
@@ -21,10 +21,6 @@ struct FBombPayload
 	GENERATED_BODY()
 
 public:
-	// 폭발 시 적용할 GE 클래스
-	UPROPERTY(BlueprintReadWrite, EditAnywhere)
-	TArray<FGameplayEffectSpecHandle> EffectSpecs;
-
 	// 폭발 반경
 	UPROPERTY()
 	float ExplosionRadius = 300.0f;
@@ -47,6 +43,19 @@ public:
 
 	// BlockSystem 캐시
 	IBlockSystemInterface* BlockSystem;
+
+	FBombPayload() = default;
+
+	FBombPayload(float InExplosionRadius, float InAutoDetonateTime,
+		UAbilitySystemComponent* InInstigatorASC, FGameplayTag InAttachedEventTag,
+		FGameplayTag InDetonationEventTag, IBlockSystemInterface* InBlockSystem)
+		: ExplosionRadius(InExplosionRadius)
+		, AutoDetonateTime(InAutoDetonateTime)
+		, InstigatorASC(InInstigatorASC)
+		, AttachedEventTag(InAttachedEventTag)
+		, DetonationEventTag(InDetonationEventTag)
+		, BlockSystem(InBlockSystem)
+	{}
 };
 
 UCLASS()

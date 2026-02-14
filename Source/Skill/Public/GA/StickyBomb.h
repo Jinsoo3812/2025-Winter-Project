@@ -31,11 +31,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	TSubclassOf<UGameplayEffect> DamageEffectClass;
 
+	// 주변 블록을 파괴할 GE 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "Config")
+	TSubclassOf<UGameplayEffect> DestructionEffectClass;
+
 	// 폭탄 투척 체공 시간 (초)
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	float ThrowDuration = 1.0f;
 
-	// 폭탄 자동 폭발 시간 (0이면 무제한 대기)
+	// 폭탄 자동 폭발 시간
 	UPROPERTY(EditDefaultsOnly, Category = "Config")
 	float AutoDetonateTime = 3.0f;
 

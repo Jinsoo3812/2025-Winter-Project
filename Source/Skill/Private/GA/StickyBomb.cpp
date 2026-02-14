@@ -130,31 +130,17 @@ void UStickyBomb::ThrowBomb(const FVector& TargetLocation)
 
 	if (SpawnedBomb)
 	{
-		// 3. Payload 구성 및 GE Spec 생성 (Snapshotting)
-		FBombPayload Payload;
-		Payload.ExplosionRadius = ExplosionRadius;
-		Payload.AutoDetonateTime = AutoDetonateTime;
-		Payload.InstigatorASC = GetAbilitySystemComponentFromActorInfo();
-		Payload.AttachedEventTag = Tag_Event_BombAttached;
-		Payload.DetonationEventTag = Tag_Event_BombDetonated;
-		Payload.BlockSystem = BlockSystem;
+		// Payload 구성
+		FBombPayload Payload(
+			ExplosionRadius,
+			AutoDetonateTime,
+			GetAbilitySystemComponentFromActorInfo(),
+			Tag_Event_BombAttached,
+			Tag_Event_BombDetonated,
+			BlockSystem
+		);
 
-		// GE Spec 생성
-		if (DamageEffectClass)
-		{
-			UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-			FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
-			ContextHandle.AddSourceObject(this); // Source를 스킬로 지정
-
-			FGameplayEffectSpecHandle SpecHandle = ASC->MakeOutgoingSpec(DamageEffectClass, 1.0f, ContextHandle);
-
-			// 룬 배율, 데미지 등을 여기서 SetByCaller로 굽습니다 (예시)
-			// SpecHandle.Data->SetSetByCallerMagnitude(Tag_Data_Damage, BaseDamage);
-
-			Payload.EffectSpecs.Add(SpecHandle);
-		}
-
-		// 초기화 및 스폰 마무리
+		// Payload 주입 및 스폰 완료
 		SpawnedBomb->InitializeExplosive(Payload);
 		SpawnedBomb->FinishSpawning(SpawnTransform);
 
@@ -220,10 +206,73 @@ void UStickyBomb::CommandDetonate()
 void UStickyBomb::OnBombDetonated(FGameplayEventData Payload)
 {
 	// 폭탄이 터졌음 (자폭했든, 적에 맞았든, 내가 터트렸든)
-	UE_LOG(LogTemp, Log, TEXT("StickyBomb: Bomb detonated."));
+
 	// 모든 상태 태그 정리
 	RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Throwing);
 	RemoveGameplayTagFromOwner(Tag_Player_State_Bomb_Active);
+
+	if (DamageEffectClass && Payload.TargetData.Num() > 0)
+	{
+		// TargetData에서 피해자 명단(AActor*) 추출
+		TArray<AActor*> TargetActors;
+		for (int32 i = 0; i < Payload.TargetData.Num(); ++i)
+		{
+			const FGameplayAbilityTargetData* Data = Payload.TargetData.Get(i);
+			if (Data)
+			{
+				// 포장된 배열을 풀어서 실제 액터 포인터로 변환
+				TArray<TWeakObjectPtr<AActor>> Actors = Data->GetActors();
+				for (TWeakObjectPtr<AActor> WeakActor : Actors)
+				{
+					if (WeakActor.IsValid())
+					{
+						TargetActors.Add(WeakActor.Get());
+					}
+				}
+			}
+		}
+
+		// 폭발 시점 기준의 GE Spec 생성
+		if (TargetActors.Num() > 0)
+		{
+			UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+			FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+			ContextHandle.AddSourceObject(this);
+
+			FGameplayEffectSpecHandle DamageSpecHandle = ASC->MakeOutgoingSpec(DamageEffectClass, 1.0f, ContextHandle);
+			FGameplayEffectSpecHandle DestructionSpecHandle = ASC->MakeOutgoingSpec(DestructionEffectClass, 1.0f, ContextHandle);
+
+			// Damage GE 적용
+			if (DamageSpecHandle.IsValid())
+			{
+				// 룬 배율 계산
+				float RuneMultiplier = 1.0f;
+				if (SkillComp && GetCurrentAbilitySpec())
+				{
+					for (const FGameplayTag& Tag : GetCurrentAbilitySpec()->DynamicAbilityTags)
+					{
+						if (Tag.MatchesTag(TAG_Skill_Slot))
+						{
+							RuneMultiplier = SkillComp->GetTotalRuneMultiplier(Tag, ERuneType::Red);
+							break;
+						}
+					}
+				}
+
+				// SetByCaller 주입
+				DamageSpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, BaseDamage);
+				DamageSpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_RuneMultiplier, RuneMultiplier);
+
+				ApplyGameplayEffectToTargets(TargetActors, DamageSpecHandle);
+			}
+
+			// Destruction GE 적용
+			if (DestructionSpecHandle.IsValid())
+			{
+				ApplyGameplayEffectToTargets(TargetActors, DestructionSpecHandle);
+			}
+		}
+	}
 
 	// 쿨타임 시작 (폭발 시점부터 쿨타임)
 	CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
@@ -234,7 +283,6 @@ void UStickyBomb::OnBombDetonated(FGameplayEventData Payload)
 
 void UStickyBomb::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	UE_LOG(LogTemp, Log, TEXT("StickyBomb: EndAbility called."));	
 	// 혹시 프리뷰가 켜진 상태로 끝났다면 정리
 	if (PreviewTask)
 	{

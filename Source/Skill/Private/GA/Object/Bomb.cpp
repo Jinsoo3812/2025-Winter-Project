@@ -8,6 +8,7 @@
 #include "BlockSystemInterface.h"
 #include "CollisionChannels.h"
 #include "Engine/OverlapResult.h"
+#include "Abilities/GameplayAbilityTargetTypes.h"
 #include "DrawDebugHelpers.h"
 
 ABomb::ABomb()
@@ -155,8 +156,6 @@ void ABomb::Detonate()
 	// 타이머가 돌고 있었다면 해제 (조기 폭발 시)
 	GetWorld()->GetTimerManager().ClearTimer(DetonateTimerHandle);
 
-	UE_LOG(LogTemp, Log, TEXT("Bomb: Detonating!"));
-
 	// 디버그 및 시각 효과
 	DrawDebugSphere(GetWorld(), GetActorLocation(), Payload.ExplosionRadius, 24, FColor::Red, false, 2.0f);
 
@@ -216,38 +215,30 @@ void ABomb::Detonate()
 		}
 	}
 
-	// GE Spec 적용
-	if (ActorsToApplyGE.Num() > 0 && Payload.EffectSpecs.Num() > 0)
-	{
-		for (AActor* Target : ActorsToApplyGE)
-		{
-			UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(Target);
-			if (!TargetASC) continue;
 
-			for (const FGameplayEffectSpecHandle& SpecHandle : Payload.EffectSpecs)
-			{
-				if (SpecHandle.IsValid())
-				{
-					TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-				}
-			}
-		}
-	}
-
-	// 시전자에게 폭발 알림 이벤트 전송
 	if (Payload.InstigatorASC.IsValid() && Payload.DetonationEventTag.IsValid())
 	{
 		FGameplayEventData EventData;
 		EventData.Instigator = this;
 		EventData.Target = this;
 
+		// 추출한 피해자 명단을 TargetData에 포장
+		if (ActorsToApplyGE.Num() > 0)
+		{
+			FGameplayAbilityTargetData_ActorArray* TargetDataActorArray = new FGameplayAbilityTargetData_ActorArray();
+			for (AActor* TargetActor : ActorsToApplyGE)
+			{
+				TargetDataActorArray->TargetActorArray.Add(TargetActor);
+			}
+			EventData.TargetData.Add(TargetDataActorArray);
+		}
+
+		// 시전자에게 이벤트 발송
 		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(
 			Payload.InstigatorASC->GetAvatarActor(),
 			Payload.DetonationEventTag,
 			EventData
 		);
-
-		UE_LOG(LogTemp, Warning, TEXT("Bomb: Event Sent! Tag: %s"), *Payload.DetonationEventTag.ToString());
 	}
 
 	Destroy();
