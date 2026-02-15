@@ -284,7 +284,6 @@ void UBarrier::OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBloc
 
 void UBarrier::OnBlockDestroyed(FGameplayEventData Payload)
 {
-	UE_LOG(LogTemp, Log, TEXT("Barrier: Block destroyed event received. Checking remaining blocks..."));
 	// 남은 블록이 있는지 검사
 	bool bHasValidBlock = false;
 	for (const TWeakObjectPtr<AActor>& BlockPtr : CurrentBarrierBlocks)
@@ -300,6 +299,8 @@ void UBarrier::OnBlockDestroyed(FGameplayEventData Payload)
 	// 모든 블록이 파괴되었다면 스킬 즉시 종료 및 쿨타임 시작
 	if (!bHasValidBlock)
 	{
+		UE_LOG(LogTemp, Log, TEXT("Barrier: All blocks destroyed. Ending ability."));
+
 		RemoveGameplayTagFromOwner(Tag_Player_State_Active_Barrier);
 
 		// 쿨타임 시작
@@ -343,26 +344,19 @@ void UBarrier::Launch()
 
 			if (AActor* BlockActor = BlockPtr.Get())
 			{
-				UFunction* LaunchFunc = BlockActor->FindFunction(FName("Launch"));
+				// 발사 이벤트를 위한 페이로드(Payload) 구성
+				FGameplayEventData EventData;
+				EventData.EventTag = TAG_Event_Block_Launch_Barrier;
+				EventData.Instigator = GetAvatarActorFromActorInfo();
 
-				if (LaunchFunc)
-				{
-					// 파라미터 구조체 정의 (함수 인자와 순서/타입 이 일치해야 함)
-					struct FLaunchParams
-					{
-						FVector Direction;
-					};
+				// FVector(발사 방향)를 TargetData에 담기
+				FGameplayAbilityTargetData_LocationInfo* LocData = new FGameplayAbilityTargetData_LocationInfo();
+				LocData->TargetLocation.LiteralTransform = FTransform(LaunchDirection);
+				LocData->TargetLocation.LocationType = EGameplayAbilityTargetingLocationType::LiteralTransform;
+				EventData.TargetData.Add(LocData);
 
-					FLaunchParams Params;
-					Params.Direction = LaunchDirection;
-
-					// 함수 실행
-					BlockActor->ProcessEvent(LaunchFunc, &Params);
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("BlockActor does not have Launch function!"));
-				}
+				// 대상 액터(Block)로 이벤트 전송
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(BlockActor, TAG_Event_Block_Launch_Barrier, EventData);
 			}
 			else
 			{
@@ -375,11 +369,8 @@ void UBarrier::Launch()
 		UE_LOG(LogTemp, Warning, TEXT("Barrier: No blocks to launch."));
 	}
 
-	// 2. 상태 해제 및 종료
-	RemoveGameplayTagFromOwner(Tag_Player_State_Active_Barrier);
-
+	// 발사 후 쿨타임 시작
 	CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 TArray<FVector> UBarrier::CalculateBarrierOffsetsByRune() const

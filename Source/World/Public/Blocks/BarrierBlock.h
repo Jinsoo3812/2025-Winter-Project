@@ -69,15 +69,16 @@ protected:
 	// -------------------------------------------------------------------------
 public:
 	/* 블록을 발사하는 함수
-	* Skill 모듈에서 간단하게 사용하기 위해 UFUNCTION으로 노출
 	* @param Direction 발사할 방향
 	*/
-	UFUNCTION(BlueprintCallable)
 	void Launch(FVector Direction);
 
 protected:
 	// Payload로부터 전달받은 시전자 액터 캐싱
 	TWeakObjectPtr<AActor> CachedInstigator;
+
+	// Gameplay Event를 수신할 콜백 함수 (ASC의 델리게이트와 시그니처가 일치해야 함)
+	void OnLaunchEventReceived(const FGameplayEventData* Payload);
 
 	// 충돌 이벤트 처리
 	UFUNCTION()

@@ -38,7 +38,6 @@ protected:
 
 	virtual void StartPreview() override;
 
-	void OnBlockDestroyed(FGameplayEventData Payload);
 	// -------------------------------------------------------------------
 	// Gameplay Tags
 	// -------------------------------------------------------------------
@@ -77,6 +76,7 @@ protected:
 	// 현재 프리뷰 회전 값 (90도 단위)
 	FRotator CurrentPreviewRotation;
 
+	UFUNCTION()
 	// 블록 소환이 완료된 후 호출되는 함수
 	void OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBlocks);
 
@@ -108,6 +108,10 @@ protected:
 
 	// 발사 함수
 	void Launch();
+
+	// 블록이 파괴되었을 때의 Gameplay Event에 바인딩
+	UFUNCTION()
+	void OnBlockDestroyed(FGameplayEventData Payload);
 
 	// -------------------------------------------------------------------------
 	// 입력 이벤트 처리

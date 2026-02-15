@@ -60,6 +60,25 @@ void ABarrierBlock::BeginPlay()
 		CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	}
 	else UE_LOG(LogTemp, Error, TEXT("BarrierBlock: CollisionComponent is null in %s"), *GetName());
+
+	// 내 ASC를 찾아 Gameplay Event 리스너 바인딩
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		ASC->GenericGameplayEventCallbacks.FindOrAdd(TAG_Event_Block_Launch_Barrier).AddUObject(this, &ABarrierBlock::OnLaunchEventReceived);
+	}
+}
+
+void ABarrierBlock::OnLaunchEventReceived(const FGameplayEventData* Payload)
+{
+	// 페이로드에서 TargetData를 검사하여 발사 방향 추출
+	if (Payload && Payload->TargetData.Num() > 0)
+	{
+		// GetEndPoint()를 사용하면 LocationInfo에 담아둔 Transform의 Location(즉, LaunchDirection)을 빼올 수 있습니다.
+		FVector Direction = Payload->TargetData.Get(0)->GetEndPoint();
+
+		// 추출한 방향으로 기존 발사 로직 실행
+		Launch(Direction);
+	}
 }
 
 void ABarrierBlock::Launch(FVector Direction)
