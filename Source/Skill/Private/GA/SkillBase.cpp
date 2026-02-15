@@ -35,7 +35,7 @@ void USkillBase::ActivateAbility(
 		for (const FGameplayAbilitySpec& Spec : Specs)
 		{
 			// Preview 상태인 GA가 있다면 취소
-			if (Spec.IsActive() && Spec.Ability != this && Spec.DynamicAbilityTags.HasTag(TAG_Skill_State_Preview))
+			if (Spec.IsActive() && Spec.Ability != this && Spec.GetDynamicSpecSourceTags().HasTag(TAG_Skill_State_Preview))
 			{
 				UE_LOG(LogTemp, Log, TEXT("SkillBase: Cancelling Previewing Skill: %s"), *Spec.Ability->GetName());
 
@@ -211,7 +211,7 @@ void USkillBase::AddAbilityTag(const FGameplayTag& Tag)
 {
 	if (FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
 	{
-		Spec->DynamicAbilityTags.AddTag(Tag);
+		Spec->GetDynamicSpecSourceTags().AddTag(Tag);
 	}
 }
 
@@ -219,7 +219,7 @@ void USkillBase::RemoveAbilityTag(const FGameplayTag& Tag)
 {
 	if (FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
 	{
-		Spec->DynamicAbilityTags.RemoveTag(Tag);
+		Spec->GetDynamicSpecSourceTags().RemoveTag(Tag);
 	}
 }
 
@@ -227,7 +227,7 @@ bool USkillBase::HasAbilityTag(const FGameplayTag& Tag) const
 {
 	if (FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
 	{
-		return Spec->DynamicAbilityTags.HasTag(Tag);
+		return Spec->GetDynamicSpecSourceTags().HasTag(Tag);
 	}
 	return false;
 }
