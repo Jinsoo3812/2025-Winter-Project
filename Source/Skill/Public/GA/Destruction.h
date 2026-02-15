@@ -7,8 +7,8 @@
 #include "PreviewTask.h"
 #include "Destruction.generated.h"
 
-class UGameplayEffect;
 
+class UGameplayEffect;
 /**
  * 
  */

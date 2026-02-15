@@ -87,39 +87,45 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 		{
 			// 1. 대미지 수치 확인 및 UI 출력 요청
 			// Magnitude는 변화량이며, 대미지는 체력을 깎으므로 보통 음수(-)입니다.
-			// 이를 양수로 변환하여 UI에 전달합니다.
 			float DamageReceived = -Data.EvaluatedData.Magnitude;
 
 			if (DamageReceived > 0.0f)
 			{
+				// --- [타격 지점 추출 로직 추가] ---
+				// 스킬 코드에서 Context에 담아준 HitResult 정보를 가져옵니다.
+				FGameplayEffectContextHandle Context = Data.EffectSpec.GetContext();
+				const FHitResult* HitResult = Context.GetHitResult();
 
-				// ----------------------------------------------------------------
-				// [디버깅] 대미지가 들어왔을 때 로그와 화면에 출력합니다.
+				// 기본 위치는 캐릭터의 머리 위 (HitResult가 없을 경우를 대비한 안전장치)
+				FVector SpawnLocation = TargetActor->GetActorLocation() + FVector(0.f, 0.f, 100.f);
+
+				// 실제 물리적 충돌 정보(ImpactPoint)가 있다면 그 좌표를 사용합니다.
+				if (HitResult && HitResult->bBlockingHit)
+				{
+					SpawnLocation = HitResult->ImpactPoint;
+				}
+				// ----------------------------------
+
+				// [디버깅] 대미지 정보 출력
 				FString DebugMsg = FString::Printf(TEXT("EnemyAttributeSet : [%s] Took Damage: %.1f | Current HP : %.1f"),
 					*TargetActor->GetName(), DamageReceived, GetHealth());
 
-				// (1) 화면에 2초간 붉은색 글씨로 출력
 				if (GEngine)
 				{
 					GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, DebugMsg);
 				}
-
-				// (2) 출력 로그(Output Log) 창에도 기록
 				UE_LOG(LogTemp, Warning, TEXT("%s"), *DebugMsg);
-				// ----------------------------------------------------------------
-				
 
-				// EnemyBase를 상속받은 모든 몬스터(보스, 쫄몹, 허수아비 등)에게 작동합니다.
+
+				// EnemyBase를 상속받은 모든 객체에게 정확한 타격 위치와 함께 출력 요청
 				if (Enemy)
 				{
-					// BlueprintImplementableEvent 호출 -> BP에서 위젯 스폰 로직 실행
-					Enemy->ShowDamageNumber(DamageReceived);
+					// 수정한 함수 호출 (데미지량, 타격 위치)
+					Enemy->ShowDamageNumber(DamageReceived, SpawnLocation);
 				}
 			}
 
 			// [특수 상태 처리] 무적(Invincible) 또는 허수아비(Scarecrow) 상태 확인
-			// 이 상태에서는 체력이 줄어들지 않고 즉시 회복됩니다.
-			// (대미지 폰트는 위에서 이미 출력되었으므로 타격감은 유지됩니다.)
 			if (TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Invincible"))) ||
 				TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Scarecrow"))))
 			{
@@ -128,16 +134,13 @@ void UEnemyAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallb
 			}
 
 			// 2. 체력 값 보정 (Clamping)
-			// 체력이 0 미만으로 떨어지거나 최대 체력을 초과하지 않도록 보정합니다.
 			SetHealth(FMath::Clamp(GetHealth(), 0.0f, GetMaxHealth()));
 
 			// 3. 사망 처리
-			// 체력이 0 이하가 되었을 때 사망 로직을 수행합니다.
 			if (GetHealth() <= 0.0f)
 			{
 				if (Enemy)
 				{
-					// 이미 사망 상태(State.Dead)가 아닐 때만 사망 함수 호출 (중복 사망 방지)
 					if (!TargetASC->HasMatchingGameplayTag(FGameplayTag::RequestGameplayTag(FName("State.Dead"))))
 					{
 						Enemy->Die();
