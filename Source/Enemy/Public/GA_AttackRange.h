@@ -2,12 +2,13 @@
 
 #include "CoreMinimal.h"
 #include "Abilities/GameplayAbility.h"
+#include "BlockCommonTypes.h"
 #include "GA_AttackRange.generated.h"
 
 // 전방 선언 (헤더 의존성 최소화)
-class ABlockBase;
 class UAnimMontage;
 class UAbilityTask_WaitGameplayEvent;
+class IBlockSystemInterface;
 
 /**
  * [범용 범위 공격 어빌리티]
@@ -79,7 +80,10 @@ protected:
 	// =================================================================
 
 	// 색상이 변경된 블록들을 기억해두는 배열 (나중에 끄기 위해)
-	TArray<TWeakObjectPtr<ABlockBase>> AffectedBlocks;
+	TArray<FBlockReference> AffectedBlocks;
+
+	// BlockManagerSubsystem 캐시
+	IBlockSystemInterface* BlockSystem = nullptr;
 
 	// =================================================================
 	// [함수 선언]

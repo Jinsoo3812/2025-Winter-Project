@@ -250,7 +250,7 @@ void UStickyBomb::OnBombDetonated(FGameplayEventData Payload)
 				float RuneMultiplier = 1.0f;
 				if (SkillComp && GetCurrentAbilitySpec())
 				{
-					for (const FGameplayTag& Tag : GetCurrentAbilitySpec()->DynamicAbilityTags)
+					for (const FGameplayTag& Tag : GetCurrentAbilitySpec()->GetDynamicSpecSourceTags())
 					{
 						if (Tag.MatchesTag(TAG_Skill_Slot))
 						{
