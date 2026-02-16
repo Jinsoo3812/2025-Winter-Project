@@ -45,6 +45,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trigger")
 	bool bTriggerOnce = true;
 
+	// -------------------------------------------------------------------------
+	// GAS 태그 설정
+	// -------------------------------------------------------------------------
+
+	// 겹친 액터가 플레이어인지 확인하기 위한 태그 (예: Character.Type.Player)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Trigger")
+	FGameplayTag PlayerTag;
+
 private:
 	// 겹침 감지 함수
 	UFUNCTION()
