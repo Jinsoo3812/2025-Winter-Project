@@ -1,5 +1,4 @@
 ﻿#include "Enemy/Public/GA_AttackRange.h" // 내 헤더 파일
-#include "BlockBase.h"             // 바닥 블록 클래스 (World 모듈)
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
@@ -9,10 +8,10 @@
 #include "AbilitySystemBlueprintLibrary.h"
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimInstance.h"
-
-// Block 색상 변경을 위해 필요한 헤더들 추가했습니다.
+#include "BlockSystemInterface.h"
+#include "CollisionChannels.h"
 #include "BlockGameplayTags.h"
-#include "GameplayEventInterface.h"
+#include "Engine/OverlapResult.h"
 
 UGA_AttackRange::UGA_AttackRange()
 {
@@ -31,6 +30,11 @@ void UGA_AttackRange::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
 		return;
+	}
+
+	// BlockManagerSubsystem 캐시
+	if (!BlockSystem) {
+		BlockSystem = IBlockSystemInterface::Get(this);
 	}
 
 	// =================================================================
@@ -126,43 +130,33 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 
 	FVector BoxExtent = FVector(HalfLength, AttackWidth * 0.5f, 50.0f);
 
-	// 2. 오버랩 검사 (WorldStatic = 블록)
-	TArray<AActor*> OverlappedActors;
-	TArray<TEnumAsByte<EObjectTypeQuery>> ObjectTypes;
-	ObjectTypes.Add(UEngineTypes::ConvertToObjectType(ECC_WorldStatic));
+	// BlockManagerSubsystem을 이용한 범위 검사
+	FCollisionShape BoxShape = FCollisionShape::MakeBox(BoxExtent);
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Block);
 
-	UKismetSystemLibrary::BoxOverlapActors(
-		this, BoxCenter, BoxExtent, ObjectTypes, ABlockBase::StaticClass(),
-		{ AvatarPawn }, OverlappedActors
+	TArray<FOverlapResult> OverlapResults;
+
+	// Overlap 검사 실행
+	GetWorld()->OverlapMultiByObjectType(
+		OverlapResults,
+		BoxCenter,
+		FQuat::Identity,
+		ObjectQueryParams,
+		BoxShape
 	);
 
-	// 3. 색상 변경 및 저장
-	for (AActor* Actor : OverlappedActors)
+	// BlockManagerSubsystem을 이용한 블록 추출 및 하이라이트 적용
+	if (BlockSystem)
 	{
-		// 인터페이스 구현 여부 검사
-		IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(Actor);
-		if (InterfaceObj)
-		{
-			// 이벤트 전송
-			InterfaceObj->HandleGameplayEvent(TAG_Block_Highlight_Target, Payload);
-			AffectedBlocks.Add(Cast<ABlockBase>(Actor));
-		}
+		// HISM 인덱스와 개별 Actor를 모두 포함한 형태(FBlockReference)로 파싱 받음
+		BlockSystem->GetBlocksFromOverlaps(OverlapResults, AffectedBlocks);
 
-		/*
-		* 기존 코드
-		* 이제 BlockBase가 IGameplayEventInterface를 구현하므로 Enemy 모듈도 World 모듈에 대한 의존을 끊으셔도 됩니다. (현재는 Block에 대한 의존성을 유지하고 있습니다. 나중에 시간 나면 제거하세요)
-		* 현재 Core 모듈의 BlockGameplayTag.h에 TAG_Block_Highlight_Danger 라는 태그가 선언되어 있지 않습니다.
-		* 이를 직접 정의하시고(BlockGameplayTags.h 참고), BlockGameplayTags.cpp에서 해당 태그를 정의해주셔야 합니다.
-		* 또한 에디터의 Block 폴더의 Block Config 라는 Data Asset이 있습니다. 그곳에서 Block.Highlight.Danger 태그에 대한 CPD 값도 설정해주셔야 합니다.
-		* 마지막으로 Material 에서도 해당 CPD에 맞는 색상 처리가 되어 있어야 합니다.(아마 제 리팩토링이 들어가면서 Dange에 대한 CPD 처리가 지워졌을겁니다.)
-		*/
-		/*
-		if (ABlockBase* Block = Cast<ABlockBase>(Actor))
+		// 서브시스템의 HighlightBlock 함수를 통해 일관성 있게 이벤트 전달
+		for (const FBlockReference& BlockRef : AffectedBlocks)
 		{
-			Block->SetHighlightState(EBlockHighlightState::Danger);
-			AffectedBlocks.Add(Block);
+			BlockSystem->HighlightBlock(BlockRef, TAG_Block_Highlight_Invalid);
 		}
-		*/
 	}
 
 	// 몽타주 속도를 다시 늦춤 (관성 느낌)
@@ -277,29 +271,17 @@ void UGA_AttackRange::OnMontageFinished()
 // [헬퍼] 블록 색상 초기화
 void UGA_AttackRange::ResetBlockColors()
 {
-	FGameplayEventData Payload;
-	Payload.EventTag = TAG_Block_Highlight_None;
-	Payload.Instigator = GetAvatarActorFromActorInfo();
-	Payload.EventMagnitude = 0.0f; // 안 씀
+	if (AffectedBlocks.IsEmpty()) return;
 
-	for (TWeakObjectPtr<ABlockBase> BlockPtr : AffectedBlocks)
+	if (BlockSystem)
 	{
-		// 인터페이스 구현 여부 검사
-		IGameplayEventInterface* InterfaceObj = Cast<IGameplayEventInterface>(BlockPtr.Get());
-		if (InterfaceObj)
+		for (const FBlockReference& BlockRef : AffectedBlocks)
 		{
-			// 이벤트 전송
-			InterfaceObj->HandleGameplayEvent(Payload.EventTag, Payload);
+			// TAG_Block_Highlight_None 태그를 전송하여 상태 해제
+			BlockSystem->HighlightBlock(BlockRef, TAG_Block_Highlight_None);
 		}
-
-		// 기존 코드
-		/*
-		if (BlockPtr.IsValid())
-		{
-			BlockPtr->SetHighlightState(EBlockHighlightState::None);
-		}
-		*/
 	}
+
 	AffectedBlocks.Empty();
 }
 

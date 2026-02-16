@@ -77,7 +77,7 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
     float RuneDamageMultiplier = 1.0f;
     if (SkillComp && GetCurrentAbilitySpec())
     {
-        for (const FGameplayTag& Tag : GetCurrentAbilitySpec()->DynamicAbilityTags)
+        for (const FGameplayTag& Tag : GetCurrentAbilitySpec()->GetDynamicSpecSourceTags())
         {
             // "Skill.Slot" 관련 태그를 찾으면 룬 배율 계산 후 즉시 break
             if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Skill.Slot"))))

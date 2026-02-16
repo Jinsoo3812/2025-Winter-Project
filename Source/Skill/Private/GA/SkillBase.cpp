@@ -114,7 +114,7 @@ float USkillBase::GetRuneMultiplier(ERuneType RuneType) const
 	// 내 슬롯 태그를 이용해 룬 배율 가져오기
 	if (const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
 	{
-		for (const FGameplayTag& Tag : Spec->DynamicAbilityTags)
+		for (const FGameplayTag& Tag : Spec->GetDynamicSpecSourceTags())
 		{
 			if (Tag.MatchesTag(TAG_Skill_Slot))
 			{
@@ -139,7 +139,7 @@ int32 USkillBase::GetRuneCount(ERuneType RuneType) const
 	// 내 슬롯 태그를 이용해 룬 개수 가져오기
 	if (const FGameplayAbilitySpec* Spec = GetCurrentAbilitySpec())
 	{
-		for (const FGameplayTag& Tag : Spec->DynamicAbilityTags)
+		for (const FGameplayTag& Tag : Spec->GetDynamicSpecSourceTags())
 		{
 			if (Tag.MatchesTag(TAG_Skill_Slot))
 			{
