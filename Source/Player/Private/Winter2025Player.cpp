@@ -181,7 +181,7 @@ void AWinter2025Player::Input_AbilityTagPressed(FGameplayTag InputTag)
 
 	for (FGameplayAbilitySpec& Spec : AllSpecs)
 	{
-		if (Spec.DynamicAbilityTags.HasTag(InputTag))
+		if (Spec.GetDynamicSpecSourceTags().HasTag(InputTag))
 		{
 			// 찾았다면 InputID를 통해 입력 이벤트로 활성화
 			if (Spec.InputID >= 0)
@@ -207,7 +207,7 @@ void AWinter2025Player::Input_AbilityTagReleased(FGameplayTag InputTag)
 	
 	for (FGameplayAbilitySpec& Spec : AllSpecs)
 	{
-		if (Spec.DynamicAbilityTags.HasTag(InputTag) && Spec.InputID >= 0)
+		if (Spec.GetDynamicSpecSourceTags().HasTag(InputTag) && Spec.InputID >= 0)
 		{
 			CachedASC->AbilityLocalInputReleased(Spec.InputID);
 			return;
