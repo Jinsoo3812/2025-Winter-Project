@@ -148,6 +148,9 @@ protected:
 	// ---------------------------------------------------------
 	// 이중 버퍼링을 사용한 비동기 렌더링 처리
 	// ---------------------------------------------------------
+public:
+	FTimerHandle GetRenderFenceTimerHandle() const { return RenderFenceTimerHandle; }
+
 protected:
 	/** 렌더링 스레드가 작업을 마쳤는지 추적하기 위한 펜스 */
 	FRenderCommandFence RenderFence;
