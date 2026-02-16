@@ -16,6 +16,9 @@ class SKILL_API UBarrier : public USkillBase
 public:
 	UBarrier();
 
+	// -----------------------------------------------------------------------------
+	// 스킬 GA의 시전, 취소 등 생명주기
+	// -----------------------------------------------------------------------------
 protected:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		const FGameplayAbilityActorInfo* ActorInfo,
@@ -27,32 +30,21 @@ protected:
 		const FGameplayAbilityActivationInfo ActivationInfo,
 		bool bReplicateEndAbility,
 		bool bWasCancelled) override;
+
+	// 실행 중인 어빌리티의 키 입력을 처리
+	virtual void InputPressed(const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo) override;
+
+	virtual void StartPreview() override;
+
 	// -------------------------------------------------------------------
 	// Gameplay Tags
 	// -------------------------------------------------------------------
-	// 시전자에게 붙을 상태 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Player_State_Preview;
 
 	// 시전자에게 붙을 장벽 소환 상태 태그
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag Tag_Player_State_Active_Barrier;
-
-	// 스킬 인스턴스에 붙을 상태 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Skill_State_Preview;
-
-	// 블록 하이라이트용 태그 (범위 표시)
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Highlight_Range;
-
-	// 블록 하이라이트용 태그 (마우스 커서)
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Highlight_Cursor;
-
-	// 입력 이벤트: 좌클릭(확인)
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Event_Confirm;
 
 	// 입력 이벤트: 마우스 휠(회전)
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
@@ -62,20 +54,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Tags")
 	FGameplayTag BlockTagToSpawn;
 
-	// 아군(플레이어)은 밀어내기 위한 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag TeamAllyTag;
-
-	// 적(다른 블록, 적)과의 충돌에서 폭발하기 위한 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag TeamEnemyTag;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Barrier")
+	TArray<FIntPoint> BarrierShapesByRuneCount;
 
 	// -------------------------------------------------------------------------
 	// 프리뷰
 	// -------------------------------------------------------------------------
 protected:
 	// 프리뷰로 사용할 BP 클래스 (BP_BarrierPreview 할당)
-	UPROPERTY(EditDefaultsOnly, Category = "Construction")
+	UPROPERTY(EditDefaultsOnly, Category = "Barrier")
 	TSubclassOf<AActor> PreviewActorClass;
 
 	// 태스크 포인터 저장
@@ -89,8 +76,12 @@ protected:
 	// 현재 프리뷰 회전 값 (90도 단위)
 	FRotator CurrentPreviewRotation;
 
+	UFUNCTION()
 	// 블록 소환이 완료된 후 호출되는 함수
 	void OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBlocks);
+
+	// 룬 개수에 따라 로컬 오프셋 배열을 계산하는 내부 헬퍼 함수
+	TArray<FVector> CalculateBarrierOffsetsByRune() const;
 
 	// -------------------------------------------------------------------------
 	// 발사
@@ -117,6 +108,10 @@ protected:
 
 	// 발사 함수
 	void Launch();
+
+	// 블록이 파괴되었을 때의 Gameplay Event에 바인딩
+	UFUNCTION()
+	void OnBlockDestroyed(FGameplayEventData Payload);
 
 	// -------------------------------------------------------------------------
 	// 입력 이벤트 처리

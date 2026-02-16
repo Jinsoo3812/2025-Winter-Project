@@ -1,10 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Block/BlockManagerSubsystem.h"
+#include "BlockManagerSubsystem.h"
 #include "CollisionChannels.h"
-#include "Block/BlockSettings.h"
-#include "Block/BlockBase.h"
+#include "BlockSettings.h"
+#include "BlockBase.h"
 #include "Chunkbase.h"
 #include "BlockMapManager.h"
 #include "BlockConfig.h"

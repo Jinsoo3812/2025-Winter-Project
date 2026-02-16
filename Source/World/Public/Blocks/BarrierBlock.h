@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Block/DestructibleBlock.h"
+#include "DestructibleBlock.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "BarrierBlock.generated.h"
 
@@ -26,6 +26,8 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	virtual void Destroyed() override;
 
 	// -------------------------------------------------------------
 	// Gameplay Tags
@@ -59,22 +61,25 @@ protected:
 	UPROPERTY()
 	float AllyKnockbackStrength = 800.0f;
 
-	// 적에게 적용할 데미지 GE 클래스
-	UPROPERTY()
-	TSubclassOf<UGameplayEffect> DamageEffectClass;
+	// Payload를 통해 전달받은 GE Spec
+	FGameplayEffectSpecHandle DamageSpecHandle;
 
 	// -------------------------------------------------------------------------
 	// 스킬 동작 
 	// -------------------------------------------------------------------------
 public:
 	/* 블록을 발사하는 함수
-	* Skill 모듈에서 간단하게 사용하기 위해 UFUNCTION으로 노출
 	* @param Direction 발사할 방향
 	*/
-	UFUNCTION(BlueprintCallable)
 	void Launch(FVector Direction);
 
 protected:
+	// Payload로부터 전달받은 시전자 액터 캐싱
+	TWeakObjectPtr<AActor> CachedInstigator;
+
+	// Gameplay Event를 수신할 콜백 함수 (ASC의 델리게이트와 시그니처가 일치해야 함)
+	void OnLaunchEventReceived(const FGameplayEventData* Payload);
+
 	// 충돌 이벤트 처리
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp,

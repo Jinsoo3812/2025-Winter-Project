@@ -12,6 +12,7 @@ class UInputMappingContext;
 struct FGameplayEventData;
 struct FInputActionValue;
 struct FOnAttributeChangeData;
+class UNavigationInvokerComponent;
 
 UCLASS()
 class AWinter2025Player : public ACharacter, public IAbilitySystemInterface
@@ -33,10 +34,6 @@ public:
 	FGameplayTagContainer InitialGameplayTags;
 
 protected:
-	// ------------------
-	// 초기화 함수
-	// ------------------
-
 	/*
 	* 서버 - 클라이언트 공통 GAS 초기화 함수
 	*/
@@ -89,4 +86,18 @@ protected:
 	void Input_AbilityTagPressed(FGameplayTag InputTag);
 
 	void Input_AbilityTagReleased(FGameplayTag InputTag);
+
+	// ------------------
+	// NavMesh 관련
+	// ------------------
+protected:
+	// 런타임 NavMesh 생성을 유도하는 컴포넌트
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Navigation")
+	TObjectPtr<UNavigationInvokerComponent> NavInvokerComp;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Navigation")
+	float NavGenerationRadius = 3000.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Navigation")
+	float NavRemovalRadius = 5000.0f;
 };

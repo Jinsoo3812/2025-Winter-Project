@@ -13,7 +13,8 @@ public class Player: ModuleRules
             "GameplayTags",
             "Winter2025Core",
             "InputCore",
-            "EnhancedInput"
+            "EnhancedInput",
+            "NavigationSystem"
         });
     }
 }

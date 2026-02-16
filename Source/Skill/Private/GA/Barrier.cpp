@@ -7,6 +7,7 @@
 #include "BlockPreviewInterface.h"
 #include "AbilitySystemComponent.h"
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
+#include "EventGameplayTags.h"
 
 UBarrier::UBarrier()
 {
@@ -20,17 +21,7 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 {
 	Super::ActivateAbility(Handle, ActorInfo, ActivationInfo, TriggerEventData);
 
-	// 생성 프리뷰 & 발사 모드 분기
-	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
-	if (ASC && ASC->HasMatchingGameplayTag(Tag_Player_State_Active_Barrier)) {
-		// 발사 후 즉시 반환
-		Launch();
-		return;
-	}
-	
-	// 프리뷰 모드 진입: 태그 부착
-	AddGameplayTagToOwner(Tag_Player_State_Preview);
-	AddAbilityTag(Tag_Skill_State_Preview);
+	StartPreview();
 
 	// 초기 회전값 설정 (캐릭터가 바라보는 방향 기준 90도 스냅)
 	if (AActor* Avatar = GetAvatarActorFromActorInfo())
@@ -39,29 +30,6 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 		// 90도 단위 스냅 (0, 90, 180, 270)
 		float SnappedYaw = FMath::GridSnap(Yaw, 90.0f);
 		CurrentPreviewRotation = FRotator(0, SnappedYaw, 0);
-	}
-
-	// 프리뷰 태스크 시작
-	PreviewTask = UPreviewTask::CreatePreviewTask(
-		this,
-		PreviewRange,
-		Tag_Highlight_Range,
-		Tag_Highlight_Cursor,
-		nullptr,
-		PreviewActorClass 
-	);
-
-	// Task 활성화
-	if (PreviewTask)
-	{
-		PreviewTask->ReadyForActivation();
-
-		// [중요] 초기 회전 적용
-		// PreviewTask가 생성한 Actor에 접근할 수 있어야 함 (Getter 필요)
-		if (AActor* SpawnedActor = PreviewTask->GetSpawnedPreviewActor())
-		{
-			SpawnedActor->SetActorRotation(CurrentPreviewRotation);
-		}
 	}
 
 	// 입력 대기 (Confirm: 좌클릭)
@@ -87,6 +55,57 @@ void UBarrier::ActivateAbility(const FGameplayAbilitySpecHandle Handle,
 	WaitWheel->ReadyForActivation();
 }
 
+void UBarrier::InputPressed(const FGameplayAbilitySpecHandle Handle,
+	const FGameplayAbilityActorInfo* ActorInfo,
+	const FGameplayAbilityActivationInfo ActivationInfo)
+{
+	Super::InputPressed(Handle, ActorInfo, ActivationInfo);
+
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+
+	// 설치된 상태에서 키를 다시 누르면 발사!
+	if (ASC && ASC->HasMatchingGameplayTag(Tag_Player_State_Active_Barrier))
+	{
+		Launch();
+	}
+}
+
+void UBarrier::StartPreview()
+{
+	Super::StartPreview();
+
+	// 프리뷰 태스크 시작
+	PreviewTask = UPreviewTask::CreatePreviewTask(
+		this,
+		PreviewRange,
+		Tag_Highlight_Range,
+		Tag_Highlight_Cursor,
+		nullptr,
+		PreviewActorClass
+	);
+
+	// Task 활성화
+	if (PreviewTask)
+	{
+		PreviewTask->ReadyForActivation();
+
+		// 초기 회전 적용
+		if (AActor* SpawnedActor = PreviewTask->GetSpawnedPreviewActor())
+		{
+			SpawnedActor->SetActorRotation(CurrentPreviewRotation);
+
+			if (IBlockPreviewInterface* PreviewInterface = Cast<IBlockPreviewInterface>(SpawnedActor))
+			{
+				// 룬 개수에 따른 (0, 100, 0), (0, -100, 0) 등의 로컬 좌표 배열 계산
+				TArray<FVector> CalculatedOffsets = CalculateBarrierOffsetsByRune();
+
+				// 인터페이스를 통해 데이터 주입
+				PreviewInterface->SetBlockOffsets(CalculatedOffsets);
+			}
+		}
+	}
+}
+
 void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	const FGameplayAbilityActorInfo* ActorInfo,
 	const FGameplayAbilityActivationInfo ActivationInfo,
@@ -95,7 +114,6 @@ void UBarrier::EndAbility(const FGameplayAbilitySpecHandle Handle,
 	if (PreviewTask)
 	{
 		// 프리뷰 태그 제거
-		RemoveGameplayTagFromOwner(Tag_Player_State_Preview);
 		RemoveAbilityTag(Tag_Skill_State_Preview);
 
 		// 태스크 종료
@@ -139,18 +157,27 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		return;
 	}
 
+	if (PreviewTask)
+	{
+		// 프리뷰 태그 제거
+		RemoveAbilityTag(Tag_Skill_State_Preview);
+
+		// 태스크 종료
+		PreviewTask->EndTask();
+		PreviewTask = nullptr;
+	}
+
 	// 발사 방향 결정
 	if (AActor* Avatar = GetAvatarActorFromActorInfo())
 	{
 		FVector PlayerLoc = Avatar->GetActorLocation();
 		FVector TargetLoc = SpawnedActor->GetActorLocation();
 
-		// 1. 시전자에서 목표 지점으로 향하는 벡터 계산
+		// 시전자에서 목표 지점으로 향하는 벡터 계산
 		FVector Dir = TargetLoc - PlayerLoc;
 		Dir.Z = 0.0f; // 높이 차이 무시 (수평 방향만 고려)
 
 		// 가장 지배적인 축(Dominant Axis)을 찾아 4방향으로 스냅
-		// X축의 크기가 Y축보다 크면 앞/뒤, 아니면 좌/우
 		if (FMath::Abs(Dir.X) > FMath::Abs(Dir.Y))
 		{
 			// X 성분의 부호(Sign)만 남김 (1 or -1)
@@ -163,31 +190,51 @@ void UBarrier::OnConfirmEventReceived(FGameplayEventData Payload)
 		}
 	}
 
-	// 1. 프리뷰 액터에게 소환할 수 있는 블록 위치 목록 요청
+	// 프리뷰 액터에게 소환할 수 있는 블록 위치 목록 요청
 	TArray<FTransform> SpawnTransforms = PreviewActor->GetValidSpawnData();
 
-	// 2. 유효한 데이터가 있다면 실제 소환 진행
+	//  실제 소환 진행
 	if (SpawnTransforms.Num() > 0)
 	{
 		if (BlockSystem)
 		{	
-			// [추가] Payload 객체 생성 (NewObject 사용)
-			// Outer를 this(Ability)로 설정하여 Ability가 살아있는 동안은 안전하게 유지
+			// Payload 생성
 			UBarrierSpawnPayload* BarrierPayload = NewObject<UBarrierSpawnPayload>(this);
 
-			// 데이터 채우기 (Barrier 스킬의 멤버 변수값들을 전달)
-			// *주의: UBarrier 클래스에 아래 변수들이 정의되어 있어야 함
+			// 데이터 채우기
 			BarrierPayload->LaunchSpeed = this->LaunchSpeed;
 			BarrierPayload->MaxLifeTime = this->MaxLifeTime;
 			BarrierPayload->TeamAllyTag = this->TeamAllyTag; // 예: Team.Ally
 			BarrierPayload->TeamEnemyTag = this->TeamEnemyTag; // 예: Team.Enemy
 			BarrierPayload->AllyKnockbackStrength = this->AllyKnockbackStrength;
-			BarrierPayload->DamageEffectClass = this->DamageEffectClass;
+			BarrierPayload->InstigatorActor = GetAvatarActorFromActorInfo();
+
+			if (DamageEffectClass)
+			{
+				UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+				FGameplayEffectContextHandle ContextHandle = ASC->MakeEffectContext();
+				ContextHandle.AddSourceObject(this);
+
+				FGameplayEffectSpecHandle DamageSpecHandle = ASC->MakeOutgoingSpec(DamageEffectClass, 1.0f, ContextHandle);
+
+				if (DamageSpecHandle.IsValid())
+				{
+					// 데미지 룬 배율
+					float RuneMultiplier = GetRuneMultiplier(ERuneType::Red);
+
+					// SetByCaller 주입
+					DamageSpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_Damage, BaseDamage);
+					DamageSpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_RuneMultiplier, RuneMultiplier);
+
+					// SpecHandle을 Payload에 전달
+					BarrierPayload->DamageSpecHandle = DamageSpecHandle;
+				}
+			}
 
 			TArray<FBlockSpawnRequest> FinalRequests;
 			for (auto& SpawnTransform : SpawnTransforms)
 			{
-				FBlockSpawnRequest Req(BlockTagToSpawn, SpawnTransform.GetLocation(), true);
+				FBlockSpawnRequest Req(BlockTagToSpawn, SpawnTransform.GetLocation(), true, BarrierPayload);
 				FinalRequests.Add(Req);
 			}
 
@@ -215,12 +262,53 @@ void UBarrier::OnBlocksSpawned(const TArray<TWeakObjectPtr<AActor>>& SpawnedBloc
 
 	if (CurrentBarrierBlocks.Num() > 0)
 	{
-		// 블록 생성 성공 시 시전자에게 상태 태그 부착
 		AddGameplayTagToOwner(Tag_Player_State_Active_Barrier);
+
+		// 블록 파괴 이벤트 대기
+		UAbilityTask_WaitGameplayEvent* WaitDestroy = UAbilityTask_WaitGameplayEvent::WaitGameplayEvent(
+			this,
+			TAG_Event_Block_Destroyed_Barrier,
+			nullptr,
+			false,
+			false
+		);
+		WaitDestroy->EventReceived.AddDynamic(this, &UBarrier::OnBlockDestroyed);
+		WaitDestroy->ReadyForActivation();
+	}
+	else
+	{
+		// 생성된 블록이 없으면 그냥 종료
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
+	}
+}
+
+void UBarrier::OnBlockDestroyed(FGameplayEventData Payload)
+{
+	// 남은 블록이 있는지 검사
+	bool bHasValidBlock = false;
+	for (const TWeakObjectPtr<AActor>& BlockPtr : CurrentBarrierBlocks)
+	{
+		// 파괴된 액터는 IsValid()가 false가 됨
+		if (BlockPtr.IsValid() && BlockPtr.Get() != Payload.Instigator)
+		{
+			bHasValidBlock = true;
+			break;
+		}
 	}
 
-	// 블록이 생성 확정된 후 안전하게 종료
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	// 모든 블록이 파괴되었다면 스킬 즉시 종료 및 쿨타임 시작
+	if (!bHasValidBlock)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Barrier: All blocks destroyed. Ending ability."));
+
+		RemoveGameplayTagFromOwner(Tag_Player_State_Active_Barrier);
+
+		// 쿨타임 시작
+		CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+
+		// 어빌리티 종료
+		EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	}
 }
 
 void UBarrier::Launch()
@@ -256,26 +344,19 @@ void UBarrier::Launch()
 
 			if (AActor* BlockActor = BlockPtr.Get())
 			{
-				UFunction* LaunchFunc = BlockActor->FindFunction(FName("Launch"));
+				// 발사 이벤트를 위한 페이로드(Payload) 구성
+				FGameplayEventData EventData;
+				EventData.EventTag = TAG_Event_Block_Launch_Barrier;
+				EventData.Instigator = GetAvatarActorFromActorInfo();
 
-				if (LaunchFunc)
-				{
-					// 파라미터 구조체 정의 (함수 인자와 순서/타입이 일치해야 함)
-					struct FLaunchParams
-					{
-						FVector Direction;
-					};
+				// FVector(발사 방향)를 TargetData에 담기
+				FGameplayAbilityTargetData_LocationInfo* LocData = new FGameplayAbilityTargetData_LocationInfo();
+				LocData->TargetLocation.LiteralTransform = FTransform(LaunchDirection);
+				LocData->TargetLocation.LocationType = EGameplayAbilityTargetingLocationType::LiteralTransform;
+				EventData.TargetData.Add(LocData);
 
-					FLaunchParams Params;
-					Params.Direction = LaunchDirection;
-
-					// 함수 실행
-					BlockActor->ProcessEvent(LaunchFunc, &Params);
-				}
-				else
-				{
-					UE_LOG(LogTemp, Warning, TEXT("BlockActor does not have Launch function!"));
-				}
+				// 대상 액터(Block)로 이벤트 전송
+				UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(BlockActor, TAG_Event_Block_Launch_Barrier, EventData);
 			}
 			else
 			{
@@ -288,11 +369,54 @@ void UBarrier::Launch()
 		UE_LOG(LogTemp, Warning, TEXT("Barrier: No blocks to launch."));
 	}
 
-	// 2. 상태 해제 및 종료
-	RemoveGameplayTagFromOwner(Tag_Player_State_Active_Barrier);
+	// 발사 후 쿨타임 시작
+	CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+}
 
-	// 배열 초기화
-	CurrentBarrierBlocks.Empty();
+TArray<FVector> UBarrier::CalculateBarrierOffsetsByRune() const
+{
+	TArray<FVector> CalculatedOffsets;
 
-	EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+	// 에디터에서 배열을 세팅하지 않은 경우 기본 1x1 큐브 반환
+	if (BarrierShapesByRuneCount.IsEmpty())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Barrier: BarrierShapesByRuneCount array is empty!"));
+		CalculatedOffsets.Add(FVector::ZeroVector);
+		return CalculatedOffsets;
+	}
+
+	// 룬 개수 가져오기
+	int32 RuneCount = GetRuneCount(ERuneType::Blue);
+
+	// 룬 개수가 배열의 최대 인덱스를 넘어가더라도 최대 크기를 유지
+	int32 SafeIndex = FMath::Clamp(RuneCount, 0, BarrierShapesByRuneCount.Num() - 1);
+
+	// 선택된 장벽의 가로(X), 세로(Y) 개수 
+	FIntPoint Shape = BarrierShapesByRuneCount[SafeIndex];
+
+	// 4. 그리드 사이즈 (블록 1개의 실제 크기)
+	float GridSize = BlockSystem ? BlockSystem->GetGridSize() : 100.0f;
+
+	// 5. 오프셋 계산 루프
+	// 가로(Width)를 중앙 정렬하기 위한 시작 인덱스 계산
+	// [홀수] Shape.X == 3 일 때: StartY = -1 -> (-1, 0, 1)로 예쁘게 중앙 정렬
+	// [짝수] Shape.X == 4 일 때: StartY = -2 -> (-2, -1, 0, 1)로 좌측으로 살짝 치우쳐서 정렬
+	int32 StartY = -(Shape.X / 2);
+	int32 EndY = StartY + Shape.X;
+
+	for (int32 y = StartY; y < EndY; ++y)
+	{
+		// Z축은 바닥(0)부터 위로 쌓아 올림
+		for (int32 z = 0; z < Shape.Y; ++z)
+		{
+			// 로컬 좌표계:
+			// X축(전방) = 0 (장벽은 두께가 1칸이므로)
+			// Y축(측면) = 가로 정렬
+			// Z축(상단) = 위로 쌓기
+			FVector Offset(0.0f, y * GridSize, z * GridSize);
+			CalculatedOffsets.Add(Offset);
+		}
+	}
+
+	return CalculatedOffsets;
 }

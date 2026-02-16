@@ -8,6 +8,7 @@
 #include "BlockManagerSubsystem.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "BlockGameplayTags.h"
+#include "NavigationSystem.h"
 
 AChunkBase::AChunkBase()
 {
@@ -117,9 +118,21 @@ void AChunkBase::RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh)
 
 				// CPD 사용을 위한 CPD 슬롯 설정(넉넉하게)
 				NewHISM->NumCustomDataFloats = 8;
-
+				
 				// Stationary: 위치 고정 & 런타임 인스턴스 변경 등 가능
-				NewHISM->SetMobility(EComponentMobility::Stationary);
+				NewHISM->SetMobility(EComponentMobility::Movable);
+
+				// Physical Material 가져오기
+				UPhysicalMaterial* StickyPhysMat = nullptr;
+				if (CachedBlockConfig) {
+					StickyPhysMat = CachedBlockConfig->GetBlockDef(Type)->PhysMat;
+				}
+
+				if (StickyPhysMat)
+				{
+					// HISM 컴포넌트 전체에 피지컬 머티리얼 덮어쓰기
+					NewHISM->SetPhysMaterialOverride(StickyPhysMat);
+				}
 
 				// 초기 상태 설정
 				if (BufferIdx == CurrentBufferIndex)
@@ -336,7 +349,12 @@ void AChunkBase::UpdateChunkVisuals()
 			{
 				// 버퍼의 HISM 컴포넌트 유효성 검사 및 초기화
 				if (Elem.Value) {
-					Elem.Value->ClearInstances();
+					// 한 번에 지우면 NavMesh가 오작동
+					while (Elem.Value->GetInstanceCount() > 0)
+					{
+						// 뒤에서부터 지워야 인덱스 밀림 현상 없이 안전하게 지워집니다.
+						Elem.Value->RemoveInstance(Elem.Value->GetInstanceCount() - 1);
+					}
 				}
 				else UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HISM component missing in BackBuffer for BlockType %d"), (int32)Elem.Key);
 			}
@@ -367,7 +385,10 @@ void AChunkBase::UpdateChunkVisuals()
 				if (Elem.Value)
 				{
 					Elem.Value->SetHiddenInGame(false);
-					Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					
+					// 두 버퍼의 충돌이 겹치면 NavMesh가 오작동하므로 주석처리
+					//Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+					
 					// 렌더링 강제 업데이트 요청
 					// Elem.Value->MarkRenderStateDirty();
 				}
@@ -565,15 +586,13 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: HighlightHISMBlock called but CachedBlockConfig is null."));
 	}
 
-	// -------------------------------------------------------------------------
-	// Case 1: 폭탄 하이라이트
-	// -------------------------------------------------------------------------
+	// 폭탄 하이라이트
 	if (Tag.MatchesTag(TAG_Block_Highlight_Bomb))
 	{
 		// 해당 컴포넌트의 카운트 맵을 가져오거나 생성
 		TMap<int32, int32>& InstanceCounts = HISMBombCountMap.FindOrAdd(HISM);
 
-		// [초기화] Bomb_None 태그가 오면 카운트 리셋 및 하이라이트 끄기
+		// Bomb_None 태그가 오면 카운트 리셋 및 하이라이트 끄기
 		if (Tag.MatchesTag(TAG_Block_Highlight_Bomb_None))
 		{
 			InstanceCounts.Remove(ItemIndex); // 맵에서 데이터 삭제 (메모리 절약)
@@ -605,9 +624,7 @@ void AChunkBase::HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemI
 		return;
 	}
 
-	// -------------------------------------------------------------------------
-	// Case 2: 일반 하이라이트 (단순 On/Off)
-	// -------------------------------------------------------------------------
+	// 일반 하이라이트 (단순 On/Off)
 	const FBlockCPDInfo* CPDInfo = CachedBlockConfig->HighlightSettings.Find(Tag);
 
 	if (CPDInfo || Tag == TAG_Block_Highlight_None)
@@ -637,11 +654,31 @@ void AChunkBase::CheckRenderFence(int32 OldBufferIndex)
 				{
 					Elem.Value->SetHiddenInGame(true);
 					Elem.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+					// [추가] 헌 버퍼가 지워졌음을 NavMesh 시스템에 알림
+					FNavigationSystem::UpdateComponentData(*Elem.Value);
 				}
 				else UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Invalid HISM in OldBuffer during Fence Callback."));
 			}
 		}
 		else UE_LOG(LogTemp, Error, TEXT("ChunkBase: Invalid OldBufferIndex in Fence Callback."));
+
+		// 새 버퍼(New) 콜리전 켜기
+		if (HISM_Buffers.IsValidIndex(CurrentBufferIndex))
+		{
+			auto& NewMap = HISM_Buffers[CurrentBufferIndex];
+			for (auto& Elem : NewMap)
+			{
+				if (Elem.Value)
+				{
+					Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+
+					// [핵심 추가] 새 버퍼의 콜리전이 활성화되었음을 NavMesh 시스템에 강제 알림!
+					// 이 코드가 있어야 엔진이 HISM 인스턴스들의 모양을 읽고 NavMesh를 굽습니다.
+					FNavigationSystem::UpdateComponentData(*Elem.Value);
+				}
+			}
+		}
 
 		// 타이머 종료
 		if (UWorld* World = GetWorld())

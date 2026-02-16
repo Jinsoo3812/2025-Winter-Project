@@ -1,7 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Block/BlockBase.h"
+#include "BlockBase.h"
 #include "Engine/World.h"
 #include "CollisionChannels.h"
 #include "BlockConfig.h"
@@ -9,7 +9,7 @@
 #include "BlockSettings.h"
 #include "ChunkBase.h"
 #include "AbilitySystemComponent.h"
-#include "AbilitySystemInterface.h"
+#include "BlockAttributeSet.h"
 
 
 // Sets default values
@@ -31,6 +31,14 @@ ABlockBase::ABlockBase()
 
 	// 블록들의 충돌 채널인 ECC_Block
 	CollisionComponent->SetCollisionObjectType(ECC_Block);
+
+	// ASC 생성 및 설정
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
+	AbilitySystemComponent->SetIsReplicated(true);
+	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Minimal); // 블록은 AI/Object 취급이므로 Minimal
+
+	// AttributeSet 생성
+	AttributeSet = CreateDefaultSubobject<UBlockAttributeSet>(TEXT("BlockAttributeSet"));
 }
 
 void ABlockBase::InitializeBlock(const UBlockSpawnPayload* InPayload)
@@ -59,48 +67,32 @@ void ABlockBase::BeginPlay()
 
 	if (BlockConfig)
 	{
+		// GridSize 초기화
 		GridSize = BlockConfig->GridSize;
 
-		// 1. 현재 내 클래스(this->GetClass())에 해당하는 태그를 Config에서 조회
-		FGameplayTag MyBlockTag = BlockConfig->GetBlockDef(this->GetClass())->Tag;
-
-		if (MyBlockTag.IsValid())
+		if (AbilitySystemComponent)
 		{
-			// 2. ASC 가져오기 (IAbilitySystemInterface를 구현했는지 확인)
-			UAbilitySystemComponent* ASC = nullptr;
+			// 현재 클래스부터 시작해서 부모 클래스로 거슬러 올라감
+			UClass* CurrentClass = this->GetClass();
 
-			// 인터페이스를 통한 접근 시도 (가장 권장되는 방식)
-			if (IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(this))
+			// BlockBase에 도달할 때까지 반복
+			while (CurrentClass && CurrentClass->IsChildOf(ABlockBase::StaticClass()))
 			{
-				ASC = ASI->GetAbilitySystemComponent();
-			}
-			// 인터페이스가 없다면 컴포넌트 검색 시도 (Fallback)
-			else
-			{
-				ASC = FindComponentByClass<UAbilitySystemComponent>();
-			}
+				// 부모들의 Tag를 모두 추가
+				if (const FBlockDefinition* Def = BlockConfig->GetBlockDef(CurrentClass))
+				{
+					if (Def->Tag.IsValid())
+					{
+						AbilitySystemComponent->AddLooseGameplayTag(Def->Tag);
+					}
+				}
 
-			// 3. ASC가 유효하다면 Loose Tag 추가
-			if (ASC)
-			{
-				// LooseGameplayTag: GameplayEffect 없이 ASC에 직접 태그를 추가함.
-				// 블록의 타입(Identity)처럼 정적인 속성을 정의할 때 적합함.
-				ASC->AddLooseGameplayTag(MyBlockTag);
-
-				// (디버깅용 로그 - 필요 시 주석 해제)
-				// UE_LOG(LogTemp, Log, TEXT("BlockBase: Assigned Tag %s to %s"), *MyBlockTag.ToString(), *GetName());
-			}
-			else
-			{
-				// BlockBase 자체는 ASC가 없을 수 있으므로(파괴 불가능 블록 등),
-				// ASC가 없다고 해서 반드시 에러는 아님. 필요하다면 로그 출력.
-				// UE_LOG(LogTemp, Warning, TEXT("BlockBase: No ASC found on %s, could not assign tag."), *GetName());
+				// 한 단계 상위 클래스로 이동 
+				CurrentClass = CurrentClass->GetSuperClass();
 			}
 		}
-		else
-		{
-			// Config에는 있지만 현재 클래스와 매칭되는 정의가 없는 경우
-			UE_LOG(LogTemp, Warning, TEXT("BlockBase: No matching ActorTag found in BlockConfig for Class %s"), *GetClass()->GetName());
+		else {
+			UE_LOG(LogTemp, Warning, TEXT("BlockBase: AbilitySystemComponent is null in %s"), *GetName());
 		}
 	}
 	else
@@ -153,8 +145,7 @@ void ABlockBase::UpdateGravity(float DeltaTime)
 {
 	FVector Start = GetActorLocation();
 
-	// 레이캐스트 길이를 속도에 비례하게 늘려서, 고속 낙하 시 터널링(바닥 뚫음) 방지
-	// 최소 길이는 60
+	// 레이캐스트 길이를 속도에 비례하게 늘려서, 고속 낙하 시 터널링 방지 (60부터 시작)
 	float CheckDistance = FMath::Max(60.0f, (FMath::Abs(VerticalVelocity) * DeltaTime) + 10.0f);
 	FVector End = Start + FVector(0.0f, 0.0f, -CheckDistance);
 
@@ -172,44 +163,59 @@ void ABlockBase::UpdateGravity(float DeltaTime)
 		ABlockBase* HitBlock = Cast<ABlockBase>(HitResult.GetActor());
 		if (HitBlock && HitBlock->IsFalling())
 		{
-			// 아래 있는 블록이 같이 추락 중이라면, 바닥이 없는 것으로 간주
 			bHitSomething = false;
 		}
 	}
 
 	if (bHitSomething)
 	{
-		// 바닥이 확실히 있음
-		if (bIsFalling)
-		{
-			CheckLanding();
-		}
-		else
-		{
-			// 안정적인 상태 유지 (물리를 켜놓으면 어디에 끼거나 진동하거나 하여튼,,)
-			SetActorTickEnabled(false);
-		}
+		// RayCast 충돌 표면 + HalfGridSize 위치로 스냅
+		float CorrectedZ = HitResult.ImpactPoint.Z + (GridSize * 0.5f);
 
-		bIsFalling = false;
-		VerticalVelocity = 0.0f;
+		FVector NewLocation = GetActorLocation();
+		NewLocation.Z = CorrectedZ;
+
+		if (SetActorLocation(NewLocation))
+		{
+			if (bIsFalling)
+			{
+				CheckLanding();
+			}
+			else
+			{
+				SetActorTickEnabled(false);
+			}
+
+			bIsFalling = false;
+			VerticalVelocity = 0.0f;
+		}
 	}
 	else
 	{
-		// 바닥이 없음 -> 낙하 처리
+		// 바닥이 없음 -> 낙하 시작 처리
 		if (!bIsFalling)
 		{
 			bIsFalling = true;
-			NotifyUpperBlock(); // 내 위의 블록도 깨움
-			// UE_LOG(LogTemp, Warning, TEXT("BlockBase: %s started falling."), *GetName());
+			NotifyUpperBlock(); // 위의 블록 깨우기
+
+			// 낙하 시작 시 청크 데이터 비우기 (Start Falling)
+			if (ParentChunk.IsValid())
+			{
+				// 청크 로컬 좌표계
+				FVector LocalPos = GetActorLocation() - ParentChunk->GetActorLocation();
+
+				int32 X = FMath::RoundToInt(LocalPos.X / GridSize);
+				int32 Y = FMath::RoundToInt(LocalPos.Y / GridSize);
+				int32 Z = FMath::RoundToInt(LocalPos.Z / GridSize);
+
+				// 자신의 자리를 비움
+				ParentChunk->SetBlockData(X, Y, Z, EBlockType::None, false);
+			}
 		}
 
-		// 속도 갱신
+		// 물리 처리
 		VerticalVelocity += GravityAcceleration * DeltaTime;
 		FVector DeltaMove = FVector(0.0f, 0.0f, VerticalVelocity * DeltaTime);
-
-		// 옆면 마찰 문제 해결
-		// 매 프레임 아래로 떨어지는 것은 일종의 순간이동인데
-		// 그 때마다 양 옆에 부딪힌다면 제대로 이동하지 못하므로 sweep을 끔
 		AddActorWorldOffset(DeltaMove, false);
 	}
 }
@@ -218,17 +224,50 @@ void ABlockBase::CheckLanding()
 {
 	FVector CurrentLoc = GetActorLocation();
 
-	// 152, 99 처럼 중간에 걸친 위치를 그리드에 스냅
-	float HalfSize = GridSize / 2.0f;
-	float SnappedZ = FMath::RoundToFloat((CurrentLoc.Z - HalfSize) / GridSize) * GridSize + HalfSize;
-	float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize; // X, Y는 중심이 0 기준이면 그대로 둠
+	float SnappedX = FMath::RoundToFloat(CurrentLoc.X / GridSize) * GridSize;
 	float SnappedY = FMath::RoundToFloat(CurrentLoc.Y / GridSize) * GridSize;
+	float SnappedZ = FMath::RoundToFloat(CurrentLoc.Z / GridSize) * GridSize;
 
-	FVector NewLoc = FVector(SnappedX, SnappedY, SnappedZ);
+	// 논리적 좌표 계산 (청크 데이터 갱신용)
+	int32 TargetX = 0, TargetY = 0, TargetZ = 0;
+	FVector SnappedWorldLoc(SnappedX, SnappedY, SnappedZ);
 
-	if (SetActorLocation(NewLoc))
+	if (ParentChunk.IsValid())
 	{
-		// 스냅 성공 및 가상 물리 연산 종료
+		// 청크 로컬 좌표계
+		FVector LocalLoc = SnappedWorldLoc - ParentChunk->GetActorLocation();
+		TargetX = FMath::RoundToInt(LocalLoc.X / GridSize);
+		TargetY = FMath::RoundToInt(LocalLoc.Y / GridSize);
+		TargetZ = FMath::RoundToInt(LocalLoc.Z / GridSize);
+
+		// 내가 착지하려는 곳에 갑자기 무언가 생긴 경우
+		FBlockData ExistingData = ParentChunk->GetBlockData(TargetX, TargetY, TargetZ);
+		if (ExistingData.Type != EBlockType::None)
+		{
+			// 이미 자리가 찼으므로 한 칸 위로 올림
+			TargetZ += 1;
+			SnappedZ += GridSize;
+			UE_LOG(LogTemp, Warning, TEXT("BlockBase: Race condition! Stacking up to Z=%d"), TargetZ);
+		}
+
+		// 내 블록 타입 가져오기
+		EBlockType MyType = EBlockType::Destructible; // 기본값
+		if (BlockConfig)
+		{
+			// 캐시된 Config에서 내 클래스 정보 조회
+			const FBlockDefinition* Def = BlockConfig->GetBlockDef(GetClass());
+			if (Def) MyType = Def->Type;
+		}
+
+		// Chunk에 도착 후 자신 기록
+		ParentChunk->SetBlockData(TargetX, TargetY, TargetZ, MyType, true);
+	}
+
+	// 최종 위치 적용
+	FVector FinalLoc(SnappedX, SnappedY, SnappedZ);
+	if (SetActorLocation(FinalLoc))
+	{
+		// 스냅 성공
 		bIsFalling = false;
 		VerticalVelocity = 0.0f;
 		SetActorTickEnabled(false);
@@ -338,8 +377,6 @@ void ABlockBase::SelfDestroy()
 	// 죽기 전에 청크에게 내 자리 비워달라고 요청
 	if (ParentChunk.IsValid())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[BlockBase] I (%s) am destroyed. Notifying Chunk to clear my spot: %s"),
-			*GetName(), *GetActorLocation().ToString());
 		// 현재 나의 월드 좌표를 넘겨줌 (청크가 알아서 로컬 좌표로 변환할 것임)
 		ParentChunk->RemoveBlockAtWorldLocation(GetActorLocation());
 	}

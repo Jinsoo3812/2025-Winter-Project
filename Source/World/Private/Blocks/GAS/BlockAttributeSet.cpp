@@ -1,10 +1,10 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Block/BlockAttributeSet.h"
+#include "BlockAttributeSet.h"
 #include "Net/UnrealNetwork.h"
 #include "GameplayEffectExtension.h"
-#include "Block/DestructibleBlock.h" // ADestructibleBlock의 헤더 필요
+#include "DestructibleBlock.h" // ADestructibleBlock의 헤더 필요
 
 UBlockAttributeSet::UBlockAttributeSet()
 {

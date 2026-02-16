@@ -7,6 +7,7 @@
 #include "BlockCommonTypes.generated.h"
 
 class AChunkBase;
+class UPhysicalMaterial;
 
 // 블록의 종류를 정의하는 Enum
 UENUM(BlueprintType)
@@ -136,12 +137,19 @@ struct FBlockDefinition
 	UPROPERTY(EditAnywhere, Category = "Definition")
 	bool bIsActor = false;
 
+	UPROPERTY(EditAnywhere, Category = "Definition")
+	UPhysicalMaterial* PhysMat;
+
 	// 블록의 Gameplay Tag
 	UPROPERTY(EditAnywhere, Category = "Definition", meta = (EditCondition = "bIsActor"))
 	FGameplayTag Tag;
 
-	// 블록의 Class 타입
+	// 블록의 BP Class 타입
 	UPROPERTY(EditAnywhere, Category = "Definition", meta = (EditCondition = "bIsActor"))
 	TSubclassOf<AActor> ActorClass;
+
+	// 블록의 C++ Class 타입
+	UPROPERTY(EditAnywhere, Category = "Definition", meta = (EditCondition = "bIsActor"))
+	TSubclassOf<AActor> NativeClass;
 };
 
