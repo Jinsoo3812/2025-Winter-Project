@@ -14,13 +14,16 @@ public class World: ModuleRules
             "GameplayTags",
             "NavigationSystem",
             "Winter2025Core",
-            "RenderCore"
+            "RenderCore",
+            "NavigationSystem"
         });
 
         PublicIncludePaths.AddRange(new string[] {
 			"World",
-			"World/Public/Block",
-			"World/Public/Chunk"
+			"World/Public/Blocks",
+			"World/Public/Chunk",
+            "World/Public/Blocks/GAS",
+            "World/Public/Blocks/Preview"
 		});
     }
 }

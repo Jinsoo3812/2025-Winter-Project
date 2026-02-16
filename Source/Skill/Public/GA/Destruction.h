@@ -29,6 +29,8 @@ public:
 		bool bReplicateEndAbility,
 		bool bWasCancelled) override;
 
+	virtual void StartPreview() override;
+
 protected:
 	// -------------------------------------------------------------------
 	// 설정 변수
@@ -53,25 +55,6 @@ protected:
 	// 프리뷰 시각화용 액터 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "Destruction")
 	TSubclassOf<AActor> PreviewVisualizerClass;
-
-	// -------------------------------------------------------------------
-	// Gameplay Tags
-	// -------------------------------------------------------------------
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_State_Preview;
-
-	// 스킬 인스턴스에 붙을 상태 태그
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Skill_State_Preview;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Highlight_Range;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Highlight_Cursor;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Tags")
-	FGameplayTag Tag_Event_Confirm;
 
 	// -------------------------------------------------------------------
 	// 내부 로직

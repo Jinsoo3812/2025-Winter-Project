@@ -9,9 +9,15 @@
 #include "EnhancedInputSubsystems.h"
 #include "Winter2025PlayerAttributeSet.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "NavigationInvokerComponent.h"
 
 AWinter2025Player::AWinter2025Player()
 {
+	NavInvokerComp = CreateDefaultSubobject<UNavigationInvokerComponent>(TEXT("NavInvokerComp"));
+
+	// GenerationRadius: 이 반경(ex. 3000 유닛) 내의 타일은 NavMesh를 생성함
+	// RemovalRadius: 이 반경(ex. 5000 유닛)을 벗어난 타일은 메모리 최적화를 위해 NavMesh를 지움
+	NavInvokerComp->SetGenerationRadii(NavGenerationRadius, NavRemovalRadius);
 }
 
 UAbilitySystemComponent* AWinter2025Player::GetAbilitySystemComponent() const

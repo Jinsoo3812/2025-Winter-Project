@@ -1,5 +1,7 @@
 ﻿// Fill out your copyright notice in the Description page of Project Settings.
 
+#pragma once
 
-#include "Block/TerrainBlock.h"
+#include "CoreMinimal.h"
 
+#define SURFACE_STICKY SurfaceType1

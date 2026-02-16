@@ -85,6 +85,8 @@ public:
 	// 대상 블록 하나를 하이라이트하는 함수
 	void HighlightBlock(const FBlockReference& BlockRef, const FGameplayTag& Tag) override;
 
+	bool IsSpawnQueueEmpty() const { return SpawnQueue.IsEmpty(); }
+
 protected:
 	// TQueue는 Thread-Safe를 지원
 	// 대기 중인 스폰 요청 Queue

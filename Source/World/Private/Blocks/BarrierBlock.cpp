@@ -1,11 +1,13 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 
-#include "Block/BarrierBlock.h"
+#include "BarrierBlock.h"
 #include "AbilitySystemComponent.h"
 #include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "ChunkBase.h"
+#include "AbilitySystemBlueprintLibrary.h"
+#include "EventGameplayTags.h"
 
 ABarrierBlock::ABarrierBlock()
 {
@@ -38,7 +40,8 @@ void ABarrierBlock::InitializeBlock(const UBlockSpawnPayload* InPayload)
 			this->TeamAllyTag = BarrierData->TeamAllyTag;
 			this->TeamEnemyTag = BarrierData->TeamEnemyTag;
 			this->AllyKnockbackStrength = BarrierData->AllyKnockbackStrength;
-			this->DamageEffectClass = BarrierData->DamageEffectClass;
+			this->DamageSpecHandle = BarrierData->DamageSpecHandle;
+			this->CachedInstigator = BarrierData->InstigatorActor;
 		}
 	}
 }
@@ -57,6 +60,25 @@ void ABarrierBlock::BeginPlay()
 		CollisionComponent->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	}
 	else UE_LOG(LogTemp, Error, TEXT("BarrierBlock: CollisionComponent is null in %s"), *GetName());
+
+	// 내 ASC를 찾아 Gameplay Event 리스너 바인딩
+	if (UAbilitySystemComponent* ASC = GetAbilitySystemComponent())
+	{
+		ASC->GenericGameplayEventCallbacks.FindOrAdd(TAG_Event_Block_Launch_Barrier).AddUObject(this, &ABarrierBlock::OnLaunchEventReceived);
+	}
+}
+
+void ABarrierBlock::OnLaunchEventReceived(const FGameplayEventData* Payload)
+{
+	// 페이로드에서 TargetData를 검사하여 발사 방향 추출
+	if (Payload && Payload->TargetData.Num() > 0)
+	{
+		// GetEndPoint()를 사용하면 LocationInfo에 담아둔 Transform의 Location(즉, LaunchDirection)을 빼올 수 있습니다.
+		FVector Direction = Payload->TargetData.Get(0)->GetEndPoint();
+
+		// 추출한 방향으로 기존 발사 로직 실행
+		Launch(Direction);
+	}
 }
 
 void ABarrierBlock::Launch(FVector Direction)
@@ -133,27 +155,18 @@ void ABarrierBlock::OnHit(UPrimitiveComponent* HitComp,
 			}
 		}
 		// B. 적군 (데미지 & 폭발)
-		else if (TargetASC->HasMatchingGameplayTag(TeamEnemyTag))
+		else
 		{
-			// GE 적용 (Damage)
-			if (DamageEffectClass && GetAbilitySystemComponent())
+			// GE Spec을 타겟에게 적용
+			if (DamageSpecHandle.IsValid())
 			{
-				FGameplayEffectContextHandle ContextHandle = GetAbilitySystemComponent()->MakeEffectContext();
-				ContextHandle.AddSourceObject(this);
-
-				FGameplayEffectSpecHandle SpecHandle = GetAbilitySystemComponent()->MakeOutgoingSpec(DamageEffectClass, 1.0f, ContextHandle);
-				if (SpecHandle.IsValid())
-				{
-					GetAbilitySystemComponent()->ApplyGameplayEffectSpecToTarget(*SpecHandle.Data.Get(), TargetASC);
-				}
+				TargetASC->ApplyGameplayEffectSpecToSelf(*DamageSpecHandle.Data.Get());
+			}
+			else {
+				UE_LOG(LogTemp, Warning, TEXT("BarrierBlock: DamageSpecHandle is invalid. Cannot apply damage to %s"), *OtherActor->GetName());
 			}
 
 			UE_LOG(LogTemp, Log, TEXT("BarrierBlock: Hit Enemy %s -> Explode"), *OtherActor->GetName());
-			Explode();
-		}
-		else
-		{
-			// GAS를 가졌지만 지정된 TAG가 없는 경우 -> 무조건 폭발
 			Explode();
 		}
 	}
@@ -172,6 +185,23 @@ void ABarrierBlock::Explode()
 		World->GetTimerManager().ClearTimer(LifeTimerHandle);
 	}
 
-	UE_LOG(LogTemp, Log, TEXT("BarrierBlock: Exploding %s"), *GetName());
 	Destroy();
+}
+
+void ABarrierBlock::Destroyed()
+{
+	// 시전자의 ASC에 파괴 이벤트를 보냄
+	if (CachedInstigator.IsValid())
+	{	
+		FGameplayEventData EventData;
+		EventData.Instigator = this;
+		EventData.Target = this;
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(CachedInstigator.Get(), TAG_Event_Block_Destroyed_Barrier, EventData);
+	}
+	else {
+		UE_LOG(LogTemp, Warning, TEXT("BarrierBlock: CachedInstigator is invalid. Cannot send Destroyed Event."));
+	}
+
+	Super::Destroyed();
 }

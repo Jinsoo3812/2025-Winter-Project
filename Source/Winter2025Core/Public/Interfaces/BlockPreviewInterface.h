@@ -33,4 +33,9 @@ public:
 	 * @return TArray<FTransform> : 소환할 블록들의 태그와 월드 좌표 리스트
 	 */
 	virtual TArray<FTransform> GetValidSpawnData() = 0;
+
+	/*
+	 * 동적으로 다중 블록 형태를 구성할 때 오프셋 배열을 전달하는 함수
+	 */
+	virtual void SetBlockOffsets(const TArray<FVector>& NewOffsets) = 0;
 };

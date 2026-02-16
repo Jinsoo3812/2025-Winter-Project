@@ -180,21 +180,35 @@ void UPreviewTask::TickTask(float DeltaTime)
 					// 타겟 블록 위에 스냅
 					FVector PreviewLoc = TargetLoc + FVector(0, 0, GridSize);
 
-					// 인터페이스 구현 여부 확인
-					if (SpawnedGhostBlock->Implements<UBlockPreviewInterface>())
+					if (BlockSystem->IsLocationOccupied(PreviewLoc, GridSize))
 					{
-						// 액터를 보이게 설정
-						SpawnedGhostBlock->SetActorHiddenInGame(false);
+						// 타겟 블록 위가 점유되어 있다면 소환 불가하므로 GhostBlock 숨김
+						SpawnedGhostBlock->SetActorHiddenInGame(true);
 
-						// 인터페이스 호출: 액터 스스로 위치를 잡고, 유효성을 판단하여 색상을 바꿈
-						IBlockPreviewInterface* PreviewInterface = Cast<IBlockPreviewInterface>(SpawnedGhostBlock);
-						bool bIsInstallable = PreviewInterface->UpdatePreviewState(PreviewLoc);
+						// 타겟 블록도 Invalid 하이라이트
+						if (bCursorHighlight) {
+							BlockSystem->HighlightBlock(CursorBlock, TAG_Block_Highlight_Invalid);
+							CurrentCursorBlock = CursorBlock;
+						}
 					}
 					else
 					{
-						// 인터페이스가 없는 단순 액터인 경우 기존 방식대로 이동
-						SpawnedGhostBlock->SetActorLocation(PreviewLoc);
-						SpawnedGhostBlock->SetActorHiddenInGame(false);
+						// 인터페이스 구현 여부 확인
+						if (SpawnedGhostBlock->Implements<UBlockPreviewInterface>())
+						{
+							// 액터를 보이게 설정
+							SpawnedGhostBlock->SetActorHiddenInGame(false);
+
+							// 인터페이스 호출: 액터 스스로 위치를 잡고, 유효성을 판단하여 색상을 바꿈
+							IBlockPreviewInterface* PreviewInterface = Cast<IBlockPreviewInterface>(SpawnedGhostBlock);
+							bool bIsInstallable = PreviewInterface->UpdatePreviewState(PreviewLoc);
+						}
+						else
+						{
+							// 인터페이스가 없는 단순 액터인 경우 기존 방식대로 이동
+							SpawnedGhostBlock->SetActorLocation(PreviewLoc);
+							SpawnedGhostBlock->SetActorHiddenInGame(false);
+						}
 					}
 				}
 			}

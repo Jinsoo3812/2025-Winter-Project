@@ -99,6 +99,15 @@ public:
 	 */
 	float GetTotalRuneMultiplier(FGameplayTag SlotTag, ERuneType Type) const;
 
+
+	/*
+	* 특정 슬롯의 룬 구성을 확인하여 해당 타입의 룬 개수를 반환
+	* @param SlotTag 검사할 스킬 슬롯 (ex. Skill.Slot.1)
+	* @param Type 집계할 룬 타입 (ex. Red)
+	* @return 룬 개수 (실패 시 0)
+	*/
+	int32 GetTotalRuneCount(FGameplayTag SlotTag, ERuneType Type) const;
+
 protected:
 	// 룬 개수에 따른 배율을 정의한 테이블 (X축: 개수, Y축: 배율)
 	UPROPERTY(EditDefaultsOnly, Category = "Rune|Config")

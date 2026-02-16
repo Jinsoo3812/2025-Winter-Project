@@ -1,10 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+﻿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "BlockPreviewInterface.h"
+#include "BlockCommonTypes.h"
 #include "PreviewActorBase.generated.h"
 
 class IBlockSystemInterface;
@@ -53,6 +54,11 @@ public:
 	 */
 	virtual TArray<FTransform> GetValidSpawnData() override;
 
+	/*
+	 * 동적으로 다중 블록 형태를 구성할 때 오프셋 배열을 전달하는 함수
+	 */
+	virtual void SetBlockOffsets(const TArray<FVector>& NewOffsets) override;
+
 protected:
 	// 생성 블록들의 상대적 위치 배열
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Preview")
@@ -72,4 +78,8 @@ protected:
 	UPROPERTY(Transient)
 	// BlockConfig 캐시
 	TObjectPtr<UBlockConfig> BlockConfig;
+
+	// CPD 정보 캐시
+	FBlockCPDInfo* ValidCPD;
+	FBlockCPDInfo* InvalidCPD;
 };

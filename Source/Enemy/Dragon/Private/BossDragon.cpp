@@ -22,10 +22,10 @@
 
 // 프로젝트 내부 모듈 헤더
 #include "Enemy/Public/EnemyAttributeSet.h" 
-#include "Block/BlockBase.h"
-#include "BlockSystemInterface.h"
+#include "BlockBase.h"
+#include "BlockSystemInterface.h"        // 블록 시스템 인터페이스 (0209 수정)
 #include "BlockSpawnPayload.h"
-#include "Block/BlockManagerSubsystem.h"   // 블록 생성 관리자
+#include "BlockManagerSubsystem.h"   // 블록 생성 관리자
 #include "BlockGameplayTags.h"             // 블록 태그 정의 헤더
 #include "CollisionChannels.h"
 

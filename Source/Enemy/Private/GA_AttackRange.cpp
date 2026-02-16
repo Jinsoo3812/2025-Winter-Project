@@ -1,5 +1,5 @@
 ﻿#include "Enemy/Public/GA_AttackRange.h" // 내 헤더 파일
-#include "Block/BlockBase.h"             // 바닥 블록 클래스 (World 모듈)
+#include "BlockBase.h"             // 바닥 블록 클래스 (World 모듈)
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "Abilities/Tasks/AbilityTask_WaitDelay.h"
 #include "Abilities/Tasks/AbilityTask_PlayMontageAndWait.h"
