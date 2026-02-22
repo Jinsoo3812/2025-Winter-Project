@@ -119,7 +119,7 @@ void AChunkBase::RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh)
 				// CPD 사용을 위한 CPD 슬롯 설정(넉넉하게)
 				NewHISM->NumCustomDataFloats = 8;
 				
-				// Stationary: 위치 고정 & 런타임 인스턴스 변경 등 가능
+				// Movable로 설정하여 NavMesh가 동적 변경에도 대응할 수 있도록
 				NewHISM->SetMobility(EComponentMobility::Movable);
 
 				// Physical Material 가져오기
@@ -385,12 +385,6 @@ void AChunkBase::UpdateChunkVisuals()
 				if (Elem.Value)
 				{
 					Elem.Value->SetHiddenInGame(false);
-					
-					// 두 버퍼의 충돌이 겹치면 NavMesh가 오작동하므로 주석처리
-					//Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-					
-					// 렌더링 강제 업데이트 요청
-					// Elem.Value->MarkRenderStateDirty();
 				}
 			}
 
@@ -655,7 +649,7 @@ void AChunkBase::CheckRenderFence(int32 OldBufferIndex)
 					Elem.Value->SetHiddenInGame(true);
 					Elem.Value->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-					// [추가] 헌 버퍼가 지워졌음을 NavMesh 시스템에 알림
+					// 헌 버퍼가 지워졌음을 NavMesh 시스템에 알림
 					FNavigationSystem::UpdateComponentData(*Elem.Value);
 				}
 				else UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Invalid HISM in OldBuffer during Fence Callback."));
@@ -673,8 +667,7 @@ void AChunkBase::CheckRenderFence(int32 OldBufferIndex)
 				{
 					Elem.Value->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 
-					// [핵심 추가] 새 버퍼의 콜리전이 활성화되었음을 NavMesh 시스템에 강제 알림!
-					// 이 코드가 있어야 엔진이 HISM 인스턴스들의 모양을 읽고 NavMesh를 굽습니다.
+					// 새 버퍼의 콜리전이 활성화되었음을 NavMesh 시스템에 알림
 					FNavigationSystem::UpdateComponentData(*Elem.Value);
 				}
 			}

@@ -26,6 +26,7 @@ public:
 	// Sets default values for this actor's properties
 	ABlockMapManager();
 
+	// 혹시라도 락이 안 풀리고 파괴될 경우를 대비해 메모리 해제
 	virtual ~ABlockMapManager();
 
 protected:
@@ -98,7 +99,7 @@ protected:
 	// 초기 월드 생성이 완료되었는지 확인하는 함수
 	void CheckInitialWorldGenerationComplete();
 
-	// NavMesh 갱신을 여러 프레임 동안 막기 위한 Lock 포인터
+	// 최초 맵 생성 시 NavMesh 갱신을 잠시 정지하기 위한 Lock 객체
 	FNavigationLockContext* NavUpdateLock = nullptr;
 
 	// -------------------------------------------------------------------------

@@ -11,7 +11,6 @@ ABlockMapManager::ABlockMapManager()
 	PrimaryActorTick.bCanEverTick = false;
 }
 
-// 1. 소멸자 수정: 혹시라도 락이 안 풀리고 파괴될 경우를 대비해 메모리 해제
 ABlockMapManager::~ABlockMapManager()
 {
 	if (NavUpdateLock)
@@ -48,7 +47,7 @@ void ABlockMapManager::GenerateWorld()
 
 	GridSize = BlockConfig->GridSize;
 
-	// 2. 할당 로직 수정: new 키워드로 직접 생성
+	// FNavigationLockContext는 생성 시 Lock Count가 올라가 NavMesh 갱신이 정지
 	if (UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld()))
 	{
 		NavUpdateLock = new FNavigationLockContext();
@@ -66,13 +65,13 @@ void ABlockMapManager::GenerateWorld()
 	// 시각적 업데이트 (비동기 렌더링 시작)
 	UpdateAllChunks();
 
-	// [추가] 맵 생성 비동기 작업 및 액터 큐 처리가 끝날 때까지 감시하는 타이머 실행
+	// 맵 생성 비동기 작업 및 액터 큐 처리가 끝날 때까지 감시하는 타이머 실행
 	GetWorld()->GetTimerManager().SetTimer(
 		InitialWorldGenTimerHandle,
 		this,
 		&ABlockMapManager::CheckInitialWorldGenerationComplete,
 		0.5f,
-		true // 0.5초마다 반복 체크
+		true
 	);
 }
 
@@ -80,7 +79,7 @@ void ABlockMapManager::CheckInitialWorldGenerationComplete()
 {
 	bool bIsChunksGenerating = false;
 
-	// 1. 진행 중인 렌더 펜스 작업이 있는지 확인
+	// 진행 중인 렌더 펜스 작업이 있는지 확인 (HISM)
 	for (auto& Pair : ChunkMap)
 	{
 		if (Pair.Value && Pair.Value->GetWorldTimerManager().IsTimerActive(Pair.Value->GetRenderFenceTimerHandle()))
@@ -90,7 +89,7 @@ void ABlockMapManager::CheckInitialWorldGenerationComplete()
 		}
 	}
 
-	// 2. 서브시스템에 아직 처리되지 않은 Actor 스폰 큐가 있는지 확인
+	// 서브시스템에 아직 처리되지 않은 Actor 스폰 큐가 있는지 확인 (Actor)
 	UBlockManagerSubsystem* Subsystem = GetWorld()->GetSubsystem<UBlockManagerSubsystem>();
 	bool bIsActorsSpawning = Subsystem && !Subsystem->IsSpawnQueueEmpty();
 
@@ -100,7 +99,7 @@ void ABlockMapManager::CheckInitialWorldGenerationComplete()
 		// 감시 타이머 종료
 		GetWorld()->GetTimerManager().ClearTimer(InitialWorldGenTimerHandle);
 
-		// 3. 해제 로직 수정: delete로 락 해제 및 메모리 정리
+		// NavMesh Lock 해제
 		if (NavUpdateLock)
 		{
 			delete NavUpdateLock;
@@ -109,7 +108,7 @@ void ABlockMapManager::CheckInitialWorldGenerationComplete()
 
 		if (UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld()))
 		{
-			NavSys->Build(); // 플레이어의 NavInvoker 반경 내에만 NavMesh가 예쁘게 깔립니다.
+			NavSys->Build();
 			UE_LOG(LogTemp, Log, TEXT("WorldMapManager: World Generation Complete. NavMesh Successfully Built."));
 		}
 	}
