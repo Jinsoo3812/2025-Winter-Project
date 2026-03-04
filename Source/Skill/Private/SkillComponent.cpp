@@ -13,6 +13,7 @@ USkillComponent::USkillComponent()
 
 void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	// 직접 만든 구조체인 SkillSlots 또한 네트워크 동기화 등록
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(USkillComponent, SkillSlots);
 }

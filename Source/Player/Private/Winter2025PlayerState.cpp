@@ -11,6 +11,9 @@ AWinter2025PlayerState::AWinter2025PlayerState()
 	// ASC 설정
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystemComponent"));
 	AbilitySystemComponent->SetIsReplicated(true);
+
+	// Local Player에게는 GAS의 모든 정보를 동기화
+	// Other Player에게는 최소한의 정보(AttributeSet)만 동기화
 	AbilitySystemComponent->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 
 	// AttributeSet
