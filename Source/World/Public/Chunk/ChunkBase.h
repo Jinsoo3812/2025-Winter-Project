@@ -5,14 +5,69 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "RenderCommandFence.h"
 #include "BlockCommonTypes.h"
+#include "Net/Serialization/FastArraySerializer.h"
 #include "ChunkBase.generated.h"
 
 class UBlockConfig;
 class UDA_BlockConfig;
 
+// 개별 블록의 변경점을 FastArraySerializer로 보내기 위한 구조체
+USTRUCT()
+struct WORLD_API FBlockNetworkItem : public FFastArraySerializerItem
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int32 BlockIndex = -1; // 변경된 블록의 1D 인덱스
+
+	UPROPERTY()
+	EBlockType BlockType = EBlockType::None; // 새롭게 변경된 블록 타입
+
+	UPROPERTY()
+	bool bIsActorSpawned = false; // Actor 소환 여부
+
+	FBlockNetworkItem() {}
+	FBlockNetworkItem(int32 InIndex, EBlockType InType, bool bInIsActor)
+		: BlockIndex(InIndex), BlockType(InType), bIsActorSpawned(bInIsActor) {
+	}
+
+	// 클라이언트에서 데이터가 추가/변경/삭제될 때 엔진이 자동으로 호출하는 콜백 함수들
+	void PreReplicatedRemove(const struct FBlockNetworkArray& Serializer);
+	void PostReplicatedAdd(const struct FBlockNetworkArray& Serializer);
+	void PostReplicatedChange(const struct FBlockNetworkArray& Serializer);
+};
+
+// 변경된 아이템들을 관리하고 네트워크로 쏴주는 배열 구조체
+USTRUCT()
+struct WORLD_API FBlockNetworkArray : public FFastArraySerializer
+{
+	GENERATED_BODY()
+
+	UPROPERTY()
+	TArray<FBlockNetworkItem> Items; // 실제로 네트워크를 탈 데이터들
+
+	// 이 데이터를 소유한 ChunkBase 포인터 (클라이언트에서 콜백 발생 시 시각 업데이트를 지시하기 위함)
+	// (NotReplicated: 포인터 자체는 네트워크로 보낼 필요가 없으므로 제외)
+	UPROPERTY(NotReplicated)
+	class AChunkBase* OwningChunk = nullptr;
+
+	// 델타(변경점) 직렬화를 수행하도록 엔진에 지시하는 핵심 함수 오버라이드
+	bool NetDeltaSerialize(FNetDeltaSerializeInfo& DeltaParms)
+	{
+		return FFastArraySerializer::FastArrayDeltaSerialize<FBlockNetworkItem, FBlockNetworkArray>(Items, DeltaParms, *this);
+	}
+};
+
+// FBlockNetworkArray가 커스텀 델타 직렬화를 사용함을 엔진 타입 시스템에 등록
+template<>
+struct TStructOpsTypeTraits<FBlockNetworkArray> : public TStructOpsTypeTraitsBase2<FBlockNetworkArray>
+{
+	enum { WithNetDeltaSerializer = true };
+};
+
 /*
 * 워커 스레드에서 안전하게 작업을 처리하기 위한 현재 청크 상태 스냅샷
-* 자신의 모든 BlockData, 6방향 이웃의 모든 BlockData 의 "복사본"
+* 자신의 모든 BlockData, 6방향 이웃의 모든 BlockData 의 복사본
 */
 struct FChunkSnapshot
 {
@@ -47,6 +102,18 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+
+	// -------------------------------------------------------------------------
+	// 네트워크 관리
+	// -------------------------------------------------------------------------
+public:
+	// 네트워크 레플리케이션 설정 함수
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+protected:
+	// 변경된 블록 데이터만 보관하고 동기화할 네트워크 배열
+	UPROPERTY(Replicated)
+	FBlockNetworkArray NetworkBlockData;
 
 	// -------------------------------------------------------------------------
 	// 청크가 갖는 데이터 관리

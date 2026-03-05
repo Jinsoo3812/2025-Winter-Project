@@ -9,6 +9,8 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "BlockGameplayTags.h"
 #include "NavigationSystem.h"
+#include "Net/UnrealNetwork.h"
+#include "BlockMapManager.h"
 
 AChunkBase::AChunkBase()
 {
@@ -22,16 +24,96 @@ AChunkBase::AChunkBase()
 	// 이중 버퍼 확보
 	HISM_Buffers.AddDefaulted(2);
 	CurrentBufferIndex = 0;
+
+	// 청크를 네트워크 동기화
+	bReplicates = true;
+	bAlwaysRelevant = true;
+
+	// 콜백을 위해 NerworkBlockData에 본인 저장
+	NetworkBlockData.OwningChunk = this;
 }
 
 void AChunkBase::BeginPlay()
 {
 	Super::BeginPlay();
 
+	UBlockManagerSubsystem* Subsystem = GetWorld()->GetSubsystem<UBlockManagerSubsystem>();
+
+	if (!CachedBlockConfig && Subsystem)
+	{
+		CachedBlockConfig = Subsystem->GetBlockConfig();
+	}
+
 	if(CachedBlockConfig)
 	{
 		GridSize = CachedBlockConfig->GridSize;
 	}
+
+	// 메모리 미리 할당
+	if (BlockDataArray.Num() == 0)
+	{
+		InitializeChunkSize(ChunkSizeX, ChunkSizeY, ChunkSizeZ);
+	}
+
+	if (!HasAuthority())
+	{
+		// 임시 하드코딩 (나중에 Config나 서버 시드(Seed)로 빼야 함)
+		// 서버는 MapManager가 스폰 시켜주지만, 클라이언트는 자립해야 합니다.
+		if (CachedBlockConfig)
+		{
+			for (const FBlockDefinition& Def : CachedBlockConfig->BlockDefinitions)
+			{
+				if (Def.Mesh)
+				{
+					RegisterBlockMesh(Def.Type, Def.Mesh);
+				}
+			}
+		}
+
+		int32 FloorHeight = 3;
+		EBlockType FloorBlockType = EBlockType::Terrain;
+
+		// 클라이언트 스스로 바닥 배열 채우기
+		for (int32 x = 0; x < ChunkSizeX; x++)
+		{
+			for (int32 y = 0; y < ChunkSizeY; y++)
+			{
+				for (int32 z = 0; z < ChunkSizeZ; z++)
+				{
+					if (z < FloorHeight)
+					{
+						SetBlockType(x, y, z, FloorBlockType);
+					}
+				}
+			}
+		}
+
+		// 바닥을 다 채웠으니 스스로 렌더링 시작
+		UpdateChunkVisuals();
+	}
+
+	// 클라이언트(Authority 없음)인 경우, 서브시스템을 통해 MapManager에게 도착을 신고
+	if (!HasAuthority() && Subsystem)
+	{
+		if (ABlockMapManager* Manager = Subsystem->GetMapManager())
+		{
+			Manager->RegisterClientChunk(this);
+		}
+		else
+		{
+			// (참고) 언리얼 네트워크 특성 상 청크가 MapManager보다 먼저 클라이언트에 도착할 수도 있습니다.
+			// 만약 이 로그가 뜬다면, 도착 타이밍 조율(Delay 혹은 타이머)이 추가로 필요할 수 있습니다.
+			UE_LOG(LogTemp, Warning, TEXT("ChunkBase: MapManager not found on client during BeginPlay!"));
+		}
+	}
+}
+
+void AChunkBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// NetworkBlockData를 네트워크 동기화 목록에 추가
+	DOREPLIFETIME(AChunkBase, NetworkBlockData);
 }
 
 void AChunkBase::InitializeChunkSize(int32 InSizeX, int32 InSizeY, int32 InSizeZ)
@@ -40,7 +122,7 @@ void AChunkBase::InitializeChunkSize(int32 InSizeX, int32 InSizeY, int32 InSizeZ
 	ChunkSizeY = InSizeY;
 	ChunkSizeZ = InSizeZ;
 
-	// 배열 메모를 미리 할당하여 최적화
+	// 배열 메모리를 미리 할당하여 최적화
 	int32 TotalBlocks = ChunkSizeX * ChunkSizeY * ChunkSizeZ;
 	BlockDataArray.Init(FBlockData{ EBlockType::None }, TotalBlocks);
 }
@@ -115,12 +197,13 @@ void AChunkBase::RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh)
 				NewHISM->SetStaticMesh(Mesh);
 				NewHISM->SetCollisionProfileName(TEXT("Block"));
 				NewHISM->bCastDynamicShadow = true;
+				NewHISM->SetIsReplicated(false);
 
 				// CPD 사용을 위한 CPD 슬롯 설정(넉넉하게)
 				NewHISM->NumCustomDataFloats = 8;
 				
 				// Movable로 설정하여 NavMesh가 동적 변경에도 대응할 수 있도록
-				NewHISM->SetMobility(EComponentMobility::Movable);
+				NewHISM->SetMobility(EComponentMobility::Stationary);
 
 				// Physical Material 가져오기
 				UPhysicalMaterial* StickyPhysMat = nullptr;
@@ -562,6 +645,31 @@ void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, boo
 	{
 		BlockDataArray[Index].Type = NewType;
 		BlockDataArray[Index].bIsActorSpawned = bIsActor;
+
+		if (HasAuthority())
+		{
+			// 혹시 이전에 이미 한 번 부서지거나 변경되어서 네트워크 배열에 등록되어 있는지 검색
+			FBlockNetworkItem* FoundItem = NetworkBlockData.Items.FindByPredicate([Index](const FBlockNetworkItem& Item) {
+				return Item.BlockIndex == Index;
+				});
+
+			if (FoundItem)
+			{
+				// 이미 이력이 있다면 값만 업데이트하고 클라이언트에 전송
+				FoundItem->BlockType = NewType;
+				FoundItem->bIsActorSpawned = bIsActor;
+				NetworkBlockData.MarkItemDirty(*FoundItem);
+			}
+			else
+			{
+				// 이번 게임에서 처음 변하는 블록이라면 새로 구조체를 만들어 배열에 추가
+				FBlockNetworkItem NewItem(Index, NewType, bIsActor);
+				int32 ArrayIndex = NetworkBlockData.Items.Add(NewItem);
+
+				// 방금 추가한 이 녀석을 클라이언트로 전송
+				NetworkBlockData.MarkItemDirty(NetworkBlockData.Items[ArrayIndex]);
+			}
+		}
 	}
 }
 
@@ -682,5 +790,48 @@ void AChunkBase::CheckRenderFence(int32 OldBufferIndex)
 	else
 	{
 		// 아직 렌더링 명령 처리중. 다음 타이머 틱에서 다시 검사
+	}
+}
+
+void FBlockNetworkItem::PreReplicatedRemove(const struct FBlockNetworkArray& Serializer)
+{
+	// 아이템이 삭제될 때의 로직 (보통 복셀에서는 '삭제'보단 'Air 블록으로 변경'을 쓰므로 비워둬도 무방)
+}
+
+void FBlockNetworkItem::PostReplicatedAdd(const struct FBlockNetworkArray& Serializer)
+{
+	// 서버로부터 '새로운 블록 변경점'이 도착했을 때 클라이언트에서 실행됨
+	if (Serializer.OwningChunk)
+	{
+		if (!Serializer.OwningChunk->BlockDataArray.IsValidIndex(BlockIndex))
+		{
+			UE_LOG(LogTemp, Error, TEXT("PostReplicatedAdd: Invalid BlockIndex %d. Ignoring."), BlockIndex);
+			return;
+		}
+
+		// 1. 클라이언트의 실제 데이터(BlockDataArray) 수정
+		Serializer.OwningChunk->BlockDataArray[BlockIndex].Type = BlockType;
+		Serializer.OwningChunk->BlockDataArray[BlockIndex].bIsActorSpawned = bIsActorSpawned;
+
+		// 2. 비주얼 업데이트 (비동기 HISM 재생성 트리거)
+		Serializer.OwningChunk->UpdateChunkVisuals();
+	}
+}
+
+void FBlockNetworkItem::PostReplicatedChange(const struct FBlockNetworkArray& Serializer)
+{
+	// 이미 있던 변경점이 '또 다른 타입'으로 변경되었을 때
+	if (Serializer.OwningChunk)
+	{
+		if (!Serializer.OwningChunk->BlockDataArray.IsValidIndex(BlockIndex))
+		{
+			UE_LOG(LogTemp, Error, TEXT("PostReplicatedChange: Invalid BlockIndex %d. Ignoring."), BlockIndex);
+			return;
+		}
+
+		Serializer.OwningChunk->BlockDataArray[BlockIndex].Type = BlockType;
+		Serializer.OwningChunk->BlockDataArray[BlockIndex].bIsActorSpawned = bIsActorSpawned;
+
+		Serializer.OwningChunk->UpdateChunkVisuals();
 	}
 }

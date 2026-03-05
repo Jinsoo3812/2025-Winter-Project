@@ -118,8 +118,15 @@ public:
 	// ---------------------------------------------------------
 	// 참조 캐싱
 	// ---------------------------------------------------------
+public:
+	// BlockConfig Getter
+	UBlockConfig* GetBlockConfig() const { return CachedBlockConfig; }
+
+	// BlockMapManager Getter
+	ABlockMapManager* GetMapManager() const { return MapManager; }
+
 protected:
-	// 청크를 찾기 위한 매니저 참조
+	// BlockMapmanager 캐시 (청크 관리자)
 	UPROPERTY(Transient)
 	ABlockMapManager* MapManager = nullptr;
 

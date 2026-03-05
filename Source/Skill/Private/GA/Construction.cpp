@@ -64,10 +64,19 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 
 		FBlockSpawnRequest Request(BlockTagToSpawn, SpawnLoc, true);
 
-		// const 인자가 아니라서 어쩔 수 없이 TArray로 감싸서 넘김
-		TArray<FBlockSpawnRequest> Requests;
-		Requests.Add(Request);
-		BlockSystem->SpawnBlocksBatch(Requests);
+		// 서버(Authority) 권한 확인 후 스폰 요청
+		// 블록 스폰은 GAS의 내장 기능이 아닌 자체적인 시스템이므로 GAS의 네트워크 관리를 받을 수 없음
+		if (CurrentActorInfo->IsNetAuthority())
+		{
+			// 서버일 때만 서브시스템에 블록 소환을 요청
+			TArray<FBlockSpawnRequest> Requests;
+			Requests.Add(Request);
+			BlockSystem->SpawnBlocksBatch(Requests);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Log, TEXT("Construction: Client requested spawn. Waiting for Server..."));
+		}
 	}
 	else
 	{

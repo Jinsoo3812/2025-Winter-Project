@@ -30,6 +30,7 @@ void ABlockMapManager::BeginPlay()
 		if (UBlockManagerSubsystem* Subsystem = World->GetSubsystem<UBlockManagerSubsystem>())
 		{
 			Subsystem->RegisterMapManager(this);
+			BlockConfig = Subsystem->GetBlockConfig();
 		}
 	}
 
@@ -39,9 +40,15 @@ void ABlockMapManager::BeginPlay()
 
 void ABlockMapManager::GenerateWorld()
 {
+	if (!HasAuthority())
+	{
+		UE_LOG(LogTemp, Log, TEXT("BlockMapManager: Client skipped GenerateWorld. Waiting for chunks..."));
+		return;
+	}
+
 	if (!BlockConfig)
 	{
-		UE_LOG(LogTemp, Error, TEXT("WorldMapManager: BlockConfig is missing!"));
+		UE_LOG(LogTemp, Error, TEXT("BlockMapManager: BlockConfig is missing!"));
 		return;
 	}
 
@@ -145,7 +152,6 @@ void ABlockMapManager::SpawnChunks()
 			{
 				// 청크 초기화
 				NewChunk->SetBlockConfig(BlockConfig);
-				NewChunk->InitializeChunkSize(ChunkSizeX, ChunkSizeY, ChunkSizeZ);
 
 				for (const FBlockDefinition& Def : BlockConfig->BlockDefinitions)
 				{
@@ -263,5 +269,39 @@ void ABlockMapManager::LinkChunkNeighbors()
 		// (선택사항) Z축(Up/Down)은 현재 2D 그리드 맵이므로 생략하거나 
 		// 3D ChunkMap을 쓴다면 여기서 연결
 	}
+}
+
+void ABlockMapManager::RegisterClientChunk(AChunkBase* NewChunk)
+{
+	if (!NewChunk) return;
+
+	// 1. 청크의 월드 위치를 기반으로 2D 그리드 좌표(X, Y) 계산
+	float ChunkWorldSizeX = ChunkSizeX * GridSize;
+	float ChunkWorldSizeY = ChunkSizeY * GridSize;
+
+	int32 ChunkX = FMath::RoundToInt(NewChunk->GetActorLocation().X / ChunkWorldSizeX);
+	int32 ChunkY = FMath::RoundToInt(NewChunk->GetActorLocation().Y / ChunkWorldSizeY);
+	FIntPoint ChunkCoord(ChunkX, ChunkY);
+
+	// 2. Map에 등록
+	ChunkMap.Add(ChunkCoord, NewChunk);
+
+	// 3. (핵심) 클라이언트 측 이웃 연결 (최적화를 위해 새로 들어온 녀석의 4방향만 체크)
+	FIntPoint Directions[4] = { FIntPoint(1, 0), FIntPoint(-1, 0), FIntPoint(0, 1), FIntPoint(0, -1) };
+	EBlockNeighbor NeighborEnums[4] = { EBlockNeighbor::Front, EBlockNeighbor::Back, EBlockNeighbor::Right, EBlockNeighbor::Left };
+	EBlockNeighbor OppositeEnums[4] = { EBlockNeighbor::Back, EBlockNeighbor::Front, EBlockNeighbor::Left, EBlockNeighbor::Right };
+
+	for (int32 i = 0; i < 4; i++)
+	{
+		if (AChunkBase** FoundNeighbor = ChunkMap.Find(ChunkCoord + Directions[i]))
+		{ 
+			// 나에게 이웃을 등록
+			NewChunk->SetNeighbor(NeighborEnums[i], *FoundNeighbor);
+			// 이웃에게 나를 등록 (쌍방 통행)
+			(*FoundNeighbor)->SetNeighbor(OppositeEnums[i], NewChunk);
+		}
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("WorldMapManager: Client Chunk registered at (%d, %d)"), ChunkX, ChunkY);
 }
 
