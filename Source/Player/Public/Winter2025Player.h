@@ -46,10 +46,18 @@ protected:
 	TObjectPtr<UAbilitySystemComponent> CachedASC;
 
 	// ------------------
+	// 네트워크 동기화
+	// ------------------
+public:
+	// 애니메이션 블루프린트에서 가속도 대신 호출할 스레드 세이프 함수
+	UFUNCTION(BlueprintPure, Category = "Movement|Animation", meta = (BlueprintThreadSafe))
+	FVector GetProxySafeAcceleration() const;
+
+	// ------------------
 	// 입력 바인딩 처리 관련
 	// IMC로 물리 키와 InputAction 매핑
 	// ------------------
-
+protected:
 	// 이동/점프 전용 (WASD, Space) - Priority 0
 	UPROPERTY(EditDefaultsOnly, Category = "Input")
 	TObjectPtr<UInputMappingContext> BasicMappingContext;
