@@ -75,8 +75,14 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 		}
 		else
 		{
-			UE_LOG(LogTemp, Log, TEXT("Construction: Client requested spawn. Waiting for Server..."));
+			// 블록 소환 서버 RPC를 호출
+			if (SkillComp)
+			{
+				SkillComp->ServerRequestBlockSpawn(BlockTagToSpawn, SpawnLoc);
+			}
 		}
+
+		CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 	}
 	else
 	{

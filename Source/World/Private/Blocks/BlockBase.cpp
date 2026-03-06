@@ -39,6 +39,9 @@ ABlockBase::ABlockBase()
 
 	// AttributeSet 생성
 	AttributeSet = CreateDefaultSubobject<UBlockAttributeSet>(TEXT("BlockAttributeSet"));
+
+	// 네트워크 Replication 설정
+	bReplicates = true;
 }
 
 void ABlockBase::InitializeBlock(const UBlockSpawnPayload* InPayload)

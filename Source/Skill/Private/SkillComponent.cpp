@@ -3,6 +3,7 @@
 #include "Abilities/GameplayAbility.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemBlueprintLibrary.h"
+#include "BlockSystemInterface.h"
 
 USkillComponent::USkillComponent()
 {
@@ -35,6 +36,17 @@ void USkillComponent::BeginPlay()
 	{
 		// 이 오류 로그 터진거면 PlayerState의 OnPossessed/OnRep_PlayerState에서 따로 호출해줘야 함.
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Cannot find ASC in Owner Actor %s"), *Owner->GetName());
+	}
+
+	// BlockSystemInterface 캐싱
+	if (!BlockSystem) {
+		if (UWorld* World = GetWorld())
+		{
+			BlockSystem = IBlockSystemInterface::Get(World);
+		}
+		else {
+			UE_LOG(LogTemp, Error, TEXT("SkillComponent: World is null in ActivateAbility"));
+		}
 	}
 }
 
@@ -212,4 +224,27 @@ int32 USkillComponent::GetTotalRuneCount(FGameplayTag SlotTag, ERuneType Type) c
 	}
 
 	return RuneCount;
+}
+
+bool USkillComponent::ServerRequestBlockSpawn_Validate(FGameplayTag BlockTag, FVector SpawnLocation)
+{
+	return BlockTag.IsValid();
+}
+
+void USkillComponent::ServerRequestBlockSpawn_Implementation(FGameplayTag BlockTag, FVector SpawnLocation)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (BlockSystem)
+		{
+			FBlockSpawnRequest Request(BlockTag, SpawnLocation, true);
+			TArray<FBlockSpawnRequest> Requests;
+			Requests.Add(Request);
+
+			BlockSystem->SpawnBlocksBatch(Requests);
+
+			// 이 로그가 찍히면 진짜 서버가 응답한 것입니다!
+			UE_LOG(LogTemp, Warning, TEXT("SkillComponent: TRUE Server processed block spawn request from Client."));
+		}
+	}
 }

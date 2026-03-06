@@ -10,6 +10,7 @@
 class UGameplayAbility;
 class UAbilitySystemComponent;
 class UDA_Rune;
+class IBlockSystemInterface;
 
 // 스킬 슬롯 구조체
 USTRUCT(BlueprintType)
@@ -112,4 +113,18 @@ protected:
 	// 룬 개수에 따른 배율을 정의한 테이블 (X축: 개수, Y축: 배율)
 	UPROPERTY(EditDefaultsOnly, Category = "Rune|Config")
 	TObjectPtr<UCurveTable> RuneCurveTable;
+	
+	// ---------------------------------------------------------------
+	// 네트워크
+	// ---------------------------------------------------------------
+public:
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerRequestBlockSpawn(FGameplayTag BlockTag, FVector SpawnLocation);
+
+	// ---------------------------------------------------------------
+	// 캐싱
+	// ---------------------------------------------------------------
+protected:
+	// BlockManagerSubsystem 캐싱
+	IBlockSystemInterface* BlockSystem;
 };
