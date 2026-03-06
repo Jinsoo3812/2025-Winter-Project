@@ -60,7 +60,7 @@ void ABlockMapManager::GenerateWorld()
 		NavUpdateLock = new FNavigationLockContext();
 	}
 
-	// 청크 액터 스폰 (빈 껍데기)
+	// 청크 액터 스폰
 	SpawnChunks();
 
 	// 청크 간 이웃 설정
@@ -150,18 +150,7 @@ void ABlockMapManager::SpawnChunks()
 
 			if (NewChunk)
 			{
-				// 청크 초기화
-				NewChunk->SetBlockConfig(BlockConfig);
-
-				for (const FBlockDefinition& Def : BlockConfig->BlockDefinitions)
-				{
-					if (Def.Mesh)
-					{
-						NewChunk->RegisterBlockMesh(Def.Type, Def.Mesh);
-					}
-				}
-
-				// 맵에 등록
+				NewChunk->SetupHISMComponents();
 				ChunkMap.Add(FIntPoint(x, y), NewChunk);
 
 // 에디터 빌드일 때만 포함하는 매크로
@@ -181,31 +170,13 @@ void ABlockMapManager::GenerateBasicTerrain()
 	for (auto& Pair : ChunkMap)
 	{
 		AChunkBase* Chunk = Pair.Value;
-		if (!Chunk) {
-			UE_LOG(LogTemp, Warning, TEXT("WorldMapManager: Null chunk found in ChunkMap!"));
-			return;
-		}
-		
-		// 청크 내부의 모든 블록을 순회.
-		// 단순 연산이므로 큰 오버헤드가 아니지만, 순간적으로 몇 청크씩 생성하는 경우 프레임 드랍이 있을 수 있음.
-		
-		for (int32 x = 0; x < ChunkSizeX; x++)
+		if (Chunk)
 		{
-			for (int32 y = 0; y < ChunkSizeY; y++)
-			{
-				// FloorHeight 칸까지는 Terrain, 그 위는 공기
-				for (int32 z = 0; z < ChunkSizeZ; z++)
-				{
-					if (z < FloorHeight)
-					{
-						Chunk->SetBlockType(x, y, z, FloorBlockType);
-					}
-					else
-					{
-						Chunk->SetBlockType(x, y, z, EBlockType::None);
-					}
-				}
-			}
+			Chunk->GenerateInitialTerrain();
+		}
+		else
+		{
+			UE_LOG(LogTemp, Warning, TEXT("WorldMapManager: Null chunk found in ChunkMap!"));
 		}
 	}
 }

@@ -97,11 +97,17 @@ class WORLD_API AChunkBase : public AActor
 public:	
 	AChunkBase();
 
-	// 블록 타입 별 HISM에 메시를 등록하는 함수
-	void RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh);
+	// Config를 기반으로 HISM 컴포넌트들을 셋업하는 함수
+	void SetupHISMComponents();
+
+	// 결정론적 맵 생성을 위한 초기 지형 데이터 할당 함수
+	void GenerateInitialTerrain();
 
 protected:
 	virtual void BeginPlay() override;
+
+	// 블록 타입 별 HISM에 메시를 등록하는 함수
+	void RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh);
 
 	// -------------------------------------------------------------------------
 	// 네트워크 관리

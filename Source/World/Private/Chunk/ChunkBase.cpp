@@ -49,50 +49,21 @@ void AChunkBase::BeginPlay()
 		GridSize = CachedBlockConfig->GridSize;
 	}
 
-	// 메모리 미리 할당
+	// BlockDataArray 메모리 미리 할당
 	if (BlockDataArray.Num() == 0)
 	{
 		InitializeChunkSize(ChunkSizeX, ChunkSizeY, ChunkSizeZ);
 	}
 
+	// 클라이언트는 스스로 청크 초기화
 	if (!HasAuthority())
 	{
-		// 임시 하드코딩 (나중에 Config나 서버 시드(Seed)로 빼야 함)
-		// 서버는 MapManager가 스폰 시켜주지만, 클라이언트는 자립해야 합니다.
-		if (CachedBlockConfig)
-		{
-			for (const FBlockDefinition& Def : CachedBlockConfig->BlockDefinitions)
-			{
-				if (Def.Mesh)
-				{
-					RegisterBlockMesh(Def.Type, Def.Mesh);
-				}
-			}
-		}
-
-		int32 FloorHeight = 3;
-		EBlockType FloorBlockType = EBlockType::Terrain;
-
-		// 클라이언트 스스로 바닥 배열 채우기
-		for (int32 x = 0; x < ChunkSizeX; x++)
-		{
-			for (int32 y = 0; y < ChunkSizeY; y++)
-			{
-				for (int32 z = 0; z < ChunkSizeZ; z++)
-				{
-					if (z < FloorHeight)
-					{
-						SetBlockType(x, y, z, FloorBlockType);
-					}
-				}
-			}
-		}
-
-		// 바닥을 다 채웠으니 스스로 렌더링 시작
+		SetupHISMComponents();
+		GenerateInitialTerrain();
 		UpdateChunkVisuals();
 	}
 
-	// 클라이언트(Authority 없음)인 경우, 서브시스템을 통해 MapManager에게 도착을 신고
+	// 서브시스템을 통해 MapManager에게 도착을 신고
 	if (!HasAuthority() && Subsystem)
 	{
 		if (ABlockMapManager* Manager = Subsystem->GetMapManager())
@@ -101,9 +72,47 @@ void AChunkBase::BeginPlay()
 		}
 		else
 		{
-			// (참고) 언리얼 네트워크 특성 상 청크가 MapManager보다 먼저 클라이언트에 도착할 수도 있습니다.
+			// 언리얼 네트워크 특성 상 청크가 MapManager보다 먼저 클라이언트에 도착할 수도 있습니다.
 			// 만약 이 로그가 뜬다면, 도착 타이밍 조율(Delay 혹은 타이머)이 추가로 필요할 수 있습니다.
 			UE_LOG(LogTemp, Warning, TEXT("ChunkBase: MapManager not found on client during BeginPlay!"));
+		}
+	}
+}
+
+void AChunkBase::SetupHISMComponents()
+{
+	if (!CachedBlockConfig) return;
+
+	for (const FBlockDefinition& Def : CachedBlockConfig->BlockDefinitions)
+	{
+		if (Def.Mesh)
+		{
+			RegisterBlockMesh(Def.Type, Def.Mesh);
+		}
+	}
+}
+
+void AChunkBase::GenerateInitialTerrain()
+{
+	// 임시 하드코딩 (추후 매니저가 넘겨준 Seed나 Noise 값으로 대체될 부분)
+	int32 FloorHeight = 3;
+	EBlockType FloorBlockType = EBlockType::Terrain;
+
+	for (int32 x = 0; x < ChunkSizeX; x++)
+	{
+		for (int32 y = 0; y < ChunkSizeY; y++)
+		{
+			for (int32 z = 0; z < ChunkSizeZ; z++)
+			{
+				if (z < FloorHeight)
+				{
+					SetBlockType(x, y, z, FloorBlockType);
+				}
+				// ---------------------------------------------------------
+				// 주의: 클라이언트는 빈 배열에서 시작하므로 else 처리는 필요 없습니다. 
+				// (InitializeChunkSize에서 이미 None으로 초기화됨)
+				// ---------------------------------------------------------
+			}
 		}
 	}
 }
