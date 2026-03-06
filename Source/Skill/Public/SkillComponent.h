@@ -118,6 +118,11 @@ protected:
 	// 네트워크
 	// ---------------------------------------------------------------
 public:
+	// 클라이언트의 로컬 스킬 이벤트(클릭 등)를 서버의 ASC로 전달하는 RPC
+	UFUNCTION(Server, Reliable, WithValidation)
+	void ServerSendSkillEvent(FGameplayTag EventTag);
+
+	// 클라이언트의 블록 소환 요청을 서버로 전달하는 RPC
 	UFUNCTION(Server, Reliable, WithValidation)
 	void ServerRequestBlockSpawn(FGameplayTag BlockTag, FVector SpawnLocation);
 

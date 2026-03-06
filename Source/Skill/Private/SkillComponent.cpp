@@ -226,6 +226,25 @@ int32 USkillComponent::GetTotalRuneCount(FGameplayTag SlotTag, ERuneType Type) c
 	return RuneCount;
 }
 
+bool USkillComponent::ServerSendSkillEvent_Validate(FGameplayTag EventTag)
+{
+	return EventTag.IsValid();
+}
+
+void USkillComponent::ServerSendSkillEvent_Implementation(FGameplayTag EventTag)
+{
+	if (AActor* Owner = GetOwner())
+	{
+		// 서버에서 클라이언트의 아바타(Owner)를 찾은 뒤, 
+		// 서버 측 ASC에 동일한 이벤트를 강제로 발생시킵니다.
+		FGameplayEventData Payload;
+		Payload.EventTag = EventTag;
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Owner, EventTag, Payload);
+
+		UE_LOG(LogTemp, Log, TEXT("SkillComponent: Relayed Event [%s] to Server."), *EventTag.ToString());
+	}
+}
+
 bool USkillComponent::ServerRequestBlockSpawn_Validate(FGameplayTag BlockTag, FVector SpawnLocation)
 {
 	return BlockTag.IsValid();

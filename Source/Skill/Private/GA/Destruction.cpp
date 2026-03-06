@@ -73,6 +73,21 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
         return;
     }
 
+    // 클라일 경우 서버의 ASC에게 클릭 이벤트를 RPC로 전달
+    if (!Avatar->HasAuthority())
+    {
+        if (SkillComp)
+        {
+            // 서버 RPC: 클릭
+            SkillComp->ServerSendSkillEvent(Tag_Event_Confirm);
+        }
+
+        // 클라이언트 측 예측(Prediction)을 위해 쿨타임만 즉시 돌리고 스킬 종료
+        CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+        return;
+    }
+
     // 데미지 룬 배율 계산
     float RuneDamageMultiplier = 1.0f;
     if (SkillComp && GetCurrentAbilitySpec())
