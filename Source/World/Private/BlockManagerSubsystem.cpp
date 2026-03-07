@@ -239,7 +239,7 @@ AActor* UBlockManagerSubsystem::SpawnBlockByTag(
 	}
 }
 
-void UBlockManagerSubsystem::SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
+void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests,
 	const FOnBlockBatchSpawnComplete& OnComplete, const UBlockSpawnPayload* InPayload)
 {
 	if (!MapManager)
@@ -260,7 +260,7 @@ void UBlockManagerSubsystem::SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Reques
 	// Key: 청크 포인터, Value: 해당 청크에 속한 요청들
 	TMap<AChunkBase*, TArray<FBlockSpawnRequest>> ChunkRequestMap;
 
-	for (FBlockSpawnRequest& Req : Requests)
+	for (FBlockSpawnRequest Req : Requests)
 	{
 		// 청크별 데이터 업데이트를 위한 매핑
 		if (AChunkBase* Chunk = MapManager->GetChunkAtLocation(Req.WorldLocation))

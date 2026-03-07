@@ -63,23 +63,13 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 		FVector SpawnLoc = TargetLoc + FVector(0, 0, BlockSystem->GetGridSize());
 
 		FBlockSpawnRequest Request(BlockTagToSpawn, SpawnLoc, true);
+		TArray<FBlockSpawnRequest> Requests;
+		Requests.Add(Request);
 
-		// 서버(Authority) 권한 확인 후 스폰 요청
-		// 블록 스폰은 GAS의 내장 기능이 아닌 자체적인 시스템이므로 GAS의 네트워크 관리를 받을 수 없음
-		if (CurrentActorInfo->IsNetAuthority())
+		if (SkillComp)
 		{
-			// 서버일 때만 서브시스템에 블록 소환을 요청
-			TArray<FBlockSpawnRequest> Requests;
-			Requests.Add(Request);
-			BlockSystem->SpawnBlocksBatch(Requests);
-		}
-		else
-		{
-			// 블록 소환 서버 RPC를 호출
-			if (SkillComp)
-			{
-				SkillComp->ServerRequestBlockSpawn(BlockTagToSpawn, SpawnLoc);
-			}
+			// 알아서 서버/클라이언트 분기 처리
+			SkillComp->RequestSpawnBlocks(Requests);
 		}
 
 		CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);

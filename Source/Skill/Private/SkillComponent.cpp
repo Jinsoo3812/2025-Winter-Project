@@ -3,7 +3,6 @@
 #include "Abilities/GameplayAbility.h"
 #include "Net/UnrealNetwork.h"
 #include "AbilitySystemBlueprintLibrary.h"
-#include "BlockSystemInterface.h"
 
 USkillComponent::USkillComponent()
 {
@@ -245,25 +244,36 @@ void USkillComponent::ServerSendSkillEvent_Implementation(FGameplayTag EventTag)
 	}
 }
 
-bool USkillComponent::ServerRequestBlockSpawn_Validate(FGameplayTag BlockTag, FVector SpawnLocation)
+void USkillComponent::RequestSpawnBlocks(const TArray<FBlockSpawnRequest>& Requests)
 {
-	return BlockTag.IsValid();
-}
+	if (Requests.IsEmpty()) return;
 
-void USkillComponent::ServerRequestBlockSpawn_Implementation(FGameplayTag BlockTag, FVector SpawnLocation)
-{
-	if (UWorld* World = GetWorld())
+	if (GetOwner()->HasAuthority())
 	{
+		// 서버 권한이 있으면 즉시 서브시스템에 요청
 		if (BlockSystem)
 		{
-			FBlockSpawnRequest Request(BlockTag, SpawnLocation, true);
-			TArray<FBlockSpawnRequest> Requests;
-			Requests.Add(Request);
-
 			BlockSystem->SpawnBlocksBatch(Requests);
-
-			// 이 로그가 찍히면 진짜 서버가 응답한 것입니다!
-			UE_LOG(LogTemp, Warning, TEXT("SkillComponent: TRUE Server processed block spawn request from Client."));
 		}
+	}
+	else
+	{
+		// 클라이언트면 서버 RPC 호출
+		ServerRequestBlockSpawn(Requests);
+	}
+}
+
+bool USkillComponent::ServerRequestBlockSpawn_Validate(const TArray<FBlockSpawnRequest>& Requests)
+{
+	return true;
+}
+
+void USkillComponent::ServerRequestBlockSpawn_Implementation(const TArray<FBlockSpawnRequest>& Requests)
+{
+	// 서버에서 일괄 소환 처리
+	if (BlockSystem)
+	{
+		BlockSystem->SpawnBlocksBatch(Requests);
+		UE_LOG(LogTemp, Log, TEXT("SkillComponent: Server processed batched block spawn request (%d blocks)."), Requests.Num());
 	}
 }

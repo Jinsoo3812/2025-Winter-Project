@@ -74,7 +74,7 @@ public:
 	FVector GetBlockLocation(const FBlockReference& Ref) override;
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
-	void SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
+	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests,
 		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete(),
 		const UBlockSpawnPayload* InPayload = nullptr) override;
 
