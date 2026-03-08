@@ -6,6 +6,7 @@
 #include "GameplayAbilitySpecHandle.h"
 #include "DA_Rune.h"
 #include "BlockSystemInterface.h"
+#include "Abilities/GameplayAbilityTargetTypes.h"
 #include "SkillComponent.generated.h"
 
 class UGameplayAbility;
@@ -123,7 +124,7 @@ public:
 
 	// 클라이언트의 로컬 스킬 이벤트(클릭 등)를 서버의 ASC(Skill GA)로 전달하는 RPC
 	UFUNCTION(Server, Reliable, WithValidation)
-	void ServerSendSkillEvent(FGameplayTag EventTag);
+	void ServerSendSkillEvent(FGameplayTag EventTag, FGameplayAbilityTargetDataHandle TargetData);
 
 protected:
 	// 클라이언트의 블록 소환 요청을 서버로 전달하는 RPC
