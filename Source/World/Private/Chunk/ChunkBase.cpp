@@ -33,6 +33,14 @@ AChunkBase::AChunkBase()
 	NetworkBlockData.OwningChunk = this;
 }
 
+void AChunkBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// NetworkBlockData를 네트워크 동기화 목록에 추가
+	DOREPLIFETIME(AChunkBase, NetworkBlockData);
+}
+
 void AChunkBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -108,21 +116,9 @@ void AChunkBase::GenerateInitialTerrain()
 				{
 					SetBlockType(x, y, z, FloorBlockType);
 				}
-				// ---------------------------------------------------------
-				// 주의: 클라이언트는 빈 배열에서 시작하므로 else 처리는 필요 없습니다. 
-				// (InitializeChunkSize에서 이미 None으로 초기화됨)
-				// ---------------------------------------------------------
 			}
 		}
 	}
-}
-
-void AChunkBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-
-	// NetworkBlockData를 네트워크 동기화 목록에 추가
-	DOREPLIFETIME(AChunkBase, NetworkBlockData);
 }
 
 void AChunkBase::InitializeChunkSize(int32 InSizeX, int32 InSizeY, int32 InSizeZ)
