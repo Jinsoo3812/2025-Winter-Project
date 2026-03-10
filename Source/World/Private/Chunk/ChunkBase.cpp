@@ -202,7 +202,7 @@ void AChunkBase::RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh)
 				NewHISM->SetStaticMesh(Mesh);
 				NewHISM->SetCollisionProfileName(TEXT("Block"));
 				NewHISM->bCastDynamicShadow = true;
-				NewHISM->SetIsReplicated(false);
+				NewHISM->SetIsReplicated(true);
 
 				// CPD 사용을 위한 CPD 슬롯 설정(넉넉하게)
 				NewHISM->NumCustomDataFloats = 8;

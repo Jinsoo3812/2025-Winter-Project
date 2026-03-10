@@ -10,6 +10,7 @@
 #include "ChunkBase.h"
 #include "AbilitySystemComponent.h"
 #include "BlockAttributeSet.h"
+#include "CollisionChannels.h"
 
 
 // Sets default values
@@ -42,6 +43,8 @@ ABlockBase::ABlockBase()
 
 	// 네트워크 Replication 설정
 	bReplicates = true;
+
+	SetReplicateMovement(true);
 }
 
 void ABlockBase::InitializeBlock(const UBlockSpawnPayload* InPayload)
@@ -293,7 +296,7 @@ void ABlockBase::NotifyUpperBlock()
 
 	// 위쪽에 블록이 있는지 검사.
 	bool bHit = GetWorld()->LineTraceSingleByChannel(
-		HitResult, Start, End, ECC_Visibility, Params
+		HitResult, Start, End, ECC_Block, Params
 	);
 
 	if (bHit && HitResult.GetActor())
@@ -376,7 +379,7 @@ void ABlockBase::HandleHighlight(FGameplayTag EventTag, const FGameplayEventData
 }
 
 void ABlockBase::SelfDestroy()
-{	
+{
 	// 죽기 전에 청크에게 내 자리 비워달라고 요청
 	if (ParentChunk.IsValid())
 	{
