@@ -653,26 +653,37 @@ void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, boo
 
 		if (HasAuthority())
 		{
-			// 혹시 이전에 이미 한 번 부서지거나 변경되어서 네트워크 배열에 등록되어 있는지 검색
-			FBlockNetworkItem* FoundItem = NetworkBlockData.Items.FindByPredicate([Index](const FBlockNetworkItem& Item) {
-				return Item.BlockIndex == Index;
-				});
-
-			if (FoundItem)
+			// TMap 해시 탐색(O(1)) 적용
+			if (int32* FoundArrayIndex = NetworkItemIndexMap.Find(Index))
 			{
-				// 이미 이력이 있다면 값만 업데이트하고 클라이언트에 전송
-				FoundItem->BlockType = NewType;
-				FoundItem->bIsActorSpawned = bIsActor;
-				NetworkBlockData.MarkItemDirty(*FoundItem);
+				// TMap에 기록이 있다면, 해당 인덱스로 FAS 배열에 직접 접근하여 값 수정
+				if (NetworkBlockData.Items.IsValidIndex(*FoundArrayIndex))
+				{
+					FBlockNetworkItem& ItemToUpdate = NetworkBlockData.Items[*FoundArrayIndex];
+					ItemToUpdate.BlockType = NewType;
+					ItemToUpdate.bIsActorSpawned = bIsActor;
+
+					// 엔진에 변경되었음을 알림 (패킷 전송 예약)
+					NetworkBlockData.MarkItemDirty(ItemToUpdate);
+				}
+				else
+				{
+					UE_LOG(LogTemp, Error, TEXT("SetBlockData: NetworkItemIndexMap holds an invalid array index!"));
+				}
 			}
 			else
 			{
-				// 이번 게임에서 처음 변하는 블록이라면 새로 구조체를 만들어 배열에 추가
+				// 이번 게임에서 처음 변하는 블록이라면 구조체를 새로 생성
 				FBlockNetworkItem NewItem(Index, NewType, bIsActor);
-				int32 ArrayIndex = NetworkBlockData.Items.Add(NewItem);
 
-				// 방금 추가한 이 녀석을 클라이언트로 전송
-				NetworkBlockData.MarkItemDirty(NetworkBlockData.Items[ArrayIndex]);
+				// FAS 배열에 추가 후 할당된 인덱스 반환
+				int32 NewArrayIndex = NetworkBlockData.Items.Add(NewItem);
+
+				// 다음 번 탐색 시 O(1)로 찾을 수 있도록 TMap에 매핑 기록 저장
+				NetworkItemIndexMap.Add(Index, NewArrayIndex);
+
+				// 엔진에 새 아이템이 추가되었음을 알림
+				NetworkBlockData.MarkItemDirty(NetworkBlockData.Items[NewArrayIndex]);
 			}
 		}
 	}

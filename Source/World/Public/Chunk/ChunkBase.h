@@ -121,6 +121,10 @@ protected:
 	UPROPERTY(Replicated)
 	FBlockNetworkArray NetworkBlockData;
 
+	// NetworkBlockData와 BlockDataArray 간의 인덱스 매핑을 관리하는 맵
+	// NetworkBlockData에 이미 등록된 인덱스인지 확인하는 과정을 O(1)로 최적화
+	TMap<int32, int32> NetworkItemIndexMap;
+
 	// -------------------------------------------------------------------------
 	// 청크가 갖는 데이터 관리
 	// -------------------------------------------------------------------------
