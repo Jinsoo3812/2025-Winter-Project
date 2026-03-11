@@ -6,6 +6,7 @@
 #include "RenderCommandFence.h"
 #include "BlockCommonTypes.h"
 #include "Net/Serialization/FastArraySerializer.h"
+#include "Tasks/Task.h"
 #include "ChunkBase.generated.h"
 
 class UBlockConfig;
@@ -66,24 +67,43 @@ struct TStructOpsTypeTraits<FBlockNetworkArray> : public TStructOpsTypeTraitsBas
 };
 
 /*
-* 워커 스레드에서 안전하게 작업을 처리하기 위한 현재 청크 상태 스냅샷
-* 자신의 모든 BlockData, 6방향 이웃의 모든 BlockData 의 복사본
+* 이웃 청크의 경계면 데이터를 저장하기 위한 구조체
 */
-struct FChunkSnapshot
+struct FNeighborBoundaryData
 {
-	// 내 청크 데이터
-	TArray<FBlockData> MyData;
+	TArray<FBlockData> FaceData[4];
+	bool bIsValid[4] = { false, false, false, false };
+
 	int32 SizeX, SizeY, SizeZ;
 
-	// 6방향 이웃 청크들의 Blockdata 배열
-	// 이웃 청크의 BlockData는 '경계면'만 가져오는 것으로 더 최적화 가능
-	TMap<EBlockNeighbor, TArray<FBlockData>> NeighborDataMap;
+	void Init(int32 InSizeX, int32 InSizeY, int32 InSizeZ)
+	{
+		SizeX = InSizeX; SizeY = InSizeY; SizeZ = InSizeZ;
+	}
 
-	FChunkSnapshot(TArray<FBlockData> inMyData, int32 inSizeX, int32 inSizeY, int32 inSizeZ)
-		: MyData(inMyData), SizeX(inSizeX), SizeY(inSizeY), SizeZ(inSizeZ) {}
+	// 6면 검사 중 좌표가 내 범위를 벗어났을 때, 적절한 이웃 껍질에서 블록을 꺼내주는 함수
+	FBlockData GetNeighborBlockData(int32 NX, int32 NY, int32 NZ) const
+	{
+		// Z축 범위를 벗어나면 무조건 허공(None)
+		if (NZ < 0 || NZ >= SizeZ) return FBlockData{ EBlockType::None };
 
-	// 스냅샷 내부에서 좌표를 통해 블록을 조회하는 헬퍼 함수
-	FBlockData GetBlockData(int32 X, int32 Y, int32 Z) const;
+		EBlockNeighbor Dir;
+		int32 U;       // 2D 평면의 가로축 역할 (X축 면이면 Y, Y축 면이면 X)
+		int32 SizeU;   // 가로축의 최대 길이
+
+		if (NX < 0) { Dir = EBlockNeighbor::Back;  U = NY; SizeU = SizeY; }
+		else if (NX >= SizeX) { Dir = EBlockNeighbor::Front; U = NY; SizeU = SizeY; }
+		else if (NY < 0) { Dir = EBlockNeighbor::Left;  U = NX; SizeU = SizeX; }
+		else if (NY >= SizeY) { Dir = EBlockNeighbor::Right; U = NX; SizeU = SizeX; }
+		else return FBlockData{ EBlockType::None }; // 내부 좌표가 들어오면 무시
+
+		// 해당 방향의 이웃 껍질 데이터가 없으면 None
+		if (!bIsValid[(int32)Dir]) return FBlockData{ EBlockType::None };
+
+		// U(가로), NZ(세로)를 이용해 1D 배열 인덱스로 변환
+		int32 Index = U + (NZ * SizeU);
+		return FaceData[(int32)Dir].IsValidIndex(Index) ? FaceData[(int32)Dir][Index] : FBlockData{ EBlockType::None };
+	}
 };
 
 UCLASS()
@@ -148,6 +168,10 @@ public:
 	// 3차원 좌표로 데이터 저장 시 메모리 파편화 및 관리 오버헤드
 	UPROPERTY()
 	TArray<FBlockData> BlockDataArray;
+
+	// HISM 인스턴스별 폭탄 부착 개수를 저장하는 맵
+	// Key: 컴포넌트 포인터, Value: <인스턴스 인덱스, 개수> 맵
+	TMap<UPrimitiveComponent*, TMap<int32, int32>> HISMBombCountMap;
 
 	UPROPERTY()
 	// 이웃한 청크의 포인터 저장
@@ -214,22 +238,23 @@ protected:
 	void ExecuteDeferredVisualUpdate();
 
 	// -------------------------------------------------------------------------
-	// UpdataeChunkVisuals의 비동기 처리 관련
+	// UpdataeChunkVisuals의 비동기 & 멀티스레드
 	// -------------------------------------------------------------------------
+public:
+	// Actor가 파괴될 때 실행 중인 스레드를 안전하게 수거하기 위함
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 protected:
 	// 비동기 작업의 유효성 검사를 위한 ID
-	// 메인 스레드에서만 수정되므로 Atomic 보장은 필요 없음
-	int32 LastUpdateRequestID = 0;
+	// 캐시 등에 의존하지 않고 데이터 무결성을 보장하기 위해 원자적 정수
+	TAtomic<int32> LastUpdateRequestID = 0;
 
-	// HISM 인스턴스별 폭탄 부착 개수를 저장하는 맵
-	// Key: 컴포넌트 포인터, Value: <인스턴스 인덱스, 개수> 맵
-	TMap<UPrimitiveComponent*, TMap<int32, int32>> HISMBombCountMap;
+	// 워커 스레드에서 안전하게 BlockDataArray에 접근하기 위한 락
+	// mutable로 선언하여 const 함수에서도 읽을 수 있도록
+	mutable FRWLock ChunkDataLock;
 
-	// HISM 컴포넌트를 블록 타입 별로 2개씩 갖기 위한 배열
-	TArray<TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*>> HISM_Buffers;
-
-	// 현재 화면에 표시 중인 버퍼 인덱스 (0 or 1)
-	int32 CurrentBufferIndex = 0;
+	// 현재 돌아가고 있는 렌더링 갱신 작업의 핸들
+	UE::Tasks::TTask<void> VisualUpdateTask;
 
 	// ---------------------------------------------------------
 	// 이중 버퍼링을 사용한 비동기 렌더링 처리
@@ -238,6 +263,12 @@ public:
 	FTimerHandle GetRenderFenceTimerHandle() const { return RenderFenceTimerHandle; }
 
 protected:
+	// HISM 컴포넌트를 블록 타입 별로 2개씩 갖기 위한 배열
+	TArray<TMap<EBlockType, UHierarchicalInstancedStaticMeshComponent*>> HISM_Buffers;
+
+	// 현재 화면에 표시 중인 버퍼 인덱스 (0 or 1)
+	int32 CurrentBufferIndex = 0;
+
 	/** 렌더링 스레드가 작업을 마쳤는지 추적하기 위한 펜스 */
 	FRenderCommandFence RenderFence;
 

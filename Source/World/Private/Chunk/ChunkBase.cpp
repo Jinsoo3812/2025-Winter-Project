@@ -3,7 +3,6 @@
 
 #include "ChunkBase.h"
 #include "Components/SceneComponent.h"
-#include "Async/Async.h"
 #include "BlockConfig.h"
 #include "BlockManagerSubsystem.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
@@ -11,6 +10,7 @@
 #include "NavigationSystem.h"
 #include "Net/UnrealNetwork.h"
 #include "BlockMapManager.h"
+
 
 AChunkBase::AChunkBase()
 {
@@ -246,21 +246,6 @@ void AChunkBase::UpdateChunkVisuals()
 	// 이번 작업의 고유 ID 캡처
 	int32 MyRequestID = LastUpdateRequestID;
 
-	// 현재 청크의 상태 스냅샷
-	FChunkSnapshot Snapshot(BlockDataArray, ChunkSizeX, ChunkSizeY, ChunkSizeZ);
-
-	// 이웃 데이터 복사
-	for (int32 i = 0; i < (int32)EBlockNeighbor::Count; i++)
-	{
-		if (Neighbors[i].IsValid())
-		{
-			
-			// 이웃의 전체 BlockData를 복사하여 스레드 안전성 확보
-			// 이웃의 접한 면만 복사하는 방법으로 최적화 가능	
-			Snapshot.NeighborDataMap.Add((EBlockNeighbor)i, Neighbors[i]->BlockDataArray);
-		}
-	}
-
 	// BlockConfig는 UObject(DataAsset)이므로 워커 스레드에서 접근해서는 안됨
 	// 또한 BlockConfig를 사용하면 매번 여러 번의 포인터를 거쳐야함 (Config -> BlockDefinitions -> Tag 등)
 	// 람다 함수 내부에 캡처해두면 캐시 적중률이 올라감
@@ -287,14 +272,57 @@ void AChunkBase::UpdateChunkVisuals()
 	// 스레드 동작 중 this 객체가 파괴될 수 있으므로 약한 참조 생성
 	TWeakObjectPtr<AChunkBase> WeakThis(this);
 
+	FNeighborBoundaryData BoundarySnapshot;
+	BoundarySnapshot.Init(ChunkSizeX, ChunkSizeY, ChunkSizeZ);
+
+	for (int32 i = 0; i < 4; i++)
+	{
+		EBlockNeighbor Dir = static_cast<EBlockNeighbor>(i);
+		if (AChunkBase* Neighbor = Neighbors[i].Get())
+		{
+			FReadScopeLock NeighborReadLock(Neighbor->ChunkDataLock);
+			BoundarySnapshot.bIsValid[i] = true;
+			auto& FaceArr = BoundarySnapshot.FaceData[i];
+
+			// X축 면(Front/Back)인지, Y축 면(Right/Left)인지 판별
+			bool bIsXAxis = (Dir == EBlockNeighbor::Front || Dir == EBlockNeighbor::Back);
+
+			// 고정시킬 좌표(0 또는 끝) 결정
+			int32 FixedAxis = (Dir == EBlockNeighbor::Front) ? 0 :
+				(Dir == EBlockNeighbor::Back) ? ChunkSizeX - 1 :
+				(Dir == EBlockNeighbor::Right) ? 0 : ChunkSizeY - 1;
+
+			// 면을 구성하는 가로 길이(U) 결정
+			int32 UMax = bIsXAxis ? ChunkSizeY : ChunkSizeX;
+			FaceArr.Reserve(UMax * ChunkSizeZ);
+
+			// 껍질 데이터 얇게 포 뜨기 (통합 루프)
+			for (int32 z = 0; z < ChunkSizeZ; z++)
+			{
+				for (int32 u = 0; u < UMax; u++)
+				{
+					// X축 면이면 (Fixed, u, z), Y축 면이면 (u, Fixed, z)로 읽어옴
+					FBlockData Block = bIsXAxis ? Neighbor->GetBlockData(FixedAxis, u, z) : Neighbor->GetBlockData(u, FixedAxis, z);
+					FaceArr.Add(Block);
+				}
+			}
+		}
+	}
+
 	float LocalGridSize = GridSize;
 	/*
 	* 엔진이 관리하는 스레드 풀에서 남는 스레드를 하나 잡아 람다 함수를 실행하도록 시킴
 	* 스레드 내부에서는 UObject를 다뤄서는 안되며 단순 계산 작업만 수행해야 함
 	* 청크 내의 모든 블록을 순회하며 그려야 할 블록 선별
 	*/
-	Async(EAsyncExecution::ThreadPool, [WeakThis, Snapshot, MyRequestID, LocalGridSize, IsActorMap, ActorTagMap]()
+	VisualUpdateTask = UE::Tasks::Launch(TEXT("ChunkVisualCulling"),
+		[WeakThis, MyRequestID, LocalGridSize, IsActorMap, ActorTagMap, BoundarySnapshot]()
 	{
+		if (!WeakThis.IsValid() || WeakThis->LastUpdateRequestID != MyRequestID) return;
+
+		// 읽기 락 획득(람다 함수가 종료되며 해제)
+		FReadScopeLock ReadLock(WeakThis->ChunkDataLock);
+
 		// 블록 타입별로 한 번에 AddInstances 호출을 하기 위한 배치 데이터
 		TMap<EBlockType, TArray<FTransform>> LocalBatchData;
 
@@ -309,17 +337,14 @@ void AChunkBase::UpdateChunkVisuals()
 		// 많이 사용될 것 같은 블록은 미리 TArray에 메모리 공간을 예약하여 잦은 할당을 방지할 수 있음.
 		// LocalBatchData.FindOrAdd(EBlockType::Terrain).Reserve(DataCopy.Num() / 2);
 
-		if (!WeakThis.IsValid()) return;
-		if (WeakThis->LastUpdateRequestID != MyRequestID) return;
-
 		// 캐시 적중률을 높이는 3중 반복문
-		for (int32 z = 0; z < Snapshot.SizeZ; z++)
+		for (int32 z = 0; z < WeakThis->ChunkSizeZ; z++)
 		{
-			for (int32 y = 0; y < Snapshot.SizeY; y++)
+			for (int32 y = 0; y < WeakThis->ChunkSizeY; y++)
 			{
-				for (int32 x = 0; x < Snapshot.SizeX; x++)
+				for (int32 x = 0; x < WeakThis->ChunkSizeX; x++)
 				{
-					FBlockData CurrentBlock = Snapshot.GetBlockData(x, y, z);
+					FBlockData CurrentBlock = WeakThis->GetBlockData(x, y, z);
 
 					// 그리지 않아도 되는 블록은 건너뜀
 					if (CurrentBlock.Type == EBlockType::None) continue;
@@ -348,7 +373,19 @@ void AChunkBase::UpdateChunkVisuals()
 						* 이웃 청크에 걸쳐있는 경우 이웃에 접근하여 알아서 가져옴
 						* 아예 빈 공간이거나 유효하지 않을 경우 None 블록 반환
 						*/
-						FBlockData NeighborBlock = Snapshot.GetBlockData(NX, NY, NZ);
+						FBlockData NeighborBlock;
+
+						// 내 청크 범위를 벗어났는가?
+						if (NX < 0 || NX >= WeakThis->ChunkSizeX || NY < 0 || NY >= WeakThis->ChunkSizeY)
+						{
+							// 범위를 벗어났다면 미리 캡처해둔 이웃 경계면 스냅샷에서 데이터를 가져옴
+							NeighborBlock = BoundarySnapshot.GetNeighborBlockData(NX, NY, NZ);
+						}
+						else
+						{
+							// 내 범위 안이라면 원본 배열에서 직접 읽음 (ReadLock 덕분에 안전)
+							NeighborBlock = WeakThis->GetBlockData(NX, NY, NZ);
+						}
 
 						// 안 그려진 이웃이 있으면 자신을 그림
 						if (NeighborBlock.Type == EBlockType::None)
@@ -369,7 +406,7 @@ void AChunkBase::UpdateChunkVisuals()
 						}
 					}
 
-					// 그려야 한다면 HISM/Actor 분기하여 스폰 처리
+					// 그려야 한다면 HISM/Actor 분기하여 스폰	 처리
 					if (bIsVisible)
 					{
 						// 통계
@@ -541,66 +578,6 @@ void AChunkBase::UpdateChunkVisuals()
 	});
 }
 
-FBlockData FChunkSnapshot::GetBlockData(int32 X, int32 Y, int32 Z) const
-{
-	// 내 청크 범위 내일 경우의 처리
-	if (X >= 0 && X < SizeX && Y >= 0 && Y < SizeY && Z >= 0 && Z < SizeZ)
-	{
-		int32 Index = X + (Y * SizeX) + (Z * SizeX * SizeY);
-		if (MyData.IsValidIndex(Index))
-		{
-			return MyData[Index];
-		}
-		return FBlockData{ EBlockType::None };
-	}
-
-	// 2. 범위를 벗어났다면 어느 이웃인지 판별
-	EBlockNeighbor TargetDir = EBlockNeighbor::Count;
-	int32 LocalX = X;
-	int32 LocalY = Y;
-	int32 LocalZ = Z;
-
-	// X축 검사
-	if (X < 0)
-	{
-		TargetDir = EBlockNeighbor::Back;
-		LocalX = (X + SizeX) % SizeX; // -1 -> 15
-	}
-	else if (X >= SizeX)
-	{
-		TargetDir = EBlockNeighbor::Front;
-		LocalX = (X + SizeX) % SizeX; // 16 -> 0
-	}
-
-	// Y축 검사 (X축이 범위 안일 때만 체크)
-	else if (Y < 0)
-	{
-		TargetDir = EBlockNeighbor::Left;
-		LocalY = (Y + SizeY) % SizeY;
-	}
-	else if (Y >= SizeY)
-	{
-		TargetDir = EBlockNeighbor::Right;
-		LocalY = (Y + SizeY) % SizeY;
-	}
-	// Z축 검사 생략 (단층 맵이므로)
-
-	// 이웃 데이터가 스냅샷에 존재하는지 확인
-	if (TargetDir != EBlockNeighbor::Count && NeighborDataMap.Contains(TargetDir))
-	{
-		const TArray<FBlockData>& NeighborArr = NeighborDataMap[TargetDir];
-		int32 Index = LocalX + (LocalY * SizeX) + (LocalZ * SizeX * SizeY);
-
-		if (NeighborArr.IsValidIndex(Index))
-		{
-			return NeighborArr[Index];
-		}
-	}
-
-	// 이웃이 없거나 데이터가 없으면 '투명(None)' 취급 -> 그래야 외벽이 그려짐
-	return FBlockData{ EBlockType::None };
-}
-
 void AChunkBase::RemoveBlockAtWorldLocation(FVector WorldLocation)
 {
 	// 월드 좌표를 청크 로컬 좌표로 변환 (청크의 회전이 없다고 가정 시 단순 빼기)
@@ -637,6 +614,9 @@ void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)
 
 void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor, bool bIsInit)
 {
+	// 쓰기 작업 락 (함수 종료 시 자동 해제)
+	FWriteScopeLock WriteLock(ChunkDataLock);
+
 	int32 Index = GetBlockIndex(X, Y, Z);
 	if (Index != -1 && BlockDataArray.IsValidIndex(Index))
 	{
@@ -866,4 +846,16 @@ void AChunkBase::ExecuteDeferredVisualUpdate()
 	// 플래그 초기화 및 UpdateVisuals 수행
 	bIsVisualDirty = false;
 	UpdateChunkVisuals();
+}
+
+void AChunkBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	// 현재 실행 중인 렌더링 스레드 작업이 있다면, 
+	// 도중에 메모리가 날아가는 것을 막기 위해 작업이 끝날 때까지 Game Thread를 잠깐 대기시킵니다.
+	if (VisualUpdateTask.IsValid() && !VisualUpdateTask.IsCompleted())
+	{
+		VisualUpdateTask.Wait();
+	}
+
+	Super::EndPlay(EndPlayReason);
 }
