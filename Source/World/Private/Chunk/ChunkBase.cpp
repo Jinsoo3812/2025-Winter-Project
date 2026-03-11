@@ -41,6 +41,17 @@ void AChunkBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AChunkBase, NetworkBlockData);
 }
 
+void AChunkBase::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+	// 네트워크 데이터가 도착하기 전에(BeginPlay 이전) 미리 배열 메모리를 할당합니다.
+	if (BlockDataArray.Num() == 0)
+	{
+		InitializeChunkSize(ChunkSizeX, ChunkSizeY, ChunkSizeZ);
+	}
+}
+
 void AChunkBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -55,12 +66,6 @@ void AChunkBase::BeginPlay()
 	if(CachedBlockConfig)
 	{
 		GridSize = CachedBlockConfig->GridSize;
-	}
-
-	// BlockDataArray 메모리 미리 할당
-	if (BlockDataArray.Num() == 0)
-	{
-		InitializeChunkSize(ChunkSizeX, ChunkSizeY, ChunkSizeZ);
 	}
 
 	// 클라이언트는 스스로 청크 초기화
@@ -114,7 +119,7 @@ void AChunkBase::GenerateInitialTerrain()
 			{
 				if (z < FloorHeight)
 				{
-					SetBlockType(x, y, z, FloorBlockType);
+					SetBlockData(x, y, z, FloorBlockType, false, true);
 				}
 			}
 		}
@@ -141,19 +146,6 @@ int32 AChunkBase::GetBlockIndex(int32 X, int32 Y, int32 Z) const
 	}
 
 	return X + (Y * ChunkSizeX) + (Z * ChunkSizeX * ChunkSizeY);
-}
-
-void AChunkBase::SetBlockType(int32 X, int32 Y, int32 Z, EBlockType NewType)
-{
-	int32 Index = GetBlockIndex(X, Y, Z);
-	if (Index != -1 && BlockDataArray.IsValidIndex(Index))
-	{
-		BlockDataArray[Index].Type = NewType;
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ChunkBase: Invalid Index Access at %d, %d, %d"), X, Y, Z);
-	}
 }
 
 FBlockData AChunkBase::GetBlockData(int32 X, int32 Y, int32 Z) const
@@ -621,11 +613,11 @@ void AChunkBase::RemoveBlockAtWorldLocation(FVector WorldLocation)
 
 	// 데이터 갱신 (None으로 변경)
 	// SetBlockType 내부에서 유효성 검사(Index Check)를 하므로 안전함
-	SetBlockType(X, Y, Z, EBlockType::None);
+	SetBlockData(X, Y, Z, EBlockType::None, false);
 
 	// 시각적 업데이트 요청 (이 블록은 Actor였으므로 HISM 갱신은 필요 없을 수 있으나, 
 	// 이웃 블록의 옆면(Culling)을 다시 그려야 하므로 호출 필수
-	UpdateChunkVisuals();
+	MarkChunkDirty();
 }
 
 void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)
@@ -643,7 +635,7 @@ void AChunkBase::OnBlockSpawnFailed(FVector WorldLocation)
 	}
 }
 
-void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor)
+void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor, bool bIsInit)
 {
 	int32 Index = GetBlockIndex(X, Y, Z);
 	if (Index != -1 && BlockDataArray.IsValidIndex(Index))
@@ -651,7 +643,7 @@ void AChunkBase::SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, boo
 		BlockDataArray[Index].Type = NewType;
 		BlockDataArray[Index].bIsActorSpawned = bIsActor;
 
-		if (HasAuthority())
+		if (HasAuthority() && !bIsInit)
 		{
 			// TMap 해시 탐색(O(1)) 적용
 			if (int32* FoundArrayIndex = NetworkItemIndexMap.Find(Index))
@@ -830,7 +822,7 @@ void FBlockNetworkItem::PostReplicatedAdd(const struct FBlockNetworkArray& Seria
 		Serializer.OwningChunk->BlockDataArray[BlockIndex].bIsActorSpawned = bIsActorSpawned;
 
 		// 2. 비주얼 업데이트 (비동기 HISM 재생성 트리거)
-		Serializer.OwningChunk->UpdateChunkVisuals();
+		Serializer.OwningChunk->MarkChunkDirty();
 	}
 }
 
@@ -848,6 +840,30 @@ void FBlockNetworkItem::PostReplicatedChange(const struct FBlockNetworkArray& Se
 		Serializer.OwningChunk->BlockDataArray[BlockIndex].Type = BlockType;
 		Serializer.OwningChunk->BlockDataArray[BlockIndex].bIsActorSpawned = bIsActorSpawned;
 
-		Serializer.OwningChunk->UpdateChunkVisuals();
+		Serializer.OwningChunk->MarkChunkDirty();
 	}
+}
+
+void AChunkBase::MarkChunkDirty()
+{
+	// 이미 이번 프레임에 갱신이 예약되어 있다면 무시
+	if (bIsVisualDirty)
+	{
+		return;
+	}
+
+	bIsVisualDirty = true;
+
+	if (UWorld* World = GetWorld())
+	{
+		// 다음 프레임에 딱 한 번만 갱신 작업을 실행하도록 예약
+		World->GetTimerManager().SetTimerForNextTick(this, &AChunkBase::ExecuteDeferredVisualUpdate);
+	}
+}
+
+void AChunkBase::ExecuteDeferredVisualUpdate()
+{
+	// 플래그 초기화 및 UpdateVisuals 수행
+	bIsVisualDirty = false;
+	UpdateChunkVisuals();
 }

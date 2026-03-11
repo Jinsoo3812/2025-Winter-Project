@@ -301,7 +301,7 @@ void UBlockManagerSubsystem::SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& 
 		}
 
 		// 청크 별로 한 번만 시각 업데이트 호출
-		Chunk->UpdateChunkVisuals();
+		Chunk->MarkChunkDirty();
 	}
 
 	// 액터 스폰 큐에 등록 (Time Slicing)

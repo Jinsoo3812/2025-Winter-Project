@@ -187,7 +187,7 @@ void ABlockMapManager::UpdateAllChunks()
 	{
 		if (Pair.Value)
 		{
-			Pair.Value->UpdateChunkVisuals();
+			Pair.Value->MarkChunkDirty();
 		}
 	}
 }

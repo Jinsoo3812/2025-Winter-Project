@@ -106,6 +106,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void PostInitializeComponents() override;
+
 	// 블록 타입 별 HISM에 메시를 등록하는 함수
 	void RegisterBlockMesh(EBlockType Type, UStaticMesh* Mesh);
 
@@ -169,15 +171,12 @@ protected:
 	// 좌표를 통한 블록 데이터 접근 함수
 	// -------------------------------------------------------------------------
 public:
-	// 특정 좌표의 블록 타입 설정
-	void SetBlockType(int32 X, int32 Y, int32 Z, EBlockType NewType);
-
 	// 특정 좌표의 블록 데이터 가져오기
 	// @return 블록 데이터, 범위 벗어나면 빈 블록 반환
 	FBlockData GetBlockData(int32 X, int32 Y, int32 Z) const;
 
 	// 특정 좌표의 블록 데이터 설정
-	void SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor);
+	void SetBlockData(int32 X, int32 Y, int32 Z, EBlockType NewType, bool bIsActor, bool bIsInit = false);
 
 	// 3D 좌표 -> 1D 배열 인덱스 변환
 	// @return 인덱스 값, 범위 벗어나면 -1 반환
@@ -198,11 +197,21 @@ public:
 	// 데이터를 기반으로 "HISM 인스턴스"를 다시 그리는 함수
 	void UpdateChunkVisuals();
 
+	// BlockDataArray의 변경이 있음을 알리고 UpdateVisuals 예약
+	void MarkChunkDirty();
+
 	// 서브시스템에서 스폰 실패 시 호출 (롤백용)
 	void OnBlockSpawnFailed(FVector WorldLocation);
 
 	// HISM 컴포넌트의 인스턴스 하나에 하이라이트 효과를 적용하는 함수
 	void HighlightHISMBlock(UPrimitiveComponent* TargetComp, int32 ItemIndex, FGameplayTag Tag);
+
+protected:
+	// 이번 프레임에 UpdateVisual이 예약되었는지 여부
+	uint8 bIsVisualDirty : 1;
+
+	// 예약된 UpdateVisuals를 실제 실행하는 래퍼
+	void ExecuteDeferredVisualUpdate();
 
 	// -------------------------------------------------------------------------
 	// UpdataeChunkVisuals의 비동기 처리 관련
