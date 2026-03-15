@@ -11,6 +11,7 @@
 class UBoxComponent;
 class UMotionWarpingComponent;
 class UGameplayEffect;
+class UNiagaraSystem;
 
 UCLASS()
 class ENEMY_API ABossDragon : public AEnemyBase
@@ -88,6 +89,17 @@ protected:
 	// 패턴 진행 시 이동할 위치
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Combat|Wipe")
 	TObjectPtr<AActor> WipeTargetPoint;
+
+
+	// 에디터에서 할당할 평타 이펙트 에셋
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Effects")
+	TObjectPtr<UNiagaraSystem> BasicAttackFX;
+
+	// 이펙트를 소환할 함수
+	UFUNCTION(BlueprintCallable, Category = "Effects")
+	void PlayBasicAttackVFX(FName SocketName);
+
+
 
 private:
 	// 패턴 중복 실행 방지 플래그
