@@ -24,7 +24,8 @@ public class Enemy : ModuleRules
             "GameplayTasks",
             "MotionWarping",
             "World",
-            "Winter2025Core"
+            "Winter2025Core",
+            "Niagara"
         });
     }
 }

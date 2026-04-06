@@ -31,6 +31,11 @@
 #include "BlockGameplayTags.h"             // 블록 태그 정의 헤더
 #include "CollisionChannels.h"
 
+
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
+#include "ChunkBase.h"
+
 // ---------------------------------------------------------------------------
 // [2] 생성자 (Constructor)
 // ---------------------------------------------------------------------------
@@ -220,48 +225,47 @@ void ABossDragon::SpawnSafetyStairs(FVector CenterLocation, int32 MaxHeight, flo
 // ---------------------------------------------------------------------------
 void ABossDragon::SetFloorWarningState(FVector CenterLocation, float Radius, bool bIsWarning)
 {
-	// [1] 경고가 꺼지는 상황(False)이라면 -> 생성했던 계단들도 즉시 삭제
 	if (!bIsWarning)
 	{
 		DestroySpawnedStairs();
 	}
 
-	// [2] 태그 결정 (True면 공격 구역 표시, False면 해제)
-	FGameplayTag TagToSend = bIsWarning ? TAG_Block_Highlight_AttackZone : TAG_Block_Highlight_AttackZone_None;
+	// 1. 블록 서브시스템 가져오기
+	IBlockSystemInterface* BlockSystem = IBlockSystemInterface::Get(GetWorld());
+	if (!BlockSystem) return;
 
-	// [3] 범위 내 블록 검색 설정
-	TArray<FOverlapResult> Overlaps;
+	// 2. 평타와 동일하게 Overlap 검사 세팅
+	TArray<FOverlapResult> OverlapResults;
 	FCollisionShape SphereShape = FCollisionShape::MakeSphere(Radius);
-	FCollisionQueryParams Params;
-	Params.AddIgnoredActor(this); // 보스 자신 제외
+	FCollisionObjectQueryParams ObjectQueryParams;
+	ObjectQueryParams.AddObjectTypesToQuery(ECC_Block);
 
-	FCollisionObjectQueryParams ObjectParams;
-	ObjectParams.AddObjectTypesToQuery(ECC_Block); // 블록 전용 채널 사용
+	// [수정] 평타처럼 높이를 50만큼 내려서 바닥에 확실히 파묻히게 감지합니다.
+	FVector AdjustedCenter = CenterLocation;
+	AdjustedCenter.Z -= 50.0f;
 
-	bool bHit = GetWorld()->OverlapMultiByObjectType(
-		Overlaps,
-		CenterLocation,
+	// Overlap 검사 실행
+	GetWorld()->OverlapMultiByObjectType(
+		OverlapResults,
+		AdjustedCenter,
 		FQuat::Identity,
-		ObjectParams,
-		SphereShape,
-		Params
+		ObjectQueryParams,
+		SphereShape
 	);
 
-	// [4] 검색된 블록들에게 색상 변경 이벤트 전송
-	if (bHit)
-	{
-		FGameplayEventData EventData;
-		EventData.Instigator = this;
-		EventData.EventTag = TagToSend;
+	// 3. 서브시스템을 통해 블록 추출 (평타 로직과 100% 동일)
+	TArray<FBlockReference> AffectedBlocks;
+	BlockSystem->GetBlocksFromOverlaps(OverlapResults, AffectedBlocks);
 
-		for (const FOverlapResult& Result : Overlaps)
-		{
-			if (ABlockBase* Block = Cast<ABlockBase>(Result.GetActor()))
-			{
-				// BlockBase 내부의 네트워크 멀티캐스트 로직 실행
-				Block->HandleGameplayEvent(TagToSend, EventData);
-			}
-		}
+	// 4. 태그 결정
+	// [테스트] 평타가 성공했던 'Invalid' 태그를 강제로 넣어봅니다! 
+	// (이걸로 성공하면 나중에 AttackZone으로 바꾸고 데이터 에셋에 등록만 하시면 됩니다)
+	FGameplayTag TagToSend = bIsWarning ? TAG_Block_Highlight_Invalid : TAG_Block_Highlight_None;
+
+	// 5. 하이라이트 이벤트 전달
+	for (const FBlockReference& BlockRef : AffectedBlocks)
+	{
+		BlockSystem->HighlightBlock(BlockRef, TagToSend);
 	}
 }
 
@@ -288,6 +292,9 @@ void ABossDragon::DestroySpawnedStairs()
 // ---------------------------------------------------------------------------
 void ABossDragon::ExecuteHeightJudgmentKill(float SafeHeightThreshold)
 {
+	// 함수가 실행되자마자 찍히는 로그 추가
+	UE_LOG(LogTemp, Warning, TEXT("[DEBUG] ExecuteHeightJudgmentKill Called!"));
+
 	// 월드의 모든 캐릭터 검색
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ACharacter::StaticClass(), FoundActors);
@@ -391,6 +398,24 @@ void ABossDragon::UpdateMotionWarpTarget(AActor* TargetActor)
 			FName("FaceTarget"), // 몽타주 내 NotifyState 이름과 일치해야 동작함
 			TargetActor->GetActorLocation(),
 			TargetActor->GetActorRotation()
+		);
+	}
+}
+
+
+void ABossDragon::PlayBasicAttackVFX(FName SocketName)
+{
+	if (BasicAttackFX)
+	{
+		// 캐릭터의 특정 소켓(예: 오른발, 입 등)에 붙여서 스폰
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			BasicAttackFX,
+			GetMesh(),
+			SocketName,
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			EAttachLocation::KeepRelativeOffset,
+			true // 자동으로 파괴됨
 		);
 	}
 }
