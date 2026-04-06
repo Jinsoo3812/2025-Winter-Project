@@ -13,6 +13,7 @@ USkillComponent::USkillComponent()
 
 void USkillComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
+	// 직접 만든 구조체인 SkillSlots 또한 네트워크 동기화 등록
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(USkillComponent, SkillSlots);
 }
@@ -34,6 +35,17 @@ void USkillComponent::BeginPlay()
 	{
 		// 이 오류 로그 터진거면 PlayerState의 OnPossessed/OnRep_PlayerState에서 따로 호출해줘야 함.
 		UE_LOG(LogTemp, Warning, TEXT("SkillComponent: Cannot find ASC in Owner Actor %s"), *Owner->GetName());
+	}
+
+	// BlockSystemInterface 캐싱
+	if (!BlockSystem) {
+		if (UWorld* World = GetWorld())
+		{
+			BlockSystem = IBlockSystemInterface::Get(World);
+		}
+		else {
+			UE_LOG(LogTemp, Error, TEXT("SkillComponent: World is null in ActivateAbility"));
+		}
 	}
 }
 
@@ -211,4 +223,60 @@ int32 USkillComponent::GetTotalRuneCount(FGameplayTag SlotTag, ERuneType Type) c
 	}
 
 	return RuneCount;
+}
+
+bool USkillComponent::ServerSendSkillEvent_Validate(FGameplayTag EventTag, FGameplayAbilityTargetDataHandle TargetData)
+{
+	return EventTag.IsValid();
+}
+
+void USkillComponent::ServerSendSkillEvent_Implementation(FGameplayTag EventTag, FGameplayAbilityTargetDataHandle TargetData)
+{
+	if (AActor* Owner = GetOwner())
+	{
+		// 서버에서 클라이언트의 아바타(Owner)를 찾은 뒤, 
+		// 서버 측 ASC에 동일한 이벤트를 강제로 발생시킵니다.
+		FGameplayEventData Payload;
+		Payload.EventTag = EventTag;
+
+		Payload.TargetData = TargetData;
+
+		UAbilitySystemBlueprintLibrary::SendGameplayEventToActor(Owner, EventTag, Payload);
+
+		UE_LOG(LogTemp, Log, TEXT("SkillComponent: Relayed Event [%s] to Server."), *EventTag.ToString());
+	}
+}
+
+void USkillComponent::RequestSpawnBlocks(const TArray<FBlockSpawnRequest>& Requests)
+{
+	if (Requests.IsEmpty()) return;
+
+	if (GetOwner()->HasAuthority())
+	{
+		// 서버 권한이 있으면 즉시 서브시스템에 요청
+		if (BlockSystem)
+		{
+			BlockSystem->SpawnBlocksBatch(Requests);
+		}
+	}
+	else
+	{
+		// 클라이언트면 서버 RPC 호출
+		ServerRequestBlockSpawn(Requests);
+	}
+}
+
+bool USkillComponent::ServerRequestBlockSpawn_Validate(const TArray<FBlockSpawnRequest>& Requests)
+{
+	return true;
+}
+
+void USkillComponent::ServerRequestBlockSpawn_Implementation(const TArray<FBlockSpawnRequest>& Requests)
+{
+	// 서버에서 일괄 소환 처리
+	if (BlockSystem)
+	{
+		BlockSystem->SpawnBlocksBatch(Requests);
+		UE_LOG(LogTemp, Log, TEXT("SkillComponent: Server processed batched block spawn request (%d blocks)."), Requests.Num());
+	}
 }

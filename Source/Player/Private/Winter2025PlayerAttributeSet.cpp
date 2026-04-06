@@ -14,7 +14,7 @@ void UWinter2025PlayerAttributeSet::GetLifetimeReplicatedProps(TArray<FLifetimeP
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
 	/*
-	* 동기화 등록
+	* 네트워크 동기화 변수 등록
 	* 서버의 Attribute Set이 변하면, 클라이언트의 Attribute Set으로 복제한다.
 	* COND_None: 조건 없이 항상 복제
 	* REPNOTIFY_Always: 값이 바뀔 때마다 OnRep_XXX 함수를 호출
@@ -59,28 +59,6 @@ void UWinter2025PlayerAttributeSet::OnRep_AttackPower(const FGameplayAttributeDa
 void UWinter2025PlayerAttributeSet::OnRep_MovementSpeed(const FGameplayAttributeData& OldMovementSpeed)
 {
 	GAMEPLAYATTRIBUTE_REPNOTIFY(UWinter2025PlayerAttributeSet, MovementSpeed, OldMovementSpeed);
-
-	// 클라이언트도 자기 캐릭터의 MaxWalkSpeed를 맞춰줘야 버벅임(Rubber-banding)이 없음
-	UAbilitySystemComponent* ASC = GetOwningAbilitySystemComponent();
-	if (ASC && ASC->GetAvatarActor())
-	{
-		if (ACharacter* Character = Cast<ACharacter>(ASC->GetAvatarActor()))
-		{
-			if (UCharacterMovementComponent* CMC = Character->GetCharacterMovement())
-			{
-				CMC->MaxWalkSpeed = GetMovementSpeed();
-			}
-			else {
-				UE_LOG(LogTemp, Warning, TEXT("OnRep_MovementSpeed: CharacterMovementComponent is null"));
-			}
-		}
-		else {
-			UE_LOG(LogTemp, Warning, TEXT("OnRep_MovementSpeed: Could not cast AvatarActor to ACharacter"));
-		}
-	}
-	else {
-		UE_LOG(LogTemp, Warning, TEXT("OnRep_MovementSpeed: Could not update Character Movement Speed"));
-	}
 }
 
 void UWinter2025PlayerAttributeSet::PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data)

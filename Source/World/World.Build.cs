@@ -15,7 +15,8 @@ public class World: ModuleRules
             "NavigationSystem",
             "Winter2025Core",
             "RenderCore",
-            "NavigationSystem"
+            "NavigationSystem",
+            "NetCore"
         });
 
         PublicIncludePaths.AddRange(new string[] {

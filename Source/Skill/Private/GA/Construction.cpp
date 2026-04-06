@@ -63,11 +63,16 @@ void UConstruction::OnConfirmEventReceived(FGameplayEventData Payload)
 		FVector SpawnLoc = TargetLoc + FVector(0, 0, BlockSystem->GetGridSize());
 
 		FBlockSpawnRequest Request(BlockTagToSpawn, SpawnLoc, true);
-
-		// const 인자가 아니라서 어쩔 수 없이 TArray로 감싸서 넘김
 		TArray<FBlockSpawnRequest> Requests;
 		Requests.Add(Request);
-		BlockSystem->SpawnBlocksBatch(Requests);
+
+		if (SkillComp)
+		{
+			// 알아서 서버/클라이언트 분기 처리
+			SkillComp->RequestSpawnBlocks(Requests);
+		}
+
+		CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
 	}
 	else
 	{

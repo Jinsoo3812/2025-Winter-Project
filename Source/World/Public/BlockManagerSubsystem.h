@@ -74,7 +74,7 @@ public:
 	FVector GetBlockLocation(const FBlockReference& Ref) override;
 
 	// 대량의 블록 생성 요청을 처리하는 함수 (배치 프로세싱)
-	void SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
+	void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests,
 		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete(),
 		const UBlockSpawnPayload* InPayload = nullptr) override;
 
@@ -118,8 +118,15 @@ public:
 	// ---------------------------------------------------------
 	// 참조 캐싱
 	// ---------------------------------------------------------
+public:
+	// BlockConfig Getter
+	UBlockConfig* GetBlockConfig() const { return CachedBlockConfig; }
+
+	// BlockMapManager Getter
+	ABlockMapManager* GetMapManager() const { return MapManager; }
+
 protected:
-	// 청크를 찾기 위한 매니저 참조
+	// BlockMapmanager 캐시 (청크 관리자)
 	UPROPERTY(Transient)
 	ABlockMapManager* MapManager = nullptr;
 

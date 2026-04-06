@@ -26,6 +26,7 @@ public:
 	// Sets default values for this actor's properties
 	ABlockMapManager();
 
+	// 혹시라도 락이 안 풀리고 파괴될 경우를 대비해 메모리 해제
 	virtual ~ABlockMapManager();
 
 protected:
@@ -59,7 +60,6 @@ public:
 	int32 GridSize = 100;
 protected:
 	// 블록 설정 데이터 에셋
-	UPROPERTY(EditAnywhere, Category = "Config")
 	UBlockConfig* BlockConfig;
 
 	// 테스트 용 기본 바닥의 층 수
@@ -72,18 +72,22 @@ protected:
 	// -------------------------------------------------------------------------
 	// 청크 초기화
 	// -------------------------------------------------------------------------
+public:
+	// 클라이언트 환경에서 복제된 청크가 스스로를 MapManager에 등록할 때 호출하는 함수
+	void RegisterClientChunk(AChunkBase* NewChunk);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Config")
-	TSubclassOf<AChunkBase> ChunkClass;
-
-	// 월드 생성 진입점
-	void GenerateWorld();
+	TSubclassOf<AChunkBase> ChunkClass;	
 
 	// 청크 간 이웃 설정
 	void LinkChunkNeighbors();
 
 	// 청크 스폰 및 초기화
 	void SpawnChunks();
+
+	// 월드 생성 진입점
+	void GenerateWorld();
 
 	// 테스트용: 간단한 지형 데이터 생성 (평지)
 	void GenerateBasicTerrain();
@@ -98,7 +102,7 @@ protected:
 	// 초기 월드 생성이 완료되었는지 확인하는 함수
 	void CheckInitialWorldGenerationComplete();
 
-	// NavMesh 갱신을 여러 프레임 동안 막기 위한 Lock 포인터
+	// 최초 맵 생성 시 NavMesh 갱신을 잠시 정지하기 위한 Lock 객체
 	FNavigationLockContext* NavUpdateLock = nullptr;
 
 	// -------------------------------------------------------------------------
