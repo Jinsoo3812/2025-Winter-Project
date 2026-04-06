@@ -80,9 +80,14 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "GAS|Combat")
 	FGameplayTag WipePatternEventTag;
 
-	// [추가] 생성된 계단 블록들을 기억하는 배열 (TWeakObjectPtr로 안전하게 참조)
+	// 생성된 계단 블록들을 기억하는 배열 (TWeakObjectPtr로 안전하게 참조)
 	UPROPERTY()
 	TArray<TWeakObjectPtr<AActor>> SpawnedStairsList;
+
+	// 에디터에서 직접 타깃 포인트를 지정할 변수
+	// 패턴 진행 시 이동할 위치
+	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Combat|Wipe")
+	TObjectPtr<AActor> WipeTargetPoint;
 
 private:
 	// 패턴 중복 실행 방지 플래그

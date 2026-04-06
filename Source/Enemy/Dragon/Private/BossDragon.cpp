@@ -14,6 +14,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Engine/OverlapResult.h"          // GetActor() 등의 결과 처리를 위해 필수
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h" // 블랙보드 접근용
 
 // GAS (Gameplay Ability System) 관련 헤더
 #include "AbilitySystemComponent.h"
@@ -111,6 +113,19 @@ void ABossDragon::OnHealthChanged(const FOnAttributeChangeData& Data)
 		// 1. 전투 상태 초기화 (모든 행동 취소)
 		ForceResetCombatState();
 
+		if (AAIController* AIC = Cast<AAIController>(GetController()))
+		{
+			if (UBlackboardComponent* Blackboard = AIC->GetBlackboardComponent())
+			{
+				// 1. 타깃 포인트의 위치(또는 액터 자체)를 블랙보드에 저장
+				// "TargetLocation"은 블랙보드에 미리 만들어둘 Key 이름입니다.
+				Blackboard->SetValueAsObject(TEXT("WipeLocation"), WipeTargetPoint);
+
+				// 2. 패턴 시작 플래그 켜기
+				Blackboard->SetValueAsBool(TEXT("IsCastingWipe"), true);
+			}
+		}
+
 		// [수정] 직접 이벤트를 보내지 않고 AI(비헤이비어 트리)에게 위임합니다.
 		UE_LOG(LogTemp, Warning, TEXT("[BossDragon] HP 66%% Reached! AI will handle the rest."));
 	}
@@ -122,7 +137,18 @@ void ABossDragon::OnHealthChanged(const FOnAttributeChangeData& Data)
 
 		// 1. 전투 상태 초기화 (모든 행동 취소)
 		ForceResetCombatState();
+		if (AAIController* AIC = Cast<AAIController>(GetController()))
+		{
+			if (UBlackboardComponent* Blackboard = AIC->GetBlackboardComponent())
+			{
+				// 1. 타깃 포인트의 위치(또는 액터 자체)를 블랙보드에 저장
+				// "TargetLocation"은 블랙보드에 미리 만들어둘 Key 이름입니다.
+				Blackboard->SetValueAsObject(TEXT("WipeLocation"), WipeTargetPoint);
 
+				// 2. 패턴 시작 플래그 켜기
+				Blackboard->SetValueAsBool(TEXT("IsCastingWipe"), true);
+			}
+		}
 		// [수정] 직접 이벤트를 보내지 않고 AI(비헤이비어 트리)에게 위임합니다.
 		UE_LOG(LogTemp, Warning, TEXT("[BossDragon] HP 33%% Reached! AI will handle the rest."));
 	}
