@@ -295,3 +295,25 @@ void AWinter2025Player::OnMouseWheelClick(const FInputActionValue& Value)
 	// 활성화된 모든 어빌리티 중, 이 태그를 기다리는(WaitGameplayEvent) 어빌리티에게 신호가 갑니다.
 	CachedASC->HandleGameplayEvent(ConfirmTag, &EventData);
 }
+
+FVector AWinter2025Player::GetProxySafeAcceleration() const
+{
+	// 1. 내가 조종하는 캐릭터거나 서버인 경우: 실제 CMC의 가속도 반환
+	if (GetLocalRole() != ROLE_SimulatedProxy)
+	{
+		return GetCharacterMovement() ? GetCharacterMovement()->GetCurrentAcceleration() : FVector::ZeroVector;
+	}
+
+	// 2. 클라이언트 화면에 보이는 타 유저(Simulated Proxy)인 경우: 속도를 기반으로 입력 유추
+	const FVector CurrentVelocity = GetVelocity();
+
+	// 약간의 속도라도 있다면 (부동소수점 오차 방지)
+	if (CurrentVelocity.SizeSquared2D() > KINDA_SMALL_NUMBER)
+	{
+		// 이동하는 방향의 단위 벡터(길이 1)를 반환하여 크기가 0이 아니게 만듦
+		return CurrentVelocity.GetSafeNormal2D();
+	}
+
+	// 멈춰있다면 가속도도 0
+	return FVector::ZeroVector;
+}

@@ -9,6 +9,7 @@
 #include "CollisionChannels.h"
 #include "SkillComponent.h" 
 #include "Rune/DA_Rune.h"
+#include "GameplayAbilityTargetData_Blocks.h"
 
 
 void UDestruction::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -60,7 +61,6 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
 {
     if (!BlockSystem || !DestructionEffectClass || !DamageEffectClass)
     {
-        UE_LOG(LogTemp, Warning, TEXT("Destruction: Missing BlockSystem or GE Class"));
         EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, true);
         return;
     }
@@ -73,97 +73,126 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
         return;
     }
 
-    // 데미지 룬 배율 계산
-    float RuneDamageMultiplier = 1.0f;
-    if (SkillComp && GetCurrentAbilitySpec())
+    // GAS 표준: 이 아바타가 내 로컬 컨트롤러에 의해 움직이는가? / 이 환경이 서버인가?
+    bool bIsLocallyControlled = CurrentActorInfo->IsLocallyControlled();
+    bool bHasAuthority = Avatar->HasAuthority();
+
+    // 서버가 RPC로 받은 데이터가 있다면 일단 담아둡니다.
+    FGameplayAbilityTargetDataHandle TargetHandle = Payload.TargetData;
+
+    // -------------------------------------------------------------------
+    // 1. [Local] 로컬 조종 캐릭터 (클라이언트 or 리슨 서버) - 타겟 수집
+    // -------------------------------------------------------------------
+    if (bIsLocallyControlled)
     {
-        for (const FGameplayTag& Tag : GetCurrentAbilitySpec()->GetDynamicSpecSourceTags())
+        TargetHandle.Clear(); // 내 화면에서 직접 수집할 것이므로 초기화
+
+        if (SkillComp && PreviewTask)
         {
-            // "Skill.Slot" 관련 태그를 찾으면 룬 배율 계산 후 즉시 break
-            if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Skill.Slot"))))
+            // --- [Index 0] 블록 패킹 ---
+            FGameplayAbilityTargetData_Blocks* BlockTargetData = new FGameplayAbilityTargetData_Blocks();
+            BlockTargetData->Blocks = PreviewTask->GetCurrentHighlightedBlocks();
+            TargetHandle.Add(BlockTargetData);
+
+            // --- [Index 1 ~ N] 적군 정밀 타격 패킹 (Sweep) ---
+            FQuat AttackRotation = Avatar->GetActorQuat();
+            FVector AttackLocation = Avatar->GetActorLocation() + AttackRotation.RotateVector(PreviewRange.RelativeOffset);
+            FVector SweepEnd = AttackLocation + FVector(0.0f, 0.0f, 0.1f);
+            FCollisionShape AttackShape = FCollisionShape::MakeBox(PreviewRange.Dimensions);
+
+            TArray<FHitResult> HitResults;
+            FCollisionQueryParams Params;
+            Params.AddIgnoredActor(Avatar);
+            Params.bTraceComplex = true;
+
+            if (GetWorld()->SweepMultiByChannel(HitResults, AttackLocation, SweepEnd, AttackRotation, ECC_Enemy, AttackShape, Params))
             {
-                RuneDamageMultiplier = SkillComp->GetTotalRuneMultiplier(Tag, ERuneType::Red);
-                break;
-            }
-        }
-    }
-
-    // 블록 파괴 로직 
-    const TArray<FBlockReference>& TargetBlocks = PreviewTask->GetCurrentHighlightedBlocks();
-    if (TargetBlocks.Num() > 0)
-    {
-        FGameplayEffectContextHandle BlockContextHandle = SourceASC->MakeEffectContext();
-        BlockContextHandle.AddSourceObject(this);
-
-        FGameplayEffectSpecHandle DestructionSpecHandle = SourceASC->MakeOutgoingSpec(DestructionEffectClass, 1.0f, BlockContextHandle);
-        if (DestructionSpecHandle.IsValid())
-        {
-            ApplyGameplayEffectToTargets(TargetBlocks, DestructionSpecHandle);
-        }
-    }
-
-    // 쿨타임 시작 (히트 여부와 상관없이 스킬이 발동되었으므로 쿨타임 적용)
-    CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
-    
-    // 적군 피해 로직
-    bool bHitAnyEnemy = false;
-
-    // 3. 적 타격 로직 (정밀 Sweep 방식)
-    if (Avatar->HasAuthority())
-    {
-        FQuat AttackRotation = Avatar->GetActorQuat();
-        FVector AttackLocation = Avatar->GetActorLocation() + AttackRotation.RotateVector(PreviewRange.RelativeOffset);
-
-        // 시작과 끝이 같으면 무시되는 현상 방지 (0.1 움직여서 Sweep 정상 동작)
-        FVector SweepEnd = AttackLocation + FVector(0.0f, 0.0f, 0.1f);
-        FCollisionShape AttackShape = FCollisionShape::MakeBox(PreviewRange.Dimensions);
-
-        TArray<FHitResult> HitResults;
-        FCollisionQueryParams Params;
-        Params.AddIgnoredActor(Avatar);
-        Params.bTraceComplex = true; // 뼈(Physics Asset) 정밀 검사
-
-        // 스윕 실행
-        bool bHit = GetWorld()->SweepMultiByChannel(
-            HitResults,
-            AttackLocation,
-            SweepEnd,
-            AttackRotation,
-            ECC_Enemy,
-            AttackShape,
-            Params
-        );
-
-        if (bHit)
-        {
-            // 중복 방지 및 태그 필터링
-            TMap<AActor*, FHitResult> UniqueHits;
-            for (const FHitResult& Hit : HitResults)
-            {
-                AActor* HitActor = Hit.GetActor();
-                if (!HitActor) continue;
-
-                UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(HitActor);
-                if (TargetASC && EnemyTag.IsValid() && TargetASC->HasMatchingGameplayTag(EnemyTag))
+                TMap<AActor*, FHitResult> UniqueHits;
+                for (const FHitResult& Hit : HitResults)
                 {
-                    if (!UniqueHits.Contains(HitActor)) {
+                    AActor* HitActor = Hit.GetActor();
+                    if (HitActor && !UniqueHits.Contains(HitActor))
+                    {
                         UniqueHits.Add(HitActor, Hit);
+
+                        FGameplayAbilityTargetData_SingleTargetHit* HitData = new FGameplayAbilityTargetData_SingleTargetHit();
+                        HitData->HitResult = Hit;
+                        TargetHandle.Add(HitData);
                     }
                 }
             }
+        }
 
-            // 데미지 GE 적용
-            for (auto& Elem : UniqueHits)
+        // '클라이언트'일 경우에만 서버로 RPC를 보내고 자기 자신은 (예측) 종료
+        if (!bHasAuthority)
+        {
+            if (SkillComp)
             {
-                AActor* TargetActor = Elem.Key;
-                FHitResult& HitInfo = Elem.Value;
-                UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+                SkillComp->ServerSendSkillEvent(Tag_Event_Confirm, TargetHandle);
+            }
+            CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+            EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
+            return;
+        }
+    }
 
-                if (TargetASC)
+    // -------------------------------------------------------------------
+    // 2. [Server] 권한을 가진 서버 (리슨 서버의 로컬 실행 or 클라이언트 RPC 수신)
+    // -------------------------------------------------------------------
+    if (bHasAuthority)
+    {
+        float RuneDamageMultiplier = 1.0f;
+        if (SkillComp && GetCurrentAbilitySpec())
+        {
+            for (const FGameplayTag& Tag : GetCurrentAbilitySpec()->GetDynamicSpecSourceTags())
+            {
+                if (Tag.MatchesTag(FGameplayTag::RequestGameplayTag(FName("Skill.Slot"))))
                 {
-                    bHitAnyEnemy = true;
+                    RuneDamageMultiplier = SkillComp->GetTotalRuneMultiplier(Tag, ERuneType::Red);
+                    break;
+                }
+            }
+        }
 
-                    // 정밀한 HitResult를 Context에 포함
+        // --- [Index 0] 블록 파괴 로직 적용 ---
+        if (TargetHandle.IsValid(0))
+        {
+            const FGameplayAbilityTargetData* BaseData = TargetHandle.Get(0);
+            if (BaseData && BaseData->GetScriptStruct() == FGameplayAbilityTargetData_Blocks::StaticStruct())
+            {
+                const FGameplayAbilityTargetData_Blocks* BlocksData = static_cast<const FGameplayAbilityTargetData_Blocks*>(BaseData);
+                if (BlocksData->Blocks.Num() > 0)
+                {
+                    FGameplayEffectContextHandle BlockContextHandle = SourceASC->MakeEffectContext();
+                    BlockContextHandle.AddSourceObject(this);
+
+                    FGameplayEffectSpecHandle DestructionSpecHandle = SourceASC->MakeOutgoingSpec(DestructionEffectClass, 1.0f, BlockContextHandle);
+                    if (DestructionSpecHandle.IsValid())
+                    {
+                        ApplyGameplayEffectToTargets(BlocksData->Blocks, DestructionSpecHandle);
+                    }
+                }
+            }
+        }
+
+        // --- [Index 1 ~ N] 적군 데미지 로직 적용 ---
+        for (int32 i = 1; i < TargetHandle.Data.Num(); ++i)
+        {
+            const FGameplayAbilityTargetData* BaseData = TargetHandle.Get(i);
+            if (BaseData && BaseData->GetScriptStruct() == FGameplayAbilityTargetData_SingleTargetHit::StaticStruct())
+            {
+                const FGameplayAbilityTargetData_SingleTargetHit* HitData = static_cast<const FGameplayAbilityTargetData_SingleTargetHit*>(BaseData);
+                const FHitResult& HitInfo = HitData->HitResult;
+                AActor* TargetActor = HitInfo.GetActor();
+
+                if (!TargetActor) continue;
+
+                float Distance = FVector::Distance(Avatar->GetActorLocation(), TargetActor->GetActorLocation());
+                if (Distance > PreviewRange.Dimensions.X + 300.0f) continue; // 핵 방지 거리 검증
+
+                UAbilitySystemComponent* TargetASC = UAbilitySystemBlueprintLibrary::GetAbilitySystemComponent(TargetActor);
+                if (TargetASC && EnemyTag.IsValid() && TargetASC->HasMatchingGameplayTag(EnemyTag))
+                {
                     FGameplayEffectContextHandle HitContextHandle = SourceASC->MakeEffectContext();
                     HitContextHandle.AddHitResult(HitInfo);
                     HitContextHandle.AddSourceObject(this);
@@ -175,14 +204,16 @@ void UDestruction::OnConfirmEventReceived(FGameplayEventData Payload)
                         DamageSpecHandle.Data->SetSetByCallerMagnitude(TAG_Data_RuneMultiplier, RuneDamageMultiplier);
 
                         SourceASC->ApplyGameplayEffectSpecToTarget(*DamageSpecHandle.Data.Get(), TargetASC);
-
-                        UE_LOG(LogTemp, Warning, TEXT("[Destruction] Hit Confirmed: %s, Bone: %s"), *TargetActor->GetName(), *HitInfo.BoneName.ToString());
+                        UE_LOG(LogTemp, Log, TEXT("[Destruction] Hit Confirmed: %s, Bone: %s"), *TargetActor->GetName(), *HitInfo.BoneName.ToString());
                     }
                 }
             }
         }
+
+        // 서버 측 쿨타임 및 스킬 종료
+        CommitAbilityCooldown(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true);
+        EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
     }
-    EndAbility(CurrentSpecHandle, CurrentActorInfo, CurrentActivationInfo, true, false);
 }
 
 void UDestruction::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)

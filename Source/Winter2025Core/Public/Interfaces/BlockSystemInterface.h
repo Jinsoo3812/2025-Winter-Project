@@ -13,18 +13,25 @@
 DECLARE_DELEGATE_OneParam(FOnBlockBatchSpawnComplete, const TArray<TWeakObjectPtr<AActor>>&);
 
 // Actor 블록 소환을 요청하기 위한 구조체
+USTRUCT(BlueprintType)
 struct FBlockSpawnRequest
 {
+	GENERATED_BODY()
+
 	// 소환할 블록 태그
+	UPROPERTY()
 	FGameplayTag BlockTag;
 
 	// 소환 위치
+	UPROPERTY()
 	FVector WorldLocation;
 
 	// 소환 후 중력 활성화 여부
+	UPROPERTY()
 	bool bEnableGravity = false;
 
 	// 배치 작업 ID
+	UPROPERTY()
 	int32 BatchID = -1;
 
 	UPROPERTY()
@@ -79,7 +86,7 @@ public:
 		const UBlockSpawnPayload* InPayload = nullptr
 	) = 0;
 	
-	virtual void SpawnBlocksBatch(TArray<FBlockSpawnRequest>& Requests,
+	virtual void SpawnBlocksBatch(const TArray<FBlockSpawnRequest>& Requests,
 		const FOnBlockBatchSpawnComplete& OnComplete = FOnBlockBatchSpawnComplete(),
 		const UBlockSpawnPayload* InPayload = nullptr) = 0;
 

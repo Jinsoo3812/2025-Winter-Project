@@ -155,7 +155,7 @@ void UGA_AttackRange::EnableTelegraph(FGameplayEventData Payload)
 		// 서브시스템의 HighlightBlock 함수를 통해 일관성 있게 이벤트 전달
 		for (const FBlockReference& BlockRef : AffectedBlocks)
 		{
-			BlockSystem->HighlightBlock(BlockRef, TAG_Block_Highlight_Invalid);
+			BlockSystem->HighlightBlock(BlockRef, TAG_Block_Highlight_Warning);
 		}
 	}
 

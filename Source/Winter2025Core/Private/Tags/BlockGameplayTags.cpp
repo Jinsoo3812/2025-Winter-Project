@@ -17,3 +17,4 @@ UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_AttackZone, "Block.Highlight.AttackZo
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_AttackZone_None, "Block.Highlight.AttackZone.None");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight, "Block.Highlight");
 UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Invalid, "Block.Highlight.Invalid");
+UE_DEFINE_GAMEPLAY_TAG(TAG_Block_Highlight_Warning, "Block.Highlight.Warning");
